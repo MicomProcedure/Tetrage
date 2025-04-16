@@ -13,4 +13,35 @@ public class GameManager : MonoBehaviour
     {
         
     }
+
+    void StartGame()
+    {
+
+    }
+
+    void StartRound()
+    {
+
+    }
+
+    void EndRound()
+    {
+
+    }
+
+    void TransitionPhase()
+    {
+
+    }
+
+    void DisplayResults()
+    {
+
+    }
+
+    void RestartOrQuit()
+    {
+
+    }
+
 }
