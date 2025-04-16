@@ -2,17 +2,18 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField]
+    private GamePhase currentPhase;
+
+    /// <summary>
+    /// 現在のフェーズを外部から参照するためのプロパティ（読み取り専用）
+    /// </summary>
+    public GamePhase CurrentPhase
     {
-        
+        get { return currentPhase; }
+        set { currentPhase = value; }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     void StartGame()
     {
