@@ -2,24 +2,17 @@ using UnityEngine;
 
 public class Card : MonoBehaviour
 {
-    // カードのスートの定義
-    public enum Suit
-    {
-        Spade,
-        Heart,
-        Diamond,
-        Club
-    }
+
 
     // カードのスートの初期値
     public Suit suit = Suit.Spade;
 
     // カードの数字
-    private int _number;
-    public int number
+    private int _Number;
+    public int Number
     {
-        get{return _number;}
-        set{_number = Mathf.Max(1, value);}//数字が1以上になるようにする
+        get{return _Number;}
+        set{_Number = Mathf.Max(1, value);}//数字が1以上になるようにする
     }
 
     // カードの表示状態
