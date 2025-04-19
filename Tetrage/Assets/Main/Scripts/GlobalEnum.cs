@@ -9,5 +9,16 @@ public enum GamePhase
 }
 
 /// <summary>
+/// カードのスートを表す列挙型
+/// </summary>
+public enum Suit
+{
+    Spade,
+    Heart,
+    Diamond,
+    Club
+    }
+
+/// <summary>
 /// その他
 /// </summary>
