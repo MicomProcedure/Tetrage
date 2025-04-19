@@ -6,7 +6,7 @@ public class GameManager : MonoBehaviour
     private GamePhase currentPhase;
 
     /// <summary>
-    /// Œ»İ‚ÌƒtƒF[ƒY‚ğŠO•”‚©‚çQÆ‚·‚é‚½‚ß‚ÌƒvƒƒpƒeƒBi“Ç‚İæ‚èê—pj
+    /// ç¾åœ¨ã®ãƒ•ã‚§ãƒ¼ã‚ºã‚’å¤–éƒ¨ã‹ã‚‰å‚ç…§ã™ã‚‹ãŸã‚ã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆèª­ã¿å–ã‚Šå°‚ç”¨ï¼‰
     /// </summary>
     public GamePhase CurrentPhase
     {
@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
         set { currentPhase = value; }
     }
 
+    //ã€€ãƒ¡ã‚½ãƒƒãƒ‰ã®å…·ä½“çš„ãªè¨˜è¿°ãªã—
 
     void StartGame()
     {
