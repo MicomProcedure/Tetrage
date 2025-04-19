@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-public class Card : MonoBehaviour
+
+public class Card : MonoBehaviour, IPointerClickHandler
 {
 
 
@@ -16,16 +18,17 @@ public class Card : MonoBehaviour
     }
 
     // カードの表示状態
-    public bool isVisible = false;
+    public bool isVisible = true;
+    public bool canFlip = true;
 
-   void Start()
+    public void Flip()
     {
-        
+        if(!canFlip) return;
+        isVisible = !isVisible;
+        Debug.Log($"今は {(isVisible ? "表" : "裏")}.");
     }
-
-    // Update is called once per frame
-    void Update()
+    public void OnPointerClick(PointerEventData eventData)
     {
-        
+        Flip();
     }
 }
