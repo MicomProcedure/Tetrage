@@ -1,9 +1,10 @@
 ---
-name: 🧹 雑務／依存性更新
+name: "\U0001F9F9 雑務／依存性更新"
 about: ビルド設定変更や依存ライブラリのアップデートなど、機能追加ではない作業用
 title: "[Chore] "
-labels: chore
-assignees: ""
+labels: '雑用-chore :small_orange_diamond:, difficulty/nomal, tier/C :brown_circle:'
+assignees: ''
+
 ---
 
 ## 作業概要

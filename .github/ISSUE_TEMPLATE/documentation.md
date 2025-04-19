@@ -1,9 +1,10 @@
 ---
-name: 📚 ドキュメント修正
+name: "\U0001F4DA ドキュメント修正"
 about: README や仕様書などのドキュメントを更新するときに使用してください
 title: "[Docs] "
-labels: docs
-assignees: ""
+labels: 'ドキュメント-documentation :memo:, difficulty/nomal, tier/C :brown_circle:'
+assignees: ''
+
 ---
 
 ## 修正内容

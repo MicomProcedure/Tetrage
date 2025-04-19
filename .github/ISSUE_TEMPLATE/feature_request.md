@@ -1,9 +1,10 @@
 ---
-name: ✨ 機能要望
+name: "✨ 機能要望"
 about: 新機能や改善アイデアを提案するときに使用してください
 title: "[Feature] "
-labels: enhancement
-assignees: ""
+labels: '追加-enhancement :sparkles:, difficulty/nomal, tier/C :brown_circle:'
+assignees: ''
+
 ---
 
 ## 要望内容

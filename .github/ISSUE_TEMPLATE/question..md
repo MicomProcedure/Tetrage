@@ -1,9 +1,10 @@
 ---
-name: 🤔 質問
+name: "\U0001F914 質問"
 about: 実装や利用方法について質問があるときに使用してください
 title: "[Question] "
-labels: 質問-question
-assignees: ""
+labels: '質問-question :question:, difficulty/nomal, tier/C :brown_circle:'
+assignees: ''
+
 ---
 
 ## 質問内容

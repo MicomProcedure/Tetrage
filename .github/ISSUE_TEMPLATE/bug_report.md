@@ -1,9 +1,10 @@
 ---
-name: 🐞 バグ報告
+name: "\U0001F41E バグ報告"
 about: バグを報告するときに使用してください
 title: "[Bug] "
-labels: bug
-assignees: ""
+labels: 'バグ-bug :bug:, difficulty/nomal, tier/C :brown_circle:'
+assignees: ''
+
 ---
 
 ## 概要
