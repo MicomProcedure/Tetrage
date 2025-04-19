@@ -1,9 +1,13 @@
 /// <summary>
-/// �Q�[���̃t�F�[�Y��\���񋓌^
+/// ゲームのフェーズを表す列挙型
 /// </summary>
 public enum GamePhase
 {
-    Starting, // ���������t�F�[�Y
-    Playing, // ���ۂ̃v���C�t�F�[�Y
-    Ending // ���s����E���ʕ\���t�F�[�Y
+    Starting, // 初期準備フェーズ
+    Playing, // 実際のプレイフェーズ
+    Ending // 勝敗判定・結果表示フェーズ
 }
+
+/// <summary>
+/// その他
+/// </summary>
