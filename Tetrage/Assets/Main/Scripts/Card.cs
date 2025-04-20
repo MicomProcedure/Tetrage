@@ -11,7 +11,7 @@ public class Card : MonoBehaviour, IPointerClickHandler
 
     // カードの数字
     private int _Number;
-    public int Number
+    public int number
     {
         get{return _Number;}
         set{_Number = Mathf.Max(1, value);}//数字が1以上になるようにする
@@ -23,12 +23,16 @@ public class Card : MonoBehaviour, IPointerClickHandler
 
     public void Flip()
     {
-        if(!canFlip) return;
         isVisible = !isVisible;
         Debug.Log($"今は {(isVisible ? "表" : "裏")}.");
     }
+
+    // 裏返し可能の場合クリックされたらカードを裏返す
     public void OnPointerClick(PointerEventData eventData)
     {
-        Flip();
+        if(canFlip)
+        {
+            Flip();
+        }
     }
 }
