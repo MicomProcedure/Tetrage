@@ -1,67 +1,90 @@
-# テトラージュ ゲーム設計書
+# テトラージュ ゲーム設計書 (実装反映版)
+
+## 列挙型 (Enums)
+
+### GamePhase
+```csharp
+public enum GamePhase {
+    Starting, // 初期準備フェーズ
+    Playing,  // 実際のプレイフェーズ
+    Ending    // 勝敗判定・結果表示フェーズ
+}
+```
+
+### Suit
+```csharp
+public enum Suit {
+    Spade,
+    Heart,
+    Diamond,
+    Club
+}
+```
 
 ## クラス設計
 
 ### 1. GameManager（ゲームの進行・フェーズ管理）
 - **メンバ**
-  - 現在のゲームフェーズ（Starting, Playing, Ending）
-  - Playerのリスト
-  - Dealerのインスタンス
+  - `private GamePhase currentPhase` （シリアライズ可）
+- **プロパティ**
+  - `public GamePhase CurrentPhase { get; set; }`  // 現在のフェーズを取得/設定
 - **メソッド**
-  - StartGame()：ゲーム開始（Startingフェーズ移行）
-  - StartRound()：ラウンド開始
-  - EndRound()：ラウンド終了処理（Endingフェーズ移行）
-  - TransitionPhase()：フェーズ切り替え
-  - DisplayResults()：ゲーム結果表示
-  - RestartOrQuit()：再プレイ選択
+  - `void StartGame()`：ゲーム開始処理（未実装）
+  - `void StartRound()`：ラウンド開始処理（未実装）
+  - `void EndRound()`：ラウンド終了処理（未実装）
+  - `void TransitionPhase()`：フェーズ切り替え処理（未実装）
+  - `void DisplayResults()`：結果表示処理（未実装）
+  - `void RestartOrQuit()`：再プレイ／終了選択処理（未実装）
 
 ### 2. Dealer（ターン進行管理・判定責任者）
 - **メンバ**
-  - Stageのインスタンス
-  - 現在ターンを持つPlayerの参照
+  - `Stage stage`：カード配置管理インスタンス
+  - `Player currentPlayer`：現在ターンのプレイヤー参照
 - **メソッド**
-  - DistributeCards()：ターゲットカードの配布
-  - DecideFirstPlayer()：最初のプレイヤー決定
-  - NextTurn()：次のターンに移行
-  - JudgeTetrage(actionType)：テトラージュアクションの判定
+  - `void DistributeCards()`：ターゲットカードの配布
+  - `void DecideFirstPlayer()`：最初のプレイヤー決定
+  - `void NextTurn()`：次のターンに移行
+  - `void JudgeTetrage(ActionType actionType)`：テトラージュ判定委譲
 
 ### 3. Player（プレイヤー情報・アクション実行者）
 - **メンバ**
-  - PlayerID
-  - target（カード1枚）
-  - hands（最大3枚）
-  - tmp（一時保持カード、最大2枚）
-- **メソッド（アクション実行要請）**
-  - PerformAction(Action action)：アクション実行を要請
+  - `string PlayerID`
+  - `Card target`：ターゲットカード（1枚）
+  - `List<Card> hands`：手札（最大3枚）
+  - `List<Card> tmp`：一時保持カード（最大2枚）
+- **メソッド**
+  - `void PerformAction(Action action)`：アクション実行を要請
 
 ### 4. Card（カード情報）
 - **メンバ**
-  - suit（スート情報）
-  - identifier（識別番号、同一スート内での区別用）
-  - isVisible（表向きか裏向きか）
+  - `public Suit suit = Suit.Spade`：カードのスート（初期値 Spade）
+  - `private int _Number`：内部保持用番号
+  - `public int Number { get; set; }`：番号プロパティ（設定時に1以上を保証）
+  - `public bool isVisible`：表裏状態
 - **メソッド**
-  - Flip()：カードをひっくり返す
+  - `void Start()`：初期化（空実装）
+  - `void Update()`：毎フレーム更新（空実装）
 
 ### 5. Stage（カード配置管理）
 - **メンバ**
-  - stack（山札、順序付きリスト）
-  - trash（墓地、順序付きリスト）
+  - `List<Card> stack`：山札（順序付きリスト）
+  - `List<Card> trash`：墓地（順序付きリスト）
 - **メソッド**
-  - DrawFromStack()：山札からカードを取り出す
-  - Discard(card)：墓地へカードを捨てる
-  - PeekTrash()：墓地のカードを見る（表面のみ）
+  - `Card DrawFromStack()`：山札からカードを取り出す
+  - `void Discard(Card card)`：墓地へカードを捨てる
+  - `Card PeekTrash()`：墓地のカードを表面のみ確認
 
 ## Actionクラス群（Commandパターンの応用）
 
 ### Action（抽象クラス）
 - **メソッド**
-  - execute()
-  - validate()
+  - `abstract void execute()`
+  - `abstract bool validate()`
 
 ### DrawAction
 - **処理概要**
-  - 山札から2枚ドロー、一時領域に保持
-  - プレイヤーが採用と墓地送りのカードを選択（カード表裏も選択）
+  - 山札から2枚ドローし、一時領域に保持
+  - プレイヤーが採用と墓地送りのカードを選択（カードの表裏も選択）
   - ターン終了処理
 
 ### OpenAction
@@ -71,95 +94,57 @@
 
 ### CheckAction
 - **処理概要**
-  - 自プレイヤーの手札が3枚同一スートであることを検証
+  - 自プレイヤーの手札が3枚同一スートか検証
   - 他プレイヤーのターゲットカードのスートを問い合わせ
   - 一致したらターゲットカード公開
   - ターン終了処理
 
 ### TetrageAction
 - **処理概要**
-  - Tetrage Solo
-    - 自手札3枚＋自ターゲットカードのスート一致確認
-    - 提出と同時にDealerへ判定を委譲
-  - Tetrage Multi
-    - 親が同一チームのプレイヤーを指名
-    - 指名者がターゲットカード公開、全員が条件を満たせば成功
-    - Dealerに勝敗判定を委譲
-- **実装注意点**
-  - 各アクションはvalidateを行い、条件不成立時はエラー処理またはリトライ促す
+  - ソロ：自手札3枚＋自ターゲットカードのスート一致確認後、Dealerへ判定委譲
+  - マルチ：親が同一チームのプレイヤーを指名し、指名者がターゲットカード公開、全員が条件を満たせば成功、Dealerに判定委譲
+- **実装注意**
+  - 各アクションは `validate()` で前提をチェックし、失敗時はエラー処理またはリトライを促す
 
 ## クラス間の関係性
-- **GameManager**がゲーム全体の進行とフェーズ管理を行い、実際のゲームプレイ進行は**Dealer**に委譲する。
-- **Dealer**はターンの進行・勝敗判定を管理。
-- 各**Player**は自身のアクションをActionクラスを介して実行。
-- **Stage**はカードを保持し、PlayerやDealerからのアクセスによってカードの出し入れを行う。
-- **Card**はカード状態管理を担当。
 
-この構造により、明確で保守性が高く、拡張性にも優れた設計が実現されます。
+- **GameManager** が全体進行とフェーズ管理を担当し、実際のゲームフローは **Dealer** に委譲
+- **Dealer** がターン進行および勝敗判定を管理
+- **Player** は自身のアクションを **Action** クラスを通じて実行
+- **Stage** はカードの保管・配置管理を担当し、**Player**/ **Dealer** から呼び出される
+- **Card** はカード状態の保持と更新を担う
 
-## クラス間の関係性と階層
-
-以下のような形でクラス間の関係性と所有・継承の階層を整理できます。
+## 所有・集約・参照・継承
 
 ```text
 GameManager
-├─ owns → Dealer
-├─ aggregates → List<Player>
+├─ composition → Dealer
+├─ aggregation → List<Player>
 └─ orchestrates game flow
 
 Dealer
-├─ aggregates → Stage
-├─ references → current Player
-├─ invokes → Player.PerformAction(Action)
-└─ delegates → Dealer.JudgeTetrage()
+├─ composition → Stage
+├─ reference → current Player
+└─ delegates → JudgeTetrage()
 
 Player
-├─ aggregates → target: Card
-├─ aggregates → hands: List<Card>
-├─ aggregates → tmp: List<Card>
-├─ sends → Action (via Player.PerformAction)
-└─ calls → Stage / Card メソッド in execute()
+├─ aggregation → target: Card
+├─ aggregation → hands/tmp: List<Card>
+└─ sends → Action via PerformAction()
 
 Stage
-├─ aggregates → stack: List<Card>
-├─ aggregates → trash: List<Card>
+├─ aggregation → stack/trash: List<Card>
 └─ provides → DrawFromStack(), Discard(), PeekTrash()
 
 Card
-└─ standalone value object
-   ├─ suit, identifier, isVisible
-   └─ Flip()
+└─ standalone value object (suit, Number, isVisible)
 
-Action (抽象)
-├─ DrawAction
-├─ OpenAction
-├─ CheckAction
-└─ TetrageAction
+Action ← DrawAction, OpenAction, CheckAction, TetrageAction
 ```
 
-### 所有・集約・参照・継承
+- **Composition** (強い所有): GameManager→Dealer, Dealer→Stage
+- **Aggregation**: GameManager→Player リスト, Player→Card リスト, Stage→Card リスト
+- **Reference**: Dealer→Player, Player/Dealer→Stage, Player→Action
+- **Inheritance**: Action ← 各具体クラス
 
-- **Composition（強い所有）**
-  - GameManager → Dealer
-  - Dealer → Stage
-
-- **Aggregation（集約）**
-  - GameManager → 複数のPlayerリスト
-  - Player → target, hands, tmp のCardリスト
-  - Stage → stack, trash のCardリスト
-
-- **Association（参照）**
-  - Dealer → 現在のPlayer
-  - Player → Stage（引数として受け取り）
-  - Player → Action（実行要求）
-
-- **Inheritance（継承）**
-  - Action ←─ DrawAction, OpenAction, CheckAction, TetrageAction
-
-この構造により、
-- 責務の明確化
-- 変更影響範囲の最小化
-- 拡張性の確保
-
-が実現します。
 
