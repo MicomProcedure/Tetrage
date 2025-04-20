@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-public class Card : MonoBehaviour
+
+public class Card : MonoBehaviour, IPointerClickHandler
 {
 
 
@@ -9,23 +11,28 @@ public class Card : MonoBehaviour
 
     // カードの数字
     private int _Number;
-    public int Number
+    public int number
     {
         get{return _Number;}
         set{_Number = Mathf.Max(1, value);}//数字が1以上になるようにする
     }
 
     // カードの表示状態
-    public bool isVisible = false;
+    public bool isVisible = true;
+    public bool canFlip = true;
 
-   void Start()
+    public void Flip()
     {
-        
+        isVisible = !isVisible;
+        Debug.Log($"今は {(isVisible ? "表" : "裏")}.");
     }
 
-    // Update is called once per frame
-    void Update()
+    // 裏返し可能の場合クリックされたらカードを裏返す
+    public void OnPointerClick(PointerEventData eventData)
     {
-        
+        if(canFlip)
+        {
+            Flip();
+        }
     }
 }
