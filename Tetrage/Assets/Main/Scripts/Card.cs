@@ -62,7 +62,6 @@ public class Card : MonoBehaviour, IPointerClickHandler
     {
         isVisible = !isVisible;
         Debug.Log($"今は {(isVisible ? "表" : "裏")}.");
-        OnCardChanged?.Invoke(this);
     }
 
     public void OnPointerClick(PointerEventData eventData)
