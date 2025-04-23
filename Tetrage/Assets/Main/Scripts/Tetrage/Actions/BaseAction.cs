@@ -1,6 +1,4 @@
-using Tetrage.Models;
-
-namespace Tetrage.Actions
+namespace Tetrage.Core
 {
     /// <summary>
     /// ゲームにおけるアクションの基底クラスです。

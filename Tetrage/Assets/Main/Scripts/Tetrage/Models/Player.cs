@@ -1,10 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Tetrage.Core;
 
-namespace Tetrage.Models
+namespace Tetrage.Core
 {
-
     /// <summary>
     /// ゲーム内のプレイヤーを表します。
     /// </summary>
@@ -39,5 +37,4 @@ namespace Tetrage.Models
             // アクションの処理内容をここに記述
         }
     }
-
 }
