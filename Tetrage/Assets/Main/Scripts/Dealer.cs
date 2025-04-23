@@ -14,12 +14,12 @@ public class Dealer : MonoBehaviour
     /// <summary>
     /// ゲームに参加しているプレイヤーのリスト。
     /// </summary>
-    private List<Player> players;
+    // private List<Player> players;（いつか復活させてください）
 
     /// <summary>
     /// 現在のプレイヤー。
     /// </summary>
-    private Player currentPlayer;
+    //private Player currentPlayer;（いつか復活させてください）
 
     /// <summary>
     /// 各プレイヤーにカードを配布する。
@@ -48,8 +48,10 @@ public class Dealer : MonoBehaviour
     /// <summary>
     /// 指定されたアクションタイプに基づいてテトラージュの勝敗を判定する。
     /// </summary>
-    public void JudgeTetrage(ActionType actionType)
+ 
+    /*public void JudgeTetrage(ActionType actionType)
     {
 
     }
+    （いつか復活させてください）*/
 }
