@@ -5,9 +5,18 @@ using UnityEngine.EventSystems;
 public class Card : MonoBehaviour, IPointerClickHandler
 {
 
+    public Suit suit;
 
-    // カードのスートの初期値
-    public Suit suit = Suit.Spade;
+    // カードの表示状態
+    public bool isVisible = true;
+    public bool canFlip = true;
+
+    public Card(Suit suit, int number, bool isVisible)
+    {
+        this.suit = suit;
+        this.number = number;
+        this.isVisible = isVisible;
+    }
 
     // カードの数字
     private int _Number;
@@ -16,10 +25,6 @@ public class Card : MonoBehaviour, IPointerClickHandler
         get{return _Number;}
         set{_Number = Mathf.Max(1, value);}//数字が1以上になるようにする
     }
-
-    // カードの表示状態
-    public bool isVisible = true;
-    public bool canFlip = true;
 
     public void Flip()
     {

@@ -229,7 +229,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1539390721
+--- !u!1001 &1265075053
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -239,11 +239,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6981821323464839261, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.2
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6981821323464839261, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.09836067
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6981821323464839261, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
       propertyPath: m_LocalPosition.z
@@ -280,10 +280,6 @@ PrefabInstance:
     - target: {fileID: 8228944604196180282, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
       propertyPath: m_Name
       value: Card
-      objectReference: {fileID: 0}
-    - target: {fileID: 8370829581586273369, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
-      propertyPath: m_FlipX
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -528,6 +524,5 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1851219475}
-  - {fileID: 1539390721}
   - {fileID: 1131961063}
-  - {fileID: 1985077479}
+  - {fileID: 1265075053}
