@@ -1,48 +1,52 @@
 using UnityEngine;
+using Tetrage.Core.Enums;
 
-public class GameManager : MonoBehaviour
+namespace Tetrage.Managers
 {
-    [SerializeField]
-    private GamePhase currentPhase;
-
-    /// <summary>
-    /// 現在のフェーズを外部から参照するためのプロパティ（読み取り専用）
-    /// </summary>
-    public GamePhase CurrentPhase
+    public class GameManager : MonoBehaviour
     {
-        get { return currentPhase; }
-        set { currentPhase = value; }
-    }
+        [SerializeField]
+        private GamePhase currentPhase;
 
-    //　メソッドの具体的な記述なし
+        /// <summary>
+        /// 現在のフェーズを外部から参照するためのプロパティ（読み取り専用）
+        /// </summary>
+        public GamePhase CurrentPhase
+        {
+            get { return currentPhase; }
+            set { currentPhase = value; }
+        }
 
-    void StartGame()
-    {
+        //　メソッドの具体的な記述なし
 
-    }
+        void StartGame()
+        {
 
-    void StartRound()
-    {
+        }
 
-    }
+        void StartRound()
+        {
 
-    void EndRound()
-    {
+        }
 
-    }
+        void EndRound()
+        {
 
-    void TransitionPhase()
-    {
+        }
 
-    }
+        void TransitionPhase()
+        {
 
-    void DisplayResults()
-    {
+        }
 
-    }
+        void DisplayResults()
+        {
 
-    void RestartOrQuit()
-    {
+        }
 
+        void RestartOrQuit()
+        {
+
+        }
     }
 }

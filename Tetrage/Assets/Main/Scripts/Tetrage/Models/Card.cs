@@ -2,82 +2,85 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 
-public class Card : MonoBehaviour, IPointerClickHandler
+namespace Tetrage.Models
 {
-    public Suit suit
+    public class Card : MonoBehaviour, IPointerClickHandler
     {
-        get => _suit;
-        set
+        public Suit suit
         {
-            if (_suit != value)
+            get => _suit;
+            set
             {
-                _suit = value;
-                OnCardChanged?.Invoke(this);
+                if (_suit != value)
+                {
+                    _suit = value;
+                    OnCardChanged?.Invoke(this);
+                }
             }
         }
-    }
-    private Suit _suit;
+        private Suit _suit;
 
-    public bool isVisible
-    {
-        get => _isVisible;
-        set
+        public bool isVisible
         {
-            if (_isVisible != value)
+            get => _isVisible;
+            set
             {
-                _isVisible = value;
-                OnCardChanged?.Invoke(this);
+                if (_isVisible != value)
+                {
+                    _isVisible = value;
+                    OnCardChanged?.Invoke(this);
+                }
             }
         }
-    }
-    private bool _isVisible = true;
+        private bool _isVisible = true;
 
-    public bool canFlip = true;
+        public bool canFlip = true;
 
-    private int _number;
-    public int number
-    {
-        get => _number;
-        set
+        private int _number;
+        public int number
         {
-            int clamped = Mathf.Max(1, value);
-            if (_number != clamped)
+            get => _number;
+            set
             {
-                _number = clamped;
-                OnCardChanged?.Invoke(this);
+                int clamped = Mathf.Max(1, value);
+                if (_number != clamped)
+                {
+                    _number = clamped;
+                    OnCardChanged?.Invoke(this);
+                }
             }
         }
-    }
 
-    public event Action<Card> OnCardChanged;
+        public event Action<Card> OnCardChanged;
 
-    public Card(Suit suit, int number, bool isVisible)
-    {
-        this.suit = suit;
-        this.number = number;
-        this.isVisible = isVisible;
-    }
-
-    public void Flip()
-    {
-        isVisible = !isVisible;
-        Debug.Log($"今は {(isVisible ? "表" : "裏")}.");
-    }
-
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        if (canFlip)
+        public Card(Suit suit, int number, bool isVisible)
         {
-            Flip();
+            this.suit = suit;
+            this.number = number;
+            this.isVisible = isVisible;
         }
-    }
 
-    public enum Suit
-    {
-        Spade,
-        Heart,
-        Diamond,
-        Club
+        public void Flip()
+        {
+            isVisible = !isVisible;
+            Debug.Log($"今は {(isVisible ? "表" : "裏")}.");
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (canFlip)
+            {
+                Flip();
+            }
+        }
+
+        public enum Suit
+        {
+            Spade,
+            Heart,
+            Diamond,
+            Club
+        }
     }
 }
 
