@@ -17,7 +17,7 @@ public enum Suit
     Heart,
     Diamond,
     Club
-    }
+}
 
 /// <summary>
 /// その他
