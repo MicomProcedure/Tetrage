@@ -1,7 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Tetrage.Models;
+using Tetrage.Actions;
 
-namespace Tetrage.Core
+namespace Tetrage.Models
 {
     /// <summary>
     /// ゲーム内のプレイヤーを表します。

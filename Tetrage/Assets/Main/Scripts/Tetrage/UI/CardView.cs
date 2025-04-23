@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using Tetrage.Models;
 
 namespace Tetrage.UI
 {
