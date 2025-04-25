@@ -31,12 +31,32 @@ namespace Tetrage.Models
         public List<Card> tmp;
 
         /// <summary>
+        /// Playerのコンストラクタ。PlayerIDを指定して初期化します。
+        /// </summary>
+        /// <param name="playerID">プレイヤーの一意な識別子</param>
+        public Player(int playerID)
+        {
+            PlayerID = playerID;
+            hands = new List<Card>();
+            tmp = new List<Card>();  // 一時的なカードリストも初期化
+        }
+
+        /// <summary>
+        /// Playerのコンストラクタ。プレイヤーIDを指定せずに初期化します。
+        /// </summary>
+        public Player()
+        {
+            hands = new List<Card>();
+            tmp = new List<Card>();
+        }
+
+        /// <summary>
         /// 指定されたアクションを実行します。
         /// </summary>
         /// <param name="action">実行するゲームアクション。</param>
         public void PerformAction(GameAction action)
         {
-            // アクションの処理内容をここに記述
+            // アクションの処理内容
         }
     }
 }

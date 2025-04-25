@@ -18,7 +18,7 @@ namespace Tetrage.UI
         {
             model = cardModel;
             model.OnCardChanged += OnModelChanged;  // イベント購読
-            RefreshView();  // 初期表示更新
+            RefreshView();  // 初期表示
         }
 
         private void OnDestroy()
@@ -42,8 +42,6 @@ namespace Tetrage.UI
 
         private void RefreshView()
         {
-            Debug.Log($"isVisible: {model.isVisible}");  // デバッグログ追加
-
             if (model.isVisible)
             {
                 CardSpriteRenderer.color = Color.white;
