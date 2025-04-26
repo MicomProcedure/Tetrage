@@ -16,9 +16,13 @@ public class Check : MonoBehaviour
     public bool DebugMode = true;
     private Player player1;
     private Player player2;
+    private Player player3;
+    private Player player4;
     public Transform[] MyCardSpawn; //自分のカード配置場所を設定
     public Transform[] OtherCardSpawn; //相手のカード配置場所
-    public Transform OtherTargetCardSpawn; //相手のターゲットカード配置場所
+    public Transform Other2Pos; //相手のターゲットカード配置場所
+    public Transform Other3Pos; //相手のターゲットカード配置場所
+    public Transform Other4Pos; //相手のターゲットカード配置場所
 
     void Start()
     {
@@ -28,17 +32,13 @@ public class Check : MonoBehaviour
             player1 = new Player(1);
             //相手
             player2 = new Player(2);
-
-            //最初のターゲットカードを簡易的に設定する
-            GameObject cardObj = Instantiate(cardPrefab);
-            cardObj.transform.position = OtherTargetCardSpawn.position;
-            //カードの内容を設定
-            Card Player2TargetCard = cardObj.GetComponent<Card>();
-            Player2TargetCard.Initialize(Card.Suit.Spade,1,false);
-            Player2TargetCard.owner = player2; //持ち主を設定
-            Player2TargetCard.canFlip = false; //ターゲットカードは勝手にめくれないようにする
-            player2.target = Player2TargetCard;
+            player3 = new Player(3);
+            player4 = new Player(4);
             
+            //相手のターゲットカードを簡易的に決める
+            GenerateOthersTargetCard(player2,Other2Pos,Card.Suit.Spade,2,false);
+            GenerateOthersTargetCard(player3,Other3Pos,Card.Suit.Club,2,false);
+            GenerateOthersTargetCard(player4,Other4Pos,Card.Suit.Diamond,1,false);
 
             //自分のカードを追加
             AddCardToPlayer(player1,MyCardSpawn,Card.Suit.Spade, 7, true);
@@ -63,15 +63,37 @@ public class Check : MonoBehaviour
 
         //チェックボタンが押されたら相手を選択させる→本来のスートと一致しているかを返す
         if(CheckButtonPushed){
-            if(player1.hands[0].suit == player2.target.suit){
-                player2.target.canFlip = true;
-                Debug.Log("一致");
-            }
-            else{
-                Debug.Log("不一致");
+            //自分が揃えたカードとタップしたターゲットカードが一致しているか取得
+            if(GetTargetCardOwner() != null){
+                if(player1.hands[0].suit == GetTargetCardOwner().target.suit){
+                    Debug.Log("一致");
+                    GetTargetCardOwner().target.canFlip = true;
+                }
+                else{
+                    Debug.Log("不一致");
+                }
             }
         }
     }
+
+    private Player? GetTargetCardOwner()
+    {
+        Vector2 tapPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        RaycastHit2D hit = Physics2D.Raycast(tapPosition, Vector2.zero);
+
+        if (hit.collider != null)
+        {
+            Card tappedCard = hit.collider.GetComponent<Card>();
+
+            if (tappedCard != null && tappedCard.owner != null && tappedCard.owner.target != null)
+            {
+                return tappedCard.owner;
+            }
+        }
+
+        return null; // nullable型だからOK
+    }
+
 
     private void AddCardToPlayer(Player player,Transform[] CardPos,Card.Suit suit, int number, bool isVisible)
     {
@@ -112,6 +134,19 @@ public class Check : MonoBehaviour
         }
 
         return true;
+    }
+
+    void GenerateOthersTargetCard(Player player,Transform CardPos,Card.Suit suit, int number, bool isVisible)
+    {
+        //最初のターゲットカードを簡易的に設定する
+        GameObject cardObj = Instantiate(cardPrefab);
+        cardObj.transform.position = CardPos.position;
+        //カードの内容を設定
+        Card PlayerCard = cardObj.GetComponent<Card>();
+        PlayerCard.Initialize(suit,number,isVisible);
+        PlayerCard.owner = player; //持ち主を設定
+        PlayerCard.canFlip = false; //ターゲットカードは勝手にめくれないようにする
+        player.target = PlayerCard;
     }
 
     //チェックボタンの機能
