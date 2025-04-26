@@ -119,6 +119,38 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &107985488
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 107985489}
+  m_Layer: 0
+  m_Name: TargetCardPosition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &107985489
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 107985488}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 761128451}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &264340714
 GameObject:
   m_ObjectHideFlags: 0
@@ -215,6 +247,37 @@ Transform:
   - {fileID: 824371216}
   m_Father: {fileID: 1811495433}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 180}
+--- !u!1 &761128450
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 761128451}
+  m_Layer: 0
+  m_Name: Other
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &761128451
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761128450}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.02, y: 4.2, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 107985489}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &804676704
 GameObject:
   m_ObjectHideFlags: 0
@@ -464,8 +527,15 @@ MonoBehaviour:
   CheckButton: {fileID: 831970498}
   CheckButtonPushed: 0
   DebugMode: 1
-  MyCardSpawn: []
-  OtherCardSpawn: []
+  MyCardSpawn:
+  - {fileID: 1084623930}
+  - {fileID: 264340715}
+  - {fileID: 1830473620}
+  OtherCardSpawn:
+  - {fileID: 804676705}
+  - {fileID: 1587237178}
+  - {fileID: 824371216}
+  OtherTargetCardSpawn: {fileID: 761128451}
 --- !u!4 &1316492375
 Transform:
   m_ObjectHideFlags: 0
@@ -1036,3 +1106,4 @@ SceneRoots:
   - {fileID: 1131961063}
   - {fileID: 1985077479}
   - {fileID: 1811495433}
+  - {fileID: 107985489}

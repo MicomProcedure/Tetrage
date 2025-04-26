@@ -16,7 +16,7 @@ namespace Tetrage.Models
         public int PlayerID;
 
         /// <summary>
-        /// 現在選択されているターゲットカード。
+        /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
         public Card target;
 

@@ -5,7 +5,6 @@ using Tetrage.Models;
 
 public class Check : MonoBehaviour
 {
-    private Player player1;
     public GameObject cardPrefab;
     public GameObject CheckButton;
     
@@ -15,46 +14,75 @@ public class Check : MonoBehaviour
 
     [Header("デバック用")]
     public bool DebugMode = true;
+    private Player player1;
+    private Player player2;
     public Transform[] MyCardSpawn; //自分のカード配置場所を設定
     public Transform[] OtherCardSpawn; //相手のカード配置場所
+    public Transform OtherTargetCardSpawn; //相手のターゲットカード配置場所
 
     void Start()
     {
-        player1 = new Player();
-
         if (DebugMode)
         {
-            AddCardToPlayer(Card.Suit.Spade, 7, true);
-            AddCardToPlayer(Card.Suit.Spade, 3, true);
-            AddCardToPlayer(Card.Suit.Spade, 5, true);
-        }
+            //自分
+            player1 = new Player(1);
+            //相手
+            player2 = new Player(2);
 
-        //自分の手札が一致しているかどうか取得
-        if(CheckAllCardSame(player1)){
-            //手札が一致していたらチェックボタンを出す
-            CheckButton.SetActive(true);
-        }
-        
+            //最初のターゲットカードを簡易的に設定する
+            GameObject cardObj = Instantiate(cardPrefab);
+            cardObj.transform.position = OtherTargetCardSpawn.position;
+            //カードの内容を設定
+            Card Player2TargetCard = cardObj.GetComponent<Card>();
+            Player2TargetCard.Initialize(Card.Suit.Spade,1,false);
+            Player2TargetCard.owner = player2; //持ち主を設定
+            Player2TargetCard.canFlip = false; //ターゲットカードは勝手にめくれないようにする
+            player2.target = Player2TargetCard;
+            
+
+            //自分のカードを追加
+            AddCardToPlayer(player1,MyCardSpawn,Card.Suit.Spade, 7, true);
+            AddCardToPlayer(player1,MyCardSpawn,Card.Suit.Spade, 3, true);
+            AddCardToPlayer(player1,MyCardSpawn,Card.Suit.Spade, 5, true);
+
+            //相手のカードを追加
+            AddCardToPlayer(player2,OtherCardSpawn,Card.Suit.Heart, 12, false);
+            AddCardToPlayer(player2,OtherCardSpawn,Card.Suit.Spade, 1, false);
+            AddCardToPlayer(player2,OtherCardSpawn,Card.Suit.Club, 13, false);
+        }        
     }
 
     void Update()
     {
-        //チェックボタンが押されたら相手のカードを選択させるフェーズに入る
-        if(CheckButtonPushed){
+        //自分の手札が一致しているかどうか取得
+        if(CheckAllCardSame(player1)){
+            if(CheckButtonPushed == false){
+                CheckButton.SetActive(true);
+            }
+        }
 
+        //チェックボタンが押されたら相手を選択させる→本来のスートと一致しているかを返す
+        if(CheckButtonPushed){
+            if(player1.hands[0].suit == player2.target.suit){
+                player2.target.canFlip = true;
+                Debug.Log("一致");
+            }
+            else{
+                Debug.Log("不一致");
+            }
         }
     }
 
-    private void AddCardToPlayer(Card.Suit suit, int number, bool isVisible)
+    private void AddCardToPlayer(Player player,Transform[] CardPos,Card.Suit suit, int number, bool isVisible)
     {
         // カードオブジェクトを生成
         GameObject cardObj = Instantiate(cardPrefab);
 
         // スポーン位置に配置（適宜調整）
-        int index = player1.hands.Count;
-        if (index < MyCardSpawn.Length)
+        int index = player.hands.Count;
+        if (index < CardPos.Length)
         {
-            cardObj.transform.position = MyCardSpawn[index].position;
+            cardObj.transform.position = CardPos[index].position;
         }
 
         // Card スクリプトを取得して初期化
@@ -62,7 +90,7 @@ public class Check : MonoBehaviour
         card.Initialize(suit, number, isVisible);
 
         // 手札に追加
-        player1.hands.Add(card);
+        player.hands.Add(card);
     }
 
     private bool CheckAllCardSame(Player player)
