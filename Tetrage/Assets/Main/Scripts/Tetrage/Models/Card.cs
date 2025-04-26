@@ -8,6 +8,8 @@ namespace Tetrage.Models
     {
         //カードの持ち主情報を記録
         public Player owner;
+        //アニメーション
+        Animator animator;
 
         public Suit suit
         {
@@ -62,6 +64,11 @@ namespace Tetrage.Models
             this.number = number;
             this.isVisible = isVisible;
         }
+
+        public void Start()
+        {
+            animator = GetComponent<Animator>();
+        }
         
         public void Flip()
         {
@@ -75,6 +82,7 @@ namespace Tetrage.Models
             if (canFlip)
             {
                 Flip();
+                animator.SetTrigger("FlipSuccess");
             }
         }
 
