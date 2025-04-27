@@ -3,6 +3,7 @@
 ## 列挙型 (Enums)
 
 ### GamePhase
+
 ```csharp
 public enum GamePhase {
     Starting, // 初期準備フェーズ
@@ -12,6 +13,7 @@ public enum GamePhase {
 ```
 
 ### Suit
+
 ```csharp
 public enum Suit {
     Spade,
@@ -24,10 +26,16 @@ public enum Suit {
 ## クラス設計
 
 ### 1. GameManager（ゲームの進行・フェーズ管理）
+
 - **メンバ**
-  - `private GamePhase currentPhase` （シリアライズ可）
+  - `private GamePhase _currentPhase` （シリアライズ可）
 - **プロパティ**
-  - `public GamePhase CurrentPhase { get; set; }`  // 現在のフェーズを取得/設定
+  ```csharp
+  public GamePhase CurrentPhase {
+      get => _currentPhase;
+      set => _currentPhase = value;
+  }
+  ```
 - **メソッド**
   - `void StartGame()`：ゲーム開始処理（未実装）
   - `void StartRound()`：ラウンド開始処理（未実装）
@@ -37,9 +45,11 @@ public enum Suit {
   - `void RestartOrQuit()`：再プレイ／終了選択処理（未実装）
 
 ### 2. Dealer（ターン進行管理・判定責任者）
+
 - **メンバ**
-  - `Stage stage`：カード配置管理インスタンス
-  - `Player currentPlayer`：現在ターンのプレイヤー参照
+  - `private CardPile _stack`：山札（内部操作は CardPile に委譲）
+  - `private CardPile _trash`：捨て札（内部操作は CardPile に委譲）
+  - `private Player _currentPlayer`：現在ターンのプレイヤー参照
 - **メソッド**
   - `void DistributeCards()`：ターゲットカードの配布
   - `void DecideFirstPlayer()`：最初のプレイヤー決定
@@ -47,74 +57,78 @@ public enum Suit {
   - `void JudgeTetrage(ActionType actionType)`：テトラージュ判定委譲
 
 ### 3. Player（プレイヤー情報・アクション実行者）
+
 - **メンバ**
-  - `string PlayerID`
-  - `Card target`：ターゲットカード（1枚）
-  - `List<Card> hands`：手札（最大3枚）
-  - `List<Card> tmp`：一時保持カード（最大2枚）
+  - `public string PlayerID`
+  - `public CardPile Hands`：手札（最大枚数はコンストラクタ定義による）
+  - `public CardPile Tmp`：一時保持カード（最大枚数はコンストラクタ定義による）
+  - `public Card Target`：ターゲットカード（1枚）
 - **メソッド**
   - `void PerformAction(Action action)`：アクション実行を要請
 
 ### 4. Card（カード情報）
+
 - **メンバ**
   - `public Suit suit = Suit.Spade`：カードのスート（初期値 Spade）
-  - `private int _Number`：内部保持用番号
-  - `public int Number { get; set; }`：番号プロパティ（設定時に1以上を保証）
+  - `private int _number`：内部保持用番号
+  - `public int Number {
+        get => _number;
+        set => _number = Mathf.Max(1, value);
+    }`：番号プロパティ（設定時に1以上を保証）
   - `public bool isVisible`：表裏状態
 - **メソッド**
   - `void Start()`：初期化（空実装）
   - `void Update()`：毎フレーム更新（空実装）
 
-### 5. Stage（カード配置管理）
+### 5. CardPile（カード束共通クラス）
+
+- **目的・背景**
+  - プレイヤーの手札、山札、捨て札など、複数のカード束で共通する操作（追加・削除・シャッフル・ドロー・転送・可視化）をまとめる
+  - 単一責任原則に従い、カード束固有のロジックを `CardPile` に集約し、`Player` や `Stage` はゲーム進行に専念
+  - `maxCount` による枚数上限管理でルール違反を防止し、実装の堅牢性を向上
 - **メンバ**
-  - `List<Card> stack`：山札（順序付きリスト）
-  - `List<Card> trash`：墓地（順序付きリスト）
+  - `private readonly List<Card> _cards`：内部カードリスト
+  - `private readonly int _maxCount`：最大枚数（コンストラクタで指定）
+  - `public string Name`：束の名称
+  - `public CardOwner Owner`Type：所有者プレイヤー（null なら共有束）
+- **コンストラクタ**
+  ```csharp
+  public CardPile(string name, CardOwner ownerType = CardOwner.Null, int maxCount = int.MaxValue)
+  ```
 - **メソッド**
-  - `Card DrawFromStack()`：山札からカードを取り出す
-  - `void Discard(Card card)`：墓地へカードを捨てる
-  - `Card PeekTrash()`：墓地のカードを表面のみ確認
+  - `bool Add(Card card)`：上限チェック付き追加（超過時は false）
+  - `bool Remove(Card card)`：カード削除
+  - `bool TransferTo(CardPile target, Card card)`：他束への移動
+  - `void Shuffle()`：シャッフル
+  - `List<Card> Draw(int count)`：先頭から count 枚ドロー
+  - `IReadOnlyList<Card> Peek(int count)`：先頭から count 枚を閲覧
+  - `int Count { get; }`：現在の枚数
+
+### 6. Stage（カード配置管理）
+
+- **メンバ**
+  - `private CardPile _stack`：山札
+  - `private CardPile _trash`：捨て札
+- **メソッド**
+  - `Card DrawFromStack()`：山札から1枚ドロー
+  - `void Discard(Card card)`：捨て札に追加
+  - `IReadOnlyList<Card> PeekTrash(int count)`：捨て札の先頭 count 枚を確認
 
 ## Actionクラス群（Commandパターンの応用）
 
+> **Note:** `Action` クラス群は `MonoBehaviour` を継承せず、純粋なドメインロジックとして実装します。
+
 ### Action（抽象クラス）
+
 - **メソッド**
-  - `abstract void execute()`
-  - `abstract bool validate()`
+  - `abstract bool Validate(GameState state)`
+  - `abstract void Execute(GameState state)`
 
-### DrawAction
-- **処理概要**
-  - 山札から2枚ドローし、一時領域に保持
-  - プレイヤーが採用と墓地送りのカードを選択（カードの表裏も選択）
-  - ターン終了処理
+### DrawAction, OpenAction, CheckAction, TetrageAction
 
-### OpenAction
-- **処理概要**
-  - 対象プレイヤーの裏向きカードを1枚表向きに変更
-  - ターン終了処理
-
-### CheckAction
-- **処理概要**
-  - 自プレイヤーの手札が3枚同一スートか検証
-  - 他プレイヤーのターゲットカードのスートを問い合わせ
-  - 一致したらターゲットカード公開
-  - ターン終了処理
-
-### TetrageAction
-- **処理概要**
-  - ソロ：自手札3枚＋自ターゲットカードのスート一致確認後、Dealerへ判定委譲
-  - マルチ：親が同一チームのプレイヤーを指名し、指名者がターゲットカード公開、全員が条件を満たせば成功、Dealerに判定委譲
-- **実装注意**
-  - 各アクションは `validate()` で前提をチェックし、失敗時はエラー処理またはリトライを促す
+- 各アクションの処理概要は従来通り。
 
 ## クラス間の関係性
-
-- **GameManager** が全体進行とフェーズ管理を担当し、実際のゲームフローは **Dealer** に委譲
-- **Dealer** がターン進行および勝敗判定を管理
-- **Player** は自身のアクションを **Action** クラスを通じて実行
-- **Stage** はカードの保管・配置管理を担当し、**Player**/ **Dealer** から呼び出される
-- **Card** はカード状態の保持と更新を担う
-
-## 所有・集約・参照・継承
 
 ```text
 GameManager
@@ -125,26 +139,30 @@ GameManager
 Dealer
 ├─ composition → Stage
 ├─ reference → current Player
-└─ delegates → JudgeTetrage()
+└─ uses → CardPile for stack/trash
 
 Player
-├─ aggregation → target: Card
-├─ aggregation → hands/tmp: List<Card>
+├─ aggregation → Cards via CardPile (Hands, Tmp)
+├─ association → Target: Card
 └─ sends → Action via PerformAction()
 
 Stage
-├─ aggregation → stack/trash: List<Card>
+├─ aggregation → CardPile (_stack, _trash)
 └─ provides → DrawFromStack(), Discard(), PeekTrash()
 
+CardPile
+└─ standalone domain model (カード束ロジック一括管理)
+
 Card
-└─ standalone value object (suit, Number, isVisible)
+└─ basic value object (suit, Number, isVisible)
 
 Action ← DrawAction, OpenAction, CheckAction, TetrageAction
 ```
 
-- **Composition** (強い所有): GameManager→Dealer, Dealer→Stage
-- **Aggregation**: GameManager→Player リスト, Player→Card リスト, Stage→Card リスト
-- **Reference**: Dealer→Player, Player/Dealer→Stage, Player→Action
+- **Composition**: GameManager→Dealer, Dealer→Stage
+- **Aggregation**: GameManager→Player, Player→CardPile, Stage→CardPile
+- **Reference**: Dealer→Player, Player/Dealer→Action
 - **Inheritance**: Action ← 各具体クラス
 
+---
 
