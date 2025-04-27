@@ -26,7 +26,7 @@ namespace Tetrage.Models
             return drawnCard;
         }
 
-        // カードを捨て札にする
+        // カードを捨て札へ
         public void Discard(Card card)
         {
             if (card == null)

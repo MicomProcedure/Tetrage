@@ -53,13 +53,13 @@ namespace Tetrage.Models
 
         public event Action<Card> OnCardChanged;
 
-        public Card(Suit suit, int number, bool isVisible)
+        public void Initialize(Suit suit, int number, bool isVisible)
         {
             this.suit = suit;
             this.number = number;
             this.isVisible = isVisible;
         }
-
+        
         public void Flip()
         {
             isVisible = !isVisible;
