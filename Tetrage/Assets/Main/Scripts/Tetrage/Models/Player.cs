@@ -1,53 +1,42 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Tetrage.Models;
 using Tetrage.Actions;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Models
 {
     /// <summary>
     /// ゲーム内のプレイヤーを表します。
     /// </summary>
-    public class Player
+    public class Player : MonoBehaviour
     {
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        public int PlayerID;
+        public int PlayerID { get; set; }
 
         /// <summary>
         /// 現在選択されているターゲットカード。
         /// </summary>
-        public Card target;
+        public Card Target { get; set; }
+
+
+        private CardPile _hands = new CardPile(name: "Hand", CardOwner.Player, maxCount: 3);
 
         /// <summary>
         /// プレイヤーが所持している手札の一覧。
         /// </summary>
-        public List<Card> hands;
+        public CardPile Hands => _hands;
 
         /// <summary>
         /// 一時的に保持しているカードの一覧。
         /// </summary>
-        public List<Card> tmp;
+        public CardPile Tmp { get; } = new CardPile(name: "Temporary", CardOwner.Player, maxCount: 2);
 
-        /// <summary>
-        /// Playerのコンストラクタ。PlayerIDを指定して初期化します。
-        /// </summary>
-        /// <param name="playerID">プレイヤーの一意な識別子</param>
-        public Player(int playerID)
-        {
-            PlayerID = playerID;
-            hands = new List<Card>();
-            tmp = new List<Card>();  // 一時的なカードリストも初期化
-        }
 
-        /// <summary>
-        /// Playerのコンストラクタ。プレイヤーIDを指定せずに初期化します。
-        /// </summary>
-        public Player()
+        private void Start()
         {
-            hands = new List<Card>();
-            tmp = new List<Card>();
+            
         }
 
         /// <summary>
