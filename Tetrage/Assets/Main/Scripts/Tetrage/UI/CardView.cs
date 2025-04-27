@@ -32,6 +32,8 @@ namespace Tetrage.UI
         void Start()
         {
             Initialize(model);
+
+            Animator animator = GetComponent<Animator>();
         }
 
 
