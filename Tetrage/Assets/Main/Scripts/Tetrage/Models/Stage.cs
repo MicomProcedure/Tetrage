@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnityEngine;
-using Tetrage.Models;
 using Tetrage.Core.Enums;
 
 namespace Tetrage.Models
