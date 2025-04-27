@@ -2,7 +2,7 @@
 name: ♻️ リファクタリング
 about: 既存のコードを改善・整理するときに使用してください
 title: "[Refactor] "
-labels: 再設計-refactoring :arrows_counterclockwise:, difficulty/nomal, tier/C 🟤
+labels: "再設計-refactoring :arrows_counterclockwise:, difficulty/nomal, tier/C 🟤"
 assignees: ""
 ---
 
