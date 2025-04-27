@@ -6,7 +6,7 @@ namespace Tetrage.Actions
     /// ゲームにおけるアクションの基底クラスです。
     /// すべての具体的なアクションはこのクラスを継承して定義します。
     /// </summary>
-    public abstract class BaseAction
+    public abstract class GameAction
     {
         /// <summary>
         /// アクションが指定されたプレイヤーおよび状況で有効かどうかを検証します。
