@@ -1,13 +1,14 @@
 using UnityEngine;
 using Tetrage.Models;
 using Tetrage.Core;
+using System.Collections;
 using System.Collections.Generic;
 using Tetrage.Core.Enums;
 using System.Linq;
 
 namespace Tetrage.Models
 {
-    public class CardPile
+    public class CardPile : IEnumerable<Card>
     {
         // 内部のカードリスト
         private readonly List<Card> _cards;
@@ -18,6 +19,21 @@ namespace Tetrage.Models
         // 束の名称と所有者（プロパティ。ローカルフィールドも自動生成される）
         public string Name { get; }
         public CardOwner OwnerType { get; }
+
+
+        // IEnumerableを実装するためのメンバその１：IEnumerator<T> を返す GetEnumerator()
+        public IEnumerator<Card> GetEnumerator()
+        {
+            return _cards.GetEnumerator();
+        }
+
+        // IEnumerableを実装するためのメンバその2：非ジェネリック版 IEnumerator を返す GetEnumerator()
+        // 明示的インターフェイスの実装なので、privateになっています（ここら辺よく分かんないけど、よく分かんなくていいっぽい）
+        // 重要なのは、これによってCardPileが列挙可能になり、LINQが仕えるようになるということ、だと思う
+        IEnumerator IEnumerable.GetEnumerator() { 
+            return GetEnumerator(); 
+        }
+
 
         /// <summary>
         /// この束に含まれるカードの枚数
