@@ -24,9 +24,11 @@ namespace Tetrage.UI
             //tetrageBtn.onClick.AddListener(() => TryExecute(() => new TetrageAction(currentPlayer)));
         }
 
-        // Update is called once per frame
         void Update()
         {
+            // ボタンの活性/非活性の更新
+            // Validate()はboolを返す
+
             openBtn.interactable = new OpenAction(currentPlayer).Validate();
             //drawBtn.interactable = new DrawAction(currentPlayer).Validate();
             //checkBtn.interactable = new CheckAction(currentPlayer).Validate();
