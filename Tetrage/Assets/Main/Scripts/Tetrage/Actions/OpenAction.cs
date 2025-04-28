@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Contracts;
 using System.Collections;
-using Unity.VisualScripting;
 
 namespace Tetrage.Actions
 {
@@ -47,14 +46,19 @@ namespace Tetrage.Actions
 
             //selectable.ForEach(c => c.Hilight(true));
 
-            // クリック待ち
+            // クリック待ちの処理
             Card clickedCard = null;
-            CardClickDispatcher.OnCardClicked += OnClick;
+            try
+            {
+                CardClickDispatcher.OnCardClicked += OnClick;
 
-            yield return new WaitUntil(() => clickedCard != null);
-
-            CardClickDispatcher.OnCardClicked -= OnClick;
-
+                yield return new WaitUntil(() => clickedCard != null); // クリックされるまで毎フレームチェック
+            }
+            finally
+            {
+                // try.finallyを使うことで、待機中にエラーが発生しても必ずイベントを解除する
+                CardClickDispatcher.OnCardClicked -= OnClick;
+            }
             // 処理の実行
             clickedCard.Flip();
             //selectable.ForEach(c => c.Highlight(false));
