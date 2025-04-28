@@ -1,4 +1,6 @@
+using System.Collections;
 using Tetrage.Models;
+using Unity.VisualScripting;
 
 namespace Tetrage.Actions
 {
@@ -26,7 +28,10 @@ namespace Tetrage.Actions
         /// <summary>
         /// アクションを実際に実行します。
         /// </summary>
-        /// <param name="player">アクションを実行するプレイヤー。</param>
-        public abstract void Execute();
+        public virtual void Execute() {
+            _requester.StartCoroutine(Run());
+        }
+
+        protected abstract IEnumerator Run(); // 派生クラスで実装する
     }
 }

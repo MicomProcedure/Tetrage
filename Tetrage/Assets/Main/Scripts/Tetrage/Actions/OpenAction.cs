@@ -1,9 +1,12 @@
 using UnityEngine;
 using Tetrage.Models;
 using Tetrage.Managers;
+using Tetrage.UI;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Contracts;
+using System.Collections;
+using Unity.VisualScripting;
 
 namespace Tetrage.Actions
 {
@@ -13,7 +16,7 @@ namespace Tetrage.Actions
         private Card _card;
         private IPlayerProvider _provider; // 基本はDealer、テスト用にそれ以外
 
-        public OpenAction(Player requester, IPlayerProvider provider) : base(requester)
+        public OpenAction(Player requester, IPlayerProvider provider = null) : base(requester) // providerはデフォルト引数なので省略可能
         {
             _provider = provider ?? Dealer.Instance; // providerを受け取るが、デフォルトではDealerの単一なインスタンスとなる
 
@@ -33,9 +36,38 @@ namespace Tetrage.Actions
             return _others.Any(p => p.Hands.Any(c => !c.isVisible));
         }
 
-        public override void Execute()
-        {
+        // 基底クラスにvirtualな Execute() 関数が存在しているため、何も書かずとも Execute()は実行可能
 
+        protected override IEnumerator Run()
+        {
+            // クリック可能カードをハイライト
+            var selectable = _others    // 自分以外のプレイヤー
+                .SelectMany(p => p.Hands.Where(c => !c.isVisible)) // 自分以外のプレイヤーの手札の家、裏のカードを選択
+                .ToList(); // selectableに入れる
+
+            //selectable.ForEach(c => c.Hilight(true));
+
+            // クリック待ち
+            Card clickedCard = null;
+            CardClickDispatcher.OnCardClicked += OnClick;
+
+            yield return new WaitUntil(() => clickedCard != null);
+
+            CardClickDispatcher.OnCardClicked -= OnClick;
+
+            // 処理の実行
+            clickedCard.Flip();
+            //selectable.ForEach(c => c.Highlight(false));
+
+
+
+            // ローカル関数
+            void OnClick(Card c)
+            {
+                if (selectable.Contains(c)) clickedCard = c;
+            }
         }
+
+
     }
 }

@@ -46,6 +46,7 @@ namespace Tetrage.Models
         public void PerformAction(GameAction action)
         {
             // アクションの処理内容
+            action.Execute();
         }
     }
 }
