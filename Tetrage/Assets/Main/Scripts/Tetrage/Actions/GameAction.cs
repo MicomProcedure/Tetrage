@@ -13,12 +13,12 @@ namespace Tetrage.Actions
         /// </summary>
         /// <param name="player">アクションを実行しようとしているプレイヤー。</param>
         /// <returns>アクションが実行可能であれば true、それ以外は false。</returns>
-        public abstract bool Validate(Player player);
+        public abstract bool Validate();
 
         /// <summary>
         /// アクションを実際に実行します。
         /// </summary>
         /// <param name="player">アクションを実行するプレイヤー。</param>
-        public abstract void Execute(Player player);
+        public abstract void Execute();
     }
 }

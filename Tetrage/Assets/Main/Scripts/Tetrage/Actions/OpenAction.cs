@@ -20,7 +20,7 @@ namespace Tetrage.Actions
                                        .Where(p => !ReferenceEquals(p, requester)).ToList();
         }
 
-        public override bool Validate(Player player)
+        public override bool Validate()
         {
             // Openの条件判定
 
@@ -31,7 +31,7 @@ namespace Tetrage.Actions
             return _others.Any(p => p.Hands.Any(c => !c.isVisible));
         }
 
-        public override void Execute(Player player)
+        public override void Execute()
         {
 
         }
