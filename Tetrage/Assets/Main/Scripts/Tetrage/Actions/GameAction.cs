@@ -8,6 +8,14 @@ namespace Tetrage.Actions
     /// </summary>
     public abstract class GameAction
     {
+        protected readonly Player _requester;
+
+        protected GameAction(Player requester)
+        {
+            _requester = requester;
+        }
+
+
         /// <summary>
         /// アクションが指定されたプレイヤーおよび状況で有効かどうかを検証します。
         /// </summary>

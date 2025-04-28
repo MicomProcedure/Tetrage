@@ -8,13 +8,11 @@ namespace Tetrage.Actions
 {
     public class OpenAction : GameAction
     {
-        private Player _requester;
         private IReadOnlyList<Player> _others;
         private Card _card;
 
-        public OpenAction(Player requester)
+        public OpenAction(Player requester) : base(requester)
         {
-            _requester = requester;
             // 他プレイヤーの参照を書き込み
             _others = Dealer.Instance.Players
                                        .Where(p => !ReferenceEquals(p, requester)).ToList();
