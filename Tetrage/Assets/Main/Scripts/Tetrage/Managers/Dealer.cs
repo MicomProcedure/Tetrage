@@ -9,20 +9,43 @@ namespace Tetrage.Managers
 {
     public class Dealer : MonoBehaviour
     {
+        /* -------- 1. 唯一のインスタンスを公開 -------- */
+        public static Dealer Instance { get; internal set; } // ここのinteralについていまいちわかってない。　テストがしやすい、とだけ
+
+        /* -------- 2. Awake で重複チェック -------- */
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);             // 既に存在→この複製を破棄
+                return;
+            }
+
+            Instance = this;                     // 初回生成
+            DontDestroyOnLoad(gameObject);       // シーンをまたいで保持したい場合
+        }
+
+        /* -------- 3. 通常の Dealer ロジック -------- */
+
         /// <summary>
         /// 現在のステージ情報。
         /// </summary>
-        private Stage stage;
+        private Stage _stage;
 
         /// <summary>
         /// ゲームに参加しているプレイヤーのリスト。
         /// </summary>
-        // private List<Player> players;（いつか復活させてください）
+        private List<Player> _players;
+        public IReadOnlyList<Player> Players => _players;
 
         /// <summary>
         /// 現在のプレイヤー。
         /// </summary>
-        //private Player currentPlayer;（いつか復活させてください）
+        private Player _currentPlayer;
+        public Player CurrentPlayer {  get { return _currentPlayer; } }
+
+
+
 
         /// <summary>
         /// 各プレイヤーにカードを配布する。
