@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Tetrage.Models;
+using Tetrage.Core.Contracts;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
 /// </summary>
 namespace Tetrage.Managers
 {
-    public class Dealer : MonoBehaviour
+    public class Dealer : MonoBehaviour, IPlayerProvider
     {
         /* -------- 1. 唯一のインスタンスを公開 -------- */
         public static Dealer Instance { get; internal set; } // ここのinteralについていまいちわかってない。　テストがしやすい、とだけ

@@ -1,4 +1,6 @@
+using System.Collections;
 using Tetrage.Models;
+using Unity.VisualScripting;
 
 namespace Tetrage.Actions
 {
@@ -8,17 +10,28 @@ namespace Tetrage.Actions
     /// </summary>
     public abstract class GameAction
     {
+        protected readonly Player _requester;
+
+        protected GameAction(Player requester)
+        {
+            _requester = requester;
+        }
+
+
         /// <summary>
         /// アクションが指定されたプレイヤーおよび状況で有効かどうかを検証します。
         /// </summary>
         /// <param name="player">アクションを実行しようとしているプレイヤー。</param>
         /// <returns>アクションが実行可能であれば true、それ以外は false。</returns>
-        public abstract bool Validate(Player player);
+        public abstract bool Validate();
 
         /// <summary>
         /// アクションを実際に実行します。
         /// </summary>
-        /// <param name="player">アクションを実行するプレイヤー。</param>
-        public abstract void Execute(Player player);
+        public virtual void Execute() {
+            _requester.StartCoroutine(Run());
+        }
+
+        protected abstract IEnumerator Run(); // 派生クラスで実装する
     }
 }

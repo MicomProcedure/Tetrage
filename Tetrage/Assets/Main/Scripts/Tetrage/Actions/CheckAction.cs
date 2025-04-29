@@ -7,13 +7,13 @@ namespace Tetrage.Actions
         private Player _requester;
         private Player _targetPlayer;
 
-        public CheckAction(Player requester, Player targetPlayer)
+        public CheckAction(Player requester) : base(requester)
         {
             _requester = requester;
-            _targetPlayer = targetPlayer;
+ 
         }
 
-        public override bool Validate(Player player)
+        public override bool Validate()
         {
 
             return _targetPlayer.Target != null;
@@ -21,7 +21,7 @@ namespace Tetrage.Actions
             return true;
         }
 
-        public override void Execute(Player player)
+        public override void Execute()
         {
             
         }
