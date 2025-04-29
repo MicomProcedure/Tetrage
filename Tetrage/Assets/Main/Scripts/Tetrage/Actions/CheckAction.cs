@@ -1,3 +1,4 @@
+using System.Collections;
 using Tetrage.Models;
 
 namespace Tetrage.Actions
@@ -21,9 +22,13 @@ namespace Tetrage.Actions
             return true;
         }
 
-        public override void Execute()
+        // Executeが基底クラスにあります
+
+        protected override IEnumerator Run()
         {
-            
+            // ここに動機的に遣りたい処理を書く
+
+            yield break;
         }
     }
 }
