@@ -11,7 +11,7 @@ namespace Tetrage.Actions
 {
     public class OpenAction : GameAction
     {
-        private IReadOnlyList<Player> _others;
+        private IReadOnlyList<Player> _others; //他のプレイヤークラスが入ってるリスト
         private Card _card;
         private IPlayerProvider _provider; // 基本はDealer、テスト用にそれ以外
 
@@ -68,7 +68,7 @@ namespace Tetrage.Actions
             // ローカル関数
             void OnClick(Card c)
             {
-                if (selectable.Contains(c)) clickedCard = c;
+                if (selectable.Contains(c)) clickedCard = c; //clickedCardがクリックされたカード
             }
         }
 
