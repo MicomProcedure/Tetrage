@@ -61,7 +61,7 @@ namespace Tetrage.Test.Editor
                 {
                     var card = new GameObject($"Card_{i}_{j}").AddComponent<Card>();
                     card.suit = (Suit)((i + j) % 4);
-                    card.Number = i * 10 + j + 1;
+                    card.number = i * 10 + j + 1;
                     card.isVisible = true;
                     p.Hands.Add(card);
                     _cleanupObjects.Add(card.gameObject);
@@ -69,7 +69,7 @@ namespace Tetrage.Test.Editor
                 // Target カード
                 var tgt = new GameObject($"Target_{i}").AddComponent<Card>();
                 tgt.suit = Suit.Spade;
-                tgt.Number = i;
+                tgt.number = i;
                 tgt.isVisible = false;
                 p.Target = tgt;
                 _cleanupObjects.Add(tgt.gameObject);
