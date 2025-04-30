@@ -32,6 +32,7 @@ namespace Tetrage.Managers
         /// 現在のステージ情報。
         /// </summary>
         private Stage _stage;
+        public Stage Stage { get { return _stage; } }
 
         /// <summary>
         /// ゲームに参加しているプレイヤーのリスト。
