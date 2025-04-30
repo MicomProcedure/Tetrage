@@ -6,7 +6,7 @@ namespace Tetrage.Actions
 {
     /// <summary>
     /// ゲームにおけるアクションの基底クラスです。
-    /// すべての具体的なアクションはこのクラスを継承して定義します。
+    /// すべての具体的なアクションはこのクラスを継承して定義します
     /// </summary>
     public abstract class GameAction
     {
@@ -23,7 +23,7 @@ namespace Tetrage.Actions
         /// </summary>
         /// <param name="player">アクションを実行しようとしているプレイヤー。</param>
         /// <returns>アクションが実行可能であれば true、それ以外は false。</returns>
-        public abstract bool Validate();
+        public abstract bool Validate(); //abstractにした関数の中身は継承先で実装する
 
         /// <summary>
         /// アクションを実際に実行します。
