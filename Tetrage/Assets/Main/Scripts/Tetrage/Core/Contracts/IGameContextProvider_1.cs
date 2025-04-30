@@ -7,7 +7,7 @@ namespace Tetrage.Core.Contracts
     /// <summary>
     /// ゲームに参加しているプレイヤー情報を読み取り専用で提供するインターフェース
     /// </summary>
-    public interface IPlayerProvider
+    public interface IGameContextProvider
     {
         /// <summary>現在の手番プレイヤー（存在しない場合は null）</summary>
         Player CurrentPlayer { get; }
