@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using Tetrage.Models;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.UI
 {
@@ -60,15 +61,14 @@ namespace Tetrage.UI
             }
         }
 
-
-        private string GetSuitSymbol(Card.Suit suit)
+        private string GetSuitSymbol(Suit suit)
         {
             switch (suit)
             {
-                case Card.Suit.Spade: return "♠";
-                case Card.Suit.Heart: return "♥";
-                case Card.Suit.Diamond: return "♦";
-                case Card.Suit.Club: return "♣";
+                case Suit.Spade: return "♠";
+                case Suit.Heart: return "♥";
+                case Suit.Diamond: return "♦";
+                case Suit.Club: return "♣";
                 default: return "?";
             }
         }
