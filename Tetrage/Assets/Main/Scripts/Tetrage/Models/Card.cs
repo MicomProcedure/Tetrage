@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Models
 {
@@ -86,13 +87,6 @@ namespace Tetrage.Models
             }
         }
 
-        public enum Suit
-        {
-            Spade,
-            Heart,
-            Diamond,
-            Club
-        }
     }
 }
 
