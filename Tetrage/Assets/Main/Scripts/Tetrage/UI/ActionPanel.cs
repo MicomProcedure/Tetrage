@@ -19,19 +19,19 @@ namespace Tetrage.UI
         {
 
             openBtn.onClick.AddListener(() => TryExecute(() => new OpenAction(currentPlayer)));
-            //drawBtn.onClick.AddListener(() => TryExecute(() => new DrawAction(currentPlayer)));
-            //checkBtn.onClick.AddListener(() => TryExecute(() => new CheckAction(currentPlayer)));
+            drawBtn.onClick.AddListener(() => TryExecute(() => new DrawAction(currentPlayer)));
+            checkBtn.onClick.AddListener(() => TryExecute(() => new CheckAction(currentPlayer)));
             //tetrageBtn.onClick.AddListener(() => TryExecute(() => new TetrageAction(currentPlayer)));
         }
 
         void Update()
         {
             // ボタンの活性/非活性の更新
-            // Validate()はboolを返す
+            // Validate()はboolを返す。
 
             openBtn.interactable = new OpenAction(currentPlayer).Validate();
-            //drawBtn.interactable = new DrawAction(currentPlayer).Validate();
-            //checkBtn.interactable = new CheckAction(currentPlayer).Validate();
+            drawBtn.interactable = new DrawAction(currentPlayer).Validate();
+            checkBtn.interactable = new CheckAction(currentPlayer).Validate();
             //tetrageBtn.interactable = new TetrageAction(currentPlayer).Validate();
         }
 

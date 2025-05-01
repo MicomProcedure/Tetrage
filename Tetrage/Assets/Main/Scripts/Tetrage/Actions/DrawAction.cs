@@ -4,6 +4,7 @@ using Tetrage.Models;
 using Tetrage.UI;
 using UnityEngine;
 using Tetrage.Managers;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Actions
 {
@@ -12,9 +13,9 @@ namespace Tetrage.Actions
         private readonly Stage _stage;
         private Card selectedCard;
 
-        public DrawAction(Player requester, Dealer provider) : base(requester)
+        public DrawAction(Player requester, IGameContextProvider provider = null) : base(requester)
         {
-            _stage = provider.Stage;
+            _stage = provider.Stage ?? Dealer.Instance.Stage;
         }
 
         public override bool Validate()
@@ -60,7 +61,7 @@ namespace Tetrage.Actions
                 if (!ReferenceEquals(card, selectedCard))
                 {
                     _requester.Tmp.TransferTo(_stage.Stack, card);
-                    card.transform.SetParent(_stage.transform);
+                    //card.transform.SetParent(_stage.transform);
                     break;
                 }
             }
@@ -69,7 +70,7 @@ namespace Tetrage.Actions
             if (_requester.Hands.Count < 3)
             {
                 _requester.Tmp.TransferTo(_requester.Hands, selectedCard);
-                selectedCard.transform.SetParent(_requester.transform);
+                //selectedCard.transform.SetParent(_requester.transform);
             }
             else
             {
@@ -98,18 +99,18 @@ namespace Tetrage.Actions
                 {
                     // Tmp のカードを Trash
                     _requester.Tmp.TransferTo(_stage.Trash, selectedCard);
-                    selectedCard.transform.SetParent(_stage.transform);
+                    //selectedCard.transform.SetParent(_stage.transform);
                 }
                 else
                 {
                     // Hands のカードを Trash
                     _requester.Hands.TransferTo(_stage.Trash, selectedCard);
-                    selectedCard.transform.SetParent(_stage.transform);
+                    //selectedCard.transform.SetParent(_stage.transform);
 
                     // Tmp の残ったカードを Hands に追加
                     var tmpCard = _requester.Tmp.First();
                     _requester.Tmp.TransferTo(_requester.Hands, tmpCard);
-                    tmpCard.transform.SetParent(_requester.transform);
+                    //tmpCard.transform.SetParent(_requester.transform);
                 }
             }
         }
