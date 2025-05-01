@@ -13,9 +13,9 @@ namespace Tetrage.Actions
     {
         private IReadOnlyList<Player> _others; //他のプレイヤークラスが入ってるリスト
         private Card _card;
-        private IPlayerProvider _provider; // 基本はDealer、テスト用にそれ以外
+        private IGameContextProvider _provider; // 基本はDealer、テスト用にそれ以外
 
-        public OpenAction(Player requester, IPlayerProvider provider = null) : base(requester) // providerはデフォルト引数なので省略可能
+        public OpenAction(Player requester, IGameContextProvider provider = null) : base(requester) // providerはデフォルト引数なので省略可能
         {
             _provider = provider ?? Dealer.Instance; // providerを受け取るが、デフォルトではDealerの単一なインスタンスとなる
 
