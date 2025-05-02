@@ -1,10 +1,9 @@
 using UnityEngine;
-using Tetrage.Models;
-using Tetrage.Core;
 using System.Collections;
 using System.Collections.Generic;
 using Tetrage.Core.Enums;
 using System.Linq;
+using System;
 
 namespace Tetrage.Models
 {
@@ -47,6 +46,16 @@ namespace Tetrage.Models
         /// <param name="name">束の名前（デバッグ用）</param>
         /// <param name="owner">所有者の判定（PlayerかStageかなど））</param>
         /// <param name="maxCount">この束の最大枚数（上限なしなら int.MaxValue）</param>
+
+        public event Action<Card> CardAdded;
+        public event Action<Card> CardRemoved;
+        public event Action<Card> CardTransferred;
+
+        private void OnCardTransferred(Card c)
+        {
+            CardTransferred?.Invoke(c);
+        }
+
         public CardPile(string name,  CardOwner ownerType = CardOwner.Null, int maxCount = int.MaxValue)
         {
             Name = name;
@@ -79,6 +88,7 @@ namespace Tetrage.Models
             }
 
             _cards.Add(card);
+
             return true;
         }
 
@@ -106,7 +116,7 @@ namespace Tetrage.Models
         {
             for (int i = _cards.Count - 1; i > 0; i--)
             {
-                int j = Random.Range(0, i + 1);
+                int j = UnityEngine.Random.Range(0, i + 1);
                 var tmp = _cards[i];
                 _cards[i] = _cards[j];
                 _cards[j] = tmp;

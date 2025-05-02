@@ -17,7 +17,7 @@ namespace Tetrage.Models
                 if (_suit != value)
                 {
                     _suit = value;
-                    OnCardChanged?.Invoke(this); // 情報更新時にCardViewで見た目を変更
+                    OnCardChanged(this); // 情報更新時にCardViewで見た目を変更
                 }
             }
         }
@@ -31,7 +31,7 @@ namespace Tetrage.Models
                 if (_isVisible != value)
                 {
                     _isVisible = value;
-                    OnCardChanged?.Invoke(this); // 情報更新時にCardViewで見た目を変更
+                    OnCardChanged(this); // 情報更新時にCardViewで見た目を変更
                 }
             }
         }
@@ -46,7 +46,7 @@ namespace Tetrage.Models
                 if (_number != clamped)
                 {
                     _number = clamped;
-                    OnCardChanged?.Invoke(this); // 情報更新時にCardViewで見た目を変更
+                    OnCardChanged(this); // 情報更新時にCardViewで見た目を変更
                 }
             }
         }
@@ -54,7 +54,13 @@ namespace Tetrage.Models
         //タッチした時に裏表を逆にできるかどうか
         public bool canFlip = true;
 
-        public event Action<Card> OnCardChanged;
+        public event Action<Card> CardChanged;
+
+        private void OnCardChanged(Card c)
+        {
+            if (c != null) CardChanged?.Invoke(this);
+        }
+
 
         public void Initialize(Suit suit, int number, bool isVisible)
         {

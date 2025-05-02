@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 namespace Tetrage.UI
 {
-    public class CardView : MonoBehaviour
+    public class CardView : MonoBehaviour, IPointerClickHandler
     {
         [Header("Visual Components")]
         [SerializeField] private SpriteRenderer CardSpriteRenderer;
@@ -21,7 +21,7 @@ namespace Tetrage.UI
         public void Initialize(Card cardModel)
         {
             _model = cardModel;
-            _model.OnCardChanged += OnModelChanged;  // イベント購読
+            _model.CardChanged += OnModelChanged;  // イベント購読
             RefreshView();  // 初期表示
         }
 
@@ -29,7 +29,7 @@ namespace Tetrage.UI
         {
             if (_model != null)
             {
-                _model.OnCardChanged -= OnModelChanged;  // イベント購読解除
+                _model.CardChanged -= OnModelChanged;  // イベント購読解除
             }
         }
 
@@ -50,6 +50,7 @@ namespace Tetrage.UI
         {
             if (_model.isVisible)
             {
+                // カードの見た目を表にする
                 CardSpriteRenderer.color = Color.white;
                 suitText.text = GetSuitSymbol(_model.suit);
                 numberText.text = _model.number.ToString();
@@ -58,6 +59,7 @@ namespace Tetrage.UI
             }
             else
             {
+                // カードの見た目を裏にする
                 CardSpriteRenderer.color = new Color(0.3f, 0.3f, 0.3f);
                 suitText.enabled = false;
                 numberText.enabled = false;
@@ -85,6 +87,8 @@ namespace Tetrage.UI
                 _model.Flip();
                 animator.SetTrigger("FlipSuccess");
             }
+            // クリック処理（各アクションなど）
+            CardClickDispatcher.Invoke(_model);
         }
     }
 }

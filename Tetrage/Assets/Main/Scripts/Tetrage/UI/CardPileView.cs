@@ -7,11 +7,13 @@ namespace Tetrage.UI
     {
         [SerializeField] private CardPile _model; // CardPileの純粋モデルへの参照
 
+
         void Start()
         {
             // モデルのイベントから、Viewの更新を行う
 
         }
 
+   
     }
 }
