@@ -28,11 +28,11 @@ namespace Tetrage.Actions
             // 1. Tmp に山札から2枚引く
             for (int i = 0; i < 2; i++)
             {
-                var card = _stage.DrawFromStack();
-                if (card == null) yield break;
+                //var card = _stage.DrawFromStack();
+                //if (card == null) yield break;
 
-                _requester.Tmp.Add(card);
-                card.transform.SetParent(_requester.transform);
+                if (!_stage.DrawFromStack(_requester.Tmp)) yield break; // カードをスタックからドロー
+
             }
 
             // 2. Tmp から1枚選択して残す（残りは Stack に戻す）

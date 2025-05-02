@@ -69,7 +69,7 @@ namespace Tetrage.Models
         /// <summary>
         /// カードを追加する上限を超える場合は false を返す。
         /// </summary>
-        public bool Add(Card card)
+        private bool Add(Card card)
         {
             if (_cards.Count >= _maxCount)
             {
@@ -85,13 +85,13 @@ namespace Tetrage.Models
         /// <summary>
         /// カードを削除する
         /// </summary>
-        public bool Remove(Card card)
+        private bool Remove(Card card)
         {
             return _cards.Remove(card); // リストがからの場合はfalseが返されます。
         }
 
         /// <summary>
-        /// 他の束へ移動する
+        /// 他の束へ移動する。カードの移動は必ずこの関数を用いる
         /// </summary>
         public bool TransferTo(CardPile targetPile, Card card)
         {

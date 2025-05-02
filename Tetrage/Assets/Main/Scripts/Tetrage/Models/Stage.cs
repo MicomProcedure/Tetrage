@@ -15,21 +15,23 @@ namespace Tetrage.Models
         public CardPile Trash => _trash;
 
         // スタックからカードを1枚引く
-        public Card DrawFromStack()
+        public bool DrawFromStack(CardPile targetPile)
         {
             if (_stack.Count == 0)
             {
                 Debug.LogWarning("スタックが空です");
-                return null;
+                return false;
             }
 
-                // 先頭のカードを取得して、StackのCardPile から削除
-                Card drawnCard = _stack.Peek(1)[0];
-                _stack.Remove(drawnCard);
+            // 先頭のカードを取得して、StackのCardPile から削除
+            Card drawnCard = _stack.Peek(1)[0];
 
-                Debug.Log("カードを引きました: " + drawnCard.name);
-                return drawnCard;
-         }
+            _stack.TransferTo(targetPile, drawnCard); // カードを狙ったカードパイルへ移動する
+
+            Debug.Log("カードを引きました: " + drawnCard.name);
+
+            return true;
+        }
 
         // カードを捨て札へ
         public void Discard(Card card)

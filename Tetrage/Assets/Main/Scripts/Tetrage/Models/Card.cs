@@ -20,7 +20,7 @@ namespace Tetrage.Models
                 if (_suit != value)
                 {
                     _suit = value;
-                    OnCardChanged?.Invoke(this);
+                    OnCardChanged?.Invoke(this); // 情報更新時にCardViewで見た目を変更
                 }
             }
         }
@@ -34,7 +34,7 @@ namespace Tetrage.Models
                 if (_isVisible != value)
                 {
                     _isVisible = value;
-                    OnCardChanged?.Invoke(this);
+                    OnCardChanged?.Invoke(this); // 情報更新時にCardViewで見た目を変更
                 }
             }
         }
@@ -49,7 +49,7 @@ namespace Tetrage.Models
                 if (_number != clamped)
                 {
                     _number = clamped;
-                    OnCardChanged?.Invoke(this);
+                    OnCardChanged?.Invoke(this); // 情報更新時にCardViewで見た目を変更
                 }
             }
         }
