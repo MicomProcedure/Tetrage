@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using Tetrage.Models;
 using Tetrage.Core.Enums;
+using UnityEngine.EventSystems;
 
 namespace Tetrage.UI
 {
@@ -13,26 +14,28 @@ namespace Tetrage.UI
         [SerializeField] private TextMeshProUGUI suitText;
         [SerializeField] private TextMeshProUGUI numberText;
 
-        [SerializeField] private Card model;
+        [SerializeField] private Animator animator;
+
+        [SerializeField] private Card _model;
 
         public void Initialize(Card cardModel)
         {
-            model = cardModel;
-            model.OnCardChanged += OnModelChanged;  // イベント購読
+            _model = cardModel;
+            _model.OnCardChanged += OnModelChanged;  // イベント購読
             RefreshView();  // 初期表示
         }
 
         private void OnDestroy()
         {
-            if (model != null)
+            if (_model != null)
             {
-                model.OnCardChanged -= OnModelChanged;  // イベント購読解除
+                _model.OnCardChanged -= OnModelChanged;  // イベント購読解除
             }
         }
 
         void Start()
         {
-            Initialize(model);
+            Initialize(_model);
 
             Animator animator = GetComponent<Animator>();
         }
@@ -45,11 +48,11 @@ namespace Tetrage.UI
 
         private void RefreshView()
         {
-            if (model.isVisible)
+            if (_model.isVisible)
             {
                 CardSpriteRenderer.color = Color.white;
-                suitText.text = GetSuitSymbol(model.suit);
-                numberText.text = model.number.ToString();
+                suitText.text = GetSuitSymbol(_model.suit);
+                numberText.text = _model.number.ToString();
                 suitText.enabled = true;
                 numberText.enabled = true;
             }
@@ -70,6 +73,17 @@ namespace Tetrage.UI
                 case Suit.Diamond: return "♦";
                 case Suit.Club: return "♣";
                 default: return "?";
+            }
+        }
+
+        //知識:OnPointerClickという関数名で実装すると，このクラスを継承しているオブジェクトがタップされたときにOnPointerClick関数が自動で実行される
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            //カードを生成するときに持ち主を記録しておく，または自分のカード以外をcanFlip = falseにする必要がありそう（memo by Manri）
+            if (_model.canFlip)
+            {
+                _model.Flip();
+                animator.SetTrigger("FlipSuccess");
             }
         }
     }

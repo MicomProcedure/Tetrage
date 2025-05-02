@@ -28,7 +28,7 @@ namespace Tetrage.Models
 
             _stack.TransferTo(targetPile, drawnCard); // カードを狙ったカードパイルへ移動する
 
-            Debug.Log("カードを引きました: " + drawnCard.name);
+            Debug.Log("カードを引きました: " + drawnCard.suit + drawnCard.number);
 
             return true;
         }
@@ -45,10 +45,8 @@ namespace Tetrage.Models
             // stack→trash の移動を一度に行う
             _stack.TransferTo(_trash, card);
 
-            // シーン上の親も切り替え
-            card.transform.SetParent(trashContainer);
 
-            Debug.Log("カードを捨てました: " + card.name);
+            Debug.Log("カードを捨てました: " + card.suit + card.number);
         }
         
     }
