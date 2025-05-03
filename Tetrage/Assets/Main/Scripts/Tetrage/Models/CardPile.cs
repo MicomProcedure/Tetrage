@@ -49,11 +49,16 @@ namespace Tetrage.Models
 
         public event Action<Card> CardAdded;
         public event Action<Card> CardRemoved;
-        public event Action<Card> CardTransferred;
+        public event Action<Card, CardPile /*from*/, CardPile /*to*/> CardTransferred;
 
-        private void OnCardTransferred(Card c)
+        private void OnCardAdded(Card c)
         {
-            CardTransferred?.Invoke(c);
+            CardAdded?.Invoke(c);
+        }
+
+        private void OnCardTransferred(Card c, CardPile from, CardPile to)
+        {
+            CardTransferred?.Invoke(c, from, to);
         }
 
         public CardPile(string name,  CardOwner ownerType = CardOwner.Null, int maxCount = int.MaxValue)
@@ -76,7 +81,7 @@ namespace Tetrage.Models
 
 
         /// <summary>
-        /// カードを追加する上限を超える場合は false を返す。
+        /// カードの参照をカードパイルに追加する。上限を超える場合は false を返す。
         /// </summary>
         private bool Add(Card card)
         {
@@ -93,7 +98,7 @@ namespace Tetrage.Models
         }
 
         /// <summary>
-        /// カードを削除する
+        /// リストからカードの参照を削除する。インスタンスが削除されるわけではない
         /// </summary>
         private bool Remove(Card card)
         {

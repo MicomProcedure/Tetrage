@@ -18,6 +18,10 @@ namespace Tetrage.UI
 
         [SerializeField] private Card _model;
 
+        /// <summary>
+        /// カードのモデルとCardViewの紐づけを行う。カードモデルに情報の更新があったときのイベントの購読も行う。
+        /// </summary>
+        /// <param name="cardModel"></param>
         public void Initialize(Card cardModel)
         {
             _model = cardModel;
