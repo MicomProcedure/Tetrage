@@ -2,14 +2,14 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Models
 {
     public class Card
     {
-
-
-        public Suit suit
+        private Suit _suit;
+        public Suit Suit
         {
             get => _suit;
             set
@@ -17,13 +17,13 @@ namespace Tetrage.Models
                 if (_suit != value)
                 {
                     _suit = value;
-                    OnCardChanged(this); // 情報更新時にCardViewで見た目を変更
+                    OnCardChanged(this);
                 }
             }
         }
-        private Suit _suit;
 
-        public bool isVisible
+        private bool _isVisible = true;
+        public bool IsVisible
         {
             get => _isVisible;
             set
@@ -31,13 +31,13 @@ namespace Tetrage.Models
                 if (_isVisible != value)
                 {
                     _isVisible = value;
-                    OnCardChanged(this); // 情報更新時にCardViewで見た目を変更
+                    OnCardChanged(this);
                 }
             }
         }
-        private bool _isVisible = true;
+
         private int _number;
-        public int number
+        public int Number
         {
             get => _number;
             set
@@ -46,35 +46,31 @@ namespace Tetrage.Models
                 if (_number != clamped)
                 {
                     _number = clamped;
-                    OnCardChanged(this); // 情報更新時にCardViewで見た目を変更
+                    OnCardChanged(this);
                 }
             }
         }
 
-        //タッチした時に裏表を逆にできるかどうか
-        public bool canFlip = true;
+        public bool CanFlip { get; set; } = true;
 
         public event Action<Card> CardChanged;
 
-        private void OnCardChanged(Card c)
+        private void OnCardChanged(Card card)
         {
-            if (c != null) CardChanged?.Invoke(this);
+            CardChanged?.Invoke(this);
         }
-
 
         public void Initialize(Suit suit, int number, bool isVisible)
         {
-            this.suit = suit;
-            this.number = number;
-            this.isVisible = isVisible;
+            Suit = suit;
+            Number = number;
+            IsVisible = isVisible;
         }
-        
+
         public void Flip()
         {
-            isVisible = !isVisible;
+            IsVisible = !IsVisible;
         }
-
-
     }
 }
 

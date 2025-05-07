@@ -1,5 +1,6 @@
 using UnityEngine;
 using Tetrage.Core.Enums;
+using Tetrage.Managers;
 
 namespace Tetrage.Models
 {
@@ -26,9 +27,9 @@ namespace Tetrage.Models
             // 先頭のカードを取得して、StackのCardPile から削除
             Card drawnCard = _stack.Peek(1)[0];
 
-            _stack.TransferTo(targetPile, drawnCard); // カードを狙ったカードパイルへ移動する
+            CardTransferService.Transfer(_stack, targetPile, drawnCard);
 
-            Debug.Log("カードを引きました: " + drawnCard.suit + drawnCard.number);
+            Debug.Log("カードを引きました: " + drawnCard.Suit + drawnCard.Number);
 
             return true;
         }
@@ -42,13 +43,12 @@ namespace Tetrage.Models
                 return;
             }
 
-            // stack→trash の移動を一度に行う
-            _stack.TransferTo(_trash, card);
+            // stack→trash の移動をサービスで実行
+            CardTransferService.Transfer(_stack, _trash, card);
 
-
-            Debug.Log("カードを捨てました: " + card.suit + card.number);
+            Debug.Log("カードを捨てました: " + card.Suit + card.Number);
         }
-        
+
     }
 
 }

@@ -1,50 +1,32 @@
-using System.Collections.Generic;
-using Tetrage.Models;
 using UnityEngine;
+using Tetrage.UI;
+using System;
 
 namespace Tetrage.UI
 {
     public class CardPileView : MonoBehaviour
     {
-        // カードモデルと、そのカードのViewの辞書
-        private Dictionary<Card, CardView> _views = new();
+        /// <summary>
+        /// このビューが破棄されたときに発行されるイベント。
+        /// Presenter はここを購読し Dispose を呼びます。
+        /// </summary>
+        public event Action Destroyed;
 
-        [SerializeField] private bool keepWorldPosition = false;
-
-        [SerializeField] private CardPile _model; // CardPileの純粋モデルへの参照
-        [SerializeField] private GameObject _cardPrefab; //CardViewのプレハブ
-
-        public void Awake()
+        private void OnDestroy()
         {
-            // 現在カードパイルに存在しているCardモデルにCardViewを作成し、紐づける
-            foreach (var cm in _model)
-            {
-                AddView(cm);
-            }
-
-            // CardPileモデルでCardが移動されたときのイベントを購読
-            _model.CardTransferred += OnCardTransferred;
-
+            Destroyed?.Invoke();
         }
 
-        private void AddView(Card cardModel)
+        /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
+        public void AddCardView(CardView cardView)
         {
-            var gameObject = Instantiate(_cardPrefab, transform); // CardPileViewのアタッチされているゲームオブジェクトの位置にCardViewオブジェクトを生成
-            var cardView = gameObject.GetComponent<CardView>();
-            cardView.Initialize(cardModel);
-            _views[cardModel] = cardView;
+            cardView.transform.SetParent(transform, worldPositionStays: true);
         }
 
-        private void OnCardTransferred(Card card, CardPile from, CardPile to)
+        /// <summary>カード表示用ViewをこのPileViewから外します。</summary>
+        public void RemoveCardView(CardView cardView)
         {
-            // ビューは既に生成済みとする
-            var view = _views[card];
-            // 新しい束のCardPileViewを探し、親子付けを付け替える
-            var toView = 
-
-            // シーン上の親子関係を、移動先のカードパイルへ移動させる
-            transform.SetParent(, keepWorldPosition);
+            cardView.transform.SetParent(null);
         }
-   
     }
 }

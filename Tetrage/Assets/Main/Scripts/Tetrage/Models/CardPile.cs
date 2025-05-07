@@ -29,8 +29,9 @@ namespace Tetrage.Models
         // IEnumerableを実装するためのメンバその2：非ジェネリック版 IEnumerator を返す GetEnumerator()
         // 明示的インターフェイスの実装なので、privateになっています（ここら辺よく分かんないけど、よく分かんなくていいっぽい）
         // 重要なのは、これによってCardPileが列挙可能になり、LINQが仕えるようになるということ、だと思う
-        IEnumerator IEnumerable.GetEnumerator() { 
-            return GetEnumerator(); 
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
 
@@ -51,17 +52,22 @@ namespace Tetrage.Models
         public event Action<Card> CardRemoved;
         public event Action<Card, CardPile /*from*/, CardPile /*to*/> CardTransferred;
 
-        private void OnCardAdded(Card c)
+        internal void NotifyCardAdded(Card c)
         {
             CardAdded?.Invoke(c);
         }
 
-        private void OnCardTransferred(Card c, CardPile from, CardPile to)
+        internal void NotifyCardRemoved(Card c)
+        {
+            CardRemoved?.Invoke(c);
+        }
+
+        internal void NotifyCardTransferred(Card c, CardPile from, CardPile to)
         {
             CardTransferred?.Invoke(c, from, to);
         }
 
-        public CardPile(string name,  CardOwner ownerType = CardOwner.Null, int maxCount = int.MaxValue)
+        public CardPile(string name, CardOwner ownerType = CardOwner.Null, int maxCount = int.MaxValue)
         {
             Name = name;
             OwnerType = ownerType;
@@ -83,7 +89,7 @@ namespace Tetrage.Models
         /// <summary>
         /// カードの参照をカードパイルに追加する。上限を超える場合は false を返す。
         /// </summary>
-        private bool Add(Card card)
+        public bool Add(Card card)
         {
             if (_cards.Count >= _maxCount)
             {
@@ -100,18 +106,9 @@ namespace Tetrage.Models
         /// <summary>
         /// リストからカードの参照を削除する。インスタンスが削除されるわけではない
         /// </summary>
-        private bool Remove(Card card)
+        public bool Remove(Card card)
         {
             return _cards.Remove(card); // リストがからの場合はfalseが返されます。
-        }
-
-        /// <summary>
-        /// 他の束へ移動する。カードの移動は必ずこの関数を用いる
-        /// </summary>
-        public bool TransferTo(CardPile targetPile, Card card)
-        {
-            if (!Remove(card)) return false;
-            return targetPile.Add(card);
         }
 
         /// <summary>
