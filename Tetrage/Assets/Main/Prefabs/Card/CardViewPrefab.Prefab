@@ -471,7 +471,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff9444f32d0366b40b5d8b440be6063b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spriteRenderer: {fileID: 0}
+  spriteRenderer: {fileID: 2014656711774223290}
   suitText: {fileID: 3838794523360312833}
   numberText: {fileID: 2050508706609354361}
   animator: {fileID: 0}

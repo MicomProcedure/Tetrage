@@ -60,11 +60,14 @@ namespace Tetrage.Models
             CardChanged?.Invoke(this);
         }
 
-        public void Initialize(Suit suit, int number, bool isVisible)
+        /// <summary>
+        /// カードを初期化するコンストラクタ
+        /// </summary>
+        public Card(Suit suit, int number, bool isVisible)
         {
-            Suit = suit;
-            Number = number;
-            IsVisible = isVisible;
+            _suit = suit;
+            _number = Mathf.Max(1, number);
+            _isVisible = isVisible;
         }
 
         public void Flip()
