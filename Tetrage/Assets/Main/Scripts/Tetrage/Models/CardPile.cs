@@ -15,9 +15,8 @@ namespace Tetrage.Models
         // カードの束の最大枚数
         private readonly int _maxCount;
 
-        // 束の名称と所有者（プロパティ。ローカルフィールドも自動生成される）
+        // 束の名称
         public string Name { get; }
-        public CardOwner OwnerType { get; }
 
 
         // IEnumerableを実装するためのメンバその１：IEnumerator<T> を返す GetEnumerator()
@@ -67,10 +66,9 @@ namespace Tetrage.Models
             CardTransferred?.Invoke(c, from, to);
         }
 
-        public CardPile(string name, CardOwner ownerType = CardOwner.Null, int maxCount = int.MaxValue)
+        public CardPile(string name, int maxCount = int.MaxValue)
         {
             Name = name;
-            OwnerType = ownerType;
             // カードの束の上限が負だった場合、規定値に設定
             if (maxCount < 0)
             {

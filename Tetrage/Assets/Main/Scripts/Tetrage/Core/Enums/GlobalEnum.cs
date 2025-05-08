@@ -21,14 +21,5 @@ namespace Tetrage.Core.Enums
         Club
     }
 
-    /// <summary>
-    /// カードの束の所有者を表す列挙型
-    /// </summary>
-    public enum CardOwner
-    {
-        Player,
-        Stage,
-        Dealer,
-        Null,
-    }
+
 }

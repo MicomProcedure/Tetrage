@@ -96,12 +96,12 @@ namespace Tetrage.Actions
                 if (_requester.Tmp.Contains(selectedCard))
                 {
                     // Tmp のカードを Trash
-                    CardTransferService.Transfer(_requester.Tmp, _stage.Trash, selectedCard);
+                    _stage.Discard(_requester.Tmp, selectedCard);
                 }
                 else
                 {
                     // Hands のカードを Trash
-                    CardTransferService.Transfer(_requester.Hands, _stage.Trash, selectedCard);
+                    _stage.Discard(_requester.Hands, selectedCard);
 
                     // Tmp の残ったカードを Hands に追加
                     var tmpCard = _requester.Tmp.First();

@@ -4,16 +4,21 @@ using Tetrage.Managers;
 
 namespace Tetrage.Models
 {
-    public class Stage : MonoBehaviour
+    public class Stage 
     {
-        [SerializeField] private Transform stackContainer;
-        [SerializeField] private Transform trashContainer;
 
-        private CardPile _stack = new CardPile(name: "Stack", ownerType: CardOwner.Stage);
-        private CardPile _trash = new CardPile(name: "Trash", ownerType: CardOwner.Stage);
+        private CardPile _stack;
+        private CardPile _trash;
 
+        // スタックを読み取り専用で公開するプロパティ
         public CardPile Stack => _stack;
+        // 捨て札を読み取り専用で公開するプロパティ 
         public CardPile Trash => _trash;
+
+        public Stage(CardPile stack, CardPile trash){
+            _stack = stack;
+            _trash = trash;
+        }
 
         // スタックからカードを1枚引く
         public bool DrawFromStack(CardPile targetPile)
@@ -35,7 +40,7 @@ namespace Tetrage.Models
         }
 
         // カードを捨て札へ
-        public void Discard(Card card)
+        public void Discard(CardPile cardPile, Card card)
         {
             if (card == null)
             {
@@ -44,7 +49,7 @@ namespace Tetrage.Models
             }
 
             // stack→trash の移動をサービスで実行
-            CardTransferService.Transfer(_stack, _trash, card);
+            CardTransferService.Transfer(cardPile, _trash, card);
 
             Debug.Log("カードを捨てました: " + card.Suit + card.Number);
         }
