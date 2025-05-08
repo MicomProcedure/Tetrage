@@ -32,7 +32,7 @@ namespace Tetrage.Actions
              * _othersはrequester以外のプレイヤーの列挙
              * CardPileであるHandsは直接列挙可能（IEnumerable<Card>を実装している）なので.Anyが使える
              */
-            return _others.Any(p => p.Hands.Any(c => !c.isVisible));
+            return _others.Any(p => p.Hands.Any(c => !c.IsVisible));
         }
 
         // 基底クラスにvirtualな Execute() 関数が存在しているため、何も書かずとも Execute()は実行可能
@@ -41,7 +41,7 @@ namespace Tetrage.Actions
         {
             // クリック可能カードをハイライト
             var selectable = _others    // 自分以外のプレイヤー
-                .SelectMany(p => p.Hands.Where(c => !c.isVisible)) // 自分以外のプレイヤーの手札の家、裏のカードを選択
+                .SelectMany(p => p.Hands.Where(c => !c.IsVisible)) // 自分以外のプレイヤーの手札の家、裏のカードを選択
                 .ToList(); // selectableに入れる
 
             //selectable.ForEach(c => c.Hilight(true));

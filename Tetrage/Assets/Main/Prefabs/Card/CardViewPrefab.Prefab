@@ -386,13 +386,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6981821323464839261}
-  - component: {fileID: 2784307630746987000}
   - component: {fileID: 7014922997825120738}
   - component: {fileID: 6479867437534543680}
   - component: {fileID: 2014656711774223290}
   - component: {fileID: 3872063364497498400}
   m_Layer: 0
-  m_Name: Card
+  m_Name: CardViewPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -414,19 +413,6 @@ Transform:
   - {fileID: 2023640649562403695}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2784307630746987000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8228944604196180282}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8922482a9dfc413cbcffb529350226f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canFlip: 1
 --- !u!61 &7014922997825120738
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -485,11 +471,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff9444f32d0366b40b5d8b440be6063b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CardSpriteRenderer: {fileID: 2014656711774223290}
-  cardSprite: {fileID: 7482667652216324306, guid: ed9fc8c36ff75b04f9414da139b55481, type: 3}
+  spriteRenderer: {fileID: 0}
   suitText: {fileID: 3838794523360312833}
   numberText: {fileID: 2050508706609354361}
-  model: {fileID: 2784307630746987000}
+  animator: {fileID: 0}
 --- !u!212 &2014656711774223290
 SpriteRenderer:
   m_ObjectHideFlags: 0

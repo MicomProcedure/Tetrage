@@ -1,76 +1,49 @@
 using UnityEngine;
 using TMPro;
-using Tetrage.Models;
-using Tetrage.Core.Enums;
+using UnityEngine.EventSystems;
+using System;
 
 namespace Tetrage.UI
 {
-    public class CardView : MonoBehaviour
+    public class CardView : MonoBehaviour, IPointerClickHandler
     {
-        [Header("Visual Components")]
-        [SerializeField] private SpriteRenderer CardSpriteRenderer;
-        [SerializeField] private Sprite cardSprite;
-        [SerializeField] private TextMeshProUGUI suitText;
-        [SerializeField] private TextMeshProUGUI numberText;
-
-        [SerializeField] private Card model;
-
-        public void Initialize(Card cardModel)
-        {
-            model = cardModel;
-            model.OnCardChanged += OnModelChanged;  // イベント購読
-            RefreshView();  // 初期表示
-        }
+        /// <summary>
+        /// このビューが破棄されたときに発行されるイベント。
+        /// Presenter はここを購読して Dispose などの後片付けを行います。
+        /// </summary>
+        public event Action Destroyed;
 
         private void OnDestroy()
         {
-            if (model != null)
-            {
-                model.OnCardChanged -= OnModelChanged;  // イベント購読解除
-            }
+            Destroyed?.Invoke();
         }
 
-        void Start()
-        {
-            Initialize(model);
+        [Header("Visual Components")]
+        [SerializeField] private SpriteRenderer spriteRenderer;
+        [SerializeField] private TextMeshProUGUI suitText;
+        [SerializeField] private TextMeshProUGUI numberText;
+        [SerializeField] private Animator animator;
 
-            Animator animator = GetComponent<Animator>();
+        public event Action Clicked;
+
+        public void OnPointerClick(PointerEventData e) => Clicked?.Invoke();
+
+        public void PlayFlipAnimation() => animator.SetTrigger("FlipSuccess");
+        public void SetSuitSymbol(string symbol) => suitText.text = symbol;
+        public void SetNumber(int number) => numberText.text = number.ToString();
+
+        public void ShowFace()
+        {
+            spriteRenderer.color = Color.white;
+            suitText.enabled = true;
+            numberText.enabled = true;
         }
 
-
-        private void OnModelChanged(Card updatedCard)
+        public void ShowBack()
         {
-            RefreshView();
-        }
-
-        private void RefreshView()
-        {
-            if (model.isVisible)
-            {
-                CardSpriteRenderer.color = Color.white;
-                suitText.text = GetSuitSymbol(model.suit);
-                numberText.text = model.number.ToString();
-                suitText.enabled = true;
-                numberText.enabled = true;
-            }
-            else
-            {
-                CardSpriteRenderer.color = new Color(0.3f, 0.3f, 0.3f);
-                suitText.enabled = false;
-                numberText.enabled = false;
-            }
-        }
-
-        private string GetSuitSymbol(Suit suit)
-        {
-            switch (suit)
-            {
-                case Suit.Spade: return "♠";
-                case Suit.Heart: return "♥";
-                case Suit.Diamond: return "♦";
-                case Suit.Club: return "♣";
-                default: return "?";
-            }
+            spriteRenderer.color = new Color(0.3f, 0.3f, 0.3f);
+            suitText.enabled = false;
+            numberText.enabled = false;
         }
     }
 }

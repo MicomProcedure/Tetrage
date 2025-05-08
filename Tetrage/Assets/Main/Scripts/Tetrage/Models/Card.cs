@@ -2,17 +2,14 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Models
 {
-    public class Card : MonoBehaviour, IPointerClickHandler
+    public class Card
     {
-        //カードの持ち主情報を記録
-        public Player owner;
-        //アニメーション
-        Animator animator;
-
-        public Suit suit
+        private Suit _suit;
+        public Suit Suit
         {
             get => _suit;
             set
@@ -20,13 +17,13 @@ namespace Tetrage.Models
                 if (_suit != value)
                 {
                     _suit = value;
-                    OnCardChanged?.Invoke(this);
+                    OnCardChanged(this);
                 }
             }
         }
-        private Suit _suit;
 
-        public bool isVisible
+        private bool _isVisible = true;
+        public bool IsVisible
         {
             get => _isVisible;
             set
@@ -34,13 +31,13 @@ namespace Tetrage.Models
                 if (_isVisible != value)
                 {
                     _isVisible = value;
-                    OnCardChanged?.Invoke(this);
+                    OnCardChanged(this);
                 }
             }
         }
-        private bool _isVisible = true;
+
         private int _number;
-        public int number
+        public int Number
         {
             get => _number;
             set
@@ -49,44 +46,31 @@ namespace Tetrage.Models
                 if (_number != clamped)
                 {
                     _number = clamped;
-                    OnCardChanged?.Invoke(this);
+                    OnCardChanged(this);
                 }
             }
         }
 
-        //タッチした時に裏表を逆にできるかどうか
-        public bool canFlip = true;
+        public bool CanFlip { get; set; } = true;
 
-        public event Action<Card> OnCardChanged;
+        public event Action<Card> CardChanged;
+
+        private void OnCardChanged(Card card)
+        {
+            CardChanged?.Invoke(this);
+        }
 
         public void Initialize(Suit suit, int number, bool isVisible)
         {
-            this.suit = suit;
-            this.number = number;
-            this.isVisible = isVisible;
+            Suit = suit;
+            Number = number;
+            IsVisible = isVisible;
         }
 
-        public void Start()
-        {
-            animator = GetComponent<Animator>();
-        }
-        
         public void Flip()
         {
-            isVisible = !isVisible;
+            IsVisible = !IsVisible;
         }
-
-        //知識:OnPointerClickという関数名で実装すると，このクラスを継承しているオブジェクトがタップされたときにOnPointerClick関数が自動で実行される
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            //カードを生成するときに持ち主を記録しておく，または自分のカード以外をcanFlip = falseにする必要がありそう（memo by Manri）
-            if (canFlip)
-            {
-                Flip();
-                animator.SetTrigger("FlipSuccess");
-            }
-        }
-
     }
 }
 

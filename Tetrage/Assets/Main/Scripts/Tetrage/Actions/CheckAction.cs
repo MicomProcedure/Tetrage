@@ -27,15 +27,15 @@ namespace Tetrage.Actions
         public override bool Validate()
         {
             //全てのカードが一致しているかを返す
-            return _requester.Hands.All(c => c.suit == _requester.Hands.First().suit);
+            return _requester.Hands.All(c => c.Suit == _requester.Hands.First().Suit);
         }
         protected override IEnumerator Run()
         {
             var selectable = _others
                 .Select(p => p.Target as Card) // 各プレイヤーのターゲットを取得し Card にキャスト
-                .Where(c => c != null && !c.isVisible) // Nullや表向きカードは除外
+                .Where(c => c != null && c.IsVisible) // Nullや表向きカードは除外
                 .ToList();
-            
+
             // クリック待ちの処理
             Card clickedCard = null;
             try
@@ -50,11 +50,13 @@ namespace Tetrage.Actions
                 CardClickDispatcher.OnCardClicked -= OnClick;
             }
             //ここでclickedCardにクリックしたカードが入ってるからそのカードと，自分の手札3枚が一致してるかを確かめる
-            if(_requester.Hands.First().suit == clickedCard.suit){
+            if (_requester.Hands.First().Suit == clickedCard.Suit)
+            {
                 //チェック成功
                 Debug.Log("チェック成功");
             }
-            else{
+            else
+            {
                 //チェック失敗
                 Debug.Log("チェック失敗");
             }

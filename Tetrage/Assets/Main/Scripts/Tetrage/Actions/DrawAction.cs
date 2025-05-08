@@ -28,11 +28,11 @@ namespace Tetrage.Actions
             // 1. Tmp に山札から2枚引く
             for (int i = 0; i < 2; i++)
             {
-                var card = _stage.DrawFromStack();
-                if (card == null) yield break;
+                //var card = _stage.DrawFromStack();
+                //if (card == null) yield break;
 
-                _requester.Tmp.Add(card);
-                card.transform.SetParent(_requester.transform);
+                if (!_stage.DrawFromStack(_requester.Tmp)) yield break; // カードをスタックからドロー
+
             }
 
             // 2. Tmp から1枚選択して残す（残りは Stack に戻す）
@@ -60,8 +60,7 @@ namespace Tetrage.Actions
             {
                 if (!ReferenceEquals(card, selectedCard))
                 {
-                    _requester.Tmp.TransferTo(_stage.Stack, card);
-                    //card.transform.SetParent(_stage.transform);
+                    CardTransferService.Transfer(_requester.Tmp, _stage.Stack, card);
                     break;
                 }
             }
@@ -69,8 +68,7 @@ namespace Tetrage.Actions
             // 3. 手札に空きがあれば追加、なければ捨てるカードを選ぶ
             if (_requester.Hands.Count < 3)
             {
-                _requester.Tmp.TransferTo(_requester.Hands, selectedCard);
-                //selectedCard.transform.SetParent(_requester.transform);
+                CardTransferService.Transfer(_requester.Tmp, _requester.Hands, selectedCard);
             }
             else
             {
@@ -98,19 +96,16 @@ namespace Tetrage.Actions
                 if (_requester.Tmp.Contains(selectedCard))
                 {
                     // Tmp のカードを Trash
-                    _requester.Tmp.TransferTo(_stage.Trash, selectedCard);
-                    //selectedCard.transform.SetParent(_stage.transform);
+                    _stage.Discard(_requester.Tmp, selectedCard);
                 }
                 else
                 {
                     // Hands のカードを Trash
-                    _requester.Hands.TransferTo(_stage.Trash, selectedCard);
-                    //selectedCard.transform.SetParent(_stage.transform);
+                    _stage.Discard(_requester.Hands, selectedCard);
 
                     // Tmp の残ったカードを Hands に追加
                     var tmpCard = _requester.Tmp.First();
-                    _requester.Tmp.TransferTo(_requester.Hands, tmpCard);
-                    //tmpCard.transform.SetParent(_requester.transform);
+                    CardTransferService.Transfer(_requester.Tmp, _requester.Hands, tmpCard);
                 }
             }
         }

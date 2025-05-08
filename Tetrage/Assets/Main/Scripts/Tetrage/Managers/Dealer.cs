@@ -23,7 +23,7 @@ namespace Tetrage.Managers
             }
 
             Instance = this;                     // 初回生成
-            DontDestroyOnLoad(gameObject);       // シーンをまたいで保持したい場合
+            //DontDestroyOnLoad(gameObject);       // シーンをまたいで保持したい場合
         }
 
         /* -------- 3. 通常の Dealer ロジック -------- */
