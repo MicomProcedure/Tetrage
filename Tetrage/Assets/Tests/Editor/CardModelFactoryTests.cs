@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Tetrage.Factories;
 using Tetrage.Core.Enums;
 using Tetrage.Models;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Tests.Editor
 {
@@ -11,7 +12,7 @@ namespace Tetrage.Tests.Editor
     /// </summary>
     public class CardModelFactoryTests
     {
-        private CardModelFactory _factory;
+        private ICardFactory _factory;
 
         [SetUp]
         public void SetUp()

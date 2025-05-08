@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using System;
 using Tetrage.Factories;
+using Tetrage.Models;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Tests.Editor
 {
@@ -9,7 +11,7 @@ namespace Tetrage.Tests.Editor
     /// </summary>
     public class CardPileFactoryTests
     {
-        private CardPileFactory _factory;
+        private ICardPileFactory _factory;
 
         [SetUp]
         public void SetUp()
@@ -18,12 +20,21 @@ namespace Tetrage.Tests.Editor
         }
 
         [Test]
-        public void CreatePile_ThrowsNotImplementedException()
+        public void CreatePile_ReturnsEmptyCardPile()
         {
-            // 未実装状態では NotImplementedException を投げる
-            Assert.Throws<NotImplementedException>(() => _factory.CreatePile());
+            var pile = _factory.CreatePile("test", 10);
+            Assert.NotNull(pile);
+            Assert.AreEqual(0, pile.Count, "新規生成時のCountは0であるべき");
         }
 
-        // 将来的に実装が完了した場合は、返却される CardPile のプロパティを検証するテストを追加してください。
+        [Test]
+        public void CreatePile_MultipleCalls_ReturnsDistinctInstances()
+        {
+            var pile1 = _factory.CreatePile("test1", 10);
+            var pile2 = _factory.CreatePile("test2", 10);
+            Assert.AreNotSame(pile1, pile2, "複数呼び出しで異なるインスタンスを返すべき");
+        }
+
+        // 将来的に実装が拡張された場合は、Name や OwnerType などのプロパティ検証テストを追加してください。
     }
 } 

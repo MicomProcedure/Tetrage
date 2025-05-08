@@ -1,4 +1,4 @@
-namespace Tetrage
+namespace Tetrage.Core.Contracts
 {
     /// <summary>
     /// ゲーム初期化処理の契約

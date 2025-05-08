@@ -21,7 +21,7 @@ namespace Tetrage.Models
         public Card Target { get; set; }
 
 
-        private CardPile _hands = new CardPile(name: "Hand", CardOwner.Player, maxCount: 3);
+        private CardPile _hands = new CardPile(name: "Hand", maxCount: 3);
 
         /// <summary>
         /// プレイヤーが所持している手札の一覧。
@@ -31,7 +31,7 @@ namespace Tetrage.Models
         /// <summary>
         /// 一時的に保持しているカードの一覧。
         /// </summary>
-        public CardPile Tmp { get; } = new CardPile(name: "Temporary", CardOwner.Player, maxCount: 2);
+        public CardPile Tmp { get; } = new CardPile(name: "Temporary", maxCount: 2);
 
 
         private void Start()

@@ -5,7 +5,7 @@ using Tetrage.UI;
 using Tetrage.Presenters;
 using UnityEngine.Assertions;
 using Tetrage.Core.Enums;
-
+using Tetrage.Core.Contracts;
 namespace Tetrage.Factories
 {
     /// <summary>

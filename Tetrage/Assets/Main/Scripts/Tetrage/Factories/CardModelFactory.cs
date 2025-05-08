@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Tetrage.Models;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Contracts;
+
 
 namespace Tetrage.Factories
 {

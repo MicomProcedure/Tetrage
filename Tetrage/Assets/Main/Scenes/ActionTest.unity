@@ -705,7 +705,9 @@ PrefabInstance:
       value: Stage
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 4113358063984700035, guid: 09c9786f79a90b24ab3cf641a5651856, type: 3}
+    - {fileID: 7026634989909959278, guid: 09c9786f79a90b24ab3cf641a5651856, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 09c9786f79a90b24ab3cf641a5651856, type: 3}
