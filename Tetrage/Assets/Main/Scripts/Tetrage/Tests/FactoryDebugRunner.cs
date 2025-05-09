@@ -60,7 +60,7 @@ namespace Tetrage.Tests
                 }
             }       
             // CardPileを作成
-            _pile = _pileFactory.CreatePile("sample cards", _cards, suits.Length * countPerSuit);
+            _pile = _pileFactory.CreatePile("SampleCards", _cards, suits.Length * countPerSuit);
 
         }
 
@@ -72,13 +72,13 @@ namespace Tetrage.Tests
             _card = _cardFactory.CreateCard(Suit.Spade, SINGLE);
             _cards.Add(_card);
             // CardPileを作成
-            _pile = _pileFactory.CreatePile("single card", _cards, SINGLE);
+            _pile = _pileFactory.CreatePile("SingleCard", _cards, SINGLE);
         }
 
         [ContextMenu("Spawn Sample Pile")]
         private void SpawnSamplePile()
         {
-            _pile = _pileFactory.CreatePile("test", pileCount);
+            _pile = _pileFactory.CreatePile("Test", pileCount);
         }
 
         [ContextMenu("Flip Sample Card")]

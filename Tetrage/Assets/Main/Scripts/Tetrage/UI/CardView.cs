@@ -26,7 +26,10 @@ namespace Tetrage.UI
 
         public event Action Clicked;
 
-        public void OnPointerClick(PointerEventData e) => Clicked?.Invoke();
+        public void OnPointerClick(PointerEventData e) {
+            Debug.Log($"CardView: OnPointerClick {e.pointerId}");
+            Clicked?.Invoke();
+        }
 
         public void PlayFlipAnimation() => animator.SetTrigger("FlipSuccess");
         public void SetSuitSymbol(string symbol) => suitText.text = symbol;

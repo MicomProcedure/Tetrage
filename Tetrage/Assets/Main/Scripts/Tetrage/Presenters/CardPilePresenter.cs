@@ -14,19 +14,19 @@ namespace Tetrage.Presenters
     {
         private readonly CardPile _model;
         private readonly CardPileView _view;
-        private readonly Dictionary<Card, CardView> _cardViewsDict;
+        private readonly Dictionary<Card, CardView> _cardViewsDict; // カードモデルとビューの対応辞書。このCardPileに入っているCardModelとCardViewだけでなく、Factoryで生成されたCardModelとCardViewも含めてGlobalに管理する
 
         /// <param name="model">監視対象のCardPileモデル</param>
         /// <param name="view">モデルに対応するCardPileView</param>
-        /// <param name="cardViews">CardモデルとCardViewの対応辞書</param>
+        /// <param name="cardViewsDict">CardモデルとCardViewの対応辞書</param>
         public CardPilePresenter(
             CardPile model,
             CardPileView view,
-            Dictionary<Card, CardView> cardViews)
+            Dictionary<Card, CardView> cardViewsDict)
         {
             _model = model;
             _view = view;
-            _cardViewsDict = cardViews;
+            _cardViewsDict = cardViewsDict;
             // Viewの破棄を監視し、破棄時に Dispose を呼び出す
             _view.Destroyed += OnViewDestroyed;
             // 初期カード追加イベントを監視
@@ -34,6 +34,9 @@ namespace Tetrage.Presenters
 
             // 移動イベントを監視
             _model.CardTransferred += OnCardTransferred;
+
+            // オブジェクト名を変更
+            _view.RenameObject(model.Name);
         }
 
         private void OnCardTransferred(Card card, CardPile from, CardPile to)

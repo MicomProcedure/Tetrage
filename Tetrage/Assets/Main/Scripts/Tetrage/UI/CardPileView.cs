@@ -29,5 +29,8 @@ namespace Tetrage.UI
         {
             cardView.transform.SetParent(null);
         }
+
+        /// <summary>オブジェクトの名前を変更します。</summary>
+        public void RenameObject(string newName) => gameObject.name = "PileView." + newName;
     }
 }
