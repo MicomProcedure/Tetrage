@@ -65,6 +65,7 @@ namespace Tetrage.Presenters
             {
                 if (_cardViewsDict.TryGetValue(card, out var cardView))
                 {
+                    UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {cardView.name}");
                     _view.AddCardView(cardView);
                 }
             }

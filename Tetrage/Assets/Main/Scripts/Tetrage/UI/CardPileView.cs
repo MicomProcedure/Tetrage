@@ -21,7 +21,7 @@ namespace Tetrage.UI
         public void AddCardView(CardView cardView)
         {
             Debug.Log($"CardPileView: AddCardView {cardView.name}");
-            cardView.transform.SetParent(transform, worldPositionStays: true);
+            cardView.transform.SetParent(transform, worldPositionStays: false);
         }
 
         /// <summary>カード表示用ViewをこのPileViewから外します。</summary>

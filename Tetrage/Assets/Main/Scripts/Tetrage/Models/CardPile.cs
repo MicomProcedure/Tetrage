@@ -9,23 +9,7 @@ namespace Tetrage.Models
 {
     public class CardPile : IEnumerable<Card>
     {
-        /*
-         * 【コンストラクタのオーバーロードについて】
-         * 
-         * CardPile には2種類のコンストラクタがあります。
-         * 
-         * 1. CardPile(string name, int maxCount = int.MaxValue)
-         *    → 空の山札を生成し、後からカードを追加する用途向けです。
-         *    → 例えばゲーム開始時に空の山を作り、後でカードを配る場合などに利用します。
-         * 
-         * 2. CardPile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
-         *    → 生成時に初期カードをまとめてセットしたい場合に使います。
-         *    → 例えばデッキ構築やテスト用の山札を一括生成したい場合に便利です。
-         *    → Add/Removeがprivateなため、外部から直接カードを追加できない設計でも、
-         *       このコンストラクタを使えば初期化時のみカードを安全に追加できます。
-         * 
-         * これにより、用途や初期化方法に応じて柔軟にCardPileを生成できる設計となっています。
-         */
+
 
         // 内部のカードリスト
         private readonly List<Card> _cards;
@@ -82,6 +66,24 @@ namespace Tetrage.Models
             CardTransferred?.Invoke(c, from, to);
         }
 
+        internal void NotifyCardsInitialized() => CardsInitialized?.Invoke(_cards);
+
+        /*
+         * 【コンストラクタのオーバーロードについて】
+         * 
+         * CardPile には2種類のコンストラクタがあります。
+         * 
+         * 1. CardPile(string name, int maxCount = int.MaxValue)
+         *    → 空の山札を生成し、後からカードを追加する用途向けです。
+         *    → 例えばゲーム開始時に空の山を作り、後でカードを配る場合などに利用します。
+         * 
+         * 2. CardPile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
+         *    → 生成時に初期カードをまとめてセットしたい場合に使います。
+         *    → 例えばデッキ構築やテスト用の山札を一括生成したい場合に便利です。
+         *    → Add/Removeがprivateなため、外部から直接カードを追加できない設計でも、
+         *       このコンストラクタを使えば初期化時のみカードを安全に追加できます。
+         */
+
         /// <summary>
         /// 初期カードを含む CardPile を生成します。
         /// </summary>
@@ -103,8 +105,9 @@ namespace Tetrage.Models
                 }
             }
             // 初期カード設定完了を通知
-            CardsInitialized?.Invoke(initialCards);
+            NotifyCardsInitialized();
         }
+
 
         /// <summary>
         /// コンストラクタで maxCount を指定
@@ -142,7 +145,7 @@ namespace Tetrage.Models
             }
 
             _cards.Add(card);
-            NotifyCardAdded(card);
+            NotifyCardAdded(card); // カードが追加されたことをPresenterに通知
 
             return true;
         }
