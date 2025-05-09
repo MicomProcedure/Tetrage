@@ -9,6 +9,24 @@ namespace Tetrage.Models
 {
     public class CardPile : IEnumerable<Card>
     {
+        /*
+         * 【コンストラクタのオーバーロードについて】
+         * 
+         * CardPile には2種類のコンストラクタがあります。
+         * 
+         * 1. CardPile(string name, int maxCount = int.MaxValue)
+         *    → 空の山札を生成し、後からカードを追加する用途向けです。
+         *    → 例えばゲーム開始時に空の山を作り、後でカードを配る場合などに利用します。
+         * 
+         * 2. CardPile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
+         *    → 生成時に初期カードをまとめてセットしたい場合に使います。
+         *    → 例えばデッキ構築やテスト用の山札を一括生成したい場合に便利です。
+         *    → Add/Removeがprivateなため、外部から直接カードを追加できない設計でも、
+         *       このコンストラクタを使えば初期化時のみカードを安全に追加できます。
+         * 
+         * これにより、用途や初期化方法に応じて柔軟にCardPileを生成できる設計となっています。
+         */
+
         // 内部のカードリスト
         private readonly List<Card> _cards;
 
@@ -41,11 +59,9 @@ namespace Tetrage.Models
 
 
         /// <summary>
-        /// コンストラクタで maxCount を指定
+        /// コンストラクタで初期カードをまとめて設定した直後に発行されるイベント
         /// </summary>
-        /// <param name="name">束の名前（デバッグ用）</param>
-        /// <param name="owner">所有者の判定（PlayerかStageかなど））</param>
-        /// <param name="maxCount">この束の最大枚数（上限なしなら int.MaxValue）</param>
+        public event Action<IEnumerable<Card>> CardsInitialized;
 
         public event Action<Card> CardAdded;
         public event Action<Card> CardRemoved;
@@ -66,6 +82,35 @@ namespace Tetrage.Models
             CardTransferred?.Invoke(c, from, to);
         }
 
+        /// <summary>
+        /// 初期カードを含む CardPile を生成します。
+        /// </summary>
+        /// <param name="name">束の名前（デバッグ用）</param>
+        /// <param name="initialCards">初期に含めるカードのコレクション</param>
+        /// <param name="maxCount">この束の最大枚数</param>
+        public CardPile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
+            : this(name, maxCount)
+        {
+            if (initialCards == null) return;
+
+            foreach (var card in initialCards)
+            {
+                // private Add を使って初期カードを追加
+                if (!Add(card))
+                {
+                    Debug.LogWarning($"[{Name}] 初期カード追加に失敗: 上限 {maxCount} を超えました。");
+                    break;
+                }
+            }
+            // 初期カード設定完了を通知
+            CardsInitialized?.Invoke(initialCards);
+        }
+
+        /// <summary>
+        /// コンストラクタで maxCount を指定
+        /// </summary>
+        /// <param name="name">束の名前（デバッグ用）</param>
+        /// <param name="maxCount">この束の最大枚数（上限なしなら int.MaxValue）</param>
         public CardPile(string name, int maxCount = int.MaxValue)
         {
             Name = name;
@@ -87,7 +132,7 @@ namespace Tetrage.Models
         /// <summary>
         /// カードの参照をカードパイルに追加する。上限を超える場合は false を返す。
         /// </summary>
-        public bool Add(Card card)
+        private bool Add(Card card)
         {
             if (_cards.Count >= _maxCount)
             {
@@ -97,6 +142,7 @@ namespace Tetrage.Models
             }
 
             _cards.Add(card);
+            NotifyCardAdded(card);
 
             return true;
         }
@@ -104,7 +150,7 @@ namespace Tetrage.Models
         /// <summary>
         /// リストからカードの参照を削除する。インスタンスが削除されるわけではない
         /// </summary>
-        public bool Remove(Card card)
+        private bool Remove(Card card)
         {
             return _cards.Remove(card); // リストがからの場合はfalseが返されます。
         }
@@ -131,5 +177,33 @@ namespace Tetrage.Models
             return _cards.Take(count).ToList();
         }
 
+        /// <summary>
+        /// ドメインサービス: 山札間でカードを移動する
+        /// </summary>
+        public static class TransferService
+        {
+            /// <summary>
+            /// from から to へ card を移動します。
+            /// </summary>
+            public static bool Transfer(CardPile from, CardPile to, Card card)
+            {
+                // 削除
+                if (!from.Remove(card))
+                {
+                    Debug.LogWarning($"[CardPile.TransferService] Failed to remove card from pile '{from.Name}'");
+                    return false;
+                }
+                // 追加
+                bool added = to.Add(card);
+                if (!added)
+                {
+                    Debug.LogWarning($"[CardPile.TransferService] Failed to add card to pile '{to.Name}'");
+                    return false;
+                }
+                // 移動完了通知
+                to.NotifyCardTransferred(card, from, to);
+                return true;
+            }
+        }
     }
 }

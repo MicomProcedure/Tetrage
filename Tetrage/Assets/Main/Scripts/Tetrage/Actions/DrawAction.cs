@@ -3,7 +3,7 @@ using System.Linq;
 using Tetrage.Models;
 using Tetrage.UI;
 using UnityEngine;
-using Tetrage.Managers;
+using Tetrage.Managers;  // Dealer用に必要
 using Tetrage.Core.Contracts;
 
 namespace Tetrage.Actions
@@ -60,7 +60,8 @@ namespace Tetrage.Actions
             {
                 if (!ReferenceEquals(card, selectedCard))
                 {
-                    CardTransferService.Transfer(_requester.Tmp, _stage.Stack, card);
+                    // 選択されなかったカードを山に戻す
+                    CardPile.TransferService.Transfer(_requester.Tmp, _stage.Stack, card);
                     break;
                 }
             }
@@ -68,7 +69,8 @@ namespace Tetrage.Actions
             // 3. 手札に空きがあれば追加、なければ捨てるカードを選ぶ
             if (_requester.Hands.Count < 3)
             {
-                CardTransferService.Transfer(_requester.Tmp, _requester.Hands, selectedCard);
+                // 手札に追加
+                CardPile.TransferService.Transfer(_requester.Tmp, _requester.Hands, selectedCard);
             }
             else
             {
@@ -105,7 +107,7 @@ namespace Tetrage.Actions
 
                     // Tmp の残ったカードを Hands に追加
                     var tmpCard = _requester.Tmp.First();
-                    CardTransferService.Transfer(_requester.Tmp, _requester.Hands, tmpCard);
+                    CardPile.TransferService.Transfer(_requester.Tmp, _requester.Hands, tmpCard);
                 }
             }
         }

@@ -28,6 +28,8 @@ namespace Tetrage.Presenters
             _cardViews = cardViews;
             // Viewの破棄を監視し、破棄時に Dispose を呼び出す
             _view.Destroyed += OnViewDestroyed;
+            // 初期カード追加イベントを監視
+            _model.CardsInitialized += OnCardsInitialized;
 
             // 移動イベントを監視
             _model.CardTransferred += OnCardTransferred;
@@ -48,6 +50,20 @@ namespace Tetrage.Presenters
 
         }
 
+        /// <summary>
+        /// 初期カード設定時に呼び出され、ビューにカードを追加する
+        /// </summary>
+        private void OnCardsInitialized(IEnumerable<Card> cards)
+        {
+            foreach (var card in cards)
+            {
+                if (_cardViews.TryGetValue(card, out var cardView))
+                {
+                    _view.AddCardView(cardView);
+                }
+            }
+        }
+
         private void OnViewDestroyed()
         {
             Dispose();
@@ -57,6 +73,7 @@ namespace Tetrage.Presenters
         {
             // イベント購読解除
             _model.CardTransferred -= OnCardTransferred;
+            _model.CardsInitialized -= OnCardsInitialized;
             _view.Destroyed -= OnViewDestroyed;
         }
     }
