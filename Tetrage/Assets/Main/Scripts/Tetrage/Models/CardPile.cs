@@ -13,6 +13,8 @@ namespace Tetrage.Models
 
         // 内部のカードリスト
         private readonly List<Card> _cards;
+        // 内部のカードリストのプロパティ
+        public IReadOnlyList<Card> Cards => _cards;
 
         // カードの束の最大枚数
         private readonly int _maxCount;
@@ -66,8 +68,11 @@ namespace Tetrage.Models
             CardTransferred?.Invoke(c, from, to);
         }
 
-        internal void NotifyCardsInitialized() => CardsInitialized?.Invoke(_cards);
-
+        internal void NotifyCardsInitialized()
+        {
+            UnityEngine.Debug.Log($"CardPile: NotifyCardsInitialized {Name}");
+            // CardsInitialized?.Invoke(_cards);
+        }
         /*
          * 【コンストラクタのオーバーロードについて】
          * 

@@ -30,13 +30,16 @@ namespace Tetrage.Presenters
             // Viewの破棄を監視し、破棄時に Dispose を呼び出す
             _view.Destroyed += OnViewDestroyed;
             // 初期カード追加イベントを監視
-            _model.CardsInitialized += OnCardsInitialized;
+            // 現状意味なし。なぜならmodel生成後にpresenterを生成するため、初期カード追加イベントが既に発行されてしまっているから
+            // _model.CardsInitialized += OnCardsInitialized;
 
             // 移動イベントを監視
             _model.CardTransferred += OnCardTransferred;
 
             // オブジェクト名を変更
             _view.RenameObject(model.Name);
+            // Presenterのコンストラクタでも実行（）
+            OnCardsInitialized(_model.Cards);
         }
 
         private void OnCardTransferred(Card card, CardPile from, CardPile to)
@@ -61,11 +64,12 @@ namespace Tetrage.Presenters
         /// </summary>
         private void OnCardsInitialized(IEnumerable<Card> cards)
         {
+            UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {_model.Name}");
+
             foreach (var card in cards)
             {
                 if (_cardViewsDict.TryGetValue(card, out var cardView))
                 {
-                    UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {cardView.name}");
                     _view.AddCardView(cardView);
                 }
             }
