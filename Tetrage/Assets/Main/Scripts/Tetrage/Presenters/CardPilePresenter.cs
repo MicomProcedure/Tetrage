@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Tetrage.Models;
 using Tetrage.UI;
 
@@ -13,7 +14,7 @@ namespace Tetrage.Presenters
     {
         private readonly CardPile _model;
         private readonly CardPileView _view;
-        private readonly Dictionary<Card, CardView> _cardViews;
+        private readonly Dictionary<Card, CardView> _cardViewsDict;
 
         /// <param name="model">監視対象のCardPileモデル</param>
         /// <param name="view">モデルに対応するCardPileView</param>
@@ -25,7 +26,7 @@ namespace Tetrage.Presenters
         {
             _model = model;
             _view = view;
-            _cardViews = cardViews;
+            _cardViewsDict = cardViews;
             // Viewの破棄を監視し、破棄時に Dispose を呼び出す
             _view.Destroyed += OnViewDestroyed;
             // 初期カード追加イベントを監視
@@ -38,8 +39,10 @@ namespace Tetrage.Presenters
         private void OnCardTransferred(Card card, CardPile from, CardPile to)
         {
             // 移動されたカードが存在しない場合は処理しない
-            if (!_cardViews.TryGetValue(card, out var cardView)) return;
-
+            if (!_cardViewsDict.TryGetValue(card, out var cardView)) {
+                UnityEngine.Debug.Log("指定されたカードはCardPilePresenterの辞書に登録されていません。");
+                return;
+            }
             // 目的のPileViewを取得して移動
             // 通常は外部でPileViewとモデルの対応が管理されている前提
             // ここでは単一Viewを担当する場合、_viewがselfモデルの場合のみ処理
@@ -57,7 +60,7 @@ namespace Tetrage.Presenters
         {
             foreach (var card in cards)
             {
-                if (_cardViews.TryGetValue(card, out var cardView))
+                if (_cardViewsDict.TryGetValue(card, out var cardView))
                 {
                     _view.AddCardView(cardView);
                 }

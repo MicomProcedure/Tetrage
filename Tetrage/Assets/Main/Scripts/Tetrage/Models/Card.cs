@@ -17,7 +17,7 @@ namespace Tetrage.Models
                 if (_suit != value)
                 {
                     _suit = value;
-                    OnCardChanged(this);
+                    OnCardChanged(this); // カードのスートが変更されたことをPresenterに通知
                 }
             }
         }
@@ -31,7 +31,7 @@ namespace Tetrage.Models
                 if (_isVisible != value)
                 {
                     _isVisible = value;
-                    OnCardChanged(this);
+                    OnCardChanged(this); // カードの表示状態が変更されたことをPresenterに通知
                 }
             }
         }
@@ -46,7 +46,7 @@ namespace Tetrage.Models
                 if (_number != clamped)
                 {
                     _number = clamped;
-                    OnCardChanged(this);
+                    OnCardChanged(this); // カードの数字が変更されたことをPresenterに通知
                 }
             }
         }

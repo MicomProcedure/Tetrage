@@ -28,7 +28,7 @@ namespace Tetrage.Tests
         private CardWithViewFactory _cardFactory;
         private ICardPileFactory _pileModelFactory;
         private CardPileWithViewFactory _pileFactory;
-        private Dictionary<Card, CardView> _cardViews = new Dictionary<Card, CardView>();
+        private Dictionary<Card, CardView> _cardViewsDict = new Dictionary<Card, CardView>();
 
         private Card _card;
         private List<Card> _cards = new List<Card>();
@@ -38,10 +38,10 @@ namespace Tetrage.Tests
         {
             // モデルファクトリとデコレータファクトリの初期化
             _cardModelFactory = new CardModelFactory();
-            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent);
+            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict); // カードモデルとビューの対応辞書を渡す
 
             _pileModelFactory = new CardPileFactory();
-            _pileFactory = new CardPileWithViewFactory(_pileModelFactory, pileViewPrefab, pileParent, _cardViews);
+            _pileFactory = new CardPileWithViewFactory(_pileModelFactory, pileViewPrefab, pileParent, _cardViewsDict); // CardWithViewFactoryで生成されたカードモデルとビューの対応辞書を渡す
         }
 
         [ContextMenu("Spawn Sample Cards")]

@@ -474,7 +474,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 2014656711774223290}
   suitText: {fileID: 3838794523360312833}
   numberText: {fileID: 2050508706609354361}
-  animator: {fileID: 0}
+  animator: {fileID: 3872063364497498400}
 --- !u!212 &2014656711774223290
 SpriteRenderer:
   m_ObjectHideFlags: 0
