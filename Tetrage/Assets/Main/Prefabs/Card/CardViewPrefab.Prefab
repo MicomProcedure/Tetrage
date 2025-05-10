@@ -334,7 +334,7 @@ Canvas:
   m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 0
+  m_SortingLayerID: 388312617
   m_SortingOrder: 0
   m_TargetDisplay: 0
 --- !u!114 &7990215576852302403
@@ -471,10 +471,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff9444f32d0366b40b5d8b440be6063b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spriteRenderer: {fileID: 0}
+  spriteRenderer: {fileID: 2014656711774223290}
   suitText: {fileID: 3838794523360312833}
   numberText: {fileID: 2050508706609354361}
-  animator: {fileID: 0}
+  animator: {fileID: 3872063364497498400}
 --- !u!212 &2014656711774223290
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -516,8 +516,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 388312617
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: ed9fc8c36ff75b04f9414da139b55481, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

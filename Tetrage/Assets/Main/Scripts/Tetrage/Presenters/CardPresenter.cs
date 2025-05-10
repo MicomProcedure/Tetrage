@@ -36,6 +36,10 @@ namespace Tetrage.Presenters
 
         private void OnViewClicked()
         {
+            // クリックされたカードをCardClickDispatcherに通知。Actionの実行に使われる。
+            CardClickDispatcher.Invoke(_model);
+
+            // クリックされた際にカードを裏返す
             if (_model.CanFlip)
             {
                 _model.Flip();

@@ -52,5 +52,25 @@ namespace Tetrage.Factories
 
             return pileModel;
         }
+
+        /// <summary>
+        /// 新しいカード山(Pile)を生成します（初期カード指定付き）。
+        /// </summary>
+        /// <param name="name">カード山の名前</param>
+        /// <param name="initialCards">生成時に含めるカードのコレクション</param>
+        /// <param name="maxCount">カード山の最大枚数</param>
+        public CardPile CreatePile(string name, IEnumerable<Card> initialCards, int maxCount)
+        {
+            // モデル生成（初期カード指定付き）
+            var pileModel = _innerFactory.CreatePile(name, initialCards, maxCount);
+
+            // View生成
+            var pileView = Object.Instantiate(_viewPrefab, _parentTransform);
+
+            // Presenter生成
+            var presenter = new CardPilePresenter(pileModel, pileView, _cardViews);
+
+            return pileModel;
+        }
     }
 } 

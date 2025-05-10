@@ -14,10 +14,8 @@ namespace Tetrage.Factories
         /// <inheritdoc/>
         public Card CreateCard(Suit suit, int number)
         {
-            var card = new Card();
-            // 初期表示は裏向き(false)とする
-            card.Initialize(suit, number, isVisible: false);
-            return card;
+            // 初期表示は裏向き(false)のカードモデルをコンストラクタで生成
+            return new Card(suit, number, isVisible: false);
         }
 
         /// <inheritdoc/>

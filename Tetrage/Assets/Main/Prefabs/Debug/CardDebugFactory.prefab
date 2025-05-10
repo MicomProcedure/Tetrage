@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &8923373188122235293
+--- !u!1 &6710753696906805981
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,39 +8,43 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2413723258024373799}
-  - component: {fileID: 3340305892033893497}
+  - component: {fileID: 187138425099819913}
+  - component: {fileID: 2379767065828007070}
   m_Layer: 0
-  m_Name: CardPileViewPrefab
+  m_Name: CardDebugFactory
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2413723258024373799
+--- !u!4 &187138425099819913
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8923373188122235293}
+  m_GameObject: {fileID: 6710753696906805981}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.34548974, y: -0.18344654, z: 0.04029937}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3340305892033893497
+--- !u!114 &2379767065828007070
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8923373188122235293}
+  m_GameObject: {fileID: 6710753696906805981}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c217c77e3ef3554db306b6a8b71b734, type: 3}
+  m_Script: {fileID: 11500000, guid: 37ff650b19c95e44e92bf4520f830f6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cardViewPrefab: {fileID: 6479867437534543680, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
+  pileViewPrefab: {fileID: 3340305892033893497, guid: 59cdcafdcfe084df0a25283d25cf1e1a, type: 3}
+  cardParent: {fileID: 2413723258024373799, guid: 59cdcafdcfe084df0a25283d25cf1e1a, type: 3}
+  pileParent: {fileID: 0}

@@ -20,7 +20,8 @@ namespace Tetrage.UI
         /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
         public void AddCardView(CardView cardView)
         {
-            cardView.transform.SetParent(transform, worldPositionStays: true);
+            Debug.Log($"CardPileView: AddCardView {cardView.name}");
+            cardView.transform.SetParent(transform, worldPositionStays: false);
         }
 
         /// <summary>カード表示用ViewをこのPileViewから外します。</summary>
@@ -28,5 +29,8 @@ namespace Tetrage.UI
         {
             cardView.transform.SetParent(null);
         }
+
+        /// <summary>オブジェクトの名前を変更します。</summary>
+        public void RenameObject(string newName) => gameObject.name = "PileView." + newName;
     }
 }
