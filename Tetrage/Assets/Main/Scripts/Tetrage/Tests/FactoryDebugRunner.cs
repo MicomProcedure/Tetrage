@@ -14,7 +14,7 @@ namespace Tetrage.Tests
     {
         [Header("Prefabs")]
         [SerializeField] private CardView cardViewPrefab;
-        [SerializeField] private CardPileView pileViewPrefab;
+        [SerializeField] private BasicCardPileView pileViewPrefab;
 
         [Header("Parents")]
         [SerializeField] private Transform cardParent;

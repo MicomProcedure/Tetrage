@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Tetrage.Models;
 using Tetrage.UI;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Presenters
 {
@@ -13,15 +14,15 @@ namespace Tetrage.Presenters
     public class CardPilePresenter : IDisposable
     {
         private readonly CardPile _model;
-        private readonly CardPileView _view;
+        private readonly ICardPileView _view;
         private readonly Dictionary<Card, CardView> _cardViewsDict; // カードモデルとビューの対応辞書。このCardPileに入っているCardModelとCardViewだけでなく、Factoryで生成されたCardModelとCardViewも含めてGlobalに管理する
 
         /// <param name="model">監視対象のCardPileモデル</param>
-        /// <param name="view">モデルに対応するCardPileView</param>
+        /// <param name="view">モデルに対応する ICardPileView</param>
         /// <param name="cardViewsDict">CardモデルとCardViewの対応辞書</param>
         public CardPilePresenter(
             CardPile model,
-            CardPileView view,
+            ICardPileView view,
             Dictionary<Card, CardView> cardViewsDict)
         {
             _model = model;

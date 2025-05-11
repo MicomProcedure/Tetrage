@@ -71,7 +71,7 @@ namespace Tetrage.Models
         internal void NotifyCardsInitialized()
         {
             UnityEngine.Debug.Log($"CardPile: NotifyCardsInitialized {Name}");
-            // CardsInitialized?.Invoke(_cards);
+            CardsInitialized?.Invoke(_cards);
         }
         /*
          * 【コンストラクタのオーバーロードについて】
@@ -160,7 +160,14 @@ namespace Tetrage.Models
         /// </summary>
         private bool Remove(Card card)
         {
-            return _cards.Remove(card); // リストがからの場合はfalseが返されます。
+            if (!_cards.Remove(card))
+            {
+                Debug.LogWarning($"[{Name}] cannot remove card: card not found");
+                return false;
+            }
+            NotifyCardRemoved(card);
+            return true;
+
         }
 
         /// <summary>
