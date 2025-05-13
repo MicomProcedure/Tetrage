@@ -14,28 +14,28 @@ namespace Tetrage.Factories
     public class CardPileWithViewFactory : ICardPileFactory
     {
         private readonly ICardPileFactory _innerFactory;
-        private readonly CardPileView _viewPrefab;
+        private readonly BasicCardPileView _viewPrefab;
         private readonly Transform _parentTransform;
-        private readonly Dictionary<Card, CardView> _cardViews;
+        private readonly Dictionary<Card, CardView> _cardViewsDict;
 
         /// <param name="innerFactory">モデル生成を委譲するICardPileFactory</param>
         /// <param name="viewPrefab">カード山表示用Viewプレハブ</param>
         /// <param name="parentTransform">生成したPileViewの親Transform</param>
-        /// <param name="cardViews">CardモデルとCardViewの対応辞書</param>
+        /// <param name="cardViewsDict">CardモデルとCardViewの対応辞書</param>
         public CardPileWithViewFactory(
             ICardPileFactory innerFactory,
-            CardPileView viewPrefab,
+            BasicCardPileView viewPrefab,
             Transform parentTransform,
-            Dictionary<Card, CardView> cardViews)
+            Dictionary<Card, CardView> cardViewsDict)
         {
             Assert.IsNotNull(innerFactory, "innerFactory が null です");
             Assert.IsNotNull(viewPrefab, "CardPileView prefab が null です");
             Assert.IsNotNull(parentTransform, "parentTransform が null です");
-            Assert.IsNotNull(cardViews, "cardViews が null です");
+            Assert.IsNotNull(cardViewsDict, "cardViews が null です");
             _innerFactory = innerFactory;
             _viewPrefab = viewPrefab;
             _parentTransform = parentTransform;
-            _cardViews = cardViews;
+            _cardViewsDict = cardViewsDict;
         }
 
         /// <inheritdoc/>
@@ -44,11 +44,11 @@ namespace Tetrage.Factories
             // モデル生成
             var pileModel = _innerFactory.CreatePile(name, maxCount);
 
-            // View生成
-            var pileView = Object.Instantiate(_viewPrefab, _parentTransform);
+            // Viewを生成し、ICardPileViewとして扱う
+            ICardPileView pileView = Object.Instantiate(_viewPrefab, _parentTransform);
 
             // Presenter生成
-            var presenter = new CardPilePresenter(pileModel, pileView, _cardViews);
+            var presenter = new CardPilePresenter(pileModel, pileView, _cardViewsDict);
 
             return pileModel;
         }
@@ -64,11 +64,11 @@ namespace Tetrage.Factories
             // モデル生成（初期カード指定付き）
             var pileModel = _innerFactory.CreatePile(name, initialCards, maxCount);
 
-            // View生成
-            var pileView = Object.Instantiate(_viewPrefab, _parentTransform);
+            // Viewを生成し、ICardPileViewとして扱う
+            ICardPileView pileView = Object.Instantiate(_viewPrefab, _parentTransform);
 
             // Presenter生成
-            var presenter = new CardPilePresenter(pileModel, pileView, _cardViews);
+            var presenter = new CardPilePresenter(pileModel, pileView, _cardViewsDict);
 
             return pileModel;
         }
