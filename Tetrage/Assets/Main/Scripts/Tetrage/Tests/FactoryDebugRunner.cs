@@ -5,6 +5,7 @@ using Tetrage.Models;
 using Tetrage.Factories;
 using Tetrage.UI;
 using Tetrage.Core.Contracts;
+using System.Linq;
 namespace Tetrage.Tests
 {
     /// <summary>
@@ -22,78 +23,96 @@ namespace Tetrage.Tests
         [Header("Spawn Settings")]
         [SerializeField] private int countPerSuit = 1;
         [SerializeField] private int pileCount = 10;
+        [SerializeField] private float _pileOffset = 2f;
+        // このスクリプトで生成した回数
+        [SerializeField] private int _spawnCount = 0;
         private const int SINGLE = 1;
 
-        private ICardFactory _cardModelFactory;
-        private CardWithViewFactory _cardFactory;
-        private ICardPileFactory _pileModelFactory;
-        private CardPileWithViewFactory _pileFactory;
         private Dictionary<Card, CardView> _cardViewsDict = new Dictionary<Card, CardView>();
 
         private Card _card;
         private List<Card> _cards = new List<Card>();
         private CardPile _pile;
 
+        private ICardFactory _cardModelFactory;
+        private CardWithViewFactory _cardFactory;
+        private CardPileBuilder _pileBuilder;
+
+
         private void Awake()
         {
             // モデルファクトリとデコレータファクトリの初期化
             _cardModelFactory = new CardModelFactory();
-            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict); // カードモデルとビューの対応辞書を渡す
-
-            _pileModelFactory = new CardPileFactory();
-            _pileFactory = new CardPileWithViewFactory(_pileModelFactory, pileViewPrefab, pileParent, _cardViewsDict); // CardWithViewFactoryで生成されたカードモデルとビューの対応辞書を渡す
+            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict);
+            // CardPileBuilder の初期化
+            _pileBuilder = new CardPileBuilder(new CardPileFactory())
+                .UseCardFactory(_cardFactory)
+                .UseView(pileViewPrefab, pileParent, _cardViewsDict);
         }
 
         [ContextMenu("Spawn Sample Cards")]
         private void SpawnSampleCards()
         {
             var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
-            var localCards = new List<Card>();
 
-            // _cardParent = pi
-            foreach (var suit in suits)
-            {
-                for (int i = 1; i <= countPerSuit; i++)
-                {
-                    // カードを生成してCardPileに追加
-                    var card = _cardFactory.CreateCard(suit, i);
-                    _cards.Add(card); // デバッグ用
-                    localCards.Add(card);
-                }
-            }
-            // CardPileを作成
-            _pile = _pileFactory.CreatePile("SampleCards", localCards, suits.Length * countPerSuit);
-
+            // ビルダーで山札生成（初期カード付き）
+            _pile = _pileBuilder
+                .WithName("SampleCards")
+                .WithMaxCount(suits.Length * countPerSuit)
+                .WithInitialCards(_cardFactory, suits, countPerSuit)
+                .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
+                .Build();
+            // デバッグ用にカードモデルを保持
+            foreach (var card in _pile.Cards)
+                _cards.Add(card);
+            _spawnCount++;
         }
 
-        [ContextMenu("Spawn One Sample Card")] 
+        [ContextMenu("Spawn One Sample Card")]
         private void SpawnOneSampleCard()
         {
-            var localCards = new List<Card>();  
-            
-            // カードを生成してCardPileに追加
-            var localCard = _cardFactory.CreateCard(Suit.Spade, SINGLE);
-            _cards.Add(localCard); // デバッグ用
-            // CardPileを作成
-            _pile = _pileFactory.CreatePile("SingleCard", _cards, SINGLE);
+ 
+            // 山札生成（1枚のみ）
+            _pile = _pileBuilder
+                .WithName("SingleCard")
+                .WithMaxCount(SINGLE)
+                .WithInitialCards(_cardFactory, new[]{Suit.Spade}, SINGLE)
+                .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
+                .Build();
+            // デバッグ用にカードを取得
+            var card = _pile.Cards.FirstOrDefault();
+            if (card != null)
+            {
+                _card = card;
+                _cards.Add(card);
+            }
+            _spawnCount++;
         }
 
         [ContextMenu("Spawn Sample Pile")]
         private void SpawnSamplePile()
         {
-            _pile = _pileFactory.CreatePile("Test", pileCount);
+            // 山札生成（初期カードなし）
+            _pile = _pileBuilder
+                .WithName("Test")
+                .WithMaxCount(pileCount)
+                .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
+                .Build();
+            _spawnCount++;
         }
 
-        [ContextMenu("Flip Sample Card")]
+        [ContextMenu("Flip Sample Cards")]
         private void FlipSampleCard()
         {
-            if (_cards == null)
+            if (_cards.Count == 0)
             {
-                Debug.LogWarning("まずは『Spawn One Sample Card』でカードを生成してください");
+                Debug.LogWarning("まずはSpawnメソッドでカードを生成してください");
                 return;
             }
 
-            _cards.ForEach(card => card.Flip());
+            // 山札内のカードをすべて裏返し
+            foreach (var c in _cards)
+                c.Flip();
         }
     }
 } 

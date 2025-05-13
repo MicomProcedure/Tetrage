@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2413723258024373799}
   - component: {fileID: 3340305892033893497}
   m_Layer: 0
-  m_Name: CardPileViewPrefab
+  m_Name: BasicCardPileViewPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
