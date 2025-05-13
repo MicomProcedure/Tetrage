@@ -48,6 +48,7 @@ namespace Tetrage.Tests
         private void SpawnSampleCards()
         {
             var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
+            var localCards = new List<Card>();
 
             // _cardParent = pi
             foreach (var suit in suits)
@@ -56,21 +57,23 @@ namespace Tetrage.Tests
                 {
                     // カードを生成してCardPileに追加
                     var card = _cardFactory.CreateCard(suit, i);
-                    _cards.Add(card);
+                    _cards.Add(card); // デバッグ用
+                    localCards.Add(card);
                 }
-            }       
+            }
             // CardPileを作成
-            _pile = _pileFactory.CreatePile("SampleCards", _cards, suits.Length * countPerSuit);
+            _pile = _pileFactory.CreatePile("SampleCards", localCards, suits.Length * countPerSuit);
 
         }
 
         [ContextMenu("Spawn One Sample Card")] 
         private void SpawnOneSampleCard()
         {
+            var localCards = new List<Card>();  
             
             // カードを生成してCardPileに追加
-            _card = _cardFactory.CreateCard(Suit.Spade, SINGLE);
-            _cards.Add(_card);
+            var localCard = _cardFactory.CreateCard(Suit.Spade, SINGLE);
+            _cards.Add(localCard); // デバッグ用
             // CardPileを作成
             _pile = _pileFactory.CreatePile("SingleCard", _cards, SINGLE);
         }
@@ -84,14 +87,13 @@ namespace Tetrage.Tests
         [ContextMenu("Flip Sample Card")]
         private void FlipSampleCard()
         {
-            if (_card == null)
+            if (_cards == null)
             {
                 Debug.LogWarning("まずは『Spawn One Sample Card』でカードを生成してください");
                 return;
             }
 
-            _card.Flip();
-            Debug.Log($"カードを{(_card.IsVisible ? "表" : "裏")}向きにしました");
+            _cards.ForEach(card => card.Flip());
         }
     }
 } 
