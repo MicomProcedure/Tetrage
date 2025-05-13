@@ -30,9 +30,9 @@ namespace Tetrage.Tests
 
         private Dictionary<Card, CardView> _cardViewsDict = new Dictionary<Card, CardView>();
 
-        private Card _card;
         private List<Card> _cards = new List<Card>();
-        private CardPile _pile;
+        private List<CardPile> _cardPiles = new List<CardPile>();
+        public List<CardPile> CardPiles => _cardPiles; // 生成したカードパイルを外部に公開するリスト
 
         private ICardFactory _cardModelFactory;
         private CardWithViewFactory _cardFactory;
@@ -54,17 +54,21 @@ namespace Tetrage.Tests
         private void SpawnSampleCards()
         {
             var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
+            var count = Mathf.Max(suits.Length * countPerSuit, pileCount);
 
             // ビルダーで山札生成（初期カード付き）
-            _pile = _pileBuilder
+            var pile = _pileBuilder
                 .WithName("SampleCards")
-                .WithMaxCount(suits.Length * countPerSuit)
+                .WithMaxCount(count)
                 .WithInitialCards(_cardFactory, suits, countPerSuit)
                 .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
                 .Build();
             // デバッグ用にカードモデルを保持
-            foreach (var card in _pile.Cards)
+            foreach (var card in pile.Cards)
                 _cards.Add(card);
+            // デバッグ用にカードパイルを保持
+            _cardPiles.Add(pile);
+
             _spawnCount++;
         }
 
@@ -73,19 +77,21 @@ namespace Tetrage.Tests
         {
  
             // 山札生成（1枚のみ）
-            _pile = _pileBuilder
+            var pile = _pileBuilder
                 .WithName("SingleCard")
                 .WithMaxCount(SINGLE)
                 .WithInitialCards(_cardFactory, new[]{Suit.Spade}, SINGLE)
                 .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
                 .Build();
             // デバッグ用にカードを取得
-            var card = _pile.Cards.FirstOrDefault();
+            var card = pile.Cards.FirstOrDefault();
             if (card != null)
             {
-                _card = card;
                 _cards.Add(card);
             }
+
+            // デバッグ用にカードパイルを保持
+            _cardPiles.Add(pile);
             _spawnCount++;
         }
 
@@ -93,11 +99,13 @@ namespace Tetrage.Tests
         private void SpawnSamplePile()
         {
             // 山札生成（初期カードなし）
-            _pile = _pileBuilder
+            var pile = _pileBuilder
                 .WithName("Test")
                 .WithMaxCount(pileCount)
                 .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
                 .Build();
+            // デバッグ用にカードパイルを保持
+            _cardPiles.Add(pile);
             _spawnCount++;
         }
 
