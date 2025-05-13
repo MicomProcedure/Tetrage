@@ -58,42 +58,55 @@ namespace Tetrage.UI
         /// <summary>ビューを更新します。</summary>
         public virtual void RefreshView()
         {
-            UpdateCardViewLayout();
+            LayoutCardView();
+        }
+
+        // 子 Transform に増減があった場合にも自動でレイアウト更新
+        protected virtual void OnTransformChildrenChanged()
+        {
+            RefreshView();
         }
 
         /// <summary>カード表示用ViewのTransformを調整します。</summary>
-        protected virtual void UpdateCardViewLayout()
+        protected virtual void LayoutCardView()
         {
-            // カード表示用ViewのTransformリストをクリア
-            _cardViewObjects.Clear();
-            // カード表示用ViewのTransformリストをこのCardPileViewの子オブジェクトから取得
-            foreach (Transform child in transform)
+            UpdateCardViewObjects();
+            int count = _cardViewObjects.Count;
+            if (count == 0) return;
+
+            // ① 共通情報を一度だけ算出
+            float spacing, centerOffset;
+            CalculateSpacingAndOffset(count, out spacing, out centerOffset);
+
+            // ② 各カードの X 座標を純粋関数で得る
+            SetCardViewPositions(count, spacing, centerOffset);
+        }
+
+        /// <summary>間隔と中心オフセットを算出</summary>
+        protected void CalculateSpacingAndOffset(int totalCount, out float spacing, out float centerOffset)
+        {
+            float raw = _cardPileWidth / totalCount;
+            spacing = Mathf.Clamp(raw, _cardViewMinSpacing, _cardViewMaxSpacing);
+            centerOffset = spacing * (totalCount - 1) / 2f;
+        }
+
+        /// <summary>指定した回数分カード表示用Viewの座標を設定</summary>
+        protected virtual void SetCardViewPositions(int count, float spacing, float centerOffset)
+        {
+            for (int i = 0; i < count; i++)
             {
-                _cardViewObjects.Add(child);
-            }
-
-            // カード表示用Viewの数を取得
-            var cardViewCount = _cardViewObjects.Count;
-
-            if (cardViewCount == 0) return; // カード表示用Viewがない場合は何もしない（関数を終了）
-
-            // カード表示用Viewの幅を計算
-            var cardViewWidth = _cardPileWidth / cardViewCount;
-            // カード表示用Viewの幅を 最小値<=幅<=最大値 に制限
-            float spacing = Mathf.Clamp(cardViewWidth, _cardViewMinSpacing, _cardViewMaxSpacing);
-            // カード表示用Viewの中心からのオフセットを計算
-            float centerOffset = spacing*(cardViewCount - 1) / 2f;
-
-            // カード表示用ViewのTransformを調整
-            for (int i = 0; i < cardViewCount; i++)
-            {
-                Transform cardView = _cardViewObjects[i];
-                float x = i * spacing - centerOffset;
-                cardView.localPosition = new Vector3(x, 0, 0) + _cardViewPositionOffset;
+                SetCardViewPositionByIndex(i, spacing, centerOffset);
             }
         }
 
-        /// <summary>カード表示用Viewを置いておく幅と最小間隔を設定します。</summary>
+        /// <summary>カード表示用Viewの座標を設定</summary>
+        protected void SetCardViewPositionByIndex(int index, float spacing, float centerOffset)
+        {
+            float x = index * spacing - centerOffset;
+            _cardViewObjects[index].localPosition = new Vector3(x,0,0) + _cardViewPositionOffset;
+        }
+
+        /// <summary>カード表示用Viewを置いておく幅と最小間隔を設定</summary>
         /// <param name="cardPileWidth">カード表示用Viewを置いておく幅</param>
         /// <param name="cardViewMinSpacing">カード表示用Viewの最小間隔</param>
         /// <param name="cardViewMaxSpacing">カード表示用Viewの最大間隔</param>
@@ -110,10 +123,17 @@ namespace Tetrage.UI
             _cardViewPositionOffset = cardViewPositionOffset;
         }
 
-        // 子 Transform に増減があった場合にも自動でレイアウト更新
-        protected virtual void OnTransformChildrenChanged()
+        /// <summary>カード表示用ViewのTransformリストを子オブジェクト子オブジェクトから取得</summary>
+        protected virtual void UpdateCardViewObjects()
         {
-            RefreshView();
+            // カード表示用ViewのTransformリストをクリア
+            _cardViewObjects.Clear();
+            // カード表示用ViewのTransformリストをこのCardPileViewの子オブジェクトから取得
+            foreach (Transform child in transform)
+            {
+                _cardViewObjects.Add(child);
+            }
         }
+
     }
 }
