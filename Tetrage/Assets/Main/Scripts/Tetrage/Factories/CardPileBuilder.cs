@@ -6,6 +6,7 @@ using Tetrage.Models;
 using Tetrage.UI;
 using Tetrage.Presenters;
 using Tetrage.Core.Constants;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Factories
 {
@@ -60,6 +61,12 @@ namespace Tetrage.Factories
             return this;
         }
 
+        public CardPileBuilder WithoutView()
+        {
+            _useView = false;   
+            return this;
+        }
+
         /// <summary>生成する山札の名前を設定する</summary>
         public CardPileBuilder WithName(string name)
         {
@@ -75,16 +82,30 @@ namespace Tetrage.Factories
         }
 
         /// <summary>CardPileView のレイアウト情報を設定する</summary>
-        public CardPileBuilder WithLayout(float pileWidth, float minSpacing, float maxSpacing, Vector3 positionOffset)
+        /// <param name="pileWidth">山札の幅</param>
+        /// <param name="minSpacing">山札の最小間隔</param>
+        /// <param name="maxSpacing">山札の最大間隔</param>
+        /// <param name="positionOffset">山札の位置オフセット</param>
+        /// <summary>CardPileView のレイアウト情報を設定する</summary>
+        /// <param name="pileWidth">山札の幅（デフォルト: DEFAULT_CARD_PILE_WIDTH）</param>
+        /// <param name="minSpacing">山札の最小間隔（デフォルト: DEFAULT_CARD_VIEW_MIN_SPACING）</param>
+        /// <param name="maxSpacing">山札の最大間隔（デフォルト: DEFAULT_CARD_VIEW_MAX_SPACING）</param>
+        /// <param name="positionOffset">山札の位置オフセット（デフォルト: DEFAULT_CARD_VIEW_POSITION_OFFSET）</param>
+        public CardPileBuilder WithLayout(
+            float pileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH,
+            float minSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING,
+            float maxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING,
+            Vector3 positionOffset = default)
         {
             _layoutWidth = pileWidth;
             _layoutMinSpacing = minSpacing;
             _layoutMaxSpacing = maxSpacing;
-            _layoutOffset = positionOffset;
+            _layoutOffset = positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset;
             return this;
         }
 
         /// <summary>SuitとcountPerSuitを省略したデフォルト初期カード設定</summary>
+        /// <returns>CardPileBuilder のインスタンス</returns>
         public CardPileBuilder WithInitialCards()
         {
             _useInitialCards = true;
@@ -104,6 +125,10 @@ namespace Tetrage.Factories
         }
 
         /// <summary>初期カードとして生成するスート配列と枚数を設定する</summary>
+        /// <param name="cardFactory">ICardFactory の実装</param>
+        /// <param name="suits">初期カードのスート配列</param>
+        /// <param name="countPerSuit">初期カードの枚数</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
         public CardPileBuilder WithInitialCards(
             ICardFactory cardFactory,
             Suit[] suits,
@@ -120,6 +145,7 @@ namespace Tetrage.Factories
         }
 
         /// <summary>山札を生成する（初期カード指定なし）</summary>
+        /// <returns>生成された CardPile のインスタンス</returns>
         public CardPile Build()
         {
             IEnumerable<Card> cards = null;
@@ -132,6 +158,8 @@ namespace Tetrage.Factories
         }
 
         /// <summary>山札を生成する（初期カード指定あり）</summary>
+        /// <param name="initialCards">初期カードのコレクション</param>
+        /// <returns>生成された CardPile のインスタンス</returns>
         public CardPile Build(IEnumerable<Card> initialCards)
         {
             // モデル生成
