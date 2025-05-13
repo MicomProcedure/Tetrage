@@ -6,12 +6,18 @@ namespace Tetrage.UI
     public class StackCardPileView : BasicCardPileView
     {
         [SerializeField] private Transform _cardPileParent;
+        public CardView TopCardView;
 
-        public override void RefreshView()
+        protected override void LayoutCardView()
         {
-            base.RefreshView();
-            
-        }
+            // カード表示用ViewのTransformリストを更新
+            UpdateCardViewObjects();
+            int count = _cardViewObjects.Count;
+            if (count == 0) return;
 
+            if (TopCardView == null){
+
+            }
+        }
     }
 }
