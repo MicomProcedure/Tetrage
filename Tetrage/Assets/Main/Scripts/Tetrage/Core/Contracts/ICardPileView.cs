@@ -1,5 +1,7 @@
 using System;
 using Tetrage.UI;
+using UnityEngine;
+
 namespace Tetrage.Core.Contracts
 {
     public interface ICardPileView
@@ -21,6 +23,8 @@ namespace Tetrage.Core.Contracts
 
         /// <summary>ビューを更新します。</summary>
         public void RefreshView();
+
+        public void SetCardViewLayoutInfo(float pileWidth, float minSpacing, float maxSpacing, Vector3 positionOffset);
 
     }
 }

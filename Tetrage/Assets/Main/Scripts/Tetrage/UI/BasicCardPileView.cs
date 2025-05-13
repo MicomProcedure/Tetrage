@@ -98,7 +98,7 @@ namespace Tetrage.UI
         /// <param name="cardViewMinSpacing">カード表示用Viewの最小間隔</param>
         /// <param name="cardViewMaxSpacing">カード表示用Viewの最大間隔</param>
         /// <param name="cardViewPositionOffset">カード表示用Viewの中心からのオフセット</param>
-        protected virtual void SetCardViewLayoutInfo(
+        public virtual void SetCardViewLayoutInfo(
         float cardPileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH,
         float cardViewMinSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING,
         float cardViewMaxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING,
