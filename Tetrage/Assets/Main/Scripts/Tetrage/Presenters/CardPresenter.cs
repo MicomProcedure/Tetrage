@@ -64,10 +64,10 @@ namespace Tetrage.Presenters
 
         private string GetSuitSymbol(Suit suit) => suit switch
         {
-            Suit.Spade => "♠",
-            Suit.Heart => "♥",
-            Suit.Diamond => "♦",
-            Suit.Club => "♣",
+            Suit.Spade => "<color=black>♠</color>",
+            Suit.Heart => "<color=red>♥</color>",
+            Suit.Diamond => "<color=red>♦</color>",
+            Suit.Club => "<color=black>♣</color>",
             _ => "?"
         };
 
