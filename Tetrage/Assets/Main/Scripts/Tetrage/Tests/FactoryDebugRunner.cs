@@ -24,6 +24,11 @@ namespace Tetrage.Tests
         [SerializeField] private int countPerSuit = 1;
         [SerializeField] private int pileCount = 10;
         [SerializeField] private float _pileOffset = 2f;
+        [Header("CardPile Settings")]
+        [SerializeField] private float _pileWidth = 10f;
+        [SerializeField] private float _cardViewMinSpacing = 0f;
+        [SerializeField] private float _cardViewMaxSpacing = 1000f;
+        [SerializeField] private Vector3 _cardViewPositionOffset = new Vector3(0, 0, 0);
         // このスクリプトで生成した回数
         [SerializeField] private int _spawnCount = 0;
         private const int SINGLE = 1;
@@ -61,7 +66,7 @@ namespace Tetrage.Tests
                 .WithName("SampleCards")
                 .WithMaxCount(count)
                 .WithInitialCards(_cardFactory, suits, countPerSuit)
-                .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
+                .WithLayout(_pileWidth, _cardViewMinSpacing, _cardViewMaxSpacing, new Vector3(0, _spawnCount*_pileOffset, 0) + _cardViewPositionOffset)    // カードパイルの位置オフセット(生成されるたびにずれる)
                 .Build();
             // デバッグ用にカードモデルを保持
             foreach (var card in pile.Cards)
@@ -81,7 +86,7 @@ namespace Tetrage.Tests
                 .WithName("SingleCard")
                 .WithMaxCount(SINGLE)
                 .WithInitialCards(_cardFactory, new[]{Suit.Spade}, SINGLE)
-                .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
+                .WithLayout(_pileWidth, _cardViewMinSpacing, _cardViewMaxSpacing, new Vector3(0, _spawnCount*_pileOffset, 0) + _cardViewPositionOffset)    // カードパイルの位置オフセット(生成されるたびにずれる)
                 .Build();
             // デバッグ用にカードを取得
             var card = pile.Cards.FirstOrDefault();
@@ -102,7 +107,7 @@ namespace Tetrage.Tests
             var pile = _pileBuilder
                 .WithName("Test")
                 .WithMaxCount(pileCount)
-                .WithLayout(positionOffset: new Vector3(0, _spawnCount*_pileOffset, 0))    // カードパイルの位置オフセット(生成されるたびにずれる)
+                .WithLayout(_pileWidth, _cardViewMinSpacing, _cardViewMaxSpacing, new Vector3(0, _spawnCount*_pileOffset, 0) + _cardViewPositionOffset)    // カードパイルの位置オフセット(生成されるたびにずれる)
                 .Build();
             // デバッグ用にカードパイルを保持
             _cardPiles.Add(pile);
