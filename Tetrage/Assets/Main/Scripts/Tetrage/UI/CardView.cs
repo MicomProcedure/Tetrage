@@ -25,6 +25,7 @@ namespace Tetrage.UI
         [SerializeField] private Animator animator;
 
         public event Action Clicked;
+        public event Action FlipAnimationHalfway;
 
         public void OnPointerClick(PointerEventData e) {
             Debug.Log($"CardView: OnPointerClick {e.pointerId}");
@@ -32,6 +33,14 @@ namespace Tetrage.UI
         }
 
         public void PlayFlipAnimation() => animator.SetTrigger("FlipSuccess");
+
+        // アニメーションイベントから呼び出されるメソッド
+        public void OnFlipAnimationHalfway()
+        {
+            Debug.Log("OnFlipAnimationHalfway called");
+            FlipAnimationHalfway?.Invoke();
+        }
+
         public void SetSuitSymbol(string symbol) => suitText.text = symbol;
         public void SetNumber(int number) => numberText.text = number.ToString();
 

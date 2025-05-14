@@ -2,6 +2,8 @@ using System;
 using Tetrage.UI; // use concrete view
 using Tetrage.Core.Enums;
 using Tetrage.Models;
+using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Tetrage.Presenters
 {
@@ -24,6 +26,8 @@ namespace Tetrage.Presenters
             _model.CardChanged += OnModelChanged;
             // Subscribe to view clicks
             _view.Clicked += OnViewClicked;
+            // Subscribe to animation events
+            _view.FlipAnimationHalfway += OnFlipAnimationHalfway;
 
             // Initial sync
             RefreshView();
@@ -42,10 +46,18 @@ namespace Tetrage.Presenters
             // クリックされた際にカードを裏返す
             if (_model.CanFlip)
             {
-                _model.Flip();
+                // アニメーションを開始
                 _view.PlayFlipAnimation();
+                // 実際のFlipはアニメーションの途中で行う
             }
             // TODO: dispatch click to application logic if needed
+        }
+
+        private void OnFlipAnimationHalfway()
+        {
+            Debug.Log("CardPresenter: OnFlipAnimationHalfway called");
+            // アニメーションの途中でカードの状態を変更
+            _model.Flip();
         }
 
         private void RefreshView()
@@ -64,10 +76,10 @@ namespace Tetrage.Presenters
 
         private string GetSuitSymbol(Suit suit) => suit switch
         {
-            Suit.Spade => "♠",
-            Suit.Heart => "♥",
-            Suit.Diamond => "♦",
-            Suit.Club => "♣",
+            Suit.Spade => "<color=black>♠</color>",
+            Suit.Heart => "<color=red>♥</color>",
+            Suit.Diamond => "<color=red>♦</color>",
+            Suit.Club => "<color=black>♣</color>",
             _ => "?"
         };
 
@@ -82,6 +94,7 @@ namespace Tetrage.Presenters
             _model.CardChanged -= OnModelChanged;
             _view.Clicked -= OnViewClicked;
             _view.Destroyed -= OnViewDestroyed;
+            _view.FlipAnimationHalfway -= OnFlipAnimationHalfway;
         }
     }
 }
