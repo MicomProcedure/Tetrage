@@ -15,9 +15,7 @@ namespace Tetrage.UI
             int count = _cardViewObjects.Count;
             if (count == 0) return;
 
-            if (TopCardView == null){
-
-            }
+            SetCardViewPositions(count, 0, 0);
         }
     }
 }
