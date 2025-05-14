@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 5274234509135575577}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.90508014, y: -0.026149498, z: 0.033430684}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -49,3 +49,4 @@ MonoBehaviour:
   _cardViewMaxSpacing: 3.4028235e+38
   _cardViewPositionOffset: {x: 0, y: 0, z: 0}
   _cardPileParent: {fileID: 0}
+  TopCardView: {fileID: 0}

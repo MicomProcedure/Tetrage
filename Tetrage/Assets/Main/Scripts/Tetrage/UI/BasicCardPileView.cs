@@ -100,10 +100,10 @@ namespace Tetrage.UI
         }
 
         /// <summary>カード表示用Viewの座標を設定</summary>
-        protected void SetCardViewPositionByIndex(int index, float spacing, float centerOffset)
+        protected virtual void SetCardViewPositionByIndex(int index, float spacing, float centerOffset)
         {
             float x = index * spacing - centerOffset;
-            _cardViewObjects[index].localPosition = new Vector3(x,0,0) + _cardViewPositionOffset;
+            _cardViewObjects[index].localPosition = new Vector3(x, 0, 0) + _cardViewPositionOffset;
         }
 
         /// <summary>カード表示用Viewを置いておく幅と最小間隔を設定</summary>
