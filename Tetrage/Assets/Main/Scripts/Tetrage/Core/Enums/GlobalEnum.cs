@@ -21,5 +21,17 @@ namespace Tetrage.Core.Enums
         Club
     }
 
+    /// <summary>
+    /// カードパイルビューの種類を表す列挙型
+    /// </summary>
+    public enum CardPileViewType
+    {
+        Hands,  // 手札のカードパイルビュー
+        Tmp,    // プレイヤーの一時保持手札のカードパイルビュー
+        Stack,  // 山札のカードパイルビュー
+        Trash,  //　捨て札のカードパイルビュー
+        Basic,  // 基本のカードパイルビュー
+    }
+
 
 }
