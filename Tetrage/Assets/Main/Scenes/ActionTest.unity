@@ -331,30 +331,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
-      propertyPath: pileViewPrefabs.Array.size
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
-      propertyPath: 'pileViewPrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 3340305892033893497, guid: 59cdcafdcfe084df0a25283d25cf1e1a, type: 3}
-    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
-      propertyPath: 'pileViewPrefabs.Array.data[1]'
-      value: 
-      objectReference: {fileID: 3600912846972201006, guid: 1bfb12b8ba15b174abb6ad5c709d7a4e, type: 3}
-    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
-      propertyPath: 'pileViewPrefabs.Array.data[2]'
-      value: 
-      objectReference: {fileID: 2802157858914362258, guid: d6df1fff37a65734eb6c91075e0289ac, type: 3}
-    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
-      propertyPath: 'pileViewPrefabs.Array.data[3]'
-      value: 
-      objectReference: {fileID: 9054381360169505600, guid: 6a46a22db9358ad468c613b89cc4370b, type: 3}
-    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
-      propertyPath: 'pileViewPrefabs.Array.data[4]'
-      value: 
-      objectReference: {fileID: 8132366089786138300, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
     - target: {fileID: 6710753696906805981, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
       propertyPath: m_Name
       value: CardLogicDebugger
@@ -597,14 +573,12 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-
 --- !u!224 &2001939722 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8133718267655420589, guid: 9f3f875617a4a184b880eed0fa742c53, type: 3}
   m_PrefabInstance: {fileID: 4641906788251636609}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2350605643753424387
-
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -617,19 +591,8 @@ PrefabInstance:
       value: TrushCardPileViewPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 8121122609806526071, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
-
-      propertyPath: m_LocalPosition.x
-      value: 0.90508014
-      objectReference: {fileID: 0}
-    - target: {fileID: 8121122609806526071, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
-
-      propertyPath: m_LocalPosition.y
-      value: -0.026149498
-      objectReference: {fileID: 0}
-    - target: {fileID: 8121122609806526071, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
-
-      propertyPath: m_LocalPosition.z
-      value: 0.033430684
+      propertyPath: 
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 8121122609806526071, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1109,4 +1072,3 @@ SceneRoots:
   - {fileID: 2350605643753424387}
   - {fileID: 5614268005691674165}
   - {fileID: 3136934834967555614}
-
