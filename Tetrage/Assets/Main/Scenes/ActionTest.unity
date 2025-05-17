@@ -119,6 +119,71 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1001 &178106865
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 187138425099819913, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: cardParent
+      value: 
+      objectReference: {fileID: 1182830390}
+    - target: {fileID: 2379767065828007070, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: pileParent
+      value: 
+      objectReference: {fileID: 1224588327}
+    - target: {fileID: 6710753696906805981, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
+      propertyPath: m_Name
+      value: CardLogicDebugger
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 846ebb9e5cb3e5b459048f90004d077c, type: 3}
 --- !u!1 &568788150
 GameObject:
   m_ObjectHideFlags: 0
@@ -671,71 +736,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8133718267655420589, guid: 9f3f875617a4a184b880eed0fa742c53, type: 3}
   m_PrefabInstance: {fileID: 4641906788251636609}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &1839614782840269172
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 187138425099819913, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2379767065828007070, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: cardParent
-      value: 
-      objectReference: {fileID: 1182830390}
-    - target: {fileID: 2379767065828007070, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: pileParent
-      value: 
-      objectReference: {fileID: 1224588327}
-    - target: {fileID: 6710753696906805981, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
-      propertyPath: m_Name
-      value: CardDebugFactory
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e4065d6a134b1ab4aadb324146e2e886, type: 3}
 --- !u!1001 &4641906788251636609
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1005,6 +1005,6 @@ SceneRoots:
   - {fileID: 1101587098}
   - {fileID: 1634831001}
   - {fileID: 803439106}
-  - {fileID: 1839614782840269172}
   - {fileID: 1224588327}
   - {fileID: 1182830390}
+  - {fileID: 178106865}

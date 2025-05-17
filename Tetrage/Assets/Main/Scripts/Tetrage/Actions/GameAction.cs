@@ -10,9 +10,9 @@ namespace Tetrage.Actions
     /// </summary>
     public abstract class GameAction
     {
-        protected readonly Player _requester;
+        protected readonly IPlayer _requester;
 
-        protected GameAction(Player requester)
+        protected GameAction(IPlayer requester)
         {
             _requester = requester;
         }
@@ -29,7 +29,7 @@ namespace Tetrage.Actions
         /// アクションを実際に実行します。
         /// </summary>
         public virtual void Execute() {
-            _requester.StartCoroutine(Run());
+            ((Player)_requester).StartCoroutine(Run());
         }
 
         protected abstract IEnumerator Run(); // 派生クラスで実装する
