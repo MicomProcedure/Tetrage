@@ -72,6 +72,16 @@ namespace Tetrage.Presenters
             {
                 _view.ShowBack();
             }
+
+            // ハイライト状態の更新
+            if (_model.IsHighlighted)
+            {
+                _view.Highlight();
+            }
+            else
+            {
+                _view.Unhighlight();
+            }
         }
 
         private string GetSuitSymbol(Suit suit) => suit switch

@@ -36,6 +36,20 @@ namespace Tetrage.Models
             }
         }
 
+        private bool _isHighlighted = false;
+        public bool IsHighlighted
+        {
+            get => _isHighlighted;
+            private set
+            {
+                if (_isHighlighted != value)
+                {
+                    _isHighlighted = value;
+                    OnCardChanged(this); // カードのハイライト状態が変更されたことをPresenterに通知
+                }
+            }
+        }
+
         private int _number;
         public int Number
         {
@@ -73,6 +87,22 @@ namespace Tetrage.Models
         public void Flip()
         {
             IsVisible = !IsVisible;
+        }
+
+        /// <summary>
+        /// カードをハイライト状態にする
+        /// </summary>
+        public void Highlight()
+        {
+            IsHighlighted = true;
+        }
+
+        /// <summary>
+        /// カードのハイライト状態を解除する
+        /// </summary>
+        public void Unhighlight()
+        {
+            IsHighlighted = false;
         }
     }
 }
