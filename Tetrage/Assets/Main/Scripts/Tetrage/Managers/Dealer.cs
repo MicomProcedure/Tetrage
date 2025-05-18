@@ -8,7 +8,7 @@ using Tetrage.Core.Contracts;
 /// </summary>
 namespace Tetrage.Managers
 {
-    public class Dealer : MonoBehaviour
+    public class Dealer : MonoBehaviour, IGameContextProvider
     {
         /* -------- 1. 唯一のインスタンスを公開 -------- */
         public static Dealer Instance { get; internal set; } // ここのinteralについていまいちわかってない。　テストがしやすい、とだけ
@@ -45,9 +45,6 @@ namespace Tetrage.Managers
         /// </summary>
         private IPlayer _currentPlayer;
         public IPlayer CurrentPlayer {  get { return _currentPlayer; } }
-
-
-
 
         /// <summary>
         /// 各プレイヤーにカードを配布する。
