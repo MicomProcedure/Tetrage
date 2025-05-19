@@ -13,9 +13,9 @@ namespace Tetrage.Actions
         private readonly Stage _stage;
         private Card selectedCard;
 
-        public DrawAction(Player requester, IGameContextProvider provider = null) : base(requester)
+        public DrawAction(IPlayer requester, IGameContextProvider provider = null) : base(requester)
         {
-            _stage = provider.Stage ?? Dealer.Instance.Stage;
+            _stage = provider?.Stage ?? Dealer.Instance.Stage;
         }
 
         public override bool Validate()

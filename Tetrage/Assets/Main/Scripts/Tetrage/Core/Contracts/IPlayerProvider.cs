@@ -10,9 +10,9 @@ namespace Tetrage.Core.Contracts
     public interface IPlayerProvider
     {
         /// <summary>現在の手番プレイヤー（存在しない場合は null）</summary>
-        Player CurrentPlayer { get; }
+        IPlayer CurrentPlayer { get; }
 
         /// <summary>参加している全プレイヤーを取得</summary>
-        IReadOnlyList<Player> Players { get; }
+        IReadOnlyList<IPlayer> Players { get; }
     }
 }
