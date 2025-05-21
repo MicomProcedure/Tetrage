@@ -8,8 +8,9 @@ namespace Tetrage.Models
     /// <summary>
     /// ゲーム内のプレイヤーを表します。
     /// </summary>
-    public class Player : MonoBehaviour
+    public class Player : MonoBehaviour, IPlayer
     {
+        
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
@@ -32,13 +33,9 @@ namespace Tetrage.Models
         /// 一時的に保持しているカードの一覧。
         /// </summary>
         public CardPile Tmp { get; } = new CardPile(name: "Temporary", maxCount: 2);
+    
 
-
-        private void Start()
-        {
-            
-        }
-
+        
         /// <summary>
         /// 指定されたアクションを実行します。
         /// </summary>
@@ -48,5 +45,7 @@ namespace Tetrage.Models
             // アクションの処理内容
             action.Execute();
         }
+        
     }
+    
 }

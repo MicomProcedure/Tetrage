@@ -37,17 +37,14 @@ namespace Tetrage.Managers
         /// <summary>
         /// ゲームに参加しているプレイヤーのリスト。
         /// </summary>
-        private List<Player> _players;
-        public IReadOnlyList<Player> Players => _players;
+        private List<IPlayer> _players;
+        public IReadOnlyList<IPlayer> Players => _players;
 
         /// <summary>
         /// 現在のプレイヤー。
         /// </summary>
-        private Player _currentPlayer;
-        public Player CurrentPlayer {  get { return _currentPlayer; } }
-
-
-
+        private IPlayer _currentPlayer;
+        public IPlayer CurrentPlayer {  get { return _currentPlayer; } }
 
         /// <summary>
         /// 各プレイヤーにカードを配布する。

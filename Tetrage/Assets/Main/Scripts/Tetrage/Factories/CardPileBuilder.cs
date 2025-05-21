@@ -14,7 +14,8 @@ namespace Tetrage.Factories
     public class CardPileBuilder
     {
         private readonly ICardPileFactory _innerFactory;    // 山札生成用基本ファクトリ
-        private BasicCardPileView _viewPrefab;             // 山札表示用ビュー
+        private List<BasicCardPileView> _viewPrefabs;             // 山札表示用ビューのリスト
+        private BasicCardPileView _viewPrefab;              // 山札表示用ビュー
         private Transform _viewParent;                     // 山札表示用ビューの親
         private Dictionary<Card, CardView> _cardViewsDict;  // カード表示用ビューのディクショナリ
         private bool _useView;                             // 山札表示用ビューの使用フラグ
@@ -63,7 +64,7 @@ namespace Tetrage.Factories
 
         public CardPileBuilder WithoutView()
         {
-            _useView = false;   
+            _useView = false;
             return this;
         }
 
@@ -180,4 +181,4 @@ namespace Tetrage.Factories
             return pile;
         }
     }
-} 
+}

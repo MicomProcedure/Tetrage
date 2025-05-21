@@ -13,7 +13,7 @@ namespace Tetrage.UI
         [SerializeField] private Button checkBtn;
         [SerializeField] private Button tetrageBtn;
 
-        [SerializeField] private Player currentPlayer;
+        [SerializeField] private IPlayer currentPlayer;
 
         void Start()
         {

@@ -11,7 +11,7 @@ namespace Tetrage.Factories
         /// <summary>
         /// 指定した人数のプレイヤーモデルを生成します。
         /// </summary>
-        public List<Player> CreatePlayers(int playerCount)
+        public List<IPlayer> CreatePlayers(int playerCount)
         {
             // TODO: Playerモデル生成
             throw new System.NotImplementedException();

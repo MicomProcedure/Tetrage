@@ -11,13 +11,13 @@ namespace Tetrage.Actions
 {
     public class CheckAction : GameAction
     {
-        private IReadOnlyList<Player> _others; //他のプレイヤークラスが入ってるリスト
+        private IReadOnlyList<IPlayer> _others; //他のプレイヤークラスが入ってるリスト
         private Card _card;
         private IGameContextProvider _provider; // 基本はDealer、テスト用にそれ以外
 
-        public CheckAction(Player requester, IGameContextProvider provider = null) : base(requester) // providerはデフォルト引数なので省略可能
+        public CheckAction(IPlayer requester, IGameContextProvider provider = null) : base(requester) // providerはデフォルト引数なので省略可能
         {
-            _provider = provider ?? Dealer.Instance; // providerを受け取るが、デフォルトではDealerの単一なインスタンスとなる
+            _provider = provider ?? (IGameContextProvider)Dealer.Instance; // providerを受け取るが、デフォルトではDealerの単一なインスタンスとなる
 
             // provider（Dealer）を使って他プレイヤーの参照を書き込み
             _others = _provider.Players
