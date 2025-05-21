@@ -48,7 +48,7 @@ namespace Tetrage.Factories
             CardPile discardPile = _pileFactory.CreatePile("DiscardPile", int.MaxValue);
             Debug.Log($"捨て山 '{discardPile.Name}' を生成しました。");
 
-            // 3. 生成したデッキと捨て山をStageManagerに紐付け
+            // 3. 生成したデッキと捨て山をStageManagerに紐付け(これによりゲーム状で山札とかを操作するときはStageMangerにアクセスすれば良くなる)
             stageManager.Initialize(deck, discardPile);
 
             Debug.Log("ステージのセットアップが完了しました。");
