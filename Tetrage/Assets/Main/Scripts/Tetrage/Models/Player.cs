@@ -8,13 +8,27 @@ namespace Tetrage.Models
     /// <summary>
     /// ゲーム内のプレイヤーを表します。
     /// </summary>
-    public class Player : MonoBehaviour, IPlayer
+    public class Player :IPlayer
     {
+        private static int _playerCount = 0;
+
+        public Player()
+        {
+            PlayerID = _playerCount++;
+            Target = null;
+            //Hands = new CardPile(name: "Hand", maxCount: 3);
+            Tmp = new CardPile(name: "Temporary", maxCount: 2);
+        }
+
+        public int GetPlayerCount()
+        {
+            return _playerCount;
+        }
         
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        public int PlayerID { get; set; }
+        public int PlayerID { get; }//外部からはgetできるけどセットはできない
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)

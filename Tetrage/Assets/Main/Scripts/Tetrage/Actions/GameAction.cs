@@ -29,7 +29,7 @@ namespace Tetrage.Actions
         /// アクションを実際に実行します。
         /// </summary>
         public virtual void Execute() {
-            ((Player)_requester).StartCoroutine(Run());
+            //((Player)_requester).StartCoroutine(Run());
         }
 
         protected abstract IEnumerator Run(); // 派生クラスで実装する

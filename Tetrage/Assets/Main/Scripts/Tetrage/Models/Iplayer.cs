@@ -4,14 +4,14 @@ using Tetrage.Core.Enums;
 namespace Tetrage.Models
 {
     /// <summary>
-    /// プレイヤーの公開インターフェース。
+    /// プレイヤーの公開インターフェース。(プレイヤーができることを指定する)
     /// </summary>
     public interface IPlayer
     {
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        int PlayerID { get; set; }
+        public int PlayerID { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)

@@ -26,7 +26,7 @@ namespace Tetrage.UI
 
         [Header("Highlight Settings")]
         [SerializeField] private Color highlightColor = new Color(1f, 1f, 0.5f, 1f); // 黄色っぽい色
-        [SerializeField] private float highlightIntensity = 1.2f; // ハイライト時の明るさ倍率(まだ使ってない)
+        //[SerializeField] private float highlightIntensity = 1.2f; // ハイライト時の明るさ倍率(まだ使ってない)
 
         private Color _originalColor;
         private bool _isHighlighted = false;
