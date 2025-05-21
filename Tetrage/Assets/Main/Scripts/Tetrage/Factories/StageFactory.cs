@@ -1,7 +1,12 @@
 using Tetrage.Core.Contracts;
 using UnityEngine;
-using System.Collections.Generic; // 必要に応じて追加
+using System.Collections.Generic;
 using Tetrage.Models;
+using Tetrage.Core.Enums;
+using Tetrage.Factories;
+using System.Linq;
+using Tetrage.UI;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Factories
 {
@@ -12,11 +17,49 @@ namespace Tetrage.Factories
     {
         private readonly ICardPileFactory _deckFactory;
         private readonly ICardPileFactory _pileFactory;
-
-        public StageFactory(ICardPileFactory deckFactory, ICardPileFactory pileFactory)
+        private readonly CardModelFactory _cardModelFactory;
+        private readonly CardWithViewFactory _cardFactory;
+        private readonly CardPileBuilder _pileBuilder;
+        private readonly Dictionary<CardPileViewType, GameObject> _pileViewPrefabDict;
+        private readonly BasicCardPileView _stackViewPrefab;
+        private readonly BasicCardPileView _trashViewPrefab;
+        private readonly Transform _cardParent;
+        private readonly Transform _pileParent;
+        private readonly Dictionary<Card, CardView> _cardViewsDict;
+        private readonly CardPileViewType _pileViewType;
+        private readonly int _countPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
+        /// <summary>
+        /// ステージファクトリのコンストラクタ
+        /// </summary>
+        /// <param name="deckFactory">デッキ生成用ファクトリ</param>
+        /// <param name="pileFactory">山札生成用ファクトリ</param>
+        /// <param name="cardsPerSuit">1スートあたりのカード枚数（デフォルト: 13）</param>
+        /// <param name="numberOfSuits">使用するスートの種類数（デフォルト: 4）</param>
+        public StageFactory(
+            ICardPileFactory deckFactory, 
+            ICardPileFactory pileFactory,
+            CardView cardViewPrefab,
+            Transform cardParent,
+            Transform pileParent,
+            BasicCardPileView stackViewPrefab,
+            BasicCardPileView trashViewPrefab
+            )
         {
             _deckFactory = deckFactory;
             _pileFactory = pileFactory;
+            _stackViewPrefab = stackViewPrefab;
+            _trashViewPrefab = trashViewPrefab;
+            _cardParent = cardParent;
+            _pileParent = pileParent;
+            _cardViewsDict = new Dictionary<Card, CardView>();
+
+            // モデルファクトリとデコレータファクトリの初期化
+            _cardModelFactory = new CardModelFactory();
+            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict);
+            // CardPileBuilder の初期化
+            _pileBuilder = new CardPileBuilder(_pileFactory)
+                .UseCardFactory(_cardFactory)
+                .UseView(_pileViewPrefabDict[_pileViewType].GetComponent<BasicCardPileView>(), pileParent, _cardViewsDict);
         }
 
         /// <summary>
@@ -26,34 +69,39 @@ namespace Tetrage.Factories
         /// ステージ(MonoBehaviour)生成と初期配置を行います。
         /// </summary>
         /// <returns>生成されたStageManagerインスタンス。</returns>
-        public StageManager SetupStage()
+        public Stage SetupStage()
         {
-            // 1. StageManagerコンポーネントを持つGameObjectを生成
-            GameObject stageGameObject = new GameObject("GameStageManager");
-            StageManager stageManager = stageGameObject.AddComponent<StageManager>();
-            Debug.Log("StageManager GameObject とコンポーネントを生成しました。");
+            //cardpilebuilderを使って山札を作る
+            CardPileBuilder builder = new CardPileBuilder(_pileFactory);
+            CardPile deck = builder.Build();
+            Stage stage = new Stage(BuildStack(), BuildTrash());
+            return stage;
+        }
 
-            // 2. デッキと捨て山をFactoryで生成
-            // ここで ICardFactory などを使って具体的なカードのリストを生成することもできます。
-            // 例: ICardFactory cardFactory = new CardModelFactory();
-            //     IEnumerable<Card> initialDeckCards = cardFactory.CreateCards(new Suit[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club }, 13);
-            //     CardPile deck = _deckFactory.CreatePile("Deck", initialDeckCards, 52);
+        private CardPile BuildStack()
+        {
+            var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
+            var count = suits.Length * _countPerSuit;
 
-            // 今回は簡略化し、初期カードなしで空の山札を生成します。
-            // 必要に応じて、上記コメントアウトした部分のように具体的なカードを生成して渡すことができます。
-            CardPile deck = _deckFactory.CreatePile("Deck", 52); // CreatePile メソッドを使用
-            Debug.Log($"デッキ '{deck.Name}' を生成しました。");
+            // ビルダーで山札生成（初期カード付き）
+            var pile = _pileBuilder
+                .UseView(_stackViewPrefab,_pileParent, _cardViewsDict)
+                .WithName("Stack")
+                .WithMaxCount(count)
+                .WithInitialCards(_cardFactory, suits, _countPerSuit)
+                .Build();
+            return pile;
+        }
 
-            // 捨て山の生成
-            CardPile discardPile = _pileFactory.CreatePile("DiscardPile", int.MaxValue);
-            Debug.Log($"捨て山 '{discardPile.Name}' を生成しました。");
-
-            // 3. 生成したデッキと捨て山をStageManagerに紐付け(これによりゲーム状で山札とかを操作するときはStageMangerにアクセスすれば良くなる)
-            stageManager.Initialize(deck, discardPile);
-
-            Debug.Log("ステージのセットアップが完了しました。");
-
-            return stageManager;
+        private CardPile BuildTrash()
+        {
+            // ビルダーで山札生成（初期カード付き）
+            var pile = _pileBuilder
+                .UseView(_trashViewPrefab, _pileParent, _cardViewsDict)
+                .WithName("Trash")
+                .WithMaxCount(InGameConsts.DEFAULT_CARD_PILE_CAPACITY)
+                .Build();
+            return pile;
         }
     }
 } 
