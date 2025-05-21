@@ -4,7 +4,7 @@ using Tetrage.Core.Enums;
 namespace Tetrage.Models
 {
     /// <summary>
-    /// プレイヤーの公開インターフェース。
+    /// プレイヤーの公開インターフェース。(プレイヤーができることを指定する)
     /// </summary>
     public interface IPlayer
     {

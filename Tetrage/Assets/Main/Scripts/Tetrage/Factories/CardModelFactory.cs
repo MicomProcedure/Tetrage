@@ -12,14 +12,14 @@ namespace Tetrage.Factories
     public class CardModelFactory : ICardFactory
     {
         /// <inheritdoc/>
-        public Card CreateCard(Suit suit, int number)
+        public Card CreateCard(Suit suit, int number) //1枚のカードオブジェクトを生成.
         {
             // 初期表示は裏向き(false)のカードモデルをコンストラクタで生成
             return new Card(suit, number, isVisible: false);
         }
 
         /// <inheritdoc/>
-        public List<Card> CreateCards(Suit[] suits, int countPerSuit)
+        public List<Card> CreateCards(Suit[] suits, int countPerSuit) //指定された条件に基づいて複数のカードを生成し、リストとして返す．
         {
             var list = new List<Card>();
             if (suits == null || suits.Length == 0 || countPerSuit <= 0)
