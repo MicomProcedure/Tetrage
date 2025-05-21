@@ -11,7 +11,7 @@ namespace Tetrage.Models
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        int PlayerID { get; set; }
+        public int PlayerID { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
