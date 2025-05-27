@@ -16,22 +16,12 @@ namespace Tetrage.Factories
         /// <param name="playerCount">生成するプレイヤーの人数。</param>
         /// <returns>生成されたIPlayerインターフェースのリスト。</returns>
         /// 
-        public IPlayer CreatePlayer()
+        public IPlayer CreatePlayer(string userId, Card target, CardPile hands, CardPile tmp)
         {
-            var player = new Player();
+            IPlayer player = new Player(userId, target, hands, tmp);
 
             return player;
         }
-        public List<IPlayer> CreatePlayers(int playerCount)
-        {
-            var players = new List<IPlayer>();
 
-            for (int i = 0; i < playerCount; i++)
-            {
-                players.Add(CreatePlayer());
-            }
-
-            return players;
-        }
     }
 }

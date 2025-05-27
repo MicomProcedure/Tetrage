@@ -18,12 +18,13 @@ namespace Tetrage.Models
         // UserID フィールドを追加 (読み取り専用プロパティとして公開)
         public string UserID { get; }
 
-        public Player(string userId = null) // UserID をコンストラクタで受け取るように変更
+        public Player(string userId, Card target, CardPile hands, CardPile tmp) // UserID をコンストラクタで受け取るように変更
         {
             PlayerID = _playerCount++;
-            Target = null;
+            Target = target;
+            Hands = hands;
             // Hands はプロパティの初期化子で定義
-            Tmp = new CardPile(name: "Temporary", maxCount: 2);
+            Tmp = tmp;
 
             // UserID が指定されなかった場合は、PlayerID を元にしたデフォルト値を設定
             UserID = userId ?? $"Player_{PlayerID}";
@@ -42,19 +43,18 @@ namespace Tetrage.Models
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
-        public Card Target { get; set; }
+        public Card Target { get; private set; }
 
-        private CardPile _hands = new CardPile(name: "Hand", maxCount: 3);
 
         /// <summary>
         /// プレイヤーが所持している手札の一覧。
         /// </summary>
-        public CardPile Hands => _hands;
+        public CardPile Hands { get; private set; }
 
         /// <summary>
         /// 一時的に保持しているカードの一覧。
         /// </summary>
-        public CardPile Tmp { get; } = new CardPile(name: "Temporary", maxCount: 2);
+        public CardPile Tmp { get; private set; }
 
 
         /// <summary>

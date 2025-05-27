@@ -10,15 +10,17 @@ namespace Tetrage.Managers
         private readonly List<IPlayer> _participants = new List<IPlayer>();
 
 
-        public FieldSetupManager(List<IPlayer> participants)
+        public FieldSetupManager(List<IPlayer> participants, IStageFactory stageFactory, IPlayerFactory playerFactory)
         {
             _participants = participants;
+            _stageFactory = stageFactory;
+            _playerFactory = playerFactory;
         }
 
         public void SetupField()
         {
             var stage = _stageFactory.SetupStage();
-            var player = _playerFactory.CreatePlayer();
+
         }
 
     }
