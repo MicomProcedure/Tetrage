@@ -2,6 +2,7 @@ using UnityEngine; // MonoBehaviourを扱うため追加
 using System.Collections.Generic;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Constants;
 using Tetrage.Factories;
 
 namespace Tetrage.Factories
@@ -16,13 +17,12 @@ namespace Tetrage.Factories
         /// </summary>
         /// <param name="playerCount">生成するプレイヤーの人数。</param>
         /// <returns>生成されたIPlayerインターフェースのリスト。</returns>
-        /// 
-        public IPlayer CreatePlayer(string userId, Card target)
+        public IPlayer CreatePlayer(string userId)
         {
             var CardPileBuilder = new CardPileBuilder(new CardPileFactory());
-            var hands = CardPileBuilder.WithName("Hand").WithMaxCount(3).Build();
-            var tmp = CardPileBuilder.WithName("Tmp").WithMaxCount(2).Build();
-            var target = CardPileBuilder.WithName("Target").WithMaxCount(1).Build();
+            var hands = CardPileBuilder.WithName("Hand").WithMaxCount(InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY).Build();
+            var tmp = CardPileBuilder.WithName("Tmp").WithMaxCount(InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY).Build();
+            var target = CardPileBuilder.WithName("Target").WithMaxCount(InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY).Build();
 
             IPlayer player = new Player(userId, target, hands, tmp);
 
@@ -38,7 +38,7 @@ namespace Tetrage.Factories
         /// <param name="hands"></param>
         /// <param name="tmp"></param>
         /// <returns></returns>
-        public IPlayer CreatePlayer(string userId, Card target, CardPile hands, CardPile tmp)
+        public IPlayer CreatePlayer(string userId, CardPile target, CardPile hands, CardPile tmp)
         {
             IPlayer player = new Player(userId, target, hands, tmp);
             return player;

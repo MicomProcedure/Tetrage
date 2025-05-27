@@ -9,7 +9,7 @@ using Tetrage.Core.Contracts;
 namespace Tetrage.Factories
 {
     /// <summary>
-    /// CardPileモデル生成後にViewとPresenterを構築するデコレーターファクトリ
+    /// CardPileモデル生成後にViewとPresenterを構築するデコレーターファクトリ。現在は使い道がないので、CardPileBuilderでは使用しません。
     /// </summary>
     public class CardPileWithViewFactory : ICardPileFactory
     {

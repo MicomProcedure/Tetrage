@@ -22,16 +22,16 @@ namespace Tetrage.Core.Enums
     }
 
     /// <summary>
-    /// カードパイルビューの種類を表す列挙型
+    /// カードパイルの種類を表す列挙型
     /// </summary>
     public enum CardPileType
     {
-        Target, // ターゲットのカードパイルビュー
-        Hands,  // 手札のカードパイルビュー
-        Tmp,    // プレイヤーの一時保持手札のカードパイルビュー
-        Stack,  // 山札のカードパイルビュー
-        Trash,  //　捨て札のカードパイルビュー
-        Basic,  // 基本のカードパイルビュー
+        Target, // ターゲットのカードパイル
+        Hands,  // 手札のカードパイル
+        Tmp,    // プレイヤーの一時保持手札のカードパイル
+        Stack,  // 山札のカードパイル
+        Trash,  //　捨て札のカードパイル
+        Basic,  // 基本のカードパイル
     }
 
 
