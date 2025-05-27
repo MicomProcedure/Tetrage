@@ -14,12 +14,18 @@ namespace Tetrage.Models
     {
         private static int _playerCount = 0;
 
-        public Player()
+        // UserID フィールドを追加 (読み取り専用プロパティとして公開)
+        public string UserID { get; }
+
+        public Player(string userId = null) // UserID をコンストラクタで受け取るように変更
         {
             PlayerID = _playerCount++;
             Target = null;
-            //Hands = new CardPile(name: "Hand", maxCount: 3);
+            // Hands はプロパティの初期化子で定義
             Tmp = new CardPile(name: "Temporary", maxCount: 2);
+
+            // UserID が指定されなかった場合は、PlayerID を元にしたデフォルト値を設定
+            UserID = userId ?? $"Player_{PlayerID}";
         }
 
         public int GetPlayerCount()
@@ -30,13 +36,12 @@ namespace Tetrage.Models
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        public int PlayerID { get; }//外部からはgetできるけどセットはできない
+        public int PlayerID { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
         public Card Target { get; set; }
-
 
         private CardPile _hands = new CardPile(name: "Hand", maxCount: 3);
 
@@ -51,18 +56,21 @@ namespace Tetrage.Models
         public CardPile Tmp { get; } = new CardPile(name: "Temporary", maxCount: 2);
 
 
-
         /// <summary>
         /// 指定されたアクションを実行します。
         /// </summary>
         /// <param name="action">実行するゲームアクション。</param>
-        public void PerformAction(GameAction action)
+        public async UniTask PerformAction(GameAction action) // async UniTask に変更
         {
-            // アクションの処理内容
-            var task = action.Execute();
+            // アクションが有効か検証
+            if (!action.Validate())
+            {
+                Debug.LogWarning($"Action '{action.GetType().Name}' for Player {UserID} is not valid.");
+                return;
+            }
 
+            // アクションの実行を待ちます
+            await action.Execute();
         }
-
     }
-
 }

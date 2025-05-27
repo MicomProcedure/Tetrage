@@ -1,5 +1,6 @@
 using Tetrage.Actions;
 using Tetrage.Core.Enums;
+using Cysharp.Threading.Tasks;
 
 namespace Tetrage.Models
 {
@@ -32,6 +33,6 @@ namespace Tetrage.Models
         /// 指定されたアクションを実行します。
         /// </summary>
         /// <param name="action">実行するゲームアクション。</param>
-        void PerformAction(GameAction action);
+        UniTask PerformAction(GameAction action); 
     }
 }
