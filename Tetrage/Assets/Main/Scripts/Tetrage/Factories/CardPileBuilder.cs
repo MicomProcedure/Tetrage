@@ -7,10 +7,11 @@ using Tetrage.UI;
 using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Settings;
 
 namespace Tetrage.Factories
 {
-    /// <summary>カード山（初期カード付き）を構築するビルダーパターン実装である</summary>
+    /// <summary>カード山（初期カード付き）を構築するビルダーパターン実装</summary>
     public class CardPileBuilder
     {
         private readonly ICardPileFactory _innerFactory;    // 山札生成用基本ファクトリ
@@ -21,9 +22,7 @@ namespace Tetrage.Factories
         private bool _useView;                             // 山札表示用ビューの使用フラグ
         private string _name;                              // 山札の名前
         private int _maxCount;                             // 山札の最大枚数
-        private float _layoutWidth;                        // 山札表示用ビューの幅
-        private float _layoutMinSpacing;                   // 山札表示用ビューの最小間隔
-        private float _layoutMaxSpacing;                   // 山札表示用ビューの最大間隔
+        private CardPileLayoutSettings _layoutSettings;     // 山札表示用ビューのレイアウト設定
         private Vector3 _layoutOffset;                     // 山札表示用ビューのオフセット
         private ICardFactory _cardFactory;                 // カード生成用ファクトリ (初期カード生成に使用)
         private bool _useInitialCards;                     // 初期カード生成フラグ
@@ -41,10 +40,7 @@ namespace Tetrage.Factories
             _name = "CardPile";
             _maxCount = int.MaxValue;
             // デフォルトのレイアウト設定を適用
-            _layoutWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH;
-            _layoutMinSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING;
-            _layoutMaxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING;
-            _layoutOffset = InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET;
+            _layoutSettings = CardPileLayoutSettings.Default;
             // デフォルトのカードファクトリ設定
             _cardFactory = new CardModelFactory();
         }
@@ -82,26 +78,34 @@ namespace Tetrage.Factories
             return this;
         }
 
-        /// <summary>CardPileView のレイアウト情報を設定する</summary>
-        /// <param name="pileWidth">山札の幅</param>
-        /// <param name="minSpacing">山札の最小間隔</param>
-        /// <param name="maxSpacing">山札の最大間隔</param>
-        /// <param name="positionOffset">山札の位置オフセット</param>
+
         /// <summary>CardPileView のレイアウト情報を設定する</summary>
         /// <param name="pileWidth">山札の幅（デフォルト: DEFAULT_CARD_PILE_WIDTH）</param>
         /// <param name="minSpacing">山札の最小間隔（デフォルト: DEFAULT_CARD_VIEW_MIN_SPACING）</param>
         /// <param name="maxSpacing">山札の最大間隔（デフォルト: DEFAULT_CARD_VIEW_MAX_SPACING）</param>
         /// <param name="positionOffset">山札の位置オフセット（デフォルト: DEFAULT_CARD_VIEW_POSITION_OFFSET）</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
         public CardPileBuilder WithLayout(
             float pileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH,
             float minSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING,
             float maxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING,
             Vector3 positionOffset = default)
         {
-            _layoutWidth = pileWidth;
-            _layoutMinSpacing = minSpacing;
-            _layoutMaxSpacing = maxSpacing;
-            _layoutOffset = positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset;
+            _layoutSettings = new CardPileLayoutSettings(
+                pileWidth,
+                minSpacing,
+                maxSpacing,
+                positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset
+            );
+            return this;
+        }
+
+        /// <summary>CardPileView のレイアウト情報を設定する</summary>
+        /// <param name="layoutSettings">CardPileLayoutSettings の構造体インスタンス</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
+        public CardPileBuilder WithLayout(CardPileLayoutSettings layoutSettings)
+        {
+            _layoutSettings = layoutSettings;
             return this;
         }
 
@@ -174,7 +178,7 @@ namespace Tetrage.Factories
                 // View を生成
                 ICardPileView view = Object.Instantiate(_viewPrefab, _viewParent);
                 // レイアウト設定を反映
-                view.SetCardViewLayoutInfo(_layoutWidth, _layoutMinSpacing, _layoutMaxSpacing, _layoutOffset);
+                view.SetCardViewLayoutInfo(_layoutSettings);
                 // Presenter を生成
                 var presenter = new CardPilePresenter(pile, view, _cardViewsDict);
             }
