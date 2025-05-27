@@ -14,10 +14,9 @@ namespace Tetrage.Factories
     /// <summary>プレイヤー（初期カードパイル付き）を構築するビルダーパターン実装</summary>
     public class PlayerBuilder
     {
-        private readonly PlayerModelFactory _innerFactory;      // プレイヤー生成用基本ファクトリ
+        private readonly PlayerModelFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
         private BasicPlayerView _viewPrefab;                // プレイヤー表示用ビュー
         private Transform _viewParent;                      // プレイヤー表示用ビューの親
-        private Dictionary<Card, CardView> _cardViewsDict;  // カード表示用ビューのディクショナリ
         private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
         private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
         private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
@@ -25,7 +24,7 @@ namespace Tetrage.Factories
         private int _tmpCapacity = InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY;                            // 一時保持カードの容量
         private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
         private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
-        private static int _playerBuildingCount = 0;       // このPlayerBuilderで生成したPlayerの数
+        private int _playerBuildingCount = 0;       // このPlayerBuilderで生成したPlayerの数
 
         /// <summary>基礎となる IPlayerFactory を受け取るコンストラクタ</summary>
         public PlayerBuilder(PlayerModelFactory innerFactory)
@@ -51,20 +50,16 @@ namespace Tetrage.Factories
         public PlayerBuilder UseView(
             BasicPlayerView viewPrefab, 
             Transform parent, 
-            Dictionary<Card, CardView> cardViewsDict,
             Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
         {
             Assert.IsNotNull(viewPrefab, "viewPrefab が null です");
             Assert.IsNotNull(parent, "parent が null です");
-            Assert.IsNotNull(cardViewsDict, "cardViewsDict が null です");
             Assert.IsNotNull(cardPileViewsDict, "cardPileViewsDict が null です");
-            
             ValidateCardPileViewDict(cardPileViewsDict);
             
             _useView = true;
             _viewPrefab = viewPrefab;
             _viewParent = parent;
-            _cardViewsDict = cardViewsDict;
             _cardPileViewsDict = cardPileViewsDict;
             return this;
         }
@@ -84,7 +79,7 @@ namespace Tetrage.Factories
             return this;
         }
 
-        public PlayerBuilder WithLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
+        public PlayerBuilder WithCardPileLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
         {
             _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
             return this;
@@ -113,21 +108,21 @@ namespace Tetrage.Factories
                 target = cardPileBuilder
                     .WithName(CardPileType.Target.ToString())
                     .WithMaxCount(_targetCapacity)
-                    .UseView(_cardPileViewsDict[CardPileType.Target], _viewParent, _cardViewsDict)
+                    .UseView(_cardPileViewsDict[CardPileType.Target], playerView.TargetRoot)
                     .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Target])
                     .Build();
 
                 hands = cardPileBuilder
                     .WithName(CardPileType.Hands.ToString())
                     .WithMaxCount(_handsCapacity)
-                    .UseView(_cardPileViewsDict[CardPileType.Hands], _viewParent, _cardViewsDict)
+                    .UseView(_cardPileViewsDict[CardPileType.Hands], playerView.HandsRoot)
                     .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Hands])
                     .Build();
 
                 tmp = cardPileBuilder
                     .WithName(CardPileType.Tmp.ToString())
                     .WithMaxCount(_tmpCapacity)
-                    .UseView(_cardPileViewsDict[CardPileType.Tmp], _viewParent, _cardViewsDict)
+                    .UseView(_cardPileViewsDict[CardPileType.Tmp], playerView.TmpRoot)
                     .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Tmp])
                     .Build();
             }

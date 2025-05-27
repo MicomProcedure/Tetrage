@@ -4,6 +4,7 @@ using Tetrage.Core.Enums;
 using Tetrage.Models;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Tetrage.Services;
 
 namespace Tetrage.Presenters
 {
@@ -19,6 +20,10 @@ namespace Tetrage.Presenters
         {
             _model = model;
             _view = view;
+
+            // カードモデルとビューの対応をグローバルな辞書に登録
+            CardViewRegistry.Register(_model, _view);
+
             // Viewの破棄を監視し、破棄時にDisposeを呼び出す
             _view.Destroyed += OnViewDestroyed;
 
@@ -100,6 +105,9 @@ namespace Tetrage.Presenters
 
         public void Dispose()
         {
+            // カードモデルとビューの対応をグローバルな辞書から削除
+            CardViewRegistry.Unregister(_model);
+
             // イベント購読解除
             _model.CardChanged -= OnModelChanged;
             _view.Clicked -= OnViewClicked;

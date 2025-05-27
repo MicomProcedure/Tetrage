@@ -46,6 +46,10 @@ namespace Tetrage.Factories
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
+        /// <param name="viewPrefab">BasicCardPileView のインスタンス</param>
+        /// <param name="parent">BasicCardPileView の親</param>
+        /// <param name="cardViewsDict">Card と CardView のディクショナリ</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
         public CardPileBuilder UseView(BasicCardPileView viewPrefab, Transform parent, Dictionary<Card, CardView> cardViewsDict)
         {
             Assert.IsNotNull(viewPrefab, "viewPrefab が null です");

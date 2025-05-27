@@ -16,26 +16,21 @@ namespace Tetrage.Factories
         private readonly ICardPileFactory _innerFactory;
         private readonly BasicCardPileView _viewPrefab;
         private readonly Transform _parentTransform;
-        private readonly Dictionary<Card, CardView> _cardViewsDict;
 
         /// <param name="innerFactory">モデル生成を委譲するICardPileFactory</param>
         /// <param name="viewPrefab">カード山表示用Viewプレハブ</param>
         /// <param name="parentTransform">生成したPileViewの親Transform</param>
-        /// <param name="cardViewsDict">CardモデルとCardViewの対応辞書</param>
         public CardPileWithViewFactory(
             ICardPileFactory innerFactory,
             BasicCardPileView viewPrefab,
-            Transform parentTransform,
-            Dictionary<Card, CardView> cardViewsDict)
+            Transform parentTransform)
         {
             Assert.IsNotNull(innerFactory, "innerFactory が null です");
             Assert.IsNotNull(viewPrefab, "CardPileView prefab が null です");
             Assert.IsNotNull(parentTransform, "parentTransform が null です");
-            Assert.IsNotNull(cardViewsDict, "cardViews が null です");
             _innerFactory = innerFactory;
             _viewPrefab = viewPrefab;
             _parentTransform = parentTransform;
-            _cardViewsDict = cardViewsDict;
         }
 
         /// <inheritdoc/>
@@ -48,7 +43,7 @@ namespace Tetrage.Factories
             ICardPileView pileView = Object.Instantiate(_viewPrefab, _parentTransform);
 
             // Presenter生成
-            var presenter = new CardPilePresenter(pileModel, pileView, _cardViewsDict);
+            var presenter = new CardPilePresenter(pileModel, pileView);
 
             return pileModel;
         }
@@ -68,7 +63,7 @@ namespace Tetrage.Factories
             ICardPileView pileView = Object.Instantiate(_viewPrefab, _parentTransform);
 
             // Presenter生成
-            var presenter = new CardPilePresenter(pileModel, pileView, _cardViewsDict);
+            var presenter = new CardPilePresenter(pileModel, pileView);
 
             return pileModel;
         }

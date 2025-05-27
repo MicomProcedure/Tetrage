@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Tetrage.Models;
 using Tetrage.UI;
 using Tetrage.Core.Contracts;
+using Tetrage.Services;
 
 namespace Tetrage.Presenters
 {
@@ -15,19 +16,16 @@ namespace Tetrage.Presenters
     {
         private readonly CardPile _model;
         private readonly ICardPileView _view;
-        private readonly Dictionary<Card, CardView> _cardViewsDict; // カードモデルとビューの対応辞書。このCardPileに入っているCardModelとCardViewだけでなく、Factoryで生成されたCardModelとCardViewも含めてGlobalに管理する
 
         /// <param name="model">監視対象のCardPileモデル</param>
         /// <param name="view">モデルに対応する ICardPileView</param>
-        /// <param name="cardViewsDict">CardモデルとCardViewの対応辞書</param>
         public CardPilePresenter(
             CardPile model,
-            ICardPileView view,
-            Dictionary<Card, CardView> cardViewsDict)
+            ICardPileView view)
         {
             _model = model;
             _view = view;
-            _cardViewsDict = cardViewsDict;
+
             // Viewの破棄を監視し、破棄時に Dispose を呼び出す
             _view.Destroyed += OnViewDestroyed;
             // 初期カード追加イベントを監視
@@ -45,9 +43,11 @@ namespace Tetrage.Presenters
 
         private void OnCardTransferred(Card card, CardPile from, CardPile to)
         {
+            var cardView = CardViewRegistry.GetView(card);
+
             // 移動されたカードが存在しない場合は処理しない
-            if (!_cardViewsDict.TryGetValue(card, out var cardView)) {
-                UnityEngine.Debug.Log("指定されたカードはCardPilePresenterの辞書に登録されていません。");
+            if (cardView == null) {
+                UnityEngine.Debug.LogError("指定されたカードはCardPilePresenterの辞書に登録されていません。");
                 return;
             }
             // 目的のPileViewを取得して移動
@@ -69,10 +69,13 @@ namespace Tetrage.Presenters
 
             foreach (var card in cards)
             {
-                if (_cardViewsDict.TryGetValue(card, out var cardView))
-                {
-                    _view.AddCardView(cardView);
+                // カードが存在しない場合は処理しない
+                var cardView = CardViewRegistry.GetView(card);
+                if (cardView == null) {
+                    UnityEngine.Debug.LogError("指定されたカードはCardPilePresenterの辞書に登録されていません。");
+                    return;
                 }
+                _view.AddCardView(cardView);
             }
         }
 
