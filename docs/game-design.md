@@ -212,3 +212,6 @@ Action ← DrawAction, OpenAction, CheckAction, TetrageAction
 - **Association**: Dealer→Player, Player→Action
 - **Inheritance**: Action ← sub classes
 
+## テトラージュの確率について
+スプレッドシートのURL:https://docs.google.com/spreadsheets/d/1lhUMp0F4Xd1jotfpcBv1PmrUZzLDEmI0cZEIOKkUO3U/edit?usp=sharing
+コラボラトリーのURL:https://colab.research.google.com/drive/1_4t_iobtMdNSSfsiINBte_dHl0AfvhFr?usp=sharing
