@@ -3,6 +3,7 @@ using UnityEngine.Assertions;
 using System.Collections.Generic;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Constants;
 using Tetrage.UI;
 using Tetrage.Presenters;
 using System;
@@ -63,10 +64,14 @@ namespace Tetrage.Factories
         }
 
         /// <inheritdoc/>
-        public IPlayer CreatePlayer(string userId, Card target)
+        public IPlayer CreatePlayer(string userId)
         {
+            CardPileBuilder cardPileBuilder = new CardPileBuilder(new CardPileFactory()).UseView(BasicCardPileView, Transform, Dictionary<Card, CardView>);
+            var target = cardPileBuilder.WithName("Target").WithMaxCount(InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY).Build();
+            var hands = cardPileBuilder.WithName("Hand").WithMaxCount(InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY).Build();
+            var tmp = cardPileBuilder.WithName("Tmp").WithMaxCount(InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY).Build();
             // プレイヤーモデル生成
-            var playerModel = _innerFactory.CreatePlayer(userId, target);
+            var playerModel = _innerFactory.CreatePlayer(userId);
 
             // プレイヤーモデルに対応するViewとPresenterを生成
             CreateViewAndPresenter(playerModel);

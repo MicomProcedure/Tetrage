@@ -13,5 +13,9 @@ namespace Tetrage.Core.Constants
         public static readonly Suit[] DEFAULT_INITIAL_SUITS = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club }; // デフォルトの初期カード生成スート
         public const int DEFAULT_INITIAL_COUNT_PER_SUIT = 13; // デフォルトの初期カード生成数
         public const int DEFAULT_CARD_PILE_CAPACITY = 52; // デフォルトのカードパイルの容量
+
+        public const int DEFAULT_PLAYER_HAND_CAPACITY = 3; // デフォルトのプレイヤーの手札の容量
+        public const int DEFAULT_PLAYER_TMP_CAPACITY = 2; // デフォルトのプレイヤーの一時的に保持しているカードの容量
+        public const int DEFAULT_PLAYER_TARGET_CAPACITY = 1; // デフォルトのプレイヤーのターゲットの容量
     }
 }

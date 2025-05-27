@@ -17,7 +17,7 @@ namespace Tetrage.Core.Contracts
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
-        Card Target { get; }
+        CardPile Target { get; }
 
         /// <summary>
         /// プレイヤーが所持している手札の一覧。
