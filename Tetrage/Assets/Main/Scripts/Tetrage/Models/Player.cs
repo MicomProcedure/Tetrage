@@ -2,13 +2,15 @@ using UnityEngine;
 using System.Collections.Generic;
 using Tetrage.Actions;
 using Tetrage.Core.Enums;
+using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace Tetrage.Models
 {
     /// <summary>
     /// ゲーム内のプレイヤーを表します。
     /// </summary>
-    public class Player :IPlayer
+    public class Player : IPlayer
     {
         private static int _playerCount = 0;
 
@@ -24,7 +26,7 @@ namespace Tetrage.Models
         {
             return _playerCount;
         }
-        
+
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
@@ -47,9 +49,9 @@ namespace Tetrage.Models
         /// 一時的に保持しているカードの一覧。
         /// </summary>
         public CardPile Tmp { get; } = new CardPile(name: "Temporary", maxCount: 2);
-    
 
-        
+
+
         /// <summary>
         /// 指定されたアクションを実行します。
         /// </summary>
@@ -57,9 +59,10 @@ namespace Tetrage.Models
         public void PerformAction(GameAction action)
         {
             // アクションの処理内容
-            action.Execute();
+            var task = action.Execute();
+
         }
-        
+
     }
-    
+
 }

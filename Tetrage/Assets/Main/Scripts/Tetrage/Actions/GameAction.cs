@@ -27,9 +27,9 @@ namespace Tetrage.Actions
         /// アクションを実際に実行します。
         /// UniTask を返すように変更し、非同期処理を待ちます。
         /// </summary>
-        public virtual async UniTask Execute()
+        public virtual UniTask Execute()
         {
-            await Run(); // Run メソッドの UniTask を待つ
+            return Run(); // Run メソッドの UniTask を返す
         }
 
         /// <summary>
