@@ -17,13 +17,13 @@ namespace Tetrage.Tests
         [SerializeField] private CardView cardViewPrefab;
         [Tooltip("0. Basic, 1. Hands, 2. Tmp, 3. Stack, 4. Trashの順に格納すること")]
         [SerializeField] private List<BasicCardPileView> pileViewPrefabs;
-        private Dictionary<CardPileViewType, BasicCardPileView> _pileViewPrefabDict = new Dictionary<CardPileViewType, BasicCardPileView>()
+        private Dictionary<CardPileType, BasicCardPileView> _pileViewPrefabDict = new Dictionary<CardPileType, BasicCardPileView>()
         {
-            {CardPileViewType.Basic, null},
-            {CardPileViewType.Hands, null},
-            {CardPileViewType.Tmp, null},
-            {CardPileViewType.Stack, null},
-            {CardPileViewType.Trash, null},
+            {CardPileType.Basic, null},
+            {CardPileType.Hands, null},
+            {CardPileType.Tmp, null},
+            {CardPileType.Stack, null},
+            {CardPileType.Trash, null},
         }; // カードパイルビューのプレハブ
 
         [Header("Parents")]
@@ -35,7 +35,7 @@ namespace Tetrage.Tests
         [Tooltip("カードパイル間の間隔")]
         [SerializeField] private float _pileOffset = 2f;
         [Tooltip("カードパイルビューの種類")]
-        [SerializeField] private CardPileViewType _pileViewType = CardPileViewType.Basic;
+        [SerializeField] private CardPileType _pileViewType = CardPileType.Basic;
         [Header("CardPile LayoutSettings")]
         [SerializeField] private float _pileWidth = 10f;
         [SerializeField] private float _cardViewMinSpacing = 0f;
@@ -58,11 +58,11 @@ namespace Tetrage.Tests
 
         private void Awake()
         {
-            _pileViewPrefabDict[CardPileViewType.Basic] = pileViewPrefabs[0];
-            _pileViewPrefabDict[CardPileViewType.Hands] = pileViewPrefabs[1];
-            _pileViewPrefabDict[CardPileViewType.Tmp] = pileViewPrefabs[2];
-            _pileViewPrefabDict[CardPileViewType.Stack] = pileViewPrefabs[3];
-            _pileViewPrefabDict[CardPileViewType.Trash] = pileViewPrefabs[4];
+            _pileViewPrefabDict[CardPileType.Basic] = pileViewPrefabs[0];
+            _pileViewPrefabDict[CardPileType.Hands] = pileViewPrefabs[1];
+            _pileViewPrefabDict[CardPileType.Tmp] = pileViewPrefabs[2];
+            _pileViewPrefabDict[CardPileType.Stack] = pileViewPrefabs[3];
+            _pileViewPrefabDict[CardPileType.Trash] = pileViewPrefabs[4];
             // モデルファクトリとデコレータファクトリの初期化
             _cardModelFactory = new CardModelFactory();
             _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict);

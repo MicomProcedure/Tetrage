@@ -20,13 +20,13 @@ namespace Tetrage.Factories
         private readonly CardModelFactory _cardModelFactory;
         private readonly CardWithViewFactory _cardFactory;
         private readonly CardPileBuilder _pileBuilder;
-        private readonly Dictionary<CardPileViewType, GameObject> _pileViewPrefabDict;
+        private readonly Dictionary<CardPileType, GameObject> _pileViewPrefabDict;
         private readonly BasicCardPileView _stackViewPrefab;
         private readonly BasicCardPileView _trashViewPrefab;
         private readonly Transform _cardParent;
         private readonly Transform _pileParent;
         private readonly Dictionary<Card, CardView> _cardViewsDict;
-        private readonly CardPileViewType _pileViewType;
+        private readonly CardPileType _pileViewType;
         private readonly int _countPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
         /// <summary>
         /// ステージファクトリのコンストラクタ

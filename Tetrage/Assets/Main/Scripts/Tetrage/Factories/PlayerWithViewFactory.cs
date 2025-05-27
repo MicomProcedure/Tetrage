@@ -7,6 +7,7 @@ using Tetrage.Core.Constants;
 using Tetrage.UI;
 using Tetrage.Presenters;
 using System;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Factories
 {
@@ -19,6 +20,7 @@ namespace Tetrage.Factories
         private readonly BasicPlayerView _viewPrefab;
         private readonly Transform _parentTransform;
         private readonly IDictionary<IPlayer, BasicPlayerView> _playerViewsDict;
+        private readonly IDictionary<CardPileType, ICardPileView> _cardPileViewsDict;
 
         // 必ずコンストラクタに引数を持たせないとコンパイルエラーになる
         [Obsolete("Use PlayerWithViewFactory(IPlayerFactory innerFactory, BasicPlayerView viewPrefab, Transform parentTransform, IDictionary<IPlayer,BasicPlayerView> playerViewsDict) instead", true)]
@@ -28,7 +30,7 @@ namespace Tetrage.Factories
         /// <param name="viewPrefab">プレイヤー表示用Viewプレハブ</param>
         /// <param name="parentTransform">生成したViewの親Transform</param>
         /// <param name="playerViewsDict">プレイヤーモデルとビューの対応辞書</param>
-        public PlayerWithViewFactory(IPlayerFactory innerFactory, BasicPlayerView viewPrefab, Transform parentTransform, IDictionary<IPlayer, BasicPlayerView> playerViewsDict)
+        public PlayerWithViewFactory(IPlayerFactory innerFactory, BasicPlayerView viewPrefab, Transform parentTransform, IDictionary<IPlayer, BasicPlayerView> playerViewsDict, IDictionary<CardPileType, ICardPileView> cardPileViewsDict)
         {
             // 必須パラメータのnullチェック
             // プレイヤーモデル生成を委譲するファクトリのnullチェック
@@ -39,16 +41,23 @@ namespace Tetrage.Factories
             Assert.IsNotNull(parentTransform, "ParentTransform が null です");
             // プレイヤーモデルとビューの対応辞書のnullチェック
             Assert.IsNotNull(playerViewsDict, "playerViewsDict が null です");
+            // カードパイルビュー辞書のnullチェック
+            Assert.IsNotNull(cardPileViewsDict, "cardPileViewsDict が null です");
+
+            // 必要なCardPileTypeキーと対応する値の存在チェック
+            ValidateCardPileViewDict(cardPileViewsDict);
+
             _innerFactory = innerFactory;
             _viewPrefab = viewPrefab;
             _parentTransform = parentTransform;
             _playerViewsDict = playerViewsDict;
+            _cardPileViewsDict = cardPileViewsDict;
         }
 
         /// <param name="innerFactory">プレイヤーモデル生成を委譲するIPlayerFactory</param>
         /// <param name="viewPrefab">プレイヤー表示用Viewプレハブ</param>
         /// <param name="playerViewsDict">プレイヤーモデルとビューの対応辞書</param>
-        public PlayerWithViewFactory(IPlayerFactory innerFactory, BasicPlayerView viewPrefab, IDictionary<IPlayer, BasicPlayerView> playerViewsDict)
+        public PlayerWithViewFactory(IPlayerFactory innerFactory, BasicPlayerView viewPrefab, IDictionary<IPlayer, BasicPlayerView> playerViewsDict, IDictionary<CardPileType, ICardPileView> cardPileViewsDict)
         {
             // 必須パラメータのnullチェック
             // プレイヤーモデル生成を委譲するファクトリのnullチェック
@@ -57,17 +66,27 @@ namespace Tetrage.Factories
             Assert.IsNotNull(viewPrefab, "PlayerViewPrefab が null です");
             // プレイヤーモデルとビューの対応辞書のnullチェック
             Assert.IsNotNull(playerViewsDict, "playerViewsDict が null です");
+            // カードパイルビュー辞書のnullチェック
+            Assert.IsNotNull(cardPileViewsDict, "cardPileViewsDict が null です");
+
+            // 必要なCardPileTypeキーと対応する値の存在チェック
+            ValidateCardPileViewDict(cardPileViewsDict); // これにより、カードパイルビュー辞書に必要なキーと値が存在することが確定する。
+
             _innerFactory = innerFactory;
             _viewPrefab = viewPrefab;
             _parentTransform = null; // 親を指定しない
             _playerViewsDict = playerViewsDict;
+            _cardPileViewsDict = cardPileViewsDict;
         }
 
         /// <inheritdoc/>
         public IPlayer CreatePlayer(string userId)
         {
-            CardPileBuilder cardPileBuilder = new CardPileBuilder(new CardPileFactory()).UseView(BasicCardPileView, Transform, Dictionary<Card, CardView>);
-            var target = cardPileBuilder.WithName("Target").WithMaxCount(InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY).Build();
+            CardPileBuilder cardPileBuilder = new CardPileBuilder(new CardPileFactory());
+            var target = cardPileBuilder.WithName(CardPileType.Target.ToString())
+                                        .WithMaxCount(InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY)
+                                        .UseView(_cardPileViewsDict[CardPileType.Target], _parentTransform, _cardPileViewsDict)
+                                        .Build();
             var hands = cardPileBuilder.WithName("Hand").WithMaxCount(InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY).Build();
             var tmp = cardPileBuilder.WithName("Tmp").WithMaxCount(InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY).Build();
             // プレイヤーモデル生成
@@ -95,6 +114,34 @@ namespace Tetrage.Factories
 
             // Presenter生成
             var presenter = new PlayerPresenter(view, player);
+        }
+
+        /// <summary>
+        /// CardPileViewDictに必要なキーと値が存在するかを検証します
+        /// </summary>
+        /// <param name="cardPileViewsDict">検証対象の辞書</param>
+        private static void ValidateCardPileViewDict(IDictionary<CardPileType, ICardPileView> cardPileViewsDict)
+        {
+            // 必要なCardPileTypeの配列
+            var requiredCardPileTypes = new[]
+            {
+                CardPileType.Target,
+                CardPileType.Hands,
+                CardPileType.Tmp
+            };
+
+            // 各必要キーの存在と値のnullチェック
+            foreach (var requiredType in requiredCardPileTypes)
+            {
+                // キーの存在チェック
+                Assert.IsTrue(cardPileViewsDict.ContainsKey(requiredType),
+                    $"cardPileViewsDict に必要なキー '{requiredType}' が存在しません");
+
+                // 対応する値のnullチェック
+                var cardPileView = cardPileViewsDict[requiredType];
+                Assert.IsNotNull(cardPileView,
+                    $"cardPileViewsDict のキー '{requiredType}' に対応する値が null です");
+            }
         }
     }
 }
