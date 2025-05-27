@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks; // UniTask を使うための using
+using Tetrage.Core.Contracts;
 using Tetrage.Models;
 
 namespace Tetrage.Actions

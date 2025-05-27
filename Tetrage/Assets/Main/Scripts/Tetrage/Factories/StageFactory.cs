@@ -13,7 +13,7 @@ namespace Tetrage.Factories
     /// <summary>
     /// ゲームステージ生成用Factory
     /// </summary>
-    public class StageFactory
+    public class StageFactory : IStageFactory
     {
         private readonly ICardPileFactory _deckFactory;
         private readonly ICardPileFactory _pileFactory;
@@ -36,7 +36,7 @@ namespace Tetrage.Factories
         /// <param name="cardsPerSuit">1スートあたりのカード枚数（デフォルト: 13）</param>
         /// <param name="numberOfSuits">使用するスートの種類数（デフォルト: 4）</param>
         public StageFactory(
-            ICardPileFactory deckFactory, 
+            ICardPileFactory deckFactory,
             ICardPileFactory pileFactory,
             CardView cardViewPrefab,
             Transform cardParent,
@@ -85,7 +85,7 @@ namespace Tetrage.Factories
 
             // ビルダーで山札生成（初期カード付き）
             var pile = _pileBuilder
-                .UseView(_stackViewPrefab,_pileParent, _cardViewsDict)
+                .UseView(_stackViewPrefab, _pileParent, _cardViewsDict)
                 .WithName("Stack")
                 .WithMaxCount(count)
                 .WithInitialCards(_cardFactory, suits, _countPerSuit)
@@ -104,4 +104,4 @@ namespace Tetrage.Factories
             return pile;
         }
     }
-} 
+}

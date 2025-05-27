@@ -1,13 +1,14 @@
 using UnityEngine; // MonoBehaviourを扱うため追加
 using System.Collections.Generic;
 using Tetrage.Models;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Factories
 {
     /// <summary>
     /// プレイヤー生成用Factory
     /// </summary>
-    public class PlayerModelFactory
+    public class PlayerModelFactory : IPlayerFactory
     {
         /// <summary>
         /// 指定した人数のプレイヤーモデルを生成します。
@@ -18,18 +19,18 @@ namespace Tetrage.Factories
         public IPlayer CreatePlayer()
         {
             var player = new Player();
-            
+
             return player;
         }
         public List<IPlayer> CreatePlayers(int playerCount)
         {
             var players = new List<IPlayer>();
-            
+
             for (int i = 0; i < playerCount; i++)
             {
                 players.Add(CreatePlayer());
             }
-            
+
             return players;
         }
     }
