@@ -1,6 +1,7 @@
 using System;
 using Tetrage.UI;
 using UnityEngine;
+using Tetrage.Core.Settings;
 
 namespace Tetrage.Core.Contracts
 {
@@ -25,6 +26,8 @@ namespace Tetrage.Core.Contracts
         public void RefreshView();
 
         public void SetCardViewLayoutInfo(float pileWidth, float minSpacing, float maxSpacing, Vector3 positionOffset);
+
+        public void SetCardViewLayoutInfo(CardPileLayoutSettings layoutSettings);
 
     }
 }
