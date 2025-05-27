@@ -115,16 +115,6 @@ namespace Tetrage.Factories
             return this;
         }
 
-        /// <summary>ICardFactory を設定し、初期カード生成を可能にする</summary>
-        /// <param name="cardFactory">ICardFactory の実装</param>
-        /// <returns>CardPileBuilder のインスタンス</returns>
-        public CardPileBuilder UseCardFactory(ICardFactory cardFactory)
-        {
-            Assert.IsNotNull(cardFactory, "cardFactory が null です");
-            _cardFactory = cardFactory;
-            return this;
-        }
-
         /// <summary>初期カードとして生成するスート配列と枚数を設定する</summary>
         /// <param name="cardFactory">ICardFactory の実装</param>
         /// <param name="suits">初期カードのスート配列</param>
@@ -144,6 +134,17 @@ namespace Tetrage.Factories
             _initialCountPerSuit = countPerSuit;
             return this;
         }
+
+        /// <summary>ICardFactory を設定し、初期カード生成を可能にする</summary>
+        /// <param name="cardFactory">ICardFactory の実装</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
+        public CardPileBuilder UseCardFactory(ICardFactory cardFactory)
+        {
+            Assert.IsNotNull(cardFactory, "cardFactory が null です");
+            _cardFactory = cardFactory;
+            return this;
+        }
+
 
         /// <summary>山札を生成する（初期カード指定なし）</summary>
         /// <returns>生成された CardPile のインスタンス</returns>

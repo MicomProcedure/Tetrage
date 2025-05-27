@@ -2,6 +2,7 @@ using UnityEngine; // MonoBehaviourを扱うため追加
 using System.Collections.Generic;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
+using Tetrage.Factories;
 
 namespace Tetrage.Factories
 {
@@ -16,8 +17,12 @@ namespace Tetrage.Factories
         /// <param name="playerCount">生成するプレイヤーの人数。</param>
         /// <returns>生成されたIPlayerインターフェースのリスト。</returns>
         /// 
-        public IPlayer CreatePlayer(string userId, Card target, CardPile hands, CardPile tmp)
+        public IPlayer CreatePlayer(string userId, Card target)
         {
+            var CardPileBuilder = new CardPileBuilder(new CardPileFactory());
+            var hands = CardPileBuilder.WithName("Hand").WithMaxCount(3).Build();
+            var tmp = CardPileBuilder.WithName("Tmp").WithMaxCount(2).Build();
+
             IPlayer player = new Player(userId, target, hands, tmp);
 
             return player;
