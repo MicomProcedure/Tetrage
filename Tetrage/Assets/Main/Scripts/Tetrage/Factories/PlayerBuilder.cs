@@ -7,6 +7,7 @@ using Tetrage.UI;
 using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Settings;
 
 namespace Tetrage.Factories
 {
@@ -23,10 +24,7 @@ namespace Tetrage.Factories
         private int _handsCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY;                         // 手札の容量
         private int _tmpCapacity = InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY;                            // 一時保持カードの容量
         private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
-        private float _layoutWidth;                        // カードパイル表示用ビューの幅
-        private float _layoutMinSpacing;                   // カードパイル表示用ビューの最小間隔
-        private float _layoutMaxSpacing;                   // カードパイル表示用ビューの最大間隔
-        private Vector3 _layoutOffset;                     // カードパイル表示用ビューのオフセット
+        private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
         private static int _playerBuildingCount = 0;       // このPlayerBuilderで生成したPlayerの数
 
         /// <summary>基礎となる IPlayerFactory を受け取るコンストラクタ</summary>
@@ -39,12 +37,14 @@ namespace Tetrage.Factories
             // デフォルト設定
             _userId = InGameConsts.DEFAULT_PLAYER_ID + _playerBuildingCount;
 
-            // デフォルトのレイアウト設定を適用
-            _layoutWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH;
-            _layoutMinSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING;
-            _layoutMaxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING;
-            _layoutOffset = InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET;
+            _cardPileLayoutSettingsDict = new Dictionary<CardPileType, CardPileLayoutSettings>
+            {
+                { CardPileType.Target, CardPileLayoutSettings.Default },
+                { CardPileType.Hands, CardPileLayoutSettings.Default },
+                { CardPileType.Tmp, CardPileLayoutSettings.Default }
+            };
             
+
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
@@ -84,25 +84,11 @@ namespace Tetrage.Factories
             return this;
         }
 
-
-        // /// <summary>CardPileView のレイアウト情報を設定する</summary>
-        // /// <param name="pileWidth">カードパイルの幅（デフォルト: DEFAULT_CARD_PILE_WIDTH）</param>
-        // /// <param name="minSpacing">カードパイルの最小間隔（デフォルト: DEFAULT_CARD_VIEW_MIN_SPACING）</param>
-        // /// <param name="maxSpacing">カードパイルの最大間隔（デフォルト: DEFAULT_CARD_VIEW_MAX_SPACING）</param>
-        // /// <param name="positionOffset">カードパイルの位置オフセット（デフォルト: DEFAULT_CARD_VIEW_POSITION_OFFSET）</param>
-        // public PlayerBuilder WithLayout(
-        //     float pileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH,
-        //     float minSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING,
-        //     float maxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING,
-        //     Vector3 positionOffset = default)
-        // {
-        //     _layoutWidth = pileWidth;
-        //     _layoutMinSpacing = minSpacing;
-        //     _layoutMaxSpacing = maxSpacing;
-        //     _layoutOffset = positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset;
-        //     return this;
-        // }
-
+        public PlayerBuilder WithLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
+        {
+            _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
+            return this;
+        }
 
 
         /// <summary>プレイヤーを生成する</summary>
@@ -128,21 +114,21 @@ namespace Tetrage.Factories
                     .WithName(CardPileType.Target.ToString())
                     .WithMaxCount(_targetCapacity)
                     .UseView(_cardPileViewsDict[CardPileType.Target], _viewParent, _cardViewsDict)
-                    .WithLayout(_layoutWidth, _layoutMinSpacing, _layoutMaxSpacing, _layoutOffset)
+                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Target])
                     .Build();
 
                 hands = cardPileBuilder
                     .WithName(CardPileType.Hands.ToString())
                     .WithMaxCount(_handsCapacity)
                     .UseView(_cardPileViewsDict[CardPileType.Hands], _viewParent, _cardViewsDict)
-                    .WithLayout(_layoutWidth, _layoutMinSpacing, _layoutMaxSpacing, _layoutOffset)
+                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Hands])
                     .Build();
 
                 tmp = cardPileBuilder
                     .WithName(CardPileType.Tmp.ToString())
                     .WithMaxCount(_tmpCapacity)
                     .UseView(_cardPileViewsDict[CardPileType.Tmp], _viewParent, _cardViewsDict)
-                    .WithLayout(_layoutWidth, _layoutMinSpacing, _layoutMaxSpacing, _layoutOffset)
+                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Tmp])
                     .Build();
             }
             else
