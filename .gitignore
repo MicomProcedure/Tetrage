@@ -86,3 +86,8 @@ Tetrage/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 # Temporary auto-generated Android Assets
 Tetrage/[Aa]ssets/[Ss]treamingAssets/aa.meta
 Tetrage/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Diff ファイルや、カスタム操作で生成したファイル
+*.diff
+*_list-archive.zip
+*_list-file.txt
