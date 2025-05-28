@@ -17,7 +17,8 @@ namespace Tetrage.Managers
         public ICardPileFactory CardPileFactory { get; }    // カードパイル生成用ファクトリ
         public CardView CardViewPrefab { get; }    // カード表示用ビューのプレハブ
         public Transform StageRoot { get; }    // ステージのルート
-        public List<Transform> PlayerLocations { get; }    // プレイヤーの位置リスト
+        public Transform PlayerRoot { get; }    // プレイヤーのルート
+        public List<Vector3> PlayerLocations { get; }    // プレイヤーの位置リスト
         public Dictionary<PlayerType, CardPileLayoutSettings> PlayerPilesLayoutSettings { get; }    // プレイヤーのカードパイルのレイアウト設定
         public CardPileLayoutSettings TrashPileLayoutSettings { get; }    // トラッシュのカードパイルのレイアウト設定
         public CardPileLayoutSettings StackPileLayoutSettings { get; }    // スタックのカードパイルのレイアウト設定
@@ -31,6 +32,7 @@ namespace Tetrage.Managers
         /// <param name="pileViewPrefabDict">カードパイル表示用ビューのディクショナリ</param>
         /// <param name="cardPileFactory">カードパイル生成用ファクトリ</param>
         /// <param name="stageRoot">ステージのルート</param>
+        /// <param name="playerRoot">プレイヤーのルート</param>
         /// <param name="cardViewPrefab">カード表示用ビューのプレハブ</param>
         /// <param name="playerLocations">プレイヤーの位置リスト</param>
         /// <param name="playerPilesLayoutSettings">プレイヤーのカードパイルのレイアウト設定</param>
@@ -42,8 +44,9 @@ namespace Tetrage.Managers
             Dictionary<CardPileType, BasicCardPileView> pileViewPrefabDict,
             ICardPileFactory cardPileFactory,
             Transform stageRoot,
+            Transform playerRoot,
             CardView cardViewPrefab,
-            List<Transform> playerLocations,
+            List<Vector3> playerLocations,
             Dictionary<PlayerType, CardPileLayoutSettings> playerPilesLayoutSettings,
             CardPileLayoutSettings trashPileLayoutSettings,
             CardPileLayoutSettings stackPileLayoutSettings
@@ -54,6 +57,7 @@ namespace Tetrage.Managers
             PileViewPrefabDict = pileViewPrefabDict;
             CardPileFactory = cardPileFactory;
             StageRoot = stageRoot;
+            PlayerRoot = playerRoot;
             CardViewPrefab = cardViewPrefab;
             PlayerLocations = playerLocations;
             PlayerPilesLayoutSettings = playerPilesLayoutSettings;

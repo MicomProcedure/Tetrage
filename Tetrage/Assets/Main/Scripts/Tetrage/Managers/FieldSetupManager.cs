@@ -104,6 +104,7 @@ namespace Tetrage.Managers
                     .UseView(
                         _settings.PlayerViewPrefabDict[participantInfo.PlayerType],
                         _settings.PlayerLocations[playerIndex],
+                        _settings.PlayerRoot,
                         _settings.PileViewPrefabDict
                     )
                     .WithCardPileLayoutSettings(CardPileType.Hands, _settings.PlayerPilesLayoutSettings[participantInfo.PlayerType])

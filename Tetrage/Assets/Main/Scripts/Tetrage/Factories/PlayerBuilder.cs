@@ -17,6 +17,7 @@ namespace Tetrage.Factories
         private readonly PlayerModelFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
         private BasicPlayerView _viewPrefab;                // プレイヤー表示用ビュー
         private Transform _viewParent;                      // プレイヤー表示用ビューの親
+        private Vector3 _viewSpawnPosition;                 // プレイヤー表示用ビューの生成位置
         private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
         private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
         private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
@@ -53,6 +54,7 @@ namespace Tetrage.Factories
         /// <param name="cardPileViewsDict">カードパイル表示用ビューのディクショナリ</param>
         public PlayerBuilder UseView(
             BasicPlayerView viewPrefab, 
+            Vector3 spawnPosition,
             Transform parent, 
             Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
         {
@@ -109,6 +111,8 @@ namespace Tetrage.Factories
         {
             // カードパイル生成用ビルダーを作成
             var cardPileBuilder = new CardPileBuilder(new CardPileFactory());
+
+            // プレイヤー View を格納する変数の用意（if構文をまたぐためにif文の外に出しておく）
             BasicPlayerView playerView = null;
 
             // 各カードパイルを生成
@@ -119,7 +123,7 @@ namespace Tetrage.Factories
             if (_useView)
             {
               // プレイヤー View を生成
-                playerView = Object.Instantiate(_viewPrefab, _viewParent);
+                playerView = Object.Instantiate(_viewPrefab, _viewSpawnPosition, Quaternion.identity, _viewParent); // Quaternion.identityは回転なしの意味
 
                 // View付きでカードパイルを生成
                 target = cardPileBuilder
