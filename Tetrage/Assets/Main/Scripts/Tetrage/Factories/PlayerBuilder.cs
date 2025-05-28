@@ -25,6 +25,7 @@ namespace Tetrage.Factories
         private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
         private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
         private int _playerBuildingCount = 0;       // このPlayerBuilderで生成したPlayerの数
+        private PlayerType _playerType;
 
         /// <summary>基礎となる IPlayerFactory を受け取るコンストラクタ</summary>
         public PlayerBuilder(PlayerModelFactory innerFactory)
@@ -47,6 +48,9 @@ namespace Tetrage.Factories
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
+        /// <param name="viewPrefab">プレイヤー表示用ビューのプレハブ</param>
+        /// <param name="parent">プレイヤー表示用ビューの親</param>
+        /// <param name="cardPileViewsDict">カードパイル表示用ビューのディクショナリ</param>
         public PlayerBuilder UseView(
             BasicPlayerView viewPrefab, 
             Transform parent, 
@@ -72,6 +76,7 @@ namespace Tetrage.Factories
         }
 
         /// <summary>生成するプレイヤーのユーザーIDを設定する</summary>
+        /// <param name="userId">ユーザーID</param>
         public PlayerBuilder WithUserId(string userId)
         {
             Assert.IsFalse(string.IsNullOrEmpty(userId), "userId が null または空です");
@@ -79,6 +84,18 @@ namespace Tetrage.Factories
             return this;
         }
 
+        /// <summary>生成するプレイヤーのプレイヤータイプを設定する</summary>
+        /// <param name="playerType">プレイヤータイプ</param>
+        public PlayerBuilder WithPlayerType(PlayerType playerType)
+        {
+            _playerType = playerType;
+            // 現在は特定の設定はなし。
+            return this;
+        }
+
+        /// <summary>生成するプレイヤーのカードパイルのレイアウト設定を設定する</summary>
+        /// <param name="cardPileType">カードパイルのタイプ</param>
+        /// <param name="layoutSettings">カードパイルのレイアウト設定</param>
         public PlayerBuilder WithCardPileLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
         {
             _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
