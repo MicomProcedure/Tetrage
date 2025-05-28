@@ -73,8 +73,7 @@ namespace Tetrage.Tests
             _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab);
             // CardPileBuilder の初期化
             _pileBuilder = new CardPileBuilder(new CardPileFactory())
-                .UseCardFactory(_cardFactory)
-                .UseView(_pileViewPrefabDict[_pileViewType], pileParent);
+                .UseCardFactory(_cardFactory);
         }
 
         [ContextMenu("Spawn Sample Cards")]

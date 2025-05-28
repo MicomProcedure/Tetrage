@@ -18,16 +18,17 @@ namespace Tetrage.Factories
         private List<BasicCardPileView> _viewPrefabs;             // 山札表示用ビューのリスト
         private BasicCardPileView _viewPrefab;              // 山札表示用ビュー
         private Transform _viewParent;                     // 山札表示用ビューの親
-        private Dictionary<Card, CardView> _cardViewsDict;  // カード表示用ビューのディクショナリ
         private bool _useView;                             // 山札表示用ビューの使用フラグ
         private string _name;                              // 山札の名前
         private int _maxCount;                             // 山札の最大枚数
         private CardPileLayoutSettings _layoutSettings;     // 山札表示用ビューのレイアウト設定
-        private Vector3 _layoutOffset;                     // 山札表示用ビューのオフセット
         private ICardFactory _cardFactory;                 // カード生成用ファクトリ (初期カード生成に使用)
         private bool _useInitialCards;                     // 初期カード生成フラグ
         private Suit[] _initialSuits;                      // 初期カード生成スート
         private int _initialCountPerSuit;                  // 初期カード生成枚数
+        
+        // パラメータ変更検知用フラグ
+        private bool _hasParametersChanged;                // パラメータが初期値から変更されたかどうか
 
 
 
@@ -43,6 +44,8 @@ namespace Tetrage.Factories
             _layoutSettings = CardPileLayoutSettings.Default;
             // デフォルトのカードファクトリ設定
             _cardFactory = new CardModelFactory();
+            // フラグを初期化
+            _hasParametersChanged = false;
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
@@ -50,21 +53,21 @@ namespace Tetrage.Factories
         /// <param name="parent">BasicCardPileView の親</param>
         /// <param name="cardViewsDict">Card と CardView のディクショナリ</param>
         /// <returns>CardPileBuilder のインスタンス</returns>
-        public CardPileBuilder UseView(BasicCardPileView viewPrefab, Transform parent, Dictionary<Card, CardView> cardViewsDict)
+        public CardPileBuilder UseView(BasicCardPileView viewPrefab, Transform parent)
         {
             Assert.IsNotNull(viewPrefab, "viewPrefab が null です");
             Assert.IsNotNull(parent, "parent が null です");
-            Assert.IsNotNull(cardViewsDict, "cardViewsDict が null です");
             _useView = true;
             _viewPrefab = viewPrefab;
             _viewParent = parent;
-            _cardViewsDict = cardViewsDict;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
         public CardPileBuilder WithoutView()
         {
             _useView = false;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -72,6 +75,7 @@ namespace Tetrage.Factories
         public CardPileBuilder WithName(string name)
         {
             _name = name;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -79,6 +83,7 @@ namespace Tetrage.Factories
         public CardPileBuilder WithMaxCount(int maxCount)
         {
             _maxCount = maxCount;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -101,6 +106,7 @@ namespace Tetrage.Factories
                 maxSpacing,
                 positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset
             );
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -110,6 +116,7 @@ namespace Tetrage.Factories
         public CardPileBuilder WithLayout(CardPileLayoutSettings layoutSettings)
         {
             _layoutSettings = layoutSettings;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -120,6 +127,7 @@ namespace Tetrage.Factories
             _useInitialCards = true;
             _initialSuits = InGameConsts.DEFAULT_INITIAL_SUITS;
             _initialCountPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -140,6 +148,7 @@ namespace Tetrage.Factories
             _useInitialCards = true;
             _initialSuits = suits;
             _initialCountPerSuit = countPerSuit;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -150,6 +159,7 @@ namespace Tetrage.Factories
         {
             Assert.IsNotNull(cardFactory, "cardFactory が null です");
             _cardFactory = cardFactory;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -172,6 +182,13 @@ namespace Tetrage.Factories
         /// <returns>生成された CardPile のインスタンス</returns>
         public CardPile Build(IEnumerable<Card> initialCards)
         {
+            // 初期パラメータのまま使用された場合の警告
+            if (!_hasParametersChanged)
+            {
+                Debug.LogWarning("[CardPileBuilder] パラメータが初期値のままBuild()が実行されました。" +
+                    "適切なパラメータ設定（WithName, WithMaxCount, UseView など）を行うことを推奨します。");
+            }
+
             // モデル生成
             CardPile pile = initialCards == null
                 ? _innerFactory.CreatePile(_name, _maxCount)
@@ -184,10 +201,24 @@ namespace Tetrage.Factories
                 // レイアウト設定を反映
                 view.SetCardViewLayoutInfo(_layoutSettings);
                 // Presenter を生成
-                var presenter = new CardPilePresenter(pile, view, _cardViewsDict);
+                var presenter = new CardPilePresenter(pile, view);
             }
 
+            ResetParameters();
+
             return pile;
+        }
+
+        private void ResetParameters()
+        {
+            _useView = false;
+            _useInitialCards = false;
+            _name = "CardPile";
+            _maxCount = int.MaxValue;
+            _initialSuits = InGameConsts.DEFAULT_INITIAL_SUITS;
+            _initialCountPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
+            _layoutSettings = CardPileLayoutSettings.Default;
+            _hasParametersChanged = false; // フラグもリセット
         }
     }
 }
