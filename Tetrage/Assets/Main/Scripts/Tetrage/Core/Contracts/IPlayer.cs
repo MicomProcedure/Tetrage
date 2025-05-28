@@ -1,8 +1,8 @@
 using Tetrage.Actions;
-using Tetrage.Core.Enums;
+using Tetrage.Models;
 using Cysharp.Threading.Tasks;
 
-namespace Tetrage.Models
+namespace Tetrage.Core.Contracts
 {
     /// <summary>
     /// プレイヤーの公開インターフェース。(プレイヤーができることを指定する)
@@ -17,7 +17,7 @@ namespace Tetrage.Models
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
-        Card Target { get; set; }
+        CardPile Target { get; }
 
         /// <summary>
         /// プレイヤーが所持している手札の一覧。
@@ -33,6 +33,6 @@ namespace Tetrage.Models
         /// 指定されたアクションを実行します。
         /// </summary>
         /// <param name="action">実行するゲームアクション。</param>
-        UniTask PerformAction(GameAction action); 
+        UniTask PerformAction(GameAction action);
     }
 }

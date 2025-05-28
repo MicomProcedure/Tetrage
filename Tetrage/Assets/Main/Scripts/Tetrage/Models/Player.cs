@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Tetrage.Actions;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Contracts;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 
@@ -17,22 +18,6 @@ namespace Tetrage.Models
         // UserID フィールドを追加 (読み取り専用プロパティとして公開)
         public string UserID { get; }
 
-        public Player(string userId = null) // UserID をコンストラクタで受け取るように変更
-        {
-            PlayerID = _playerCount++;
-            Target = null;
-            // Hands はプロパティの初期化子で定義
-            Tmp = new CardPile(name: "Temporary", maxCount: 2);
-
-            // UserID が指定されなかった場合は、PlayerID を元にしたデフォルト値を設定
-            UserID = userId ?? $"Player_{PlayerID}";
-        }
-
-        public int GetPlayerCount()
-        {
-            return _playerCount;
-        }
-
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
@@ -41,20 +26,37 @@ namespace Tetrage.Models
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
-        public Card Target { get; set; }
+        public CardPile Target { get; private set; }
 
-        private CardPile _hands = new CardPile(name: "Hand", maxCount: 3);
 
         /// <summary>
         /// プレイヤーが所持している手札の一覧。
         /// </summary>
-        public CardPile Hands => _hands;
+        public CardPile Hands { get; private set; }
 
         /// <summary>
         /// 一時的に保持しているカードの一覧。
         /// </summary>
-        public CardPile Tmp { get; } = new CardPile(name: "Temporary", maxCount: 2);
+        public CardPile Tmp { get; private set; }
 
+
+        public Player(string userId, CardPile target, CardPile hands, CardPile tmp) // UserID をコンストラクタで受け取るように変更
+        {
+            PlayerID = _playerCount++;
+
+            Target = target;
+            Hands = hands;
+            Tmp = tmp;
+
+            // UserID が指定されなかった場合は、PlayerID を元にしたデフォルト値を設定
+            UserID = userId ?? $"Player_{PlayerID}";
+        }
+
+
+        public int GetPlayerCount()
+        {
+            return _playerCount;
+        }
 
         /// <summary>
         /// 指定されたアクションを実行します。

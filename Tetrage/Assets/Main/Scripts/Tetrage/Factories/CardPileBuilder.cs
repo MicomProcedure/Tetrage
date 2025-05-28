@@ -7,28 +7,28 @@ using Tetrage.UI;
 using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Settings;
 
 namespace Tetrage.Factories
 {
-    /// <summary>カード山（初期カード付き）を構築するビルダーパターン実装である</summary>
+    /// <summary>カード山（初期カード付き）を構築するビルダーパターン実装</summary>
     public class CardPileBuilder
     {
         private readonly ICardPileFactory _innerFactory;    // 山札生成用基本ファクトリ
         private List<BasicCardPileView> _viewPrefabs;             // 山札表示用ビューのリスト
         private BasicCardPileView _viewPrefab;              // 山札表示用ビュー
         private Transform _viewParent;                     // 山札表示用ビューの親
-        private Dictionary<Card, CardView> _cardViewsDict;  // カード表示用ビューのディクショナリ
         private bool _useView;                             // 山札表示用ビューの使用フラグ
         private string _name;                              // 山札の名前
         private int _maxCount;                             // 山札の最大枚数
-        private float _layoutWidth;                        // 山札表示用ビューの幅
-        private float _layoutMinSpacing;                   // 山札表示用ビューの最小間隔
-        private float _layoutMaxSpacing;                   // 山札表示用ビューの最大間隔
-        private Vector3 _layoutOffset;                     // 山札表示用ビューのオフセット
+        private CardPileLayoutSettings _layoutSettings;     // 山札表示用ビューのレイアウト設定
         private ICardFactory _cardFactory;                 // カード生成用ファクトリ (初期カード生成に使用)
         private bool _useInitialCards;                     // 初期カード生成フラグ
         private Suit[] _initialSuits;                      // 初期カード生成スート
         private int _initialCountPerSuit;                  // 初期カード生成枚数
+        
+        // パラメータ変更検知用フラグ
+        private bool _hasParametersChanged;                // パラメータが初期値から変更されたかどうか
 
 
 
@@ -41,30 +41,33 @@ namespace Tetrage.Factories
             _name = "CardPile";
             _maxCount = int.MaxValue;
             // デフォルトのレイアウト設定を適用
-            _layoutWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH;
-            _layoutMinSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING;
-            _layoutMaxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING;
-            _layoutOffset = InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET;
+            _layoutSettings = CardPileLayoutSettings.Default;
             // デフォルトのカードファクトリ設定
             _cardFactory = new CardModelFactory();
+            // フラグを初期化
+            _hasParametersChanged = false;
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
-        public CardPileBuilder UseView(BasicCardPileView viewPrefab, Transform parent, Dictionary<Card, CardView> cardViewsDict)
+        /// <param name="viewPrefab">BasicCardPileView のインスタンス</param>
+        /// <param name="parent">BasicCardPileView の親</param>
+        /// <param name="cardViewsDict">Card と CardView のディクショナリ</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
+        public CardPileBuilder UseView(BasicCardPileView viewPrefab, Transform parent)
         {
             Assert.IsNotNull(viewPrefab, "viewPrefab が null です");
             Assert.IsNotNull(parent, "parent が null です");
-            Assert.IsNotNull(cardViewsDict, "cardViewsDict が null です");
             _useView = true;
             _viewPrefab = viewPrefab;
             _viewParent = parent;
-            _cardViewsDict = cardViewsDict;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
         public CardPileBuilder WithoutView()
         {
             _useView = false;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -72,6 +75,7 @@ namespace Tetrage.Factories
         public CardPileBuilder WithName(string name)
         {
             _name = name;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -79,29 +83,40 @@ namespace Tetrage.Factories
         public CardPileBuilder WithMaxCount(int maxCount)
         {
             _maxCount = maxCount;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
-        /// <summary>CardPileView のレイアウト情報を設定する</summary>
-        /// <param name="pileWidth">山札の幅</param>
-        /// <param name="minSpacing">山札の最小間隔</param>
-        /// <param name="maxSpacing">山札の最大間隔</param>
-        /// <param name="positionOffset">山札の位置オフセット</param>
+
         /// <summary>CardPileView のレイアウト情報を設定する</summary>
         /// <param name="pileWidth">山札の幅（デフォルト: DEFAULT_CARD_PILE_WIDTH）</param>
         /// <param name="minSpacing">山札の最小間隔（デフォルト: DEFAULT_CARD_VIEW_MIN_SPACING）</param>
         /// <param name="maxSpacing">山札の最大間隔（デフォルト: DEFAULT_CARD_VIEW_MAX_SPACING）</param>
         /// <param name="positionOffset">山札の位置オフセット（デフォルト: DEFAULT_CARD_VIEW_POSITION_OFFSET）</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
         public CardPileBuilder WithLayout(
             float pileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH,
             float minSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING,
             float maxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING,
             Vector3 positionOffset = default)
         {
-            _layoutWidth = pileWidth;
-            _layoutMinSpacing = minSpacing;
-            _layoutMaxSpacing = maxSpacing;
-            _layoutOffset = positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset;
+            _layoutSettings = new CardPileLayoutSettings(
+                pileWidth,
+                minSpacing,
+                maxSpacing,
+                positionOffset == default ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET : positionOffset
+            );
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
+            return this;
+        }
+
+        /// <summary>CardPileView のレイアウト情報を設定する</summary>
+        /// <param name="layoutSettings">CardPileLayoutSettings の構造体インスタンス</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
+        public CardPileBuilder WithLayout(CardPileLayoutSettings layoutSettings)
+        {
+            _layoutSettings = layoutSettings;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -112,16 +127,7 @@ namespace Tetrage.Factories
             _useInitialCards = true;
             _initialSuits = InGameConsts.DEFAULT_INITIAL_SUITS;
             _initialCountPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
-            return this;
-        }
-
-        /// <summary>ICardFactory を設定し、初期カード生成を可能にする</summary>
-        /// <param name="cardFactory">ICardFactory の実装</param>
-        /// <returns>CardPileBuilder のインスタンス</returns>
-        public CardPileBuilder UseCardFactory(ICardFactory cardFactory)
-        {
-            Assert.IsNotNull(cardFactory, "cardFactory が null です");
-            _cardFactory = cardFactory;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
 
@@ -142,8 +148,21 @@ namespace Tetrage.Factories
             _useInitialCards = true;
             _initialSuits = suits;
             _initialCountPerSuit = countPerSuit;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
             return this;
         }
+
+        /// <summary>ICardFactory を設定し、初期カード生成を可能にする</summary>
+        /// <param name="cardFactory">ICardFactory の実装</param>
+        /// <returns>CardPileBuilder のインスタンス</returns>
+        public CardPileBuilder UseCardFactory(ICardFactory cardFactory)
+        {
+            Assert.IsNotNull(cardFactory, "cardFactory が null です");
+            _cardFactory = cardFactory;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
+            return this;
+        }
+
 
         /// <summary>山札を生成する（初期カード指定なし）</summary>
         /// <returns>生成された CardPile のインスタンス</returns>
@@ -163,6 +182,13 @@ namespace Tetrage.Factories
         /// <returns>生成された CardPile のインスタンス</returns>
         public CardPile Build(IEnumerable<Card> initialCards)
         {
+            // 初期パラメータのまま使用された場合の警告
+            if (!_hasParametersChanged)
+            {
+                Debug.LogWarning("[CardPileBuilder] パラメータが初期値のままBuild()が実行されました。" +
+                    "適切なパラメータ設定（WithName, WithMaxCount, UseView など）を行うことを推奨します。");
+            }
+
             // モデル生成
             CardPile pile = initialCards == null
                 ? _innerFactory.CreatePile(_name, _maxCount)
@@ -173,12 +199,26 @@ namespace Tetrage.Factories
                 // View を生成
                 ICardPileView view = Object.Instantiate(_viewPrefab, _viewParent);
                 // レイアウト設定を反映
-                view.SetCardViewLayoutInfo(_layoutWidth, _layoutMinSpacing, _layoutMaxSpacing, _layoutOffset);
+                view.SetCardViewLayoutInfo(_layoutSettings);
                 // Presenter を生成
-                var presenter = new CardPilePresenter(pile, view, _cardViewsDict);
+                var presenter = new CardPilePresenter(pile, view);
             }
 
+            ResetParameters();
+
             return pile;
+        }
+
+        private void ResetParameters()
+        {
+            _useView = false;
+            _useInitialCards = false;
+            _name = "CardPile";
+            _maxCount = int.MaxValue;
+            _initialSuits = InGameConsts.DEFAULT_INITIAL_SUITS;
+            _initialCountPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
+            _layoutSettings = CardPileLayoutSettings.Default;
+            _hasParametersChanged = false; // フラグもリセット
         }
     }
 }

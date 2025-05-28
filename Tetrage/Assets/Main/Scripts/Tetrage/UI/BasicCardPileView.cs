@@ -4,6 +4,7 @@ using Tetrage.Core.Contracts;
 using System.Collections.Generic;
 using Tetrage.Core.Constants;
 using System.Linq;
+using Tetrage.Core.Settings;
 
 namespace Tetrage.UI
 {
@@ -111,7 +112,7 @@ namespace Tetrage.UI
         /// <param name="cardViewMinSpacing">カード表示用Viewの最小間隔</param>
         /// <param name="cardViewMaxSpacing">カード表示用Viewの最大間隔</param>
         /// <param name="cardViewPositionOffset">カード表示用Viewの中心からのオフセット</param>
-        public virtual void SetCardViewLayoutInfo(
+        public void SetCardViewLayoutInfo(
         float cardPileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH,
         float cardViewMinSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING,
         float cardViewMaxSpacing = InGameConsts.DEFAULT_CARD_VIEW_MAX_SPACING,
@@ -121,6 +122,14 @@ namespace Tetrage.UI
             _cardViewMinSpacing = cardViewMinSpacing;
             _cardViewMaxSpacing = cardViewMaxSpacing;
             _cardViewPositionOffset = cardViewPositionOffset;
+        }
+
+        public void SetCardViewLayoutInfo(CardPileLayoutSettings layoutSettings)
+        {
+            _cardPileWidth = layoutSettings.PileWidth;
+            _cardViewMinSpacing = layoutSettings.MinSpacing;
+            _cardViewMaxSpacing = layoutSettings.MaxSpacing;
+            _cardViewPositionOffset = layoutSettings.PositionOffset;
         }
 
         /// <summary>カード表示用ViewのTransformリストを子オブジェクト子オブジェクトから取得</summary>

@@ -7,73 +7,74 @@ using Tetrage.Factories;
 using System.Linq;
 using Tetrage.UI;
 using Tetrage.Core.Constants;
+using UnityEngine.Assertions;
+using Tetrage.Core.Settings;
 
 namespace Tetrage.Factories
 {
     /// <summary>
     /// ゲームステージ生成用Factory
     /// </summary>
-    public class StageFactory
+    public class StageFactory : IStageFactory
     {
-        private readonly ICardPileFactory _deckFactory;
         private readonly ICardPileFactory _pileFactory;
         private readonly CardModelFactory _cardModelFactory;
-        private readonly CardWithViewFactory _cardFactory;
-        private readonly CardPileBuilder _pileBuilder;
-        private readonly Dictionary<CardPileViewType, GameObject> _pileViewPrefabDict;
-        private readonly BasicCardPileView _stackViewPrefab;
-        private readonly BasicCardPileView _trashViewPrefab;
-        private readonly Transform _cardParent;
+        private readonly CardView _cardViewPrefab;
         private readonly Transform _pileParent;
-        private readonly Dictionary<Card, CardView> _cardViewsDict;
-        private readonly CardPileViewType _pileViewType;
+        private readonly Dictionary<CardPileType, BasicCardPileView> _pileViewPrefabDict;
+        private readonly Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict;
         private readonly int _countPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
+
         /// <summary>
         /// ステージファクトリのコンストラクタ
         /// </summary>
-        /// <param name="deckFactory">デッキ生成用ファクトリ</param>
-        /// <param name="pileFactory">山札生成用ファクトリ</param>
-        /// <param name="cardsPerSuit">1スートあたりのカード枚数（デフォルト: 13）</param>
-        /// <param name="numberOfSuits">使用するスートの種類数（デフォルト: 4）</param>
+        /// <param name="pileFactory">カードパイル生成用ファクトリ</param>
+        /// <param name="cardViewPrefab">カード表示用Viewプレハブ</param>
+        /// <param name="pileParent">カードパイル表示用ビューの親Transform</param>
+        /// <param name="pileViewPrefabDict">カードパイルタイプとView Prefabの対応辞書</param>
         public StageFactory(
-            ICardPileFactory deckFactory, 
             ICardPileFactory pileFactory,
             CardView cardViewPrefab,
-            Transform cardParent,
             Transform pileParent,
-            BasicCardPileView stackViewPrefab,
-            BasicCardPileView trashViewPrefab
+            Dictionary<CardPileType, BasicCardPileView> pileViewPrefabDict
             )
         {
-            _deckFactory = deckFactory;
-            _pileFactory = pileFactory;
-            _stackViewPrefab = stackViewPrefab;
-            _trashViewPrefab = trashViewPrefab;
-            _cardParent = cardParent;
-            _pileParent = pileParent;
-            _cardViewsDict = new Dictionary<Card, CardView>();
+            // 必須パラメータのnullチェック
+            Assert.IsNotNull(pileFactory, "pileFactory が null です");
+            Assert.IsNotNull(cardViewPrefab, "cardViewPrefab が null です");
+            Assert.IsNotNull(pileParent, "pileParent が null です");
+            Assert.IsNotNull(pileViewPrefabDict, "pileViewPrefabDict が null です");
+            ValidatePileViewDict(pileViewPrefabDict);
 
-            // モデルファクトリとデコレータファクトリの初期化
+            _pileFactory = pileFactory;
+            _cardViewPrefab = cardViewPrefab;
+            _pileParent = pileParent;
+            _pileViewPrefabDict = pileViewPrefabDict;
+
+            // モデルファクトリの初期化
             _cardModelFactory = new CardModelFactory();
-            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict);
-            // CardPileBuilder の初期化
-            _pileBuilder = new CardPileBuilder(_pileFactory)
-                .UseCardFactory(_cardFactory)
-                .UseView(_pileViewPrefabDict[_pileViewType].GetComponent<BasicCardPileView>(), pileParent, _cardViewsDict);
+
+            // デフォルトのレイアウト設定
+            _cardPileLayoutSettingsDict = new Dictionary<CardPileType, CardPileLayoutSettings>
+            {
+                { CardPileType.Stack, CardPileLayoutSettings.Default },
+                { CardPileType.Trash, CardPileLayoutSettings.Default }
+            };
         }
 
-        /// <summary>
-        /// ステージ(MonoBehaviour)生成と初期配置
-        /// </summary>
+        /// <summary>レイアウト設定を追加する</summary>
+        public StageFactory WithCardPileLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
+        {
+            _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
+            return this;
+        }
+
         /// <summary>
         /// ステージ(MonoBehaviour)生成と初期配置を行います。
         /// </summary>
         /// <returns>生成されたStageManagerインスタンス。</returns>
         public Stage SetupStage()
         {
-            //cardpilebuilderを使って山札を作る
-            CardPileBuilder builder = new CardPileBuilder(_pileFactory);
-            CardPile deck = builder.Build();
             Stage stage = new Stage(BuildStack(), BuildTrash());
             return stage;
         }
@@ -83,25 +84,64 @@ namespace Tetrage.Factories
             var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
             var count = suits.Length * _countPerSuit;
 
+            // CardWithViewFactoryを生成
+            var cardFactory = new CardWithViewFactory(_cardModelFactory, _cardViewPrefab);
+
             // ビルダーで山札生成（初期カード付き）
-            var pile = _pileBuilder
-                .UseView(_stackViewPrefab,_pileParent, _cardViewsDict)
+            var builder = new CardPileBuilder(_pileFactory);
+            var pile = builder
                 .WithName("Stack")
                 .WithMaxCount(count)
-                .WithInitialCards(_cardFactory, suits, _countPerSuit)
+                .UseView(_pileViewPrefabDict[CardPileType.Stack], _pileParent)
+                .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Stack])
+                .UseCardFactory(cardFactory)
+                .WithInitialCards(cardFactory, suits, _countPerSuit)
                 .Build();
             return pile;
         }
 
         private CardPile BuildTrash()
         {
-            // ビルダーで山札生成（初期カード付き）
-            var pile = _pileBuilder
-                .UseView(_trashViewPrefab, _pileParent, _cardViewsDict)
+            // CardWithViewFactoryを生成
+            var cardFactory = new CardWithViewFactory(_cardModelFactory, _cardViewPrefab);
+
+            // ビルダーで山札生成
+            var builder = new CardPileBuilder(_pileFactory);
+            var pile = builder
                 .WithName("Trash")
                 .WithMaxCount(InGameConsts.DEFAULT_CARD_PILE_CAPACITY)
+                .UseView(_pileViewPrefabDict[CardPileType.Trash], _pileParent)
+                .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Trash])
+                .UseCardFactory(cardFactory)
                 .Build();
             return pile;
         }
+
+        /// <summary>
+        /// PileViewDictに必要なキーと値が存在するかを検証します
+        /// </summary>
+        /// <param name="pileViewPrefabDict">検証対象の辞書</param>
+        private static void ValidatePileViewDict(Dictionary<CardPileType, BasicCardPileView> pileViewPrefabDict)
+        {
+            // 必要なCardPileTypeの配列
+            var requiredCardPileTypes = new[]
+            {
+                CardPileType.Stack,
+                CardPileType.Trash
+            };
+
+            // 各必要キーの存在と値のnullチェック
+            foreach (var requiredType in requiredCardPileTypes)
+            {
+                // キーの存在チェック
+                Assert.IsTrue(pileViewPrefabDict.ContainsKey(requiredType),
+                    $"pileViewPrefabDict に必要なキー '{requiredType}' が存在しません");
+
+                // 対応する値のnullチェック
+                var pileView = pileViewPrefabDict[requiredType];
+                Assert.IsNotNull(pileView,
+                    $"pileViewPrefabDict のキー '{requiredType}' に対応する値が null です");
+            }
+        }
     }
-} 
+}

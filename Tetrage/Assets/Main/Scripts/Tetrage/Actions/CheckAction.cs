@@ -35,7 +35,7 @@ namespace Tetrage.Actions
         protected override async UniTask Run() // IEnumerator から async UniTask に変更
         {
             var selectable = _others
-                .Select(p => p.Target as Card) // 各プレイヤーのターゲットを取得し Card にキャスト
+                .Select(p => p.Target.FirstOrDefault()) // 各プレイヤーのターゲットを取得し CardPile にキャスト
                 .Where(c => c != null && c.IsVisible) // Nullや表向きカードは除外
                 .ToList();
 

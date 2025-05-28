@@ -1,5 +1,5 @@
 using Tetrage.Actions;
-using Tetrage.Models;
+using Tetrage.Core.Contracts;
 using UnityEngine;
 using UnityEngine.UI;
 

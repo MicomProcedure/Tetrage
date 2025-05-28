@@ -1,0 +1,194 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Assertions;
+using Tetrage.Core.Contracts;
+using Tetrage.Models;
+using Tetrage.UI;
+using Tetrage.Presenters;
+using Tetrage.Core.Constants;
+using Tetrage.Core.Enums;
+using Tetrage.Core.Settings;
+
+namespace Tetrage.Factories
+{
+    /// <summary>プレイヤー（初期カードパイル付き）を構築するビルダーパターン実装</summary>
+    public class PlayerBuilder
+    {
+        private readonly PlayerModelFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
+        private BasicPlayerView _viewPrefab;                // プレイヤー表示用ビュー
+        private Transform _viewParent;                      // プレイヤー表示用ビューの親
+        private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
+        private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
+        private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
+        private int _handsCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY;                         // 手札の容量
+        private int _tmpCapacity = InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY;                            // 一時保持カードの容量
+        private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
+        private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
+        private int _playerBuildingCount = 0;       // このPlayerBuilderで生成したPlayerの数
+
+        /// <summary>基礎となる IPlayerFactory を受け取るコンストラクタ</summary>
+        public PlayerBuilder(PlayerModelFactory innerFactory)
+        {
+            Assert.IsNotNull(innerFactory, "innerFactory(PlayerModelFactory) が null です");
+            
+            _innerFactory = innerFactory;
+
+            // デフォルト設定
+            _userId = InGameConsts.DEFAULT_PLAYER_ID + _playerBuildingCount;
+
+            _cardPileLayoutSettingsDict = new Dictionary<CardPileType, CardPileLayoutSettings>
+            {
+                { CardPileType.Target, CardPileLayoutSettings.Default },
+                { CardPileType.Hands, CardPileLayoutSettings.Default },
+                { CardPileType.Tmp, CardPileLayoutSettings.Default }
+            };
+            
+
+        }
+
+        /// <summary>View と Presenter を生成するよう設定する</summary>
+        public PlayerBuilder UseView(
+            BasicPlayerView viewPrefab, 
+            Transform parent, 
+            Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
+        {
+            Assert.IsNotNull(viewPrefab, "viewPrefab が null です");
+            Assert.IsNotNull(parent, "parent が null です");
+            Assert.IsNotNull(cardPileViewsDict, "cardPileViewsDict が null です");
+            ValidateCardPileViewDict(cardPileViewsDict);
+            
+            _useView = true;
+            _viewPrefab = viewPrefab;
+            _viewParent = parent;
+            _cardPileViewsDict = cardPileViewsDict;
+            return this;
+        }
+
+        /// <summary>Viewを使用しないよう設定する</summary>
+        public PlayerBuilder WithoutView()
+        {
+            _useView = false;
+            return this;
+        }
+
+        /// <summary>生成するプレイヤーのユーザーIDを設定する</summary>
+        public PlayerBuilder WithUserId(string userId)
+        {
+            Assert.IsFalse(string.IsNullOrEmpty(userId), "userId が null または空です");
+            _userId = userId;
+            return this;
+        }
+
+        public PlayerBuilder WithCardPileLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
+        {
+            _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
+            return this;
+        }
+
+
+        /// <summary>プレイヤーを生成する</summary>
+        /// <returns>生成された Player のインスタンス</returns>
+        public IPlayer Build()
+        {
+            // カードパイル生成用ビルダーを作成
+            var cardPileBuilder = new CardPileBuilder(new CardPileFactory());
+            BasicPlayerView playerView = null;
+
+            // 各カードパイルを生成
+            CardPile target = null;
+            CardPile hands = null;
+            CardPile tmp = null;
+
+            if (_useView)
+            {
+              // プレイヤー View を生成
+                playerView = Object.Instantiate(_viewPrefab, _viewParent);
+
+                // View付きでカードパイルを生成
+                target = cardPileBuilder
+                    .WithName(CardPileType.Target.ToString())
+                    .WithMaxCount(_targetCapacity)
+                    .UseView(_cardPileViewsDict[CardPileType.Target], playerView.TargetRoot)
+                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Target])
+                    .Build();
+
+                hands = cardPileBuilder
+                    .WithName(CardPileType.Hands.ToString())
+                    .WithMaxCount(_handsCapacity)
+                    .UseView(_cardPileViewsDict[CardPileType.Hands], playerView.HandsRoot)
+                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Hands])
+                    .Build();
+
+                tmp = cardPileBuilder
+                    .WithName(CardPileType.Tmp.ToString())
+                    .WithMaxCount(_tmpCapacity)
+                    .UseView(_cardPileViewsDict[CardPileType.Tmp], playerView.TmpRoot)
+                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Tmp])
+                    .Build();
+            }
+            else
+            {
+                // Viewなしでカードパイルを生成
+                target = cardPileBuilder
+                    .WithName(CardPileType.Target.ToString())
+                    .WithMaxCount(_targetCapacity)
+                    .WithoutView()
+                    .Build();
+
+                hands = cardPileBuilder
+                    .WithName(CardPileType.Hands.ToString())
+                    .WithMaxCount(_handsCapacity)
+                    .WithoutView()
+                    .Build();
+
+                tmp = cardPileBuilder
+                    .WithName(CardPileType.Tmp.ToString())
+                    .WithMaxCount(_tmpCapacity)
+                    .WithoutView()
+                    .Build();
+            }
+
+            // プレイヤーモデル生成
+            IPlayer player = _innerFactory.CreatePlayer(_userId, target, hands, tmp);
+
+            if (_useView)
+            {
+
+                // プレイヤー Presenter を生成
+                var presenter = new PlayerPresenter(playerView, player);
+            }
+
+            _playerBuildingCount++; // 名前を設定しなかった場合のデフォルトの名前を設定するためのカウンタなのであんまり気にしなくてよい
+
+            return player;
+        }
+
+        /// <summary>
+        /// CardPileViewDictに必要なキーと値が存在するかを検証します
+        /// </summary>
+        /// <param name="cardPileViewsDict">検証対象の辞書</param>
+        private static void ValidateCardPileViewDict(Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
+        {
+            // 必要なCardPileTypeの配列
+            var requiredCardPileTypes = new[]
+            {
+                CardPileType.Target,
+                CardPileType.Hands,
+                CardPileType.Tmp
+            };
+
+            // 各必要キーの存在と値のnullチェック
+            foreach (var requiredType in requiredCardPileTypes)
+            {
+                // キーの存在チェック
+                Assert.IsTrue(cardPileViewsDict.ContainsKey(requiredType),
+                    $"cardPileViewsDict に必要なキー '{requiredType}' が存在しません");
+
+                // 対応する値のnullチェック
+                var cardPileView = cardPileViewsDict[requiredType];
+                Assert.IsNotNull(cardPileView,
+                    $"cardPileViewsDict のキー '{requiredType}' に対応する値が null です");
+            }
+        }
+    }
+} 

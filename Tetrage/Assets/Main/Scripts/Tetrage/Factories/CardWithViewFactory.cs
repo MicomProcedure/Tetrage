@@ -17,30 +17,44 @@ namespace Tetrage.Factories
         private readonly ICardFactory _innerFactory;
         private readonly CardView _viewPrefab;
         private readonly Transform _parentTransform;
-        private readonly IDictionary<Card, CardView> _cardViewsDict;
 
         // 必ずコンストラクタに引数を持たせないとコンパイルエラーになる
         [Obsolete("Use CardWithViewFactory(CardView prefab, IDictionary<CardModel,CardView> cardDict) instead", true)]
         public CardWithViewFactory() { }
 
-        /// <param name="innerFactory">モデル生成を委譲するICardFactory</param>
+        /// <summary>
+        /// /// <param name="innerFactory">モデル生成を委譲するICardFactory</param>
         /// <param name="viewPrefab">カード表示用Viewプレハブ</param>
         /// <param name="parentTransform">生成したViewの親Transform</param>
-        public CardWithViewFactory(ICardFactory innerFactory, CardView viewPrefab, Transform parentTransform, IDictionary<Card, CardView> cardViewsDict)
+        public CardWithViewFactory(ICardFactory innerFactory, CardView viewPrefab, Transform parentTransform)
         {
             // 必須パラメータのnullチェック
             // カードモデル生成を委譲するファクトリのnullチェック
             Assert.IsNotNull(innerFactory, "innerFactory が null です");
             // カードビュープレハブのnullチェック
-            Assert.IsNotNull(viewPrefab, "CardViewPrefab が null です"); 
+            Assert.IsNotNull(viewPrefab, "CardViewPrefab が null です");
             // 生成したビューの親となるTransformのnullチェック
             Assert.IsNotNull(parentTransform, "ParentTransform が null です");
-            // カードモデルとビューの対応辞書のnullチェック
-            Assert.IsNotNull(cardViewsDict, "cardViewsDict が null です");
             _innerFactory = innerFactory;
             _viewPrefab = viewPrefab;
             _parentTransform = parentTransform;
-            _cardViewsDict = cardViewsDict;
+        }
+
+        /// <summary>
+        /// カードモデル生成後にViewとPresenterを構築するデコレーターファクトリ（親Transformを指定なし）
+        /// </summary>
+        /// <param name="innerFactory">モデル生成を委譲するICardFactory</param>
+        /// <param name="viewPrefab">カード表示用Viewプレハブ</param>
+        public CardWithViewFactory(ICardFactory innerFactory, CardView viewPrefab)
+        {
+            // 必須パラメータのnullチェック
+            // カードモデル生成を委譲するファクトリのnullチェック
+            Assert.IsNotNull(innerFactory, "innerFactory が null です");
+            // カードビュープレハブのnullチェック
+            Assert.IsNotNull(viewPrefab, "CardViewPrefab が null です");
+            _innerFactory = innerFactory;
+            _viewPrefab = viewPrefab;
+            _parentTransform = null; // 親を指定しない
         }
 
         /// <inheritdoc/>
@@ -74,12 +88,13 @@ namespace Tetrage.Factories
         /// <param name="card">対象のカードモデル</param>
         private void CreateViewAndPresenter(Card card)
         {
-            // View生成
-            var view = UnityEngine.Object.Instantiate(_viewPrefab, _parentTransform);
-            // カードモデルとビューの対応を辞書に登録
-            _cardViewsDict.Add(card, view);
+            // View生成（parentTransformがnullの場合はシーンルートに配置）
+            var view = _parentTransform != null
+                ? UnityEngine.Object.Instantiate(_viewPrefab, _parentTransform)
+                : UnityEngine.Object.Instantiate(_viewPrefab);
+                
             // Presenter生成
             var presenter = new CardPresenter(card, view);
         }
     }
-} 
+}
