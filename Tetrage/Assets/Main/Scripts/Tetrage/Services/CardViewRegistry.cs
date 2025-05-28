@@ -1,3 +1,4 @@
+#nullable enable
 using Tetrage.Models;
 using Tetrage.UI;
 using System.Collections.Generic;
@@ -26,15 +27,22 @@ namespace Tetrage.Services
             }
             _cardViews.Remove(card);
         }
+
+        public static bool TryGetView(Card card, out CardView view)
+        {
+            return _cardViews.TryGetValue(card, out view);
+        }
         
+        [System.Obsolete("TryGetView は非推奨です。GetView を使用してください。")]
         public static CardView? GetView(Card card)
         {
             return _cardViews.TryGetValue(card, out var view) ? view : null;
         }
         
-        public static Dictionary<Card, CardView> GetAll() => _cardViews;
+        public static IReadOnlyDictionary<Card, CardView> GetAll() => _cardViews;
         
         // テスト用・シーン切り替え用
         public static void Clear() => _cardViews.Clear();
     }
 }
+#nullable restore
