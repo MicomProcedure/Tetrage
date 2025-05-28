@@ -16,12 +16,12 @@ namespace Tetrage.Models
         private static int _playerCount = 0;
 
         // UserID フィールドを追加 (読み取り専用プロパティとして公開)
-        public string UserID { get; }
+        public string UserId { get; }
 
         /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        public int PlayerID { get; }
+        public int PlayerId { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
@@ -42,14 +42,14 @@ namespace Tetrage.Models
 
         public Player(string userId, CardPile target, CardPile hands, CardPile tmp) // UserID をコンストラクタで受け取るように変更
         {
-            PlayerID = _playerCount++;
+            PlayerId = _playerCount++;
 
             Target = target;
             Hands = hands;
             Tmp = tmp;
 
             // UserID が指定されなかった場合は、PlayerID を元にしたデフォルト値を設定
-            UserID = userId ?? $"Player_{PlayerID}";
+            UserId = userId ?? $"Player_{PlayerId}";
         }
 
 
@@ -67,7 +67,7 @@ namespace Tetrage.Models
             // アクションが有効か検証
             if (!action.Validate())
             {
-                Debug.LogWarning($"Action '{action.GetType().Name}' for Player {UserID} is not valid.");
+                Debug.LogWarning($"Action '{action.GetType().Name}' for Player {UserId} is not valid.");
                 return;
             }
 

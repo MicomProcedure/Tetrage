@@ -10,9 +10,14 @@ namespace Tetrage.Core.Contracts
     public interface IPlayer
     {
         /// <summary>
+        /// プレイヤーのユーザーID。
+        /// </summary>
+        public string UserId { get; }
+
+        /// <summary>
         /// プレイヤーの一意な識別子。
         /// </summary>
-        public int PlayerID { get; }
+        public int PlayerId { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)

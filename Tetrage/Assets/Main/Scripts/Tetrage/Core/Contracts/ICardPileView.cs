@@ -1,7 +1,7 @@
 using System;
 using Tetrage.UI;
 using UnityEngine;
-using Tetrage.Core.Settings;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Core.Contracts
 {
