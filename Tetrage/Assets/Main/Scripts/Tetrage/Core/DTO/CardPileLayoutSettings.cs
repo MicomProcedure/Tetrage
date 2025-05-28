@@ -1,7 +1,7 @@
 using UnityEngine;
 using Tetrage.Core.Constants;
 
-namespace Tetrage.Core.Settings
+namespace Tetrage.Core.DTO
 {
     /// <summary>
     /// カードパイルのレイアウト設定を表す不変な構造体

@@ -8,7 +8,7 @@ using System.Linq;
 using Tetrage.UI;
 using Tetrage.Core.Constants;
 using UnityEngine.Assertions;
-using Tetrage.Core.Settings;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Factories
 {

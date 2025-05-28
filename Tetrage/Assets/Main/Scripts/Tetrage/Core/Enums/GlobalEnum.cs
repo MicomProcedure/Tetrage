@@ -34,5 +34,12 @@ namespace Tetrage.Core.Enums
         Basic,  // 基本のカードパイル
     }
 
+    public enum PlayerType
+    {
+        LocalPlayer,
+        RemotePlayer,
+        Bot,
+    }
+
 
 }

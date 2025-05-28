@@ -7,7 +7,7 @@ using Tetrage.UI;
 using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
-using Tetrage.Core.Settings;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Factories
 {
@@ -17,6 +17,7 @@ namespace Tetrage.Factories
         private readonly PlayerModelFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
         private BasicPlayerView _viewPrefab;                // プレイヤー表示用ビュー
         private Transform _viewParent;                      // プレイヤー表示用ビューの親
+        private Vector3 _viewSpawnPosition;                 // プレイヤー表示用ビューの生成位置
         private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
         private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
         private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
@@ -25,6 +26,7 @@ namespace Tetrage.Factories
         private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
         private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
         private int _playerBuildingCount = 0;       // このPlayerBuilderで生成したPlayerの数
+        private PlayerType _playerType;
 
         /// <summary>基礎となる IPlayerFactory を受け取るコンストラクタ</summary>
         public PlayerBuilder(PlayerModelFactory innerFactory)
@@ -47,8 +49,13 @@ namespace Tetrage.Factories
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
+        /// <param name="viewPrefab">プレイヤー表示用ビューのプレハブ</param>
+        /// <param name="spawnPosition">プレイヤー表示用ビューの生成位置</param>
+        /// <param name="parent">プレイヤー表示用ビューの親</param>
+        /// <param name="cardPileViewsDict">カードパイル表示用ビューのディクショナリ</param>
         public PlayerBuilder UseView(
             BasicPlayerView viewPrefab, 
+            Vector3 spawnPosition,
             Transform parent, 
             Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
         {
@@ -59,6 +66,7 @@ namespace Tetrage.Factories
             
             _useView = true;
             _viewPrefab = viewPrefab;
+            _viewSpawnPosition = spawnPosition;
             _viewParent = parent;
             _cardPileViewsDict = cardPileViewsDict;
             return this;
@@ -72,6 +80,7 @@ namespace Tetrage.Factories
         }
 
         /// <summary>生成するプレイヤーのユーザーIDを設定する</summary>
+        /// <param name="userId">ユーザーID</param>
         public PlayerBuilder WithUserId(string userId)
         {
             Assert.IsFalse(string.IsNullOrEmpty(userId), "userId が null または空です");
@@ -79,6 +88,18 @@ namespace Tetrage.Factories
             return this;
         }
 
+        /// <summary>生成するプレイヤーのプレイヤータイプを設定する</summary>
+        /// <param name="playerType">プレイヤータイプ</param>
+        public PlayerBuilder WithPlayerType(PlayerType playerType)
+        {
+            _playerType = playerType;
+            // 現在は特定の設定はなし。
+            return this;
+        }
+
+        /// <summary>生成するプレイヤーのカードパイルのレイアウト設定を設定する</summary>
+        /// <param name="cardPileType">カードパイルのタイプ</param>
+        /// <param name="layoutSettings">カードパイルのレイアウト設定</param>
         public PlayerBuilder WithCardPileLayoutSettings(CardPileType cardPileType, CardPileLayoutSettings layoutSettings)
         {
             _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
@@ -92,6 +113,8 @@ namespace Tetrage.Factories
         {
             // カードパイル生成用ビルダーを作成
             var cardPileBuilder = new CardPileBuilder(new CardPileFactory());
+
+            // プレイヤー View を格納する変数の用意（if構文をまたぐためにif文の外に出しておく）
             BasicPlayerView playerView = null;
 
             // 各カードパイルを生成
@@ -102,7 +125,7 @@ namespace Tetrage.Factories
             if (_useView)
             {
               // プレイヤー View を生成
-                playerView = Object.Instantiate(_viewPrefab, _viewParent);
+                playerView = Object.Instantiate(_viewPrefab, _viewSpawnPosition, Quaternion.identity, _viewParent); // Quaternion.identityは回転なしの意味
 
                 // View付きでカードパイルを生成
                 target = cardPileBuilder

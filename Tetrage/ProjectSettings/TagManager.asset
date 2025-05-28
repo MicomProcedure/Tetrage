@@ -47,6 +47,9 @@ TagManager:
   - name: Stage
     uniqueID: 349453391
     locked: 0
+  - name: OnStageMarker
+    uniqueID: 2851706047
+    locked: 0
   - name: CardView
     uniqueID: 388312617
     locked: 0

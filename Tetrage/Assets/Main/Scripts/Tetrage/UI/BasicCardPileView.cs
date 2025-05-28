@@ -3,8 +3,7 @@ using System;
 using Tetrage.Core.Contracts;
 using System.Collections.Generic;
 using Tetrage.Core.Constants;
-using System.Linq;
-using Tetrage.Core.Settings;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.UI
 {
