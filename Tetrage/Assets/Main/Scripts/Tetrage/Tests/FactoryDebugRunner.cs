@@ -6,6 +6,8 @@ using Tetrage.Factories;
 using Tetrage.UI;
 using Tetrage.Core.Contracts;
 using System.Linq;
+using Tetrage.Services;
+
 namespace Tetrage.Tests
 {
     /// <summary>
@@ -45,7 +47,6 @@ namespace Tetrage.Tests
         [SerializeField] private int _spawnCount = 0;
         private const int SINGLE = 1;
 
-        private Dictionary<Card, CardView> _cardViewsDict = new Dictionary<Card, CardView>();
 
         private List<Card> _cards = new List<Card>();
         private List<CardPile> _cardPiles = new List<CardPile>();
@@ -63,13 +64,17 @@ namespace Tetrage.Tests
             _pileViewPrefabDict[CardPileType.Tmp] = pileViewPrefabs[2];
             _pileViewPrefabDict[CardPileType.Stack] = pileViewPrefabs[3];
             _pileViewPrefabDict[CardPileType.Trash] = pileViewPrefabs[4];
+
+            // CardViewRegistry の初期化
+            CardViewRegistry.Clear();
+
             // モデルファクトリとデコレータファクトリの初期化
             _cardModelFactory = new CardModelFactory();
-            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab, cardParent, _cardViewsDict);
+            _cardFactory = new CardWithViewFactory(_cardModelFactory, cardViewPrefab);
             // CardPileBuilder の初期化
             _pileBuilder = new CardPileBuilder(new CardPileFactory())
                 .UseCardFactory(_cardFactory)
-                .UseView(_pileViewPrefabDict[_pileViewType], pileParent, _cardViewsDict);
+                .UseView(_pileViewPrefabDict[_pileViewType], pileParent);
         }
 
         [ContextMenu("Spawn Sample Cards")]
@@ -80,7 +85,7 @@ namespace Tetrage.Tests
 
             // ビルダーで山札生成（初期カード付き）
             var pile = _pileBuilder
-                .UseView(_pileViewPrefabDict[_pileViewType], pileParent, _cardViewsDict)
+                .UseView(_pileViewPrefabDict[_pileViewType], pileParent)
                 .WithName("SampleCards")
                 .WithMaxCount(count)
                 .WithInitialCards(_cardFactory, suits, countPerSuit)
@@ -101,7 +106,7 @@ namespace Tetrage.Tests
 
             // 山札生成（1枚のみ）
             var pile = _pileBuilder
-                .UseView(_pileViewPrefabDict[_pileViewType], pileParent, _cardViewsDict)
+                .UseView(_pileViewPrefabDict[_pileViewType], pileParent)
                 .WithName("SingleCard")
                 .WithMaxCount(SINGLE)
                 .WithInitialCards(_cardFactory, new[] { Suit.Spade }, SINGLE)
@@ -124,7 +129,7 @@ namespace Tetrage.Tests
         {
             // 山札生成（初期カードなし）
             var pile = _pileBuilder
-                .UseView(_pileViewPrefabDict[_pileViewType], pileParent, _cardViewsDict)
+                .UseView(_pileViewPrefabDict[_pileViewType], pileParent)
                 .WithName("Test")
                 .WithMaxCount(_pileCapacity)
                 .WithLayout(_pileWidth, _cardViewMinSpacing, _cardViewMaxSpacing, new Vector3(0, _spawnCount * _pileOffset, 0) + _cardViewPositionOffset)    // カードパイルの位置オフセット(生成されるたびにずれる)
