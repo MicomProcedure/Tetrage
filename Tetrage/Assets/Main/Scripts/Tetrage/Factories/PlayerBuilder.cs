@@ -50,6 +50,7 @@ namespace Tetrage.Factories
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
         /// <param name="viewPrefab">プレイヤー表示用ビューのプレハブ</param>
+        /// <param name="spawnPosition">プレイヤー表示用ビューの生成位置</param>
         /// <param name="parent">プレイヤー表示用ビューの親</param>
         /// <param name="cardPileViewsDict">カードパイル表示用ビューのディクショナリ</param>
         public PlayerBuilder UseView(
@@ -65,6 +66,7 @@ namespace Tetrage.Factories
             
             _useView = true;
             _viewPrefab = viewPrefab;
+            _viewSpawnPosition = spawnPosition;
             _viewParent = parent;
             _cardPileViewsDict = cardPileViewsDict;
             return this;
