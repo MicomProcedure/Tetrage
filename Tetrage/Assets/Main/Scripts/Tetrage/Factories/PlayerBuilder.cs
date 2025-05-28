@@ -7,7 +7,7 @@ using Tetrage.UI;
 using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
-using Tetrage.Core.Settings;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Factories
 {

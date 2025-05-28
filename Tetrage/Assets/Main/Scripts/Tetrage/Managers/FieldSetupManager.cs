@@ -1,20 +1,21 @@
 using Tetrage.Core.Contracts;
 using System.Collections.Generic;
+using Tetrage.Factories;
 
 namespace Tetrage.Managers
 {
     public class FieldSetupManager
     {
         private readonly IStageFactory _stageFactory;
-        private readonly IPlayerFactory _playerFactory;
+        private readonly PlayerBuilder _playerBuilder;
         private readonly List<IPlayer> _participants = new List<IPlayer>();
 
 
-        public FieldSetupManager(List<IPlayer> participants, IStageFactory stageFactory, IPlayerFactory playerFactory)
+        public FieldSetupManager(List<IPlayer> participants, IStageFactory stageFactory, PlayerBuilder playerBuilder)
         {
             _participants = participants;
             _stageFactory = stageFactory;
-            _playerFactory = playerFactory;
+            _playerBuilder = playerBuilder;
         }
 
         public void SetupField()
