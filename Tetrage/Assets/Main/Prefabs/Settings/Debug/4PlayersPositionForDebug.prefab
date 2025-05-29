@@ -53,6 +53,23 @@ MonoBehaviour:
   - {fileID: 5784571947689101792}
   - {fileID: 2251620582621552304}
   - {fileID: 6504141661041652571}
+  showGizmos: 1
+  showLabels: 0
+  showDirection: 0
+  showAxes: 0
+  showConnectionLines: 0
+  showStatistics: 1
+  markerColor: {r: 0, g: 1, b: 1, a: 1}
+  selectedMarkerColor: {r: 0, g: 1, b: 0, a: 1}
+  directionColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  connectionLineColor: {r: 1, g: 1, b: 1, a: 1}
+  xAxisColor: {r: 1, g: 0, b: 0, a: 1}
+  yAxisColor: {r: 0, g: 1, b: 0, a: 1}
+  zAxisColor: {r: 0, g: 0, b: 1, a: 1}
+  markerSize: 0.5
+  selectedMarkerSize: 0.8
+  directionLength: 0.75
+  axisLength: 1
 --- !u!1001 &2671201616811814637
 PrefabInstance:
   m_ObjectHideFlags: 0

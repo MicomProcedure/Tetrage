@@ -33,10 +33,9 @@ namespace Tetrage.Tests
         [Header("シーン内の参照")]
         [SerializeField] private Transform stageRoot;
         [SerializeField] private Transform playerRoot;
-        [SerializeField] private PositionMarker positionMarker;
+        [SerializeField] private PositionConfig playerPositionConfig;
+        [SerializeField] private PositionConfig stagePositionConfig;
         
-        [Header("ステージ設定")]
-        [SerializeField] private Vector3 stageSpawnPosition = Vector3.zero;
         
         [Header("プレイヤー設定")]
         [SerializeField] private List<TestPlayerData> testPlayerList = new List<TestPlayerData>
@@ -197,9 +196,15 @@ namespace Tetrage.Tests
                 isValid = false;
             }
             
-            if (positionMarker == null)
+            if (playerPositionConfig == null)
             {
                 Debug.LogError("PositionMarkerが設定されていません");
+                isValid = false;
+            }
+
+            if (stagePositionConfig == null)
+            {
+                Debug.LogError("StagePositionConfigが設定されていません");
                 isValid = false;
             }
             
@@ -220,9 +225,15 @@ namespace Tetrage.Tests
             }
             
             // プレイヤー位置の数とプレイヤー数の整合性チェック
-            if (!positionMarker.ValidateConfig(testPlayerList.Count))
+            if (!playerPositionConfig.ValidateConfig(testPlayerList.Count))
             {
-                Debug.LogError($"PositionMarkerの位置数({positionMarker.Position.Count})とプレイヤー数({testPlayerList.Count})が一致しません");
+                Debug.LogError($"PositionMarkerの位置数({playerPositionConfig.Position.Count})とプレイヤー数({testPlayerList.Count})が一致しません");
+                isValid = false;
+            }
+
+            if (!stagePositionConfig.ValidateConfig(1))
+            {
+                Debug.LogError($"StagePositionConfigの位置数({stagePositionConfig.Position.Count})が1ではありません");
                 isValid = false;
             }
             
@@ -284,7 +295,7 @@ namespace Tetrage.Tests
             };
             
             // プレイヤー位置リストを作成
-            var playerLocations = positionMarker.Position;
+            var playerLocations = playerPositionConfig.Position;
             
             // プレイヤータイプ別レイアウト設定辞書を作成
             var playerPilesLayoutSettings = new Dictionary<PlayerType, CardPileLayoutSettings>();
@@ -299,6 +310,8 @@ namespace Tetrage.Tests
             {
                 playerPilesLayoutSettings[playerType] = handsLayout; // 簡単のため、全プレイヤーに同じ設定を適用
             }
+
+            var stageSpawnPosition = stagePositionConfig.Position[0];
             
             return new FieldSetupSettings(
                 participantInfoList,
@@ -330,7 +343,7 @@ namespace Tetrage.Tests
             Debug.Log($"生成されたプレイヤー数: {players.Count}");
             
             // PositionMarkerの位置情報も表示
-            var positions = positionMarker.Position;
+            var positions = playerPositionConfig.Position;
             Debug.Log($"PositionMarkerの位置数: {positions.Count}");
             
             for (int i = 0; i < players.Count; i++)
