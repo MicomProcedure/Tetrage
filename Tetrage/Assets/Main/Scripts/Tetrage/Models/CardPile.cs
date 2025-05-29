@@ -18,6 +18,7 @@ namespace Tetrage.Models
 
         // カードの束の最大枚数
         private readonly int _maxCount;
+        public int MaxCount => _maxCount;
 
         // 束の名称
         public string Name { get; }

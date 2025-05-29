@@ -14,8 +14,9 @@ namespace Tetrage.Managers
         public List<PlayerInfo> ParticipantInfoList { get; }    // 参加者情報リスト
         public Dictionary<PlayerType, BasicPlayerView> PlayerViewPrefabDict { get; }    // プレイヤー表示用ビューのディクショナリ
         public Dictionary<CardPileType, BasicCardPileView> PileViewPrefabDict { get; }    // カードパイル表示用ビューのディクショナリ
-        public ICardPileFactory CardPileFactory { get; }    // カードパイル生成用ファクトリ
         public CardView CardViewPrefab { get; }    // カード表示用ビューのプレハブ
+        public StageView StageViewPrefab { get; }    // ステージ表示用ビューのプレハブ
+        public Vector3 StageSpawnPosition { get; }    // ステージ表示用ビューの生成位置
         public Transform StageRoot { get; }    // ステージのルート
         public Transform PlayerRoot { get; }    // プレイヤーのルート
         public List<Vector3> PlayerLocations { get; }    // プレイヤーの位置リスト
@@ -30,10 +31,11 @@ namespace Tetrage.Managers
         /// <param name="participantInfoList">参加者情報リスト</param>
         /// <param name="playerViewPrefabDict">プレイヤー表示用ビューのディクショナリ</param>
         /// <param name="pileViewPrefabDict">カードパイル表示用ビューのディクショナリ</param>
-        /// <param name="cardPileFactory">カードパイル生成用ファクトリ</param>
+        /// <param name="cardViewPrefab">カード表示用ビューのプレハブ</param>
+        /// <param name="stageViewPrefab">ステージ表示用ビューのプレハブ</param>
+        /// <param name="stageSpawnPosition">ステージ表示用ビューの生成位置</param>
         /// <param name="stageRoot">ステージのルート</param>
         /// <param name="playerRoot">プレイヤーのルート</param>
-        /// <param name="cardViewPrefab">カード表示用ビューのプレハブ</param>
         /// <param name="playerLocations">プレイヤーの位置リスト</param>
         /// <param name="playerPilesLayoutSettings">プレイヤーのカードパイルのレイアウト設定</param>
         /// <param name="trashPileLayoutSettings">トラッシュのカードパイルのレイアウト設定</param>
@@ -42,10 +44,11 @@ namespace Tetrage.Managers
             List<PlayerInfo> participantInfoList,
             Dictionary<PlayerType, BasicPlayerView> playerViewPrefabDict,
             Dictionary<CardPileType, BasicCardPileView> pileViewPrefabDict,
-            ICardPileFactory cardPileFactory,
+            CardView cardViewPrefab,
+            StageView stageViewPrefab,
+            Vector3 stageSpawnPosition,
             Transform stageRoot,
             Transform playerRoot,
-            CardView cardViewPrefab,
             List<Vector3> playerLocations,
             Dictionary<PlayerType, CardPileLayoutSettings> playerPilesLayoutSettings,
             CardPileLayoutSettings trashPileLayoutSettings,
@@ -55,10 +58,11 @@ namespace Tetrage.Managers
             ParticipantInfoList = participantInfoList;
             PlayerViewPrefabDict = playerViewPrefabDict;
             PileViewPrefabDict = pileViewPrefabDict;
-            CardPileFactory = cardPileFactory;
+            CardViewPrefab = cardViewPrefab;
+            StageViewPrefab = stageViewPrefab;
+            StageSpawnPosition = stageSpawnPosition;
             StageRoot = stageRoot;
             PlayerRoot = playerRoot;
-            CardViewPrefab = cardViewPrefab;
             PlayerLocations = playerLocations;
             PlayerPilesLayoutSettings = playerPilesLayoutSettings;
             TrashPileLayoutSettings = trashPileLayoutSettings;

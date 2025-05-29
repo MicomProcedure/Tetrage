@@ -8,11 +8,10 @@ using UnityEngine;
 
 namespace Tetrage.Managers
 {
-
-
     public class FieldSetupManager
     {
         private readonly FieldSetupSettings _settings;
+        private readonly FieldSetupDependencies _dependencies;
         private List<IPlayer> _players;
         private Stage _stage;
 
@@ -42,10 +41,18 @@ namespace Tetrage.Managers
         // フィールドのセットアップが完了したかどうかを示すフラグ
         private bool _isSetup = false;
 
-        // 引数はFieldSetupSettingsのインスタンスとして受け取ります
-        public FieldSetupManager(FieldSetupSettings settings)
+        
+        /* --- コンストラクタ --- */
+        
+        /// <summary>
+        /// FieldSetupManagerのコンストラクタ
+        /// </summary>
+        /// <param name="settings">フィールドセットアップ設定</param>
+        /// <param name="dependencies">フィールドセットアップ依存性</param>
+        public FieldSetupManager(FieldSetupSettings settings, FieldSetupDependencies dependencies)
         {
             _settings = settings;
+            _dependencies = dependencies;
         }
 
         // フィールドのセットアップを行う。動作後、StageとPlayersのプロパティが有効になります。
@@ -76,23 +83,33 @@ namespace Tetrage.Managers
 
         private Stage SetupStage()
         {
-            var stageFactory = new StageFactory(
-                _settings.CardPileFactory,
-                _settings.CardViewPrefab,
-                _settings.StageRoot,
-                _settings.PileViewPrefabDict
-            );
+            // 依存性注入されたFactoryを使用してStageBuilderを作成
+            var stageBuilder = new StageBuilder(
+                (StageModelFactory)_dependencies.StageModelFactory,
+                _dependencies.CardPileFactory,
+                _dependencies.CardModelFactory);
+            
+            var stage = stageBuilder
+                .UseView(
+                    _settings.StageViewPrefab,
+                    _settings.StageSpawnPosition,
+                    _settings.StageRoot,
+                    _settings.CardViewPrefab,
+                    _settings.PileViewPrefabDict
+                )
+                .WithCardPileLayoutSettings(CardPileType.Trash, _settings.TrashPileLayoutSettings)
+                .WithCardPileLayoutSettings(CardPileType.Stack, _settings.StackPileLayoutSettings)
+                .Build();
 
-            stageFactory.WithCardPileLayoutSettings(CardPileType.Trash, _settings.TrashPileLayoutSettings);
-            stageFactory.WithCardPileLayoutSettings(CardPileType.Stack, _settings.StackPileLayoutSettings);
-
-            return stageFactory.SetupStage();
+            return stage;
         }
         private List<IPlayer> SetupPlayers()
         {
+            // return予定のプレイヤーリストを作成
             var players = new List<IPlayer>();
-            var playerBuilder = new PlayerBuilder(new PlayerModelFactory());
-
+            
+            // 依存性注入されたPlayerModelFactoryを使用
+            var playerBuilder = new PlayerBuilder((PlayerModelFactory)_dependencies.PlayerModelFactory);
 
             // 要請に応じてプレイヤーを作成する
             int playerIndex = 0;

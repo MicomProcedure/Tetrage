@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardViewPrefab: {fileID: 6479867437534543680, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
+  stageViewPrefab: {fileID: 2611144816705012123, guid: 389703ef11d09414bb6547d1fd79f3d5, type: 3}
   localPlayerViewPrefab: {fileID: 4366716965876282203, guid: f2d8de75c362a436ebc8fef8e442b3ed, type: 3}
   remotePlayerViewPrefab: {fileID: 4366716965876282203, guid: f2d8de75c362a436ebc8fef8e442b3ed, type: 3}
   botPlayerViewPrefab: {fileID: 4366716965876282203, guid: f2d8de75c362a436ebc8fef8e442b3ed, type: 3}
@@ -58,7 +59,8 @@ MonoBehaviour:
   trashCardPileViewPrefab: {fileID: 8132366089786138300, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
   stageRoot: {fileID: 7992695696870423182}
   playerRoot: {fileID: 6800424478567477767}
-  positionMarker: {fileID: 5938314527305277211, guid: 70665362defd00b4aa8b693c7d2be53a, type: 3}
+  positionMarker: {fileID: 0}
+  stageSpawnPosition: {x: 0, y: 0, z: 0}
   testPlayerList:
   - userId: LocalPlayer1
     playerType: 0
@@ -106,7 +108,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fac7c40414abfd04cb18592281ad843c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardsPerPlayer: 13
+  cardsPerPlayer: 2
   targetPileIndex: 0
   fromPlayerIndex: 0
   toPlayerIndex: 1
