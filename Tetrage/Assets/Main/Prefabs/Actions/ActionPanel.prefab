@@ -57,7 +57,6 @@ MonoBehaviour:
   drawBtn: {fileID: 2566952841871524724}
   checkBtn: {fileID: 7245112540175902992}
   tetrageBtn: {fileID: 2239038039231420600}
-  currentPlayer: {fileID: 0}
 --- !u!114 &7721748600377689898
 MonoBehaviour:
   m_ObjectHideFlags: 0
