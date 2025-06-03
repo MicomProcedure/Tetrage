@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Core.Actions
 {
@@ -9,22 +10,22 @@ namespace Tetrage.Core.Actions
     public interface IAction
     {
         /// <summary>
-        /// アクションの一意識別子
+        /// アクションタイプ
         /// </summary>
-        string ActionId { get; }
-        
+        ActionType ActionType { get; }
+
         /// <summary>
         /// アクションを実行するプレイヤー
         /// </summary>
         IPlayer Requester { get; }
-        
+
         /// <summary>
         /// アクションの実行条件を検証する
         /// </summary>
         /// <param name="context">実行コンテキスト</param>
         /// <returns>実行可能な場合true</returns>
         bool CanExecute(IActionContext context);
-        
+
         /// <summary>
         /// アクションを実行する
         /// </summary>
@@ -32,4 +33,4 @@ namespace Tetrage.Core.Actions
         /// <returns>実行結果</returns>
         UniTask<ActionResult> ExecuteAsync(IActionContext context);
     }
-} 
+}

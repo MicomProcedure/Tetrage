@@ -14,7 +14,7 @@ namespace Tetrage.Core.Actions
             try
             {
                 var hands = context.RequesterPlayer.Hands;
-                
+
                 // 1. プレイヤーの手札を全て表向きにする
                 var cardsRevealed = 0;
                 foreach (var card in hands)
@@ -26,21 +26,21 @@ namespace Tetrage.Core.Actions
                     }
                 }
 
-                // 2. TODO: プレイヤーをReach状態に設定
-                // 現在のIPlayerインターフェースにReach状態のプロパティがないため、
-                // 今後プレイヤーモデルに追加する必要がある
-                
+                // 2. プレイヤーをReach状態に設定
+                context.RequesterPlayer.Reach();
+
                 // 3. Reach状態の通知/アニメーション
                 await ShowReachAnimation(context);
 
                 var suitName = hands.FirstOrDefault()?.Suit.ToString() ?? "Unknown";
-                
+
                 Debug.Log($"Reach アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} が {suitName} でReach状態になりました");
-                
-                return ActionResult.Success(new { 
+
+                return ActionResult.Success(new
+                {
                     ReachedSuit = suitName,
                     CardsRevealed = cardsRevealed,
-                    Message = "Reach アクションが正常に実行されました" 
+                    Message = "Reach アクションが正常に実行されました"
                 });
             }
             catch (System.Exception ex)
@@ -57,7 +57,7 @@ namespace Tetrage.Core.Actions
         {
             // TODO: 実際のReachアニメーション/エフェクトを実装
             // 手札のカードをハイライトしたり、特殊なエフェクトを表示
-            
+
             // 仮実装：手札のカードを一時的にハイライト
             var hands = context.RequesterPlayer.Hands;
             foreach (var card in hands)
@@ -65,6 +65,7 @@ namespace Tetrage.Core.Actions
                 card.Highlight();
             }
 
+            Debug.Log("Reach アニメーション開始");
             await UniTask.Delay(500); // アニメーション時間
 
             foreach (var card in hands)
@@ -75,4 +76,4 @@ namespace Tetrage.Core.Actions
             Debug.Log("Reach アニメーション完了");
         }
     }
-} 
+}

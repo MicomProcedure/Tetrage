@@ -39,6 +39,8 @@ namespace Tetrage.Models
         /// </summary>
         public CardPile Tmp { get; private set; }
 
+        public bool IsReach { get; private set; }
+
 
         public Player(string userId, CardPile target, CardPile hands, CardPile tmp) // UserID をコンストラクタで受け取るように変更
         {
@@ -56,6 +58,14 @@ namespace Tetrage.Models
         public int GetPlayerCount()
         {
             return _playerCount;
+        }
+
+        /// <summary>
+        /// プレイヤーをReach状態にする。
+        /// </summary>
+        public void Reach()
+        {
+            IsReach = true;
         }
 
         /// <summary>

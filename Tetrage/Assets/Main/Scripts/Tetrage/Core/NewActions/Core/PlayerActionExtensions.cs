@@ -18,12 +18,12 @@ namespace Tetrage.Core.Actions
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は自動検索）</param>
         /// <returns>アクション実行結果</returns>
         public static async UniTask<ActionResult> ExecuteNewActionAsync(
-            this IPlayer player, 
-            ActionType actionType, 
+            this IPlayer player,
+            ActionType actionType,
             IGameContextProvider gameContextProvider = null)
         {
             var actionManager = ActionManager.Instance;
-            
+
             // GameContextProviderが指定されていない場合は自動検索
             if (gameContextProvider == null)
             {
@@ -33,17 +33,17 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure("GameContextProviderが見つかりません");
                 }
             }
-            
+
             // ActionManagerの初期化確認
             if (actionManager != null)
             {
                 actionManager.SetGameContextProvider(gameContextProvider);
                 ActionFactory.RegisterAllActions(actionManager);
             }
-            
-            return await actionManager.ExecuteActionAsync(actionType.ToActionId(), player);
+
+            return await actionManager.ExecuteActionAsync(actionType, player);
         }
-        
+
         /// <summary>
         /// 指定されたアクションが実行可能かチェック
         /// </summary>
@@ -52,12 +52,12 @@ namespace Tetrage.Core.Actions
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は自動検索）</param>
         /// <returns>実行可能な場合true</returns>
         public static bool CanExecuteNewAction(
-            this IPlayer player, 
-            ActionType actionType, 
+            this IPlayer player,
+            ActionType actionType,
             IGameContextProvider gameContextProvider = null)
         {
             var actionManager = ActionManager.Instance;
-            
+
             // GameContextProviderが指定されていない場合は自動検索
             if (gameContextProvider == null)
             {
@@ -67,17 +67,17 @@ namespace Tetrage.Core.Actions
                     return false;
                 }
             }
-            
+
             // ActionManagerの初期化確認
             if (actionManager != null)
             {
                 actionManager.SetGameContextProvider(gameContextProvider);
                 ActionFactory.RegisterAllActions(actionManager);
             }
-            
-            return actionManager.CanExecuteAction(actionType.ToActionId(), player);
+
+            return actionManager.CanExecuteAction(actionType, player);
         }
-        
+
         /// <summary>
         /// プレイヤーが実行可能なアクション一覧を取得
         /// </summary>
@@ -85,11 +85,11 @@ namespace Tetrage.Core.Actions
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は自動検索）</param>
         /// <returns>実行可能なActionTypeの一覧</returns>
         public static System.Collections.Generic.IReadOnlyList<ActionType> GetAvailableNewActionTypes(
-            this IPlayer player, 
+            this IPlayer player,
             IGameContextProvider gameContextProvider = null)
         {
             var actionManager = ActionManager.Instance;
-            
+
             // GameContextProviderが指定されていない場合は自動検索
             if (gameContextProvider == null)
             {
@@ -99,30 +99,19 @@ namespace Tetrage.Core.Actions
                     return new System.Collections.Generic.List<ActionType>();
                 }
             }
-            
+
             // ActionManagerの初期化確認
             if (actionManager != null)
             {
                 actionManager.SetGameContextProvider(gameContextProvider);
                 ActionFactory.RegisterAllActions(actionManager);
             }
-            
-            var availableActionIds = actionManager.GetAvailableActions(player);
-            var availableActionTypes = new System.Collections.Generic.List<ActionType>();
-            
-            foreach (var actionId in availableActionIds)
-            {
-                if (actionId.IsValidActionType())
-                {
-                    availableActionTypes.Add(actionId.ToActionType());
-                }
-            }
-            
-            return availableActionTypes;
+
+            return actionManager.GetAvailableActionTypes(player);
         }
-        
+
         // === 具体的なアクション実行用の便利メソッド ===
-        
+
         /// <summary>
         /// Draw アクションを実行
         /// </summary>
@@ -130,7 +119,7 @@ namespace Tetrage.Core.Actions
         {
             return await player.ExecuteNewActionAsync(ActionType.Draw, gameContextProvider);
         }
-        
+
         /// <summary>
         /// Open アクションを実行
         /// </summary>
@@ -138,7 +127,7 @@ namespace Tetrage.Core.Actions
         {
             return await player.ExecuteNewActionAsync(ActionType.Open, gameContextProvider);
         }
-        
+
         /// <summary>
         /// Reach アクションを実行
         /// </summary>
@@ -146,7 +135,7 @@ namespace Tetrage.Core.Actions
         {
             return await player.ExecuteNewActionAsync(ActionType.Reach, gameContextProvider);
         }
-        
+
         /// <summary>
         /// Check アクションを実行
         /// </summary>
@@ -154,9 +143,9 @@ namespace Tetrage.Core.Actions
         {
             return await player.ExecuteNewActionAsync(ActionType.Check, gameContextProvider);
         }
-        
+
         // === 実行可能性チェック用の便利メソッド ===
-        
+
         /// <summary>
         /// Draw アクションが実行可能かチェック
         /// </summary>
@@ -164,7 +153,7 @@ namespace Tetrage.Core.Actions
         {
             return player.CanExecuteNewAction(ActionType.Draw, gameContextProvider);
         }
-        
+
         /// <summary>
         /// Open アクションが実行可能かチェック
         /// </summary>
@@ -172,7 +161,7 @@ namespace Tetrage.Core.Actions
         {
             return player.CanExecuteNewAction(ActionType.Open, gameContextProvider);
         }
-        
+
         /// <summary>
         /// Reach アクションが実行可能かチェック
         /// </summary>
@@ -180,7 +169,7 @@ namespace Tetrage.Core.Actions
         {
             return player.CanExecuteNewAction(ActionType.Reach, gameContextProvider);
         }
-        
+
         /// <summary>
         /// Check アクションが実行可能かチェック
         /// </summary>
@@ -188,7 +177,7 @@ namespace Tetrage.Core.Actions
         {
             return player.CanExecuteNewAction(ActionType.Check, gameContextProvider);
         }
-        
+
         /// <summary>
         /// GameContextProviderを自動検索
         /// </summary>
@@ -200,7 +189,7 @@ namespace Tetrage.Core.Actions
             {
                 return dealer;
             }
-            
+
             // その他のIGameContextProvider実装をMonoBehaviourから探す
             var providers = UnityEngine.Object.FindObjectsOfType<UnityEngine.MonoBehaviour>();
             foreach (var provider in providers)
@@ -210,8 +199,8 @@ namespace Tetrage.Core.Actions
                     return gameContextProvider;
                 }
             }
-            
+
             return null;
         }
     }
-} 
+}

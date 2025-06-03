@@ -1,3 +1,5 @@
+using System;
+
 namespace Tetrage.Core.Contracts
 {
     public interface IRoundManager
@@ -8,6 +10,6 @@ namespace Tetrage.Core.Contracts
         void OnRoundStart();
         void OnRoundEnd();
 
-        
+
     }
 }

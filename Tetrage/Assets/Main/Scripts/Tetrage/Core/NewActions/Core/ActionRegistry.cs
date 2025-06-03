@@ -14,7 +14,7 @@ namespace Tetrage.Core.Actions
     public class ActionRegistry
     {
         private readonly Dictionary<ActionType, ActionDefinition> _definitions = new();
-        
+
         /// <summary>
         /// アクションを登録する（型指定版）
         /// </summary>
@@ -28,10 +28,10 @@ namespace Tetrage.Core.Actions
                 ValidatorFactory = () => new TValidator(),
                 ExecutorFactory = () => new TExecutor()
             };
-            
+
             Debug.Log($"Action登録完了: {actionType} -> {typeof(TValidator).Name}/{typeof(TExecutor).Name}");
         }
-        
+
         /// <summary>
         /// アクションを登録する（ファクトリ関数版）
         /// </summary>
@@ -42,20 +42,20 @@ namespace Tetrage.Core.Actions
         {
             if (validatorFactory == null)
                 throw new ArgumentNullException(nameof(validatorFactory));
-            
+
             if (executorFactory == null)
                 throw new ArgumentNullException(nameof(executorFactory));
-            
+
             _definitions[actionType] = new ActionDefinition
             {
                 ActionType = actionType,
                 ValidatorFactory = validatorFactory,
                 ExecutorFactory = executorFactory
             };
-            
+
             Debug.Log($"Action登録完了: {actionType}");
         }
-        
+
         /// <summary>
         /// 指定されたActionTypeのActionを作成
         /// </summary>
@@ -63,16 +63,16 @@ namespace Tetrage.Core.Actions
         {
             if (!_definitions.TryGetValue(actionType, out var definition))
                 throw new ArgumentException($"未登録のアクションタイプ: {actionType}", nameof(actionType));
-            
+
             if (requester == null)
                 throw new ArgumentNullException(nameof(requester));
-            
+
             try
             {
                 var validator = definition.ValidatorFactory();
                 var executor = definition.ExecutorFactory();
-                
-                return new GenericAction(actionType.ToActionId(), requester, validator, executor);
+
+                return new GenericAction(actionType, requester, validator, executor);
             }
             catch (Exception ex)
             {
@@ -80,7 +80,7 @@ namespace Tetrage.Core.Actions
                 throw;
             }
         }
-        
+
         /// <summary>
         /// 登録済みのActionType一覧を取得
         /// </summary>
@@ -88,7 +88,7 @@ namespace Tetrage.Core.Actions
         {
             return _definitions.Keys.ToList();
         }
-        
+
         /// <summary>
         /// 指定されたActionTypeが登録されているかチェック
         /// </summary>
@@ -96,7 +96,7 @@ namespace Tetrage.Core.Actions
         {
             return _definitions.ContainsKey(actionType);
         }
-        
+
         /// <summary>
         /// アクション定義を取得（デバッグ用）
         /// </summary>
@@ -104,7 +104,7 @@ namespace Tetrage.Core.Actions
         {
             return _definitions.TryGetValue(actionType, out var definition) ? definition : null;
         }
-        
+
         /// <summary>
         /// 全てのアクション定義をクリア
         /// </summary>
@@ -114,7 +114,7 @@ namespace Tetrage.Core.Actions
             Debug.Log("全てのAction定義をクリアしました");
         }
     }
-    
+
     /// <summary>
     /// アクション定義クラス（ActionType専用版）
     /// Validator/Executorのファクトリ関数を保持
@@ -124,15 +124,15 @@ namespace Tetrage.Core.Actions
         public ActionType ActionType { get; set; }
         public Func<IActionValidator> ValidatorFactory { get; set; }
         public Func<IActionExecutor> ExecutorFactory { get; set; }
-        
+
         /// <summary>
         /// ActionIdプロパティ（ログ出力用）
         /// </summary>
         public string ActionId => ActionType.ToActionId();
-        
+
         public override string ToString()
         {
             return $"ActionDefinition[{ActionType}]";
         }
     }
-} 
+}

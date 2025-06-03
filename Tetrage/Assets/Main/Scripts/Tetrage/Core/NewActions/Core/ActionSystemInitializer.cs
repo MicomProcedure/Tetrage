@@ -1,4 +1,5 @@
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Enums;
 using UnityEngine;
 
 namespace Tetrage.Core.Actions
@@ -9,11 +10,11 @@ namespace Tetrage.Core.Actions
     public class ActionSystemInitializer : MonoBehaviour
     {
         [SerializeField] private bool _initializeOnAwake = true;
-        
+
         private ActionManager _actionManager;
         private IGameContextProvider _gameContextProvider;
         private bool _isInitialized = false;
-        
+
         private void Awake()
         {
             if (_initializeOnAwake)
@@ -21,7 +22,7 @@ namespace Tetrage.Core.Actions
                 InitializeActionSystem();
             }
         }
-        
+
         /// <summary>
         /// Actionシステムを初期化する
         /// </summary>
@@ -42,19 +43,19 @@ namespace Tetrage.Core.Actions
                 Debug.LogError("GameContextProviderが見つかりません。Dealerインスタンスが適切に設定されているか確認してください。");
                 return;
             }
-            
+
             try
             {
                 // GameContextProviderの保存
                 _gameContextProvider = gameContextProvider;
-                
+
                 // ActionManagerの初期化
                 _actionManager = ActionManager.Instance;
                 _actionManager.SetGameContextProvider(gameContextProvider);
-                
+
                 // 全てのアクションファクトリを登録
                 ActionFactory.RegisterAllActions(_actionManager);
-                
+
                 _isInitialized = true;
                 Debug.Log("アクションシステムの初期化が完了しました");
             }
@@ -63,7 +64,7 @@ namespace Tetrage.Core.Actions
                 Debug.LogError($"アクションシステムの初期化中にエラーが発生: {ex.Message}");
             }
         }
-        
+
         /// <summary>
         /// GameContextProviderを自動検索
         /// </summary>
@@ -88,7 +89,7 @@ namespace Tetrage.Core.Actions
 
             return null;
         }
-        
+
         /// <summary>
         /// 現在のActionManagerインスタンスを取得
         /// </summary>
@@ -96,7 +97,7 @@ namespace Tetrage.Core.Actions
         {
             return _actionManager ?? ActionManager.Instance;
         }
-        
+
         /// <summary>
         /// Inspector上でアクションをテスト実行するためのメソッド
         /// </summary>
@@ -105,7 +106,7 @@ namespace Tetrage.Core.Actions
         {
             if (_gameContextProvider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync("Draw", _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Draw, _gameContextProvider.CurrentPlayer);
                 Debug.Log($"Draw Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -113,13 +114,13 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("テスト実行用のプレイヤーが見つかりません");
             }
         }
-        
+
         [ContextMenu("Test Open Action")]
         public async void TestOpenAction()
         {
             if (_gameContextProvider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync("Open", _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Open, _gameContextProvider.CurrentPlayer);
                 Debug.Log($"Open Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -127,13 +128,13 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("テスト実行用のプレイヤーが見つかりません");
             }
         }
-        
+
         [ContextMenu("Test Reach Action")]
         public async void TestReachAction()
         {
             if (_gameContextProvider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync("Reach", _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Reach, _gameContextProvider.CurrentPlayer);
                 Debug.Log($"Reach Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -141,13 +142,13 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("テスト実行用のプレイヤーが見つかりません");
             }
         }
-        
+
         [ContextMenu("Test Check Action")]
         public async void TestCheckAction()
         {
             if (_gameContextProvider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync("Check", _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Check, _gameContextProvider.CurrentPlayer);
                 Debug.Log($"Check Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -156,4 +157,4 @@ namespace Tetrage.Core.Actions
             }
         }
     }
-} 
+}

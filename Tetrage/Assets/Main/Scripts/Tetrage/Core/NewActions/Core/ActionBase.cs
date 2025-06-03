@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Enums;
 using UnityEngine;
 
 namespace Tetrage.Core.Actions
@@ -11,22 +12,22 @@ namespace Tetrage.Core.Actions
     /// </summary>
     public abstract class ActionBase : IAction
     {
-        public abstract string ActionId { get; }
+        public abstract ActionType ActionType { get; }
         public IPlayer Requester { get; }
-        
+
         protected readonly IActionValidator _validator;
         protected readonly IActionExecutor _executor;
-        
+
         protected ActionBase(
-            IPlayer requester, 
-            IActionValidator validator, 
+            IPlayer requester,
+            IActionValidator validator,
             IActionExecutor executor)
         {
             Requester = requester ?? throw new ArgumentNullException(nameof(requester));
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         }
-        
+
         /// <summary>
         /// アクションの実行条件を検証する
         /// </summary>
@@ -43,7 +44,7 @@ namespace Tetrage.Core.Actions
                 return false;
             }
         }
-        
+
         /// <summary>
         /// アクションを実行する（Template Method）
         /// </summary>
@@ -57,16 +58,16 @@ namespace Tetrage.Core.Actions
                     var validationResult = _validator.Validate(context);
                     return ActionResult.Failure($"実行条件を満たしていません: {validationResult.FailureReason}");
                 }
-                
+
                 // 実行前処理
                 await OnBeforeExecute(context);
-                
+
                 // メイン実行処理
                 var result = await _executor.ExecuteAsync(context);
-                
+
                 // 実行後処理
                 await OnAfterExecute(context, result);
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -75,7 +76,7 @@ namespace Tetrage.Core.Actions
                 return ActionResult.Failure($"実行エラー: {ex.Message}");
             }
         }
-        
+
         /// <summary>
         /// 実行前の処理（派生クラスでオーバーライド可能）
         /// </summary>
@@ -84,7 +85,7 @@ namespace Tetrage.Core.Actions
             // デフォルトでは何もしない
             await UniTask.Yield();
         }
-        
+
         /// <summary>
         /// 実行後の処理（派生クラスでオーバーライド可能）
         /// </summary>
@@ -94,4 +95,4 @@ namespace Tetrage.Core.Actions
             await UniTask.Yield();
         }
     }
-} 
+}

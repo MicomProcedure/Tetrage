@@ -22,13 +22,15 @@ namespace Tetrage.Managers
             {
                 if (!_isSetup)
                 {
-                throw new InvalidOperationException("FieldSetupManager がまだセットアップされていません。");
+                    throw new InvalidOperationException("FieldSetupManager がまだセットアップされていません。");
                 }
                 return _players;
             }
         }
         // ステージのインスタンスを取得可能なプロパティ
-        public Stage Stage { get
+        public Stage Stage
+        {
+            get
             {
                 if (!_isSetup)
                 {
@@ -41,9 +43,9 @@ namespace Tetrage.Managers
         // フィールドのセットアップが完了したかどうかを示すフラグ
         private bool _isSetup = false;
 
-        
+
         /* --- コンストラクタ --- */
-        
+
         /// <summary>
         /// FieldSetupManagerのコンストラクタ
         /// </summary>
@@ -87,8 +89,8 @@ namespace Tetrage.Managers
             var stageBuilder = new StageBuilder(
                 (StageModelFactory)_dependencies.StageModelFactory,
                 _dependencies.CardPileFactory,
-                _dependencies.CardModelFactory);
-            
+                _dependencies.CardFactory);
+
             var stage = stageBuilder
                 .UseView(
                     _settings.StageViewPrefab,
@@ -107,7 +109,7 @@ namespace Tetrage.Managers
         {
             // return予定のプレイヤーリストを作成
             var players = new List<IPlayer>();
-            
+
             // 依存性注入されたPlayerModelFactoryを使用
             var playerBuilder = new PlayerBuilder((PlayerModelFactory)_dependencies.PlayerModelFactory);
 

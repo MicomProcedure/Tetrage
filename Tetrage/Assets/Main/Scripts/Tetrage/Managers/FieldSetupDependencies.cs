@@ -12,7 +12,7 @@ namespace Tetrage.Managers
         /// <summary>
         /// カードモデル生成用ファクトリ
         /// </summary>
-        public ICardFactory CardModelFactory { get; }
+        public ICardFactory CardFactory { get; }
 
         /// <summary>
         /// ステージモデル生成用ファクトリ
@@ -37,20 +37,20 @@ namespace Tetrage.Managers
         /// <param name="playerModelFactory">プレイヤーモデル生成用ファクトリ</param>
         /// <param name="cardPileFactory">カードパイル生成用ファクトリ</param>
         public FieldSetupDependencies(
-            ICardFactory cardModelFactory,
+            ICardFactory cardFactory,
             IStageFactory stageModelFactory,
             IPlayerFactory playerModelFactory,
             ICardPileFactory cardPileFactory)
         {
-            Assert.IsNotNull(cardModelFactory, "cardModelFactory が null です");
+            Assert.IsNotNull(cardFactory, "cardFactory が null です");
             Assert.IsNotNull(stageModelFactory, "stageModelFactory が null です");
             Assert.IsNotNull(playerModelFactory, "playerModelFactory が null です");
             Assert.IsNotNull(cardPileFactory, "cardPileFactory が null です");
 
-            CardModelFactory = cardModelFactory;
+            CardFactory = cardFactory;
             StageModelFactory = stageModelFactory;
             PlayerModelFactory = playerModelFactory;
             CardPileFactory = cardPileFactory;
         }
     }
-} 
+}

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Tetrage.Models;
@@ -8,30 +9,11 @@ using Tetrage.Core.Contracts;
 /// </summary>
 namespace Tetrage.Managers
 {
-    public class Dealer : IGameContextProvider
+    public class Dealer : IGameContextProvider, IRoundManager
     {
-        /* -------- 1. 唯一のインスタンスを公開 -------- */
-        private static Dealer _instance;
-        private static readonly object _lock = new object();
-        
-        public static Dealer Instance 
-        { 
-            get 
-        {
-                if (_instance == null)
-                {
-                    lock (_lock)
-                    {
-                        if (_instance == null)
-            {
-                            _instance = new Dealer();
-                        }
-                    }
-                }
-                return _instance;
-            }
-            internal set => _instance = value; // テスト用
-        }
+        /* -------- 1. Singleton実装 -------- */
+        private static readonly Dealer _instance = new Dealer();
+        public static Dealer Instance => _instance;
 
         /* -------- 2. プライベートコンストラクタでSingleton実装 -------- */
         private Dealer()
@@ -40,6 +22,10 @@ namespace Tetrage.Managers
         }
 
         /* -------- 3. 通常の Dealer ロジック -------- */
+
+
+        public event Action RoundStart;
+        public event Action RoundEnd;
 
         /// <summary>
         /// 現在のステージ情報。
@@ -57,7 +43,7 @@ namespace Tetrage.Managers
         /// 現在のプレイヤー。
         /// </summary>
         private IPlayer _currentPlayer;
-        public IPlayer CurrentPlayer {  get { return _currentPlayer; } }
+        public IPlayer CurrentPlayer { get { return _currentPlayer; } }
 
         /// <summary>
         /// Stageを設定する（初期化用）
@@ -74,6 +60,18 @@ namespace Tetrage.Managers
         {
             _players = players;
         }
+
+        public void OnRoundStart()
+        {
+            RoundStart?.Invoke();
+        }
+
+        public void OnRoundEnd()
+        {
+            RoundEnd?.Invoke();
+        }
+
+
 
         /// <summary>
         /// 現在のプレイヤーを設定する
@@ -107,25 +105,14 @@ namespace Tetrage.Managers
 
         }
 
-        /// <summary>
-        /// 指定されたアクションタイプに基づいてテトラージュの勝敗を判定する。
-        /// </summary>
-
-        /*public void JudgeTetrage(ActionType actionType)
-        {
-
-        }
-        （いつか復活させてください）*/
 
         /// <summary>
         /// Dealerインスタンスをリセットする（テスト用）
         /// </summary>
         public static void ResetInstance()
         {
-            lock (_lock)
-            {
-                _instance = null;
-            }
+            // このメソッドは通常使用されないため、実装は不要
         }
+
     }
 }
