@@ -8,22 +8,35 @@ using Tetrage.Core.Contracts;
 /// </summary>
 namespace Tetrage.Managers
 {
-    public class Dealer : MonoBehaviour, IGameContextProvider
+    public class Dealer : IGameContextProvider
     {
         /* -------- 1. 唯一のインスタンスを公開 -------- */
-        public static Dealer Instance { get; internal set; } // ここのinteralについていまいちわかってない。　テストがしやすい、とだけ
-
-        /* -------- 2. Awake で重複チェック -------- */
-        private void Awake()
+        private static Dealer _instance;
+        private static readonly object _lock = new object();
+        
+        public static Dealer Instance 
+        { 
+            get 
         {
-            if (Instance != null && Instance != this)
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
             {
-                Destroy(gameObject);             // 既に存在→この複製を破棄
-                return;
+                            _instance = new Dealer();
+                        }
+                    }
+                }
+                return _instance;
             }
+            internal set => _instance = value; // テスト用
+        }
 
-            Instance = this;                     // 初回生成
-            //DontDestroyOnLoad(gameObject);       // シーンをまたいで保持したい場合
+        /* -------- 2. プライベートコンストラクタでSingleton実装 -------- */
+        private Dealer()
+        {
+            // 初期化処理があればここに記述
         }
 
         /* -------- 3. 通常の Dealer ロジック -------- */
@@ -45,6 +58,30 @@ namespace Tetrage.Managers
         /// </summary>
         private IPlayer _currentPlayer;
         public IPlayer CurrentPlayer {  get { return _currentPlayer; } }
+
+        /// <summary>
+        /// Stageを設定する（初期化用）
+        /// </summary>
+        public void SetStage(Stage stage)
+        {
+            _stage = stage;
+        }
+
+        /// <summary>
+        /// プレイヤーリストを設定する（初期化用）
+        /// </summary>
+        public void SetPlayers(List<IPlayer> players)
+        {
+            _players = players;
+        }
+
+        /// <summary>
+        /// 現在のプレイヤーを設定する
+        /// </summary>
+        public void SetCurrentPlayer(IPlayer player)
+        {
+            _currentPlayer = player;
+        }
 
         /// <summary>
         /// 各プレイヤーにカードを配布する。
@@ -79,5 +116,16 @@ namespace Tetrage.Managers
 
         }
         （いつか復活させてください）*/
+
+        /// <summary>
+        /// Dealerインスタンスをリセットする（テスト用）
+        /// </summary>
+        public static void ResetInstance()
+        {
+            lock (_lock)
+            {
+                _instance = null;
+            }
+        }
     }
 }
