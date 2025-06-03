@@ -180,6 +180,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: df47f294bbf52418db1051156134d796, type: 3}
+--- !u!114 &874659854 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8945349680416234397, guid: c2aae1303312bde47bf352bfb1e48c58, type: 3}
+  m_PrefabInstance: {fileID: 150792837109888185}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20e775f03e7bd0f408ac4c02a55234f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1427117121
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -451,6 +462,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4509666908347568160, guid: 9edf25ba380449c4f84ee7053fb91044, type: 3}
       propertyPath: positionMarker
+      value: 
+      objectReference: {fileID: 1932378261}
+    - target: {fileID: 4509666908347568160, guid: 9edf25ba380449c4f84ee7053fb91044, type: 3}
+      propertyPath: stagePositionConfig
+      value: 
+      objectReference: {fileID: 874659854}
+    - target: {fileID: 4509666908347568160, guid: 9edf25ba380449c4f84ee7053fb91044, type: 3}
+      propertyPath: playerPositionConfig
       value: 
       objectReference: {fileID: 1932378261}
     m_RemovedComponents: []

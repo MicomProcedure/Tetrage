@@ -147,7 +147,7 @@ namespace Tetrage.Models
             {
                 // 上限超過時の処理
                 Debug.LogWarning($"[{Name}] cannot add card: reached maxCount {_maxCount}");
-                return false;
+                return false;   
             }
 
             _cards.Add(card);
@@ -214,6 +214,7 @@ namespace Tetrage.Models
                 if (!added)
                 {
                     Debug.LogWarning($"[CardPile.TransferService] Failed to add card to pile '{to.Name}'");
+                    from.Add(card);
                     return false;
                 }
                 // 移動完了通知
