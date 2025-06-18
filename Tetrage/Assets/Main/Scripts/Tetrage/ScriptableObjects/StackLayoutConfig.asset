@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ecf9d709ce6f374d88bac284bcbcf38, type: 3}
   m_Name: StackLayoutConfig
   m_EditorClassIdentifier: 
-  PileWidth: 10
+  PileWidth: 3
   MinSpacing: 0
   MaxSpacing: 3.4028235e+38
   PositionOffset: {x: 0, y: 0, z: 0}
