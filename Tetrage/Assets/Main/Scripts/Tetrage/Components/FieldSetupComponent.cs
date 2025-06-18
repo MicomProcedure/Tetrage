@@ -11,8 +11,9 @@ using Tetrage.Managers;
 namespace Tetrage.Components
 {
     /// <summary>
-    /// FieldSetupManagerに必要な依存性と設定を準備・提供するMonoBehaviourコンポーネント
-    /// ScriptableObjectとシーン固有設定を組み合わせて統合的なセットアップを実現
+    /// FieldSetupManagerに必要な依存性と静的設定を提供するMonoBehaviourコンポーネント
+    /// 責務: 静的フィールド設定の提供のみ（セットアップ実行は行わない）
+    /// 動的な参加者情報はDealerが管理、セットアップ実行は上位モジュールが担当
     /// </summary>
     public class FieldSetupComponent : MonoBehaviour
     {
@@ -22,241 +23,134 @@ namespace Tetrage.Components
         [Header("Scene Dependencies")]
         [SerializeField] private Transform stageRoot;
         [SerializeField] private Transform playerRoot;
-        [SerializeField] private Vector3 stageSpawnPosition;
-        [SerializeField] private List<Vector3> playerLocations;
+        [SerializeField] private PositionConfig stageSpawnPositionPrefab;
+        [SerializeField] private PositionConfig playerLocationsPrefab;
 
-        [Header("Game Settings")]
-        [SerializeField] private List<PlayerInfo> participantInfoList;
-
-        [Header("Layout Settings")]
-        [SerializeField] private CardPileLayoutConfig trashPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig stackPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig localPlayerPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig remotePlayerPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig botPlayerPileLayoutConfig;
-
-        private FieldSetupManager _fieldSetupManager;
+        [Header("カードパイルレイアウト設定")]
+        [SerializeField] private CardPileLayoutAsset handsPileLayoutAsset;
+        [SerializeField] private CardPileLayoutAsset tmpPileLayoutAsset;
+        [SerializeField] private CardPileLayoutAsset targetPileLayoutAsset;
+        [SerializeField] private CardPileLayoutAsset trashPileLayoutAsset;
+        [SerializeField] private CardPileLayoutAsset stackPileLayoutAsset;
 
         /// <summary>
-        /// セットアップされたFieldSetupManagerを取得
+        /// PrefabConfigを取得
         /// </summary>
-        public FieldSetupManager FieldSetupManager => _fieldSetupManager;
+        public FieldSetupPrefabConfig PrefabConfig => prefabConfig;
 
-        private void Awake()
+        /// <summary>
+        /// StageRootを取得
+        /// </summary>
+        public Transform StageRoot => stageRoot;
+
+        /// <summary>
+        /// PlayerRootを取得
+        /// </summary>
+        public Transform PlayerRoot => playerRoot;
+
+        /// <summary>
+        /// StageSpawnPositionConfigをIPositionConfigとして取得
+        /// </summary>
+        public IPositionConfig StageSpawnPositionConfig => stageSpawnPositionPrefab;
+
+        /// <summary>
+        /// PlayerLocationsConfigをIPositionConfigとして取得
+        /// </summary>
+        public IPositionConfig PlayerLocationsConfig => playerLocationsPrefab;
+
+        /// <summary>
+        /// カードパイルレイアウト設定の辞書を取得
+        /// </summary>
+        public Dictionary<CardPileType, CardPileLayoutSettings> GetCardPileLayoutSettings()
         {
-            ValidateConfiguration();
+            return CreateCardPileLayoutSettingsDictionary();
         }
 
         /// <summary>
-        /// フィールドセットアップを実行
+        /// プレイヤー位置情報を取得
         /// </summary>
-        [ContextMenu("Setup Field")]
-        public void SetupField()
+        public List<Vector3> GetPlayerLocations()
         {
-            try
+            return PlayerLocationsConfig.Position;
+        }
+
+        /// <summary>
+        /// ステージスポーン位置を取得
+        /// </summary>
+        public Vector3 GetStageSpawnPosition()
+        {
+            return StageSpawnPositionConfig.Position[0]; // ステージは1つのみ
+        }
+
+        /// <summary>
+        /// カードパイルレイアウト設定の辞書を作成
+        /// </summary>
+        private Dictionary<CardPileType, CardPileLayoutSettings> CreateCardPileLayoutSettingsDictionary()
+        {
+            return new Dictionary<CardPileType, CardPileLayoutSettings>
             {
-                var dependencies = CreateFieldSetupDependencies();
-                var settings = CreateFieldSetupSettings();
-
-                _fieldSetupManager = new FieldSetupManager(settings, dependencies);
-                _fieldSetupManager.SetupField();
-
-                // セットアップ完了後、DealerにStageとPlayersを設定
-                SetupDealer();
-
-                Debug.Log("フィールドセットアップが完了しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"フィールドセットアップに失敗しました: {ex.Message}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// FieldSetupDependenciesを作成（直接インスタンス化）
-        /// </summary>
-        private FieldSetupDependencies CreateFieldSetupDependencies()
-        {
-            // 基本となるモデル用Factoryを作成
-            var cardModelFactory = new CardWithViewFactory(new CardModelFactory(), prefabConfig.CardViewPrefab);
-            var cardPileFactory = new CardPileFactory();
-
-            // 依存関係のあるFactoryを作成
-            var stageModelFactory = new StageModelFactory(cardPileFactory, cardModelFactory);
-            var playerModelFactory = new PlayerModelFactory(cardPileFactory, cardModelFactory);
-
-            return new FieldSetupDependencies(
-                cardModelFactory,
-                stageModelFactory,
-                playerModelFactory,
-                cardPileFactory);
-        }
-
-        /// <summary>
-        /// FieldSetupSettingsを作成
-        /// </summary>
-        private FieldSetupSettings CreateFieldSetupSettings()
-        {
-            var playerViewPrefabDict = CreatePlayerViewPrefabDict();
-            var pileViewPrefabDict = CreatePileViewPrefabDict();
-            var playerPilesLayoutSettings = CreatePlayerPilesLayoutSettings();
-
-            return new FieldSetupSettings(
-                participantInfoList,
-                playerViewPrefabDict,
-                pileViewPrefabDict,
-                prefabConfig.CardViewPrefab,
-                prefabConfig.StageViewPrefab,
-                stageSpawnPosition,
-                stageRoot,
-                playerRoot,
-                playerLocations,
-                playerPilesLayoutSettings,
-                ConvertToLayoutSettings(trashPileLayoutConfig),
-                ConvertToLayoutSettings(stackPileLayoutConfig));
-        }
-
-        /// <summary>
-        /// プレイヤービューPrefabディクショナリを作成
-        /// </summary>
-        private Dictionary<PlayerType, BasicPlayerView> CreatePlayerViewPrefabDict()
-        {
-            return new Dictionary<PlayerType, BasicPlayerView>
-            {
-                { PlayerType.Local, prefabConfig.LocalPlayerViewPrefab },
-                { PlayerType.Remote, prefabConfig.RemotePlayerViewPrefab },
-                { PlayerType.Bot, prefabConfig.BotPlayerViewPrefab }
+                { CardPileType.Hands, handsPileLayoutAsset.ToLayoutSettings() },
+                { CardPileType.Tmp, tmpPileLayoutAsset.ToLayoutSettings() },
+                { CardPileType.Target, targetPileLayoutAsset.ToLayoutSettings() },
+                { CardPileType.Trash, trashPileLayoutAsset.ToLayoutSettings() },
+                { CardPileType.Stack, stackPileLayoutAsset.ToLayoutSettings() }
             };
         }
 
         /// <summary>
-        /// カードパイルビューPrefabディクショナリを作成
-        /// </summary>
-        private Dictionary<CardPileType, BasicCardPileView> CreatePileViewPrefabDict()
-        {
-            return new Dictionary<CardPileType, BasicCardPileView>
-            {
-                { CardPileType.Basic, prefabConfig.BasicCardPileViewPrefab },
-                { CardPileType.Hands, prefabConfig.HandsCardPileViewPrefab },
-                { CardPileType.Tmp, prefabConfig.TmpCardPileViewPrefab },
-                { CardPileType.Stack, prefabConfig.StackCardPileViewPrefab },
-                { CardPileType.Trash, prefabConfig.TrashCardPileViewPrefab },
-                { CardPileType.Target, prefabConfig.BasicCardPileViewPrefab } // Targetは基本ビューを使用
-            };
-        }
-
-        /// <summary>
-        /// プレイヤーパイルレイアウト設定ディクショナリを作成
-        /// </summary>
-        private Dictionary<PlayerType, CardPileLayoutSettings> CreatePlayerPilesLayoutSettings()
-        {
-            return new Dictionary<PlayerType, CardPileLayoutSettings>
-            {
-                { PlayerType.Local, ConvertToLayoutSettings(localPlayerPileLayoutConfig) },
-                { PlayerType.Remote, ConvertToLayoutSettings(remotePlayerPileLayoutConfig) },
-                { PlayerType.Bot, ConvertToLayoutSettings(botPlayerPileLayoutConfig) }
-            };
-        }
-
-        /// <summary>
-        /// CardPileLayoutConfigをCardPileLayoutSettingsに変換
-        /// </summary>
-        private CardPileLayoutSettings ConvertToLayoutSettings(CardPileLayoutConfig config)
-        {
-            if (config == null)
-            {
-                Debug.LogWarning("CardPileLayoutConfigがnullです。デフォルト設定を使用します。");
-                return CardPileLayoutSettings.Default;
-            }
-
-            return new CardPileLayoutSettings(
-                config.PileWidth,
-                config.MinSpacing,
-                config.MaxSpacing,
-                config.PositionOffset);
-        }
-
-        /// <summary>
-        /// DealerにStageとPlayersを設定
-        /// </summary>
-        private void SetupDealer()
-        {
-            if (_fieldSetupManager == null)
-            {
-                Debug.LogError("FieldSetupManagerが初期化されていません");
-                return;
-            }
-
-            var dealer = Dealer.Instance;
-            dealer.SetStage(_fieldSetupManager.Stage);
-            dealer.SetPlayers(_fieldSetupManager.Players);
-
-            Debug.Log("DealerにStageとPlayersを設定しました");
-        }
-
-        /// <summary>
-        /// 設定の妥当性を検証
+        /// 設定の検証
         /// </summary>
         private void ValidateConfiguration()
         {
             if (prefabConfig == null)
-                Debug.LogError("FieldSetupPrefabConfigが設定されていません", this);
+                throw new InvalidOperationException("PrefabConfigが設定されていません");
 
             if (stageRoot == null)
-                Debug.LogError("StageRootが設定されていません", this);
+                throw new InvalidOperationException("StageRootが設定されていません");
 
             if (playerRoot == null)
-                Debug.LogError("PlayerRootが設定されていません", this);
+                throw new InvalidOperationException("PlayerRootが設定されていません");
 
-            if (participantInfoList == null || participantInfoList.Count == 0)
-                Debug.LogError("ParticipantInfoListが設定されていません", this);
+            if (stageSpawnPositionPrefab == null)
+                throw new InvalidOperationException("StageSpawnPositionPrefabが設定されていません");
 
-            if (playerLocations == null || playerLocations.Count == 0)
-                Debug.LogError("PlayerLocationsが設定されていません", this);
+            if (playerLocationsPrefab == null)
+                throw new InvalidOperationException("PlayerLocationsPrefabが設定されていません");
 
-            // Layout Config の検証
-            ValidateLayoutConfig("TrashPileLayoutConfig", trashPileLayoutConfig);
-            ValidateLayoutConfig("StackPileLayoutConfig", stackPileLayoutConfig);
-            ValidateLayoutConfig("LocalPlayerPileLayoutConfig", localPlayerPileLayoutConfig);
-            ValidateLayoutConfig("RemotePlayerPileLayoutConfig", remotePlayerPileLayoutConfig);
-            ValidateLayoutConfig("BotPlayerPileLayoutConfig", botPlayerPileLayoutConfig);
+            // カードパイルレイアウト設定の検証
+            ValidateCardPileLayoutAsset(handsPileLayoutAsset, "HandsPileLayoutAsset");
+            ValidateCardPileLayoutAsset(tmpPileLayoutAsset, "TmpPileLayoutAsset");
+            ValidateCardPileLayoutAsset(targetPileLayoutAsset, "TargetPileLayoutAsset");
+            ValidateCardPileLayoutAsset(trashPileLayoutAsset, "TrashPileLayoutAsset");
+            ValidateCardPileLayoutAsset(stackPileLayoutAsset, "StackPileLayoutAsset");
         }
 
         /// <summary>
-        /// レイアウト設定の妥当性を検証
+        /// CardPileLayoutAssetの検証
         /// </summary>
-        private void ValidateLayoutConfig(string configName, CardPileLayoutConfig config)
+        private void ValidateCardPileLayoutAsset(CardPileLayoutAsset asset, string assetName)
         {
-            if (config == null)
-                Debug.LogWarning($"{configName}が設定されていません。デフォルト設定を使用します。", this);
+            if (asset == null)
+                throw new InvalidOperationException($"{assetName}が設定されていません");
         }
 
+        #if UNITY_EDITOR
         /// <summary>
-        /// Inspectorでのテスト用メソッド
+        /// Inspector用の検証ボタン
         /// </summary>
-        [ContextMenu("Validate Configuration")]
-        private void ValidateConfigurationMenu()
-        {
-            ValidateConfiguration();
-            Debug.Log("設定の妥当性検証が完了しました");
-        }
-
-        /// <summary>
-        /// Factory依存関係作成テスト用メソッド
-        /// </summary>
-        [ContextMenu("Test Dependencies Creation")]
-        private void TestDependenciesCreation()
+        [ContextMenu("設定を検証")]
+        public void ValidateConfigurationInEditor()
         {
             try
             {
-                var dependencies = CreateFieldSetupDependencies();
-                Debug.Log("全てのFactory依存関係の作成に成功しました");
+                ValidateConfiguration();
+                Debug.Log("FieldSetupComponent: 設定の検証が完了しました");
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Debug.LogError($"Factory依存関係作成テストに失敗しました: {ex.Message}");
+                Debug.LogError($"FieldSetupComponent: 設定エラー - {e.Message}");
             }
         }
+        #endif
     }
 }

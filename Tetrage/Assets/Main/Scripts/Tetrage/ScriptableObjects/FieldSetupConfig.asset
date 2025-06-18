@@ -12,5 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 749a73f0c66d74f7e8b273dce0248782, type: 3}
   m_Name: FieldSetupConfig
   m_EditorClassIdentifier: 
-  cardViewPrefab: {fileID: 0}
-  stageViewPrefab: {fileID: 0}
+  playerPositionConfigPrefab: {fileID: 5938314527305277211, guid: 70665362defd00b4aa8b693c7d2be53a, type: 3}
+  stagePositionConfigPrefab: {fileID: 8945349680416234397, guid: c2aae1303312bde47bf352bfb1e48c58, type: 3}
+  LocalPlayerViewPrefab: {fileID: 4366716965876282203, guid: f2d8de75c362a436ebc8fef8e442b3ed, type: 3}
+  RemotePlayerViewPrefab: {fileID: 4366716965876282203, guid: f2d8de75c362a436ebc8fef8e442b3ed, type: 3}
+  BotPlayerViewPrefab: {fileID: 4366716965876282203, guid: f2d8de75c362a436ebc8fef8e442b3ed, type: 3}
+  CardViewPrefab: {fileID: 6479867437534543680, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
+  StageViewPrefab: {fileID: 2611144816705012123, guid: 389703ef11d09414bb6547d1fd79f3d5, type: 3}
+  BasicCardPileViewPrefab: {fileID: 3340305892033893497, guid: 59cdcafdcfe084df0a25283d25cf1e1a, type: 3}
+  HandsCardPileViewPrefab: {fileID: 3600912846972201006, guid: 1bfb12b8ba15b174abb6ad5c709d7a4e, type: 3}
+  TmpCardPileViewPrefab: {fileID: 2802157858914362258, guid: d6df1fff37a65734eb6c91075e0289ac, type: 3}
+  StackCardPileViewPrefab: {fileID: 9054381360169505600, guid: 6a46a22db9358ad468c613b89cc4370b, type: 3}
+  TrashCardPileViewPrefab: {fileID: 8132366089786138300, guid: db38cc1178eecfe4c93fe14c986dcee8, type: 3}
