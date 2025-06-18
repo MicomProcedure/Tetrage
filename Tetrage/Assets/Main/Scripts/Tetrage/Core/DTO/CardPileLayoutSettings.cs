@@ -27,24 +27,24 @@ namespace Tetrage.Core.DTO
             PileWidth = pileWidth;
             MinSpacing = minSpacing;
             MaxSpacing = maxSpacing;
-            PositionOffset = positionOffset == default 
-                ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET 
+            PositionOffset = positionOffset == default
+                ? InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET
                 : positionOffset;
         }
 
         // よく使うプリセット（staticプロパティ）
         public static CardPileLayoutSettings Default => new CardPileLayoutSettings();
-        
+
         // public static CardPileLayoutSettings Hands => new CardPileLayoutSettings(
         //     pileWidth: 15f, 
         //     minSpacing: 1f, 
         //     maxSpacing: 3f);
-            
+
         // public static CardPileLayoutSettings Stack => new CardPileLayoutSettings(
         //     pileWidth: 5f, 
         //     minSpacing: 0f, 
         //     maxSpacing: 0f);
-            
+
         // public static CardPileLayoutSettings Tmp => new CardPileLayoutSettings(
         //     pileWidth: 8f, 
         //     minSpacing: 0.5f, 
@@ -53,10 +53,10 @@ namespace Tetrage.Core.DTO
         // With系メソッドで部分変更（不変性を保ちつつ）
         public CardPileLayoutSettings WithWidth(float width) => new CardPileLayoutSettings(
             width, MinSpacing, MaxSpacing, PositionOffset);
-            
+
         public CardPileLayoutSettings WithSpacing(float min, float max) => new CardPileLayoutSettings(
             PileWidth, min, max, PositionOffset);
-            
+
         public CardPileLayoutSettings WithOffset(Vector3 offset) => new CardPileLayoutSettings(
             PileWidth, MinSpacing, MaxSpacing, offset);
     }

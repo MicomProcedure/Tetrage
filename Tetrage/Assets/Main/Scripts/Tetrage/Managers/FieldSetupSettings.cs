@@ -20,9 +20,7 @@ namespace Tetrage.Managers
         public Transform StageRoot { get; }    // ステージのルート
         public Transform PlayerRoot { get; }    // プレイヤーのルート
         public List<Vector3> PlayerLocations { get; }    // プレイヤーの位置リスト
-        public Dictionary<PlayerType, CardPileLayoutSettings> PlayerPilesLayoutSettings { get; }    // プレイヤーのカードパイルのレイアウト設定
-        public CardPileLayoutSettings TrashPileLayoutSettings { get; }    // トラッシュのカードパイルのレイアウト設定
-        public CardPileLayoutSettings StackPileLayoutSettings { get; }    // スタックのカードパイルのレイアウト設定
+        public Dictionary<CardPileType, CardPileLayoutSettings> CardPileLayoutSettingsDict { get; }    // カードパイルタイプごとのレイアウト設定
 
         /* -------- 2. コンストラクタ -------- */
         /// <summary>
@@ -37,9 +35,7 @@ namespace Tetrage.Managers
         /// <param name="stageRoot">ステージのルート</param>
         /// <param name="playerRoot">プレイヤーのルート</param>
         /// <param name="playerLocations">プレイヤーの位置リスト</param>
-        /// <param name="playerPilesLayoutSettings">プレイヤーのカードパイルのレイアウト設定</param>
-        /// <param name="trashPileLayoutSettings">トラッシュのカードパイルのレイアウト設定</param>
-        /// <param name="stackPileLayoutSettings">スタックのカードパイルのレイアウト設定</param>        
+        /// <param name="cardPileLayoutSettingsDict">カードパイルタイプごとのレイアウト設定</param>
         public FieldSetupSettings(
             List<PlayerInfo> participantInfoList,
             Dictionary<PlayerType, BasicPlayerView> playerViewPrefabDict,
@@ -50,9 +46,7 @@ namespace Tetrage.Managers
             Transform stageRoot,
             Transform playerRoot,
             List<Vector3> playerLocations,
-            Dictionary<PlayerType, CardPileLayoutSettings> playerPilesLayoutSettings,
-            CardPileLayoutSettings trashPileLayoutSettings,
-            CardPileLayoutSettings stackPileLayoutSettings
+            Dictionary<CardPileType, CardPileLayoutSettings> cardPileLayoutSettingsDict
         )
         {
             ParticipantInfoList = participantInfoList;
@@ -64,9 +58,7 @@ namespace Tetrage.Managers
             StageRoot = stageRoot;
             PlayerRoot = playerRoot;
             PlayerLocations = playerLocations;
-            PlayerPilesLayoutSettings = playerPilesLayoutSettings;
-            TrashPileLayoutSettings = trashPileLayoutSettings;
-            StackPileLayoutSettings = stackPileLayoutSettings;
+            CardPileLayoutSettingsDict = cardPileLayoutSettingsDict;
         }
     }
 }

@@ -28,12 +28,12 @@ namespace Tetrage.Components
         [Header("Game Settings")]
         [SerializeField] private List<PlayerInfo> participantInfoList;
 
-        [Header("Layout Settings")]
+        [Header("Card Pile Layout Settings")]
+        [SerializeField] private CardPileLayoutConfig handsLayoutConfig;
+        [SerializeField] private CardPileLayoutConfig tmpLayoutConfig;
+        [SerializeField] private CardPileLayoutConfig targetLayoutConfig;
         [SerializeField] private CardPileLayoutConfig trashPileLayoutConfig;
         [SerializeField] private CardPileLayoutConfig stackPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig localPlayerPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig remotePlayerPileLayoutConfig;
-        [SerializeField] private CardPileLayoutConfig botPlayerPileLayoutConfig;
 
         private FieldSetupManager _fieldSetupManager;
 
@@ -98,23 +98,65 @@ namespace Tetrage.Components
         /// </summary>
         private FieldSetupSettings CreateFieldSetupSettings()
         {
-            var playerViewPrefabDict = CreatePlayerViewPrefabDict();
-            var pileViewPrefabDict = CreatePileViewPrefabDict();
-            var playerPilesLayoutSettings = CreatePlayerPilesLayoutSettings();
+            Debug.Log("FieldSetupSettingsの作成を開始します", this);
 
-            return new FieldSetupSettings(
-                participantInfoList,
-                playerViewPrefabDict,
-                pileViewPrefabDict,
-                prefabConfig.CardViewPrefab,
-                prefabConfig.StageViewPrefab,
-                stageSpawnPosition,
-                stageRoot,
-                playerRoot,
-                playerLocations,
-                playerPilesLayoutSettings,
-                ConvertToLayoutSettings(trashPileLayoutConfig),
-                ConvertToLayoutSettings(stackPileLayoutConfig));
+            try
+            {
+                Debug.Log("プレイヤービューPrefabディクショナリを作成中...", this);
+                var playerViewPrefabDict = CreatePlayerViewPrefabDict();
+
+                Debug.Log("カードパイルビューPrefabディクショナリを作成中...", this);
+                var pileViewPrefabDict = CreatePileViewPrefabDict();
+
+                Debug.Log("カードパイルレイアウト設定ディクショナリを作成中...", this);
+                var cardPileLayoutSettingsDict = CreateCardPileLayoutSettingsDict();
+
+                Debug.Log("FieldSetupSettingsインスタンスを作成中...", this);
+
+                // 各パラメータのnullチェック
+                if (participantInfoList == null)
+                {
+                    Debug.LogError("participantInfoListがnullです", this);
+                    throw new System.NullReferenceException("participantInfoList is null");
+                }
+
+                if (playerLocations == null)
+                {
+                    Debug.LogError("playerLocationsがnullです", this);
+                    throw new System.NullReferenceException("playerLocations is null");
+                }
+
+                if (stageRoot == null)
+                {
+                    Debug.LogError("stageRootがnullです", this);
+                    throw new System.NullReferenceException("stageRoot is null");
+                }
+
+                if (playerRoot == null)
+                {
+                    Debug.LogError("playerRootがnullです", this);
+                    throw new System.NullReferenceException("playerRoot is null");
+                }
+
+                Debug.Log($"参加者数: {participantInfoList.Count}, プレイヤー位置数: {playerLocations.Count}", this);
+
+                return new FieldSetupSettings(
+                    participantInfoList,
+                    playerViewPrefabDict,
+                    pileViewPrefabDict,
+                    prefabConfig.CardViewPrefab,
+                    prefabConfig.StageViewPrefab,
+                    stageSpawnPosition,
+                    stageRoot,
+                    playerRoot,
+                    playerLocations,
+                    cardPileLayoutSettingsDict);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"FieldSetupSettings作成中にエラーが発生しました: {ex.Message}", this);
+                throw;
+            }
         }
 
         /// <summary>
@@ -122,6 +164,33 @@ namespace Tetrage.Components
         /// </summary>
         private Dictionary<PlayerType, BasicPlayerView> CreatePlayerViewPrefabDict()
         {
+            // デバッグ: prefabConfigのnullチェック
+            if (prefabConfig == null)
+            {
+                Debug.LogError("prefabConfigがnullです。FieldSetupPrefabConfigを設定してください。", this);
+                throw new System.NullReferenceException("prefabConfig is null");
+            }
+
+            // デバッグ: 各プレイヤービューPrefabのnullチェック
+            if (prefabConfig.LocalPlayerViewPrefab == null)
+            {
+                Debug.LogError("prefabConfig.LocalPlayerViewPrefabがnullです。", this);
+                throw new System.NullReferenceException("LocalPlayerViewPrefab is null");
+            }
+
+            if (prefabConfig.RemotePlayerViewPrefab == null)
+            {
+                Debug.LogError("prefabConfig.RemotePlayerViewPrefabがnullです。", this);
+                throw new System.NullReferenceException("RemotePlayerViewPrefab is null");
+            }
+
+            if (prefabConfig.BotPlayerViewPrefab == null)
+            {
+                Debug.LogError("prefabConfig.BotPlayerViewPrefabがnullです。", this);
+                throw new System.NullReferenceException("BotPlayerViewPrefab is null");
+            }
+
+            Debug.Log("プレイヤービューPrefabディクショナリを作成します", this);
             return new Dictionary<PlayerType, BasicPlayerView>
             {
                 { PlayerType.Local, prefabConfig.LocalPlayerViewPrefab },
@@ -147,15 +216,18 @@ namespace Tetrage.Components
         }
 
         /// <summary>
-        /// プレイヤーパイルレイアウト設定ディクショナリを作成
+        /// カードパイルタイプごとのレイアウト設定ディクショナリを作成
         /// </summary>
-        private Dictionary<PlayerType, CardPileLayoutSettings> CreatePlayerPilesLayoutSettings()
+        private Dictionary<CardPileType, CardPileLayoutSettings> CreateCardPileLayoutSettingsDict()
         {
-            return new Dictionary<PlayerType, CardPileLayoutSettings>
+            return new Dictionary<CardPileType, CardPileLayoutSettings>
             {
-                { PlayerType.Local, ConvertToLayoutSettings(localPlayerPileLayoutConfig) },
-                { PlayerType.Remote, ConvertToLayoutSettings(remotePlayerPileLayoutConfig) },
-                { PlayerType.Bot, ConvertToLayoutSettings(botPlayerPileLayoutConfig) }
+                { CardPileType.Hands, ConvertToLayoutSettings(handsLayoutConfig) },
+                { CardPileType.Tmp, ConvertToLayoutSettings(tmpLayoutConfig) },
+                { CardPileType.Target, ConvertToLayoutSettings(targetLayoutConfig) },
+                { CardPileType.Stack, ConvertToLayoutSettings(stackPileLayoutConfig) },
+                { CardPileType.Trash, ConvertToLayoutSettings(trashPileLayoutConfig) },
+                { CardPileType.Basic, CardPileLayoutSettings.Default } // Basicはデフォルト設定
             };
         }
 
@@ -216,11 +288,11 @@ namespace Tetrage.Components
                 Debug.LogError("PlayerLocationsが設定されていません", this);
 
             // Layout Config の検証
+            ValidateLayoutConfig("HandsLayoutConfig", handsLayoutConfig);
+            ValidateLayoutConfig("TmpLayoutConfig", tmpLayoutConfig);
+            ValidateLayoutConfig("TargetLayoutConfig", targetLayoutConfig);
             ValidateLayoutConfig("TrashPileLayoutConfig", trashPileLayoutConfig);
             ValidateLayoutConfig("StackPileLayoutConfig", stackPileLayoutConfig);
-            ValidateLayoutConfig("LocalPlayerPileLayoutConfig", localPlayerPileLayoutConfig);
-            ValidateLayoutConfig("RemotePlayerPileLayoutConfig", remotePlayerPileLayoutConfig);
-            ValidateLayoutConfig("BotPlayerPileLayoutConfig", botPlayerPileLayoutConfig);
         }
 
         /// <summary>

@@ -14,13 +14,16 @@ namespace Tetrage.UI
         /// Presenter はここを購読し Dispose を呼びます。
         /// </summary>
         public event Action Destroyed;
+
         /// <summary>
         /// このcardpileviewObjectのシーン上の子であるカード表示用ViewのTransformリスト
         /// </summary>
         protected List<Transform> _cardViewObjects = new List<Transform>();
+
         /// <summary>
         /// このcardpileviewObjectのシーン上の子であるカード表示用Viewを置いておく幅
         /// </summary>
+        [Header("Current Layout Settings (Read Only)")]
         [SerializeField] protected float _cardPileWidth = InGameConsts.DEFAULT_CARD_PILE_WIDTH;
         public float CardPileWidth => _cardPileWidth;
         [SerializeField] protected float _cardViewMinSpacing = InGameConsts.DEFAULT_CARD_VIEW_MIN_SPACING;

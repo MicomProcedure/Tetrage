@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625f0f0982480474db4ecdbbff5e49b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  layoutConfig: {fileID: 11400000, guid: 98f535a77c3bc4e639c259dc58f9507a, type: 2}
   _cardPileWidth: 10
   _cardViewMinSpacing: 0
   _cardViewMaxSpacing: 3.4028235e+38
