@@ -8,10 +8,13 @@ using UnityEngine;
 
 namespace Tetrage.Managers
 {
+    /// <summary>
+    /// フィールドセットアップの静的設定情報
+    /// 動的なゲーム情報（参加者情報など）は含まない
+    /// </summary>
     public class FieldSetupSettings
     {
-        /* -------- 1. 必須パラメータ -------- */
-        public List<PlayerInfo> ParticipantInfoList { get; }    // 参加者情報リスト
+        /* -------- 1. 静的フィールド設定のみ -------- */
         public Dictionary<PlayerType, BasicPlayerView> PlayerViewPrefabDict { get; }    // プレイヤー表示用ビューのディクショナリ
         public Dictionary<CardPileType, BasicCardPileView> PileViewPrefabDict { get; }    // カードパイル表示用ビューのディクショナリ
         public CardView CardViewPrefab { get; }    // カード表示用ビューのプレハブ
@@ -20,15 +23,15 @@ namespace Tetrage.Managers
         public Transform StageRoot { get; }    // ステージのルート
         public Transform PlayerRoot { get; }    // プレイヤーのルート
         public List<Vector3> PlayerLocations { get; }    // プレイヤーの位置リスト
-        public Dictionary<PlayerType, CardPileLayoutSettings> PlayerPilesLayoutSettings { get; }    // プレイヤーのカードパイルのレイアウト設定
+        public Dictionary<CardPileType, CardPileLayoutSettings> PlayerPilesLayoutSettings { get; }    // プレイヤーのカードパイルのレイアウト設定
         public CardPileLayoutSettings TrashPileLayoutSettings { get; }    // トラッシュのカードパイルのレイアウト設定
         public CardPileLayoutSettings StackPileLayoutSettings { get; }    // スタックのカードパイルのレイアウト設定
 
         /* -------- 2. コンストラクタ -------- */
         /// <summary>
-        /// フィールドのセットアップ設定を作成します。
+        /// フィールドの静的セットアップ設定を作成します。
+        /// 動的な参加者情報は含まれません。
         /// </summary>
-        /// <param name="participantInfoList">参加者情報リスト</param>
         /// <param name="playerViewPrefabDict">プレイヤー表示用ビューのディクショナリ</param>
         /// <param name="pileViewPrefabDict">カードパイル表示用ビューのディクショナリ</param>
         /// <param name="cardViewPrefab">カード表示用ビューのプレハブ</param>
@@ -41,7 +44,6 @@ namespace Tetrage.Managers
         /// <param name="trashPileLayoutSettings">トラッシュのカードパイルのレイアウト設定</param>
         /// <param name="stackPileLayoutSettings">スタックのカードパイルのレイアウト設定</param>        
         public FieldSetupSettings(
-            List<PlayerInfo> participantInfoList,
             Dictionary<PlayerType, BasicPlayerView> playerViewPrefabDict,
             Dictionary<CardPileType, BasicCardPileView> pileViewPrefabDict,
             CardView cardViewPrefab,
@@ -50,12 +52,11 @@ namespace Tetrage.Managers
             Transform stageRoot,
             Transform playerRoot,
             List<Vector3> playerLocations,
-            Dictionary<PlayerType, CardPileLayoutSettings> playerPilesLayoutSettings,
+            Dictionary<CardPileType, CardPileLayoutSettings> playerPilesLayoutSettings,
             CardPileLayoutSettings trashPileLayoutSettings,
             CardPileLayoutSettings stackPileLayoutSettings
         )
         {
-            ParticipantInfoList = participantInfoList;
             PlayerViewPrefabDict = playerViewPrefabDict;
             PileViewPrefabDict = pileViewPrefabDict;
             CardViewPrefab = cardViewPrefab;

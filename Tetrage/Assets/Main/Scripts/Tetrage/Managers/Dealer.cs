@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Tetrage.Models;
@@ -8,25 +9,23 @@ using Tetrage.Core.Contracts;
 /// </summary>
 namespace Tetrage.Managers
 {
-    public class Dealer : MonoBehaviour, IGameContextProvider
+    public class Dealer : IGameContextProvider, IRoundManager
     {
-        /* -------- 1. 唯一のインスタンスを公開 -------- */
-        public static Dealer Instance { get; internal set; } // ここのinteralについていまいちわかってない。　テストがしやすい、とだけ
+        /* -------- 1. Singleton実装 -------- */
+        private static readonly Dealer _instance = new Dealer();
+        public static Dealer Instance => _instance;
 
-        /* -------- 2. Awake で重複チェック -------- */
-        private void Awake()
+        /* -------- 2. プライベートコンストラクタでSingleton実装 -------- */
+        private Dealer()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);             // 既に存在→この複製を破棄
-                return;
-            }
-
-            Instance = this;                     // 初回生成
-            //DontDestroyOnLoad(gameObject);       // シーンをまたいで保持したい場合
+            // 初期化処理があればここに記述
         }
 
         /* -------- 3. 通常の Dealer ロジック -------- */
+
+
+        public event Action RoundStart;
+        public event Action RoundEnd;
 
         /// <summary>
         /// 現在のステージ情報。
@@ -44,7 +43,43 @@ namespace Tetrage.Managers
         /// 現在のプレイヤー。
         /// </summary>
         private IPlayer _currentPlayer;
-        public IPlayer CurrentPlayer {  get { return _currentPlayer; } }
+        public IPlayer CurrentPlayer { get { return _currentPlayer; } }
+
+        /// <summary>
+        /// Stageを設定する（初期化用）
+        /// </summary>
+        public void SetStage(Stage stage)
+        {
+            _stage = stage;
+        }
+
+        /// <summary>
+        /// プレイヤーリストを設定する（初期化用）
+        /// </summary>
+        public void SetPlayers(List<IPlayer> players)
+        {
+            _players = players;
+        }
+
+        public void OnRoundStart()
+        {
+            RoundStart?.Invoke();
+        }
+
+        public void OnRoundEnd()
+        {
+            RoundEnd?.Invoke();
+        }
+
+
+
+        /// <summary>
+        /// 現在のプレイヤーを設定する
+        /// </summary>
+        public void SetCurrentPlayer(IPlayer player)
+        {
+            _currentPlayer = player;
+        }
 
         /// <summary>
         /// 各プレイヤーにカードを配布する。
@@ -70,14 +105,14 @@ namespace Tetrage.Managers
 
         }
 
+
         /// <summary>
-        /// 指定されたアクションタイプに基づいてテトラージュの勝敗を判定する。
+        /// Dealerインスタンスをリセットする（テスト用）
         /// </summary>
-
-        /*public void JudgeTetrage(ActionType actionType)
+        public static void ResetInstance()
         {
-
+            // このメソッドは通常使用されないため、実装は不要
         }
-        （いつか復活させてください）*/
+
     }
 }

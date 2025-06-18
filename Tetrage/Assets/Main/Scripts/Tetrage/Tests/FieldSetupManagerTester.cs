@@ -7,90 +7,36 @@ using Tetrage.UI;
 using Tetrage.Factories;
 using Tetrage.Components;
 using Tetrage.Core.Contracts;
+using Tetrage.Services;
+using Tetrage.Models;
 
 namespace Tetrage.Tests
 {
     /// <summary>
     /// FieldSetupManagerのプレイモードテストクラス
-    /// Inspectorから必要なプレハブや設定を受け取り、フィールドセットアップの動作を確認します
+    /// シーン上のFieldSetupComponentから設定を取得し、フィールドセットアップの動作を確認します
     /// </summary>
     public class FieldSetupManagerTester : MonoBehaviour
     {
-        [Header("プレハブ設定")]
-        [SerializeField] private CardView cardViewPrefab;
-        [SerializeField] private StageView stageViewPrefab;
-        [SerializeField] private BasicPlayerView localPlayerViewPrefab;
-        [SerializeField] private BasicPlayerView remotePlayerViewPrefab;
-        [SerializeField] private BasicPlayerView botPlayerViewPrefab;
-        
-        [Header("カードパイルビュープレハブ")]
-        [SerializeField] private BasicCardPileView basicCardPileViewPrefab;
-        [SerializeField] private BasicCardPileView handsCardPileViewPrefab;
-        [SerializeField] private BasicCardPileView tmpCardPileViewPrefab;
-        [SerializeField] private BasicCardPileView stackCardPileViewPrefab;
-        [SerializeField] private BasicCardPileView trashCardPileViewPrefab;
-        
-        [Header("シーン内の参照")]
-        [SerializeField] private Transform stageRoot;
-        [SerializeField] private Transform playerRoot;
-        [SerializeField] private PositionConfig playerPositionConfig;
-        [SerializeField] private PositionConfig stagePositionConfig;
-        
-        
+        [Header("FieldSetupComponent参照")]
+        [SerializeField] private FieldSetupComponent fieldSetupComponent;
+
         [Header("プレイヤー設定")]
-        [SerializeField] private List<TestPlayerData> testPlayerList = new List<TestPlayerData>
+        [SerializeField]
+        private List<TestPlayerData> testPlayerList = new List<TestPlayerData>
         {
-            new TestPlayerData { userId = "LocalPlayer1", playerType = PlayerType.LocalPlayer },
-            new TestPlayerData { userId = "RemotePlayer1", playerType = PlayerType.RemotePlayer }
+            new TestPlayerData { userId = "LocalPlayer1", playerType = PlayerType.Local },
+            new TestPlayerData { userId = "RemotePlayer1", playerType = PlayerType.Remote }
         };
-        
-        [Header("レイアウト設定")]
-        [SerializeField] private CardPileLayoutSettingsData handsLayoutSettings = new CardPileLayoutSettingsData
-        {
-            pileWidth = 15f,
-            minSpacing = 1f,
-            maxSpacing = 3f,
-            positionOffset = Vector3.zero
-        };
-        
-        [SerializeField] private CardPileLayoutSettingsData tmpLayoutSettings = new CardPileLayoutSettingsData
-        {
-            pileWidth = 8f,
-            minSpacing = 0.5f,
-            maxSpacing = 2f,
-            positionOffset = Vector3.zero
-        };
-        
-        [SerializeField] private CardPileLayoutSettingsData targetLayoutSettings = new CardPileLayoutSettingsData
-        {
-            pileWidth = 5f,
-            minSpacing = 0f,
-            maxSpacing = 1f,
-            positionOffset = Vector3.zero
-        };
-        
-        [SerializeField] private CardPileLayoutSettingsData stackLayoutSettings = new CardPileLayoutSettingsData
-        {
-            pileWidth = 5f,
-            minSpacing = 0f,
-            maxSpacing = 0f,
-            positionOffset = new Vector3(-5f, 0f, 0f)
-        };
-        
-        [SerializeField] private CardPileLayoutSettingsData trashLayoutSettings = new CardPileLayoutSettingsData
-        {
-            pileWidth = 5f,
-            minSpacing = 0f,
-            maxSpacing = 0f,
-            positionOffset = new Vector3(5f, 0f, 0f)
-        };
-        
+
         [Header("テスト設定")]
         [SerializeField] private bool autoSetupOnStart = false;
-        
+        [SerializeField] private bool preventDuplicateSetup = true;
+
         // セットアップ後のインスタンス
         private FieldSetupManager _fieldSetupManager;
-        
+        private bool _isSetupInProgress = false;
+
         /// <summary>
         /// テスト用プレイヤーデータ構造体
         /// </summary>
@@ -100,27 +46,7 @@ namespace Tetrage.Tests
             public string userId;
             public PlayerType playerType;
         }
-        
-        /// <summary>
-        /// Inspector用のレイアウト設定データ構造体
-        /// </summary>
-        [System.Serializable]
-        public struct CardPileLayoutSettingsData
-        {
-            public float pileWidth;
-            public float minSpacing;
-            public float maxSpacing;
-            public Vector3 positionOffset;
-            
-            /// <summary>
-            /// CardPileLayoutSettingsに変換
-            /// </summary>
-            public CardPileLayoutSettings ToCardPileLayoutSettings()
-            {
-                return new CardPileLayoutSettings(pileWidth, minSpacing, maxSpacing, positionOffset);
-            }
-        }
-        
+
         void Start()
         {
             if (autoSetupOnStart)
@@ -128,129 +54,114 @@ namespace Tetrage.Tests
                 SetupField();
             }
         }
-        
+
         /// <summary>
-        /// フィールドセットアップを実行します（パブリックメソッド、Inspectorボタンから呼び出し可能）
+        /// フィールドセットアップを実行します（FieldSetupComponentの統合メソッドを使用）
         /// </summary>
         [ContextMenu("フィールドセットアップを実行")]
         public void SetupField()
         {
+            // 重複セットアップの防止
+            if (preventDuplicateSetup && _isSetupInProgress)
+            {
+                Debug.LogWarning("FieldSetupManagerTester: セットアップが既に実行中です。重複実行をスキップします。");
+                return;
+            }
+
+            if (preventDuplicateSetup && _fieldSetupManager != null)
+            {
+                Debug.LogWarning("FieldSetupManagerTester: フィールドは既にセットアップ済みです。再セットアップする場合は先にクリアしてください。");
+                return;
+            }
+
             try
             {
+                _isSetupInProgress = true;
                 Debug.Log("FieldSetupManagerTester: フィールドセットアップを開始します");
-                
+
                 // 必要なコンポーネントの検証
                 if (!ValidateRequiredComponents())
                 {
                     Debug.LogError("FieldSetupManagerTester: 必要なコンポーネントが不足しています");
                     return;
                 }
-                
-                // FieldSetupSettingsとDependenciesを作成
-                var settings = CreateFieldSetupSettings();
+
+                // 参加者情報リストを作成
+                var participantInfoList = CreateParticipantInfoList();
+
+                // FieldSetupComponentから検証済みの設定を取得（参加者数チェック付き）
+                var settings = fieldSetupComponent.GetValidatedFieldSetupSettings(participantInfoList.Count);
                 var dependencies = CreateFieldSetupDependencies();
-                
+
                 // FieldSetupManagerを作成してセットアップ実行
                 _fieldSetupManager = new FieldSetupManager(settings, dependencies);
-                _fieldSetupManager.SetupField();
-                
-                Debug.Log($"FieldSetupManagerTester: セットアップが完了しました。プレイヤー数: {_fieldSetupManager.Players.Count}");
-                
-                // 結果をログ出力
+                _fieldSetupManager.SetupField(participantInfoList);
+
+                Debug.Log("FieldSetupManagerTester: フィールドセットアップが完了しました");
                 LogSetupResults();
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"FieldSetupManagerTester: セットアップ中にエラーが発生しました: {e.Message}\n{e.StackTrace}");
+                Debug.LogError($"FieldSetupManagerTester: セットアップに失敗しました - {e.Message}");
+            }
+            finally
+            {
+                _isSetupInProgress = false;
             }
         }
-        
+
         /// <summary>
-        /// 必要なコンポーネントが設定されているかを検証
+        /// 必要なコンポーネントの検証
         /// </summary>
         private bool ValidateRequiredComponents()
         {
-            bool isValid = true;
-            
-            if (cardViewPrefab == null)
+            if (fieldSetupComponent == null)
             {
-                Debug.LogError("CardViewPrefabが設定されていません");
-                isValid = false;
-            }
-            
-            if (stageViewPrefab == null)
-            {
-                Debug.LogError("StageViewPrefabが設定されていません");
-                isValid = false;
-            }
-            
-            if (stageRoot == null)
-            {
-                Debug.LogError("StageRootが設定されていません");
-                isValid = false;
-            }
-            
-            if (playerRoot == null)
-            {
-                Debug.LogError("PlayerRootが設定されていません");
-                isValid = false;
-            }
-            
-            if (playerPositionConfig == null)
-            {
-                Debug.LogError("PositionMarkerが設定されていません");
-                isValid = false;
+                Debug.LogError("FieldSetupManagerTester: FieldSetupComponentが設定されていません");
+                return false;
             }
 
-            if (stagePositionConfig == null)
+            if (testPlayerList == null || testPlayerList.Count == 0)
             {
-                Debug.LogError("StagePositionConfigが設定されていません");
-                isValid = false;
-            }
-            
-            // プレイヤービュープレハブの検証
-            if (localPlayerViewPrefab == null || remotePlayerViewPrefab == null || botPlayerViewPrefab == null)
-            {
-                Debug.LogError("プレイヤービュープレハブが不足しています");
-                isValid = false;
-            }
-            
-            // カードパイルビュープレハブの検証
-            if (basicCardPileViewPrefab == null || handsCardPileViewPrefab == null || 
-                tmpCardPileViewPrefab == null || stackCardPileViewPrefab == null || 
-                trashCardPileViewPrefab == null)
-            {
-                Debug.LogError("カードパイルビュープレハブが不足しています");
-                isValid = false;
-            }
-            
-            // プレイヤー位置の数とプレイヤー数の整合性チェック
-            if (!playerPositionConfig.ValidateConfig(testPlayerList.Count))
-            {
-                Debug.LogError($"PositionMarkerの位置数({playerPositionConfig.Position.Count})とプレイヤー数({testPlayerList.Count})が一致しません");
-                isValid = false;
+                Debug.LogError("FieldSetupManagerTester: テストプレイヤーリストが設定されていません");
+                return false;
             }
 
-            if (!stagePositionConfig.ValidateConfig(1))
-            {
-                Debug.LogError($"StagePositionConfigの位置数({stagePositionConfig.Position.Count})が1ではありません");
-                isValid = false;
-            }
-            
-            return isValid;
+            return true;
         }
-        
+
+        /// <summary>
+        /// 参加者情報リストを作成
+        /// </summary>
+        private List<PlayerInfo> CreateParticipantInfoList()
+        {
+            var participantInfoList = new List<PlayerInfo>();
+
+            foreach (var testPlayer in testPlayerList)
+            {
+                var playerInfo = new PlayerInfo
+                {
+                    UserId = testPlayer.userId,
+                    PlayerType = testPlayer.playerType
+                };
+                participantInfoList.Add(playerInfo);
+            }
+
+            Debug.Log($"FieldSetupManagerTester: 作成された参加者情報数: {participantInfoList.Count}");
+            return participantInfoList;
+        }
+
         /// <summary>
         /// FieldSetupDependenciesを作成
         /// </summary>
         private FieldSetupDependencies CreateFieldSetupDependencies()
         {
-            // 依存性オブジェクトを作成
-            ICardFactory cardModelFactory = new CardModelFactory();
-            ICardPileFactory cardPileFactory = new CardPileFactory();
-            IStageFactory stageModelFactory = new StageModelFactory(cardPileFactory, cardModelFactory);
-            IPlayerFactory playerModelFactory = new PlayerModelFactory(cardPileFactory, cardModelFactory);
-            
+            // 必要なファクトリを作成
+            var cardModelFactory = new CardModelFactory();
+            var cardPileFactory = new CardPileFactory();
+            var stageModelFactory = new StageModelFactory(cardPileFactory, cardModelFactory);
+            var playerModelFactory = new PlayerModelFactory(cardPileFactory, cardModelFactory);
+
             return new FieldSetupDependencies(
                 cardModelFactory,
                 stageModelFactory,
@@ -258,94 +169,25 @@ namespace Tetrage.Tests
                 cardPileFactory
             );
         }
-        
-        /// <summary>
-        /// FieldSetupSettingsを作成
-        /// </summary>
-        private FieldSetupSettings CreateFieldSetupSettings()
-        {
-            // 参加者情報リストを作成
-            var participantInfoList = new List<PlayerInfo>();
-            foreach (var testPlayer in testPlayerList)
-            {
-                participantInfoList.Add(new PlayerInfo
-                {
-                    UserId = testPlayer.userId,
-                    PlayerType = testPlayer.playerType
-                });
-            }
-            
-            // プレイヤービュープレハブ辞書を作成
-            var playerViewPrefabDict = new Dictionary<PlayerType, BasicPlayerView>
-            {
-                { PlayerType.LocalPlayer, localPlayerViewPrefab },
-                { PlayerType.RemotePlayer, remotePlayerViewPrefab },
-                { PlayerType.Bot, botPlayerViewPrefab }
-            };
-            
-            // カードパイルビュープレハブ辞書を作成
-            var pileViewPrefabDict = new Dictionary<CardPileType, BasicCardPileView>
-            {
-                { CardPileType.Basic, basicCardPileViewPrefab },
-                { CardPileType.Hands, handsCardPileViewPrefab },
-                { CardPileType.Tmp, tmpCardPileViewPrefab },
-                { CardPileType.Target, basicCardPileViewPrefab }, // Targetは基本ビューを使用
-                { CardPileType.Stack, stackCardPileViewPrefab },
-                { CardPileType.Trash, trashCardPileViewPrefab }
-            };
-            
-            // プレイヤー位置リストを作成
-            var playerLocations = playerPositionConfig.Position;
-            
-            // プレイヤータイプ別レイアウト設定辞書を作成
-            var playerPilesLayoutSettings = new Dictionary<PlayerType, CardPileLayoutSettings>();
-            
-            // 全プレイヤータイプに対して同じレイアウト設定を適用
-            // 実際の運用では、プレイヤータイプごとに異なる設定も可能
-            var handsLayout = handsLayoutSettings.ToCardPileLayoutSettings();
-            var tmpLayout = tmpLayoutSettings.ToCardPileLayoutSettings();
-            var targetLayout = targetLayoutSettings.ToCardPileLayoutSettings();
-            
-            foreach (PlayerType playerType in System.Enum.GetValues(typeof(PlayerType)))
-            {
-                playerPilesLayoutSettings[playerType] = handsLayout; // 簡単のため、全プレイヤーに同じ設定を適用
-            }
 
-            var stageSpawnPosition = stagePositionConfig.Position[0];
-            
-            return new FieldSetupSettings(
-                participantInfoList,
-                playerViewPrefabDict,
-                pileViewPrefabDict,
-                cardViewPrefab,
-                stageViewPrefab,
-                stageSpawnPosition,
-                stageRoot,
-                playerRoot,
-                playerLocations,
-                playerPilesLayoutSettings,
-                trashLayoutSettings.ToCardPileLayoutSettings(),
-                stackLayoutSettings.ToCardPileLayoutSettings()
-            );
-        }
-        
         /// <summary>
         /// セットアップ結果をログ出力
         /// </summary>
         private void LogSetupResults()
         {
-            if (_fieldSetupManager == null) return;
-            
+            if (_fieldSetupManager == null) 
+            {
+                Debug.LogWarning("FieldSetupManagerTester: FieldSetupManagerが初期化されていません");
+                return;
+            }
+
             Debug.Log("=== FieldSetupManager セットアップ結果 ===");
-            
+            Debug.Log("設定ソース: FieldSetupComponent（統合メソッド使用）");
+
             // プレイヤー情報
             var players = _fieldSetupManager.Players;
             Debug.Log($"生成されたプレイヤー数: {players.Count}");
-            
-            // PositionMarkerの位置情報も表示
-            var positions = playerPositionConfig.Position;
-            Debug.Log($"PositionMarkerの位置数: {positions.Count}");
-            
+
             for (int i = 0; i < players.Count; i++)
             {
                 var player = players[i];
@@ -353,21 +195,15 @@ namespace Tetrage.Tests
                          $"Hands={player.Hands.Cards.Count}枚, " +
                          $"Tmp={player.Tmp.Cards.Count}枚, " +
                          $"Target={player.Target.Cards.Count}枚");
-                         
-                // プレイヤーの想定位置も表示
-                if (i < positions.Count)
-                {
-                    Debug.Log($"  想定位置: {positions[i]}");
-                }
             }
-            
+
             // ステージ情報
             var stage = _fieldSetupManager.Stage;
             Debug.Log($"ステージ - Stack: {stage.Stack.Cards.Count}枚, Trash: {stage.Trash.Cards.Count}枚");
-            
+
             Debug.Log("=== セットアップ完了 ===");
         }
-        
+
         /// <summary>
         /// セットアップ済みのManagerインスタンスを取得（テスト用）
         /// </summary>
@@ -375,7 +211,7 @@ namespace Tetrage.Tests
         {
             return _fieldSetupManager;
         }
-        
+
         /// <summary>
         /// フィールドをクリア（テストの後始末用）
         /// </summary>
@@ -383,37 +219,58 @@ namespace Tetrage.Tests
         public void ClearField()
         {
             // プレイヤーの子オブジェクトを削除
-            if (playerRoot != null)
+            if (fieldSetupComponent?.PlayerRoot != null)
             {
-                for (int i = playerRoot.childCount - 1; i >= 0; i--)
+                for (int i = fieldSetupComponent.PlayerRoot.childCount - 1; i >= 0; i--)
                 {
-                    DestroyImmediate(playerRoot.GetChild(i).gameObject);
+                    DestroyImmediate(fieldSetupComponent.PlayerRoot.GetChild(i).gameObject);
                 }
             }
-            
+
             // ステージの子オブジェクトを削除
-            if (stageRoot != null)
+            if (fieldSetupComponent?.StageRoot != null)
             {
-                for (int i = stageRoot.childCount - 1; i >= 0; i--)
+                for (int i = fieldSetupComponent.StageRoot.childCount - 1; i >= 0; i--)
                 {
-                    DestroyImmediate(stageRoot.GetChild(i).gameObject);
+                    DestroyImmediate(fieldSetupComponent.StageRoot.GetChild(i).gameObject);
                 }
             }
-            
+
+            // 内部状態をリセット
             _fieldSetupManager = null;
-            Debug.Log("フィールドがクリアされました");
+            _isSetupInProgress = false;
+
+            Debug.Log("FieldSetupManagerTester: フィールドをクリアしました");
         }
-        
+
         /// <summary>
-        /// Inspector用のテストボタン群
+        /// 設定のみをテスト（セットアップは実行しない）
         /// </summary>
-        void OnValidate()
+        [ContextMenu("設定検証のみ実行")]
+        public void TestConfigurationOnly()
         {
-            // Inspectorでの値変更時の検証処理
-            if (testPlayerList.Count == 0)
+            try
             {
-                testPlayerList.Add(new TestPlayerData { userId = "TestPlayer1", playerType = PlayerType.LocalPlayer });
+                if (fieldSetupComponent == null)
+                {
+                    Debug.LogError("FieldSetupManagerTester: FieldSetupComponentが設定されていません");
+                    return;
+                }
+
+                var participantCount = testPlayerList?.Count ?? 0;
+                Debug.Log($"FieldSetupManagerTester: 参加者数({participantCount})での設定検証を開始します");
+
+                // 設定検証のみ実行
+                var settings = fieldSetupComponent.GetValidatedFieldSetupSettings(participantCount);
+                
+                Debug.Log("FieldSetupManagerTester: 設定検証が正常に完了しました");
+                Debug.Log($"プレイヤー位置数: {settings.PlayerLocations.Count}");
+                Debug.Log($"ステージスポーン位置: {settings.StageSpawnPosition}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"FieldSetupManagerTester: 設定検証に失敗しました - {e.Message}");
             }
         }
     }
-} 
+}

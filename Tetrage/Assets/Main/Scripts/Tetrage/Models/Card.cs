@@ -26,7 +26,7 @@ namespace Tetrage.Models
         public bool IsVisible
         {
             get => _isVisible;
-            set
+            private set
             {
                 if (_isVisible != value)
                 {

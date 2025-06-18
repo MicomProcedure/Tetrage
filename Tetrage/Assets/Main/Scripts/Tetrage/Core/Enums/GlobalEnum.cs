@@ -36,10 +36,35 @@ namespace Tetrage.Core.Enums
 
     public enum PlayerType
     {
-        LocalPlayer,
-        RemotePlayer,
+        Local,
+        Remote,
         Bot,
     }
 
+    /// <summary>
+    /// アクションの種類を表す列挙型
+    /// </summary>
+    public enum ActionType
+    {
+        /// <summary>
+        /// カードを引くアクション
+        /// </summary>
+        Draw,
+
+        /// <summary>
+        /// カードを表向きにするアクション
+        /// </summary>
+        Open,
+
+        /// <summary>
+        /// リーチ状態にするアクション
+        /// </summary>
+        Reach,
+
+        /// <summary>
+        /// チェックアクション
+        /// </summary>
+        Check
+    }
 
 }
