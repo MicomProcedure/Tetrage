@@ -59,6 +59,31 @@ namespace Tetrage.Components
         public IPositionConfig PlayerLocationsConfig => playerLocationsPrefab;
 
         /// <summary>
+        /// HandsPileLayoutAssetを取得
+        /// </summary>
+        public CardPileLayoutAsset HandsPileLayoutAsset => handsPileLayoutAsset;
+
+        /// <summary>
+        /// TmpPileLayoutAssetを取得
+        /// </summary>
+        public CardPileLayoutAsset TmpPileLayoutAsset => tmpPileLayoutAsset;
+
+        /// <summary>
+        /// TargetPileLayoutAssetを取得
+        /// </summary>
+        public CardPileLayoutAsset TargetPileLayoutAsset => targetPileLayoutAsset;
+
+        /// <summary>
+        /// TrashPileLayoutAssetを取得
+        /// </summary>
+        public CardPileLayoutAsset TrashPileLayoutAsset => trashPileLayoutAsset;
+
+        /// <summary>
+        /// StackPileLayoutAssetを取得
+        /// </summary>
+        public CardPileLayoutAsset StackPileLayoutAsset => stackPileLayoutAsset;
+
+        /// <summary>
         /// カードパイルレイアウト設定の辞書を取得
         /// </summary>
         public Dictionary<CardPileType, CardPileLayoutSettings> GetCardPileLayoutSettings()

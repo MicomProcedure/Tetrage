@@ -550,25 +550,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 2607528489857244052, guid: 014cb57cd59294dcfb680a1c570685b0, type: 3}
-      propertyPath: useTestParticipants
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4991050970133476437, guid: 014cb57cd59294dcfb680a1c570685b0, type: 3}
       propertyPath: m_Name
       value: FieldSetupComponent
       objectReference: {fileID: 0}
     - target: {fileID: 8626877388116208719, guid: 014cb57cd59294dcfb680a1c570685b0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.16240057
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8626877388116208719, guid: 014cb57cd59294dcfb680a1c570685b0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.7422132
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8626877388116208719, guid: 014cb57cd59294dcfb680a1c570685b0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.0409431
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8626877388116208719, guid: 014cb57cd59294dcfb680a1c570685b0, type: 3}
       propertyPath: m_LocalRotation.w
