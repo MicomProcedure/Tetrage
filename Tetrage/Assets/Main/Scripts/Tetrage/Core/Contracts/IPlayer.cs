@@ -1,4 +1,4 @@
-using Tetrage.Actions;
+// using Tetrage.Actions;
 using Tetrage.Models;
 using Cysharp.Threading.Tasks;
 
@@ -44,10 +44,10 @@ namespace Tetrage.Core.Contracts
         /// </summary>
         void Reach();
 
-        /// <summary>
-        /// 指定されたアクションを実行します。
-        /// </summary>
-        /// <param name="action">実行するゲームアクション。</param>
-        UniTask PerformAction(GameAction action);
+        // /// <summary>
+        // /// 指定されたアクションを実行します。
+        // /// </summary>
+        // /// <param name="action">実行するゲームアクション。</param>
+        // UniTask PerformAction(GameAction action);
     }
 }

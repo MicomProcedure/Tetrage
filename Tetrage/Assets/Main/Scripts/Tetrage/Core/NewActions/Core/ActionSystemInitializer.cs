@@ -70,11 +70,23 @@ namespace Tetrage.Core.Actions
         /// </summary>
         private IGameContextProvider FindGameContextProvider()
         {
-            // Dealerインスタンスを取得
-            var dealer = Tetrage.Managers.Dealer.Instance;
-            if (dealer != null)
+            // GameManagerからDealerインスタンスを取得
+            var gameManager = FindObjectOfType<Tetrage.Managers.GameManager>();
+            if (gameManager != null)
             {
-                return dealer;
+                try
+                {
+                    var dealer = gameManager.Dealer;
+                    if (dealer != null)
+                    {
+                        return dealer;
+                    }
+                }
+                catch (System.InvalidOperationException)
+                {
+                    // GameManagerが初期化されていない場合は無視
+                    Debug.LogWarning("GameManagerが初期化されていません。別のIGameContextProviderを検索します。");
+                }
             }
 
             // その他のIGameContextProvider実装をMonoBehaviourから探す

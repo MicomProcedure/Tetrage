@@ -18,32 +18,32 @@ namespace Tetrage.Core.Actions
         [SerializeField] private Button openButton;
         [SerializeField] private Button reachButton;
         [SerializeField] private Button checkButton;
-        
+
         [Header("Settings")]
         [SerializeField] private bool autoUpdateButtons = true;
         [SerializeField] private float updateInterval = 0.1f;
-        
+
         private ActionManager _actionManager;
         private IGameContextProvider _gameContextProvider;
         private Dictionary<ActionType, Button> _actionButtons;
         private IPlayer _currentPlayer;
-        
+
         private void Awake()
         {
             InitializeButtonMappings();
             SetupButtonClickHandlers();
         }
-        
+
         private void Start()
         {
             InitializeActionSystem();
-            
+
             if (autoUpdateButtons)
             {
                 StartButtonUpdateLoop();
             }
         }
-        
+
         /// <summary>
         /// ボタンとActionTypeのマッピングを初期化
         /// </summary>
@@ -57,7 +57,7 @@ namespace Tetrage.Core.Actions
                 { ActionType.Check, checkButton }
             };
         }
-        
+
         /// <summary>
         /// ボタンのクリックハンドラーを設定
         /// </summary>
@@ -67,14 +67,14 @@ namespace Tetrage.Core.Actions
             {
                 var actionType = pair.Key;
                 var button = pair.Value;
-                
+
                 if (button != null)
                 {
                     button.onClick.AddListener(() => ExecuteActionAsync(actionType).Forget());
                 }
             }
         }
-        
+
         /// <summary>
         /// アクションシステムを初期化
         /// </summary>
@@ -82,13 +82,13 @@ namespace Tetrage.Core.Actions
         {
             _actionManager = ActionManager.Instance;
             _gameContextProvider = FindGameContextProvider();
-            
+
             if (_gameContextProvider == null)
             {
                 Debug.LogError("GameContextProviderが見つかりません");
                 return;
             }
-            
+
             // ActionManagerがまだ初期化されていない場合は初期化
             if (_actionManager != null)
             {
@@ -96,17 +96,29 @@ namespace Tetrage.Core.Actions
                 ActionFactory.RegisterAllActions(_actionManager);
             }
         }
-        
+
         /// <summary>
         /// GameContextProviderを自動検索
         /// </summary>
         private IGameContextProvider FindGameContextProvider()
         {
-            // Dealerインスタンスを取得
-            var dealer = Tetrage.Managers.Dealer.Instance;
-            if (dealer != null)
+            // GameManagerからDealerインスタンスを取得
+            var gameManager = FindObjectOfType<Tetrage.Managers.GameManager>();
+            if (gameManager != null)
             {
-                return dealer;
+                try
+                {
+                    var dealer = gameManager.Dealer;
+                    if (dealer != null)
+                    {
+                        return dealer;
+                    }
+                }
+                catch (System.InvalidOperationException)
+                {
+                    // GameManagerが初期化されていない場合は無視
+                    Debug.LogWarning("GameManagerが初期化されていません。別のIGameContextProviderを検索します。");
+                }
             }
 
             // その他のIGameContextProvider実装をMonoBehaviourから探す
@@ -121,7 +133,7 @@ namespace Tetrage.Core.Actions
 
             return null;
         }
-        
+
         /// <summary>
         /// ボタン更新ループを開始
         /// </summary>
@@ -133,7 +145,7 @@ namespace Tetrage.Core.Actions
                 await UniTask.Delay((int)(updateInterval * 1000));
             }
         }
-        
+
         /// <summary>
         /// ボタンの状態（有効/無効）を更新
         /// </summary>
@@ -141,21 +153,21 @@ namespace Tetrage.Core.Actions
         {
             if (_actionManager == null || _gameContextProvider == null)
                 return;
-            
+
             _currentPlayer = _gameContextProvider.CurrentPlayer;
-            
+
             if (_currentPlayer == null)
             {
                 DisableAllButtons();
                 return;
             }
-            
+
             // 各ボタンの状態を更新（ActionType版）
             foreach (var pair in _actionButtons)
             {
                 var actionType = pair.Key;
                 var button = pair.Value;
-                
+
                 if (button != null)
                 {
                     bool canExecute = _currentPlayer.CanExecuteNewAction(actionType, _gameContextProvider);
@@ -163,7 +175,7 @@ namespace Tetrage.Core.Actions
                 }
             }
         }
-        
+
         /// <summary>
         /// 全てのボタンを無効化
         /// </summary>
@@ -177,7 +189,7 @@ namespace Tetrage.Core.Actions
                 }
             }
         }
-        
+
         /// <summary>
         /// アクションを実行（ActionType版）
         /// </summary>
@@ -188,16 +200,16 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("ActionManagerまたは現在のプレイヤーが設定されていません");
                 return;
             }
-            
+
             try
             {
                 // 実行前にボタンを一時的に無効化
                 DisableAllButtons();
-                
+
                 Debug.Log($"アクション実行開始: {actionType}");
-                
+
                 var result = await _currentPlayer.ExecuteNewActionAsync(actionType, _gameContextProvider);
-                
+
                 if (result.IsSuccess)
                 {
                     Debug.Log($"アクション成功: {actionType}");
@@ -220,7 +232,7 @@ namespace Tetrage.Core.Actions
                 UpdateButtonStates();
             }
         }
-        
+
         /// <summary>
         /// アクション成功時の処理
         /// </summary>
@@ -229,7 +241,7 @@ namespace Tetrage.Core.Actions
             // TODO: 成功時のフィードバック（UI、音、エフェクトなど）
             Debug.Log($"アクション成功フィードバック: {actionType}");
         }
-        
+
         /// <summary>
         /// アクション失敗時の処理
         /// </summary>
@@ -238,9 +250,9 @@ namespace Tetrage.Core.Actions
             // TODO: 失敗時のフィードバック（エラーメッセージ表示など）
             Debug.LogWarning($"アクション失敗フィードバック: {actionType} - {result.ErrorMessage}");
         }
-        
+
         // === Inspector用のテストメソッド ===
-        
+
         [ContextMenu("Show Available Actions")]
         private void ShowAvailableActions()
         {
@@ -249,18 +261,18 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("現在のプレイヤーが設定されていません");
                 return;
             }
-            
+
             var availableActions = _currentPlayer.GetAvailableNewActionTypes(_gameContextProvider);
             Debug.Log($"実行可能なアクション: {string.Join(", ", availableActions)}");
         }
-        
+
         [ContextMenu("Force Update Button States")]
         private void ForceUpdateButtonStates()
         {
             UpdateButtonStates();
             Debug.Log("ボタン状態を強制更新しました");
         }
-        
+
         [ContextMenu("Test Draw Action")]
         private async void TestDrawAction()
         {
@@ -270,7 +282,7 @@ namespace Tetrage.Core.Actions
                 Debug.Log($"Test Draw Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
-        
+
         [ContextMenu("Test Open Action")]
         private async void TestOpenAction()
         {
@@ -280,7 +292,7 @@ namespace Tetrage.Core.Actions
                 Debug.Log($"Test Open Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
-        
+
         [ContextMenu("Test Reach Action")]
         private async void TestReachAction()
         {
@@ -290,7 +302,7 @@ namespace Tetrage.Core.Actions
                 Debug.Log($"Test Reach Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
-        
+
         [ContextMenu("Test Check Action")]
         private async void TestCheckAction()
         {
@@ -301,4 +313,4 @@ namespace Tetrage.Core.Actions
             }
         }
     }
-} 
+}
