@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.DTO;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -39,28 +40,37 @@ namespace Tetrage.Managers
         private IPlayer _currentPlayer;
         public IPlayer CurrentPlayer { get { return _currentPlayer; } }
 
+        /// <summary>
+        /// ディーラー戦略
+        /// </summary>
+        private IDealerStrategy _dealerStrategy;
+        public IDealerStrategy DealerStrategy { get { return _dealerStrategy; } }
+
+        /// <summary>
+        /// 参加者情報リスト
+        /// </summary>
+        private List<PlayerInfo> _participantInfoList;
+        public List<PlayerInfo> ParticipantInfoList { get { return _participantInfoList; } }
+
         /* -------- 4. コンストラクタ -------- */
         /// <summary>
         /// Dealerクラスのコンストラクタ
         /// </summary>
-        public Dealer()
+        public Dealer(List<PlayerInfo> participantInfoList)
         {
             _players = new List<IPlayer>();
+            _participantInfoList = participantInfoList;
             Debug.Log("Dealer: インスタンスが作成されました");
         }
 
         /// <summary>
-        /// 戦略パターン対応コンストラクタ（将来用）
+        /// 戦略パターン対応コンストラクタ
         /// </summary>
-        /// <param name="turnStrategy">ターン戦略</param>
-        /// <param name="firstPlayerStrategy">開始プレイヤー選択戦略</param>
-        // public Dealer(ITurnStrategy turnStrategy = null, IFirstPlayerStrategy firstPlayerStrategy = null)
-        // {
-        //     _players = new List<IPlayer>();
-        //     _turnStrategy = turnStrategy;
-        //     _firstPlayerStrategy = firstPlayerStrategy;
-        //     Debug.Log("Dealer: 戦略パターン付きインスタンスが作成されました");
-        // }
+        public Dealer(IDealerStrategy dealerStrategy, List<PlayerInfo> participantInfoList)
+        {
+            _dealerStrategy = dealerStrategy;
+            _participantInfoList = participantInfoList;
+        }
 
         /* -------- 5. 初期化メソッド -------- */
         /// <summary>
@@ -88,6 +98,16 @@ namespace Tetrage.Managers
         }
 
         /* -------- 6. ラウンド管理 -------- */
+        public void StartGame()
+        {
+            // 実装予定
+        }
+
+        public void EndGame()
+        {
+            // 実装予定
+        }
+
         public void OnRoundStart()
         {
             RoundStart?.Invoke();
@@ -117,7 +137,7 @@ namespace Tetrage.Managers
             // {
             //     _currentPlayer = _firstPlayerStrategy.DecideFirstPlayer(_players);
             // }
-            
+
             // 仮実装：最初のプレイヤーを選択
             if (_players?.Count > 0)
             {
@@ -135,7 +155,7 @@ namespace Tetrage.Managers
             // {
             //     _currentPlayer = _turnStrategy.GetNextPlayer(_currentPlayer, _players);
             // }
-            
+
             // 仮実装：時計回り
             if (_currentPlayer != null && _players?.Count > 0)
             {
