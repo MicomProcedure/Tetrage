@@ -8,6 +8,8 @@ namespace Tetrage.Core.Contracts
     /// </summary>
     public interface IDealerStrategy
     {
+        #region インターフェースで定義されているメソッド
+
         /// <summary>
         /// ゲーム開始時の最初のプレイヤーを決定する
         /// </summary>
@@ -39,11 +41,6 @@ namespace Tetrage.Core.Contracts
         void ResetTurnOrder(IReadOnlyList<IPlayer> players);
 
         /// <summary>
-        /// 戦略の名前を取得する（デバッグ・ログ用）
-        /// </summary>
-        string StrategyName { get; }
-
-        /// <summary>
         /// デッキ（山札）をシャッフルする戦略
         /// </summary>
         /// <param name="stack">シャッフル対象のカードパイル</param>
@@ -63,6 +60,8 @@ namespace Tetrage.Core.Contracts
         /// <param name="players">参加プレイヤーのリスト</param>
         /// <param name="stack">配布元の山札</param>
         void SetupInitialTargets(IReadOnlyList<IPlayer> players, CardPile stack);
+
+        #endregion
     }
 
     /// <summary>

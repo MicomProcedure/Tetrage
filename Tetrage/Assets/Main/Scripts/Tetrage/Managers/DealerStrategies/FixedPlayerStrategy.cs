@@ -10,8 +10,16 @@ namespace Tetrage.Managers.DealerStrategies
 {
     /// <summary>
     /// テスト用戦略: 固定したプレイヤーから開始し、常に同じプレイヤーにターンを回す戦略
-    /// デバッグやテスト時に特定のプレイヤーのアクションを集中的にテストする際に使用
     /// </summary>
+    /// <remarks>
+    /// DecideFirstPlayer               : 指定したインデックスのプレイヤーを親にする
+    /// GetNextPlayer                   : 常に同じ指定したプレイヤーにターンを回す
+    /// GetNextPlayerWithConditions     : 条件に関係なく常に同じ指定したプレイヤーにターンを回す
+    /// ResetTurnOrder                  : 何もしない
+    /// ShuffleDeck                     : デッキを「スートAの1, スートBの1, ... スートnの1, スートAの2, スートBの2, ...」の順序にする
+    /// DistributeCards                 : カードを指定したプレイヤーに順番に配布する
+    /// SetupInitialTargets             : 初期ターゲットカードを指定したプレイヤーに設定する
+    /// </remarks>
     public class FixedPlayerStrategy : IDealerStrategy
     {
         #region フィールドとコンストラクタ
@@ -33,22 +41,19 @@ namespace Tetrage.Managers.DealerStrategies
         #region IDealerStrategy インターフェース実装
 
         /// <summary>
-        /// 戦略の名前
-        /// </summary>
-        public string StrategyName => "FixedPlayerStrategy";
-
-        /// <summary>
         /// ゲーム開始時の最初のプレイヤーを決定する（固定プレイヤーを選択）
         /// </summary>
         /// <param name="players">参加プレイヤーのリスト</param>
-        /// <returns>固定されたプレイヤー</returns>
+        /// <returns>固定されたIPlayer</returns>
         public IPlayer DecideFirstPlayer(IReadOnlyList<IPlayer> players)
         {
+            // nullチェック
             if (players == null)
                 throw new ArgumentNullException(nameof(players), "プレイヤーリストがnullです");
 
             if (players.Count == 0)
                 throw new ArgumentException("プレイヤーリストが空です", nameof(players));
+                
 
             // 指定されたインデックスが範囲外の場合は最初のプレイヤーを選択
             var playerIndex = _fixedPlayerIndex < players.Count ? _fixedPlayerIndex : 0;
@@ -155,24 +160,29 @@ namespace Tetrage.Managers.DealerStrategies
         /// <param name="cardsPerPlayer">各プレイヤーに配布するカード枚数</param>
         public void DistributeCards(IReadOnlyList<IPlayer> players, CardPile stack, int cardsPerPlayer)
         {
+            // nullチェック
             if (players == null)
                 throw new ArgumentNullException(nameof(players), "プレイヤーリストがnullです");
 
+            // nullチェック
             if (stack == null)
                 throw new ArgumentNullException(nameof(stack), "山札がnullです");
 
+            // プレイヤーが存在しない場合はスキップ
             if (players.Count == 0)
             {
                 Debug.Log("FixedPlayerStrategy: プレイヤーが存在しないため配布をスキップします");
                 return;
             }
 
+            // 配布枚数が0以下の場合はスキップ
             if (cardsPerPlayer <= 0)
             {
                 Debug.Log("FixedPlayerStrategy: 配布枚数が0以下のため配布をスキップします");
                 return;
             }
 
+            // 必要なカード枚数を計算
             var totalCardsNeeded = players.Count * cardsPerPlayer;
             if (stack.Count < totalCardsNeeded)
             {
@@ -212,6 +222,7 @@ namespace Tetrage.Managers.DealerStrategies
         /// <param name="stack">配布元の山札</param>
         public void SetupInitialTargets(IReadOnlyList<IPlayer> players, CardPile stack)
         {
+            // nullチェック
             if (players == null)
                 throw new ArgumentNullException(nameof(players), "プレイヤーリストがnullです");
 
@@ -231,7 +242,8 @@ namespace Tetrage.Managers.DealerStrategies
 
             Debug.Log($"FixedPlayerStrategy: ターゲットカード設定開始 - {players.Count}人");
 
-            for (int i = 0; i < players.Count; i++)
+            // プレイヤー順にデッキの先頭から1枚ずつ配布
+            foreach (var player in players)
             {
                 if (stack.Count == 0)
                 {
@@ -239,7 +251,6 @@ namespace Tetrage.Managers.DealerStrategies
                     return;
                 }
 
-                var player = players[i];
                 var targetCard = stack.Peek(1)[0]; // 先頭のカードを取得
 
                 bool success = CardPile.TransferService.Transfer(stack, player.Target, targetCard);
