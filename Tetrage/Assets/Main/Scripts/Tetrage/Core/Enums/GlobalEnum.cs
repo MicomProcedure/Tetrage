@@ -64,7 +64,12 @@ namespace Tetrage.Core.Enums
         /// <summary>
         /// チェックアクション
         /// </summary>
-        Check
+        Check,
+
+        /// <summary>
+        /// 何もしないアクション（パス）
+        /// </summary>
+        Pass
     }
 
 }

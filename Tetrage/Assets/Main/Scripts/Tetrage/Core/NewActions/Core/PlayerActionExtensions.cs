@@ -144,6 +144,14 @@ namespace Tetrage.Core.Actions
             return await player.ExecuteNewActionAsync(ActionType.Check, gameContextProvider);
         }
 
+        /// <summary>
+        /// Pass アクションを実行
+        /// </summary>
+        public static async UniTask<ActionResult> PassAsync(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        {
+            return await player.ExecuteNewActionAsync(ActionType.Pass, gameContextProvider);
+        }
+
         // === 実行可能性チェック用の便利メソッド ===
 
         /// <summary>
@@ -176,6 +184,14 @@ namespace Tetrage.Core.Actions
         public static bool CanCheck(this IPlayer player, IGameContextProvider gameContextProvider = null)
         {
             return player.CanExecuteNewAction(ActionType.Check, gameContextProvider);
+        }
+
+        /// <summary>
+        /// Pass アクションが実行可能かチェック
+        /// </summary>
+        public static bool CanPass(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        {
+            return player.CanExecuteNewAction(ActionType.Pass, gameContextProvider);
         }
 
         /// <summary>

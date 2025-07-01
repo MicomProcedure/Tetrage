@@ -53,7 +53,7 @@ namespace Tetrage.Managers.DealerStrategies
 
             if (players.Count == 0)
                 throw new ArgumentException("プレイヤーリストが空です", nameof(players));
-                
+
 
             // 指定されたインデックスが範囲外の場合は最初のプレイヤーを選択
             var playerIndex = _fixedPlayerIndex < players.Count ? _fixedPlayerIndex : 0;

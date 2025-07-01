@@ -18,6 +18,7 @@ namespace Tetrage.Core.Actions
         [SerializeField] private Button openButton;
         [SerializeField] private Button reachButton;
         [SerializeField] private Button checkButton;
+        [SerializeField] private Button passButton;
 
         [Header("Settings")]
         [SerializeField] private bool autoUpdateButtons = true;
@@ -54,7 +55,8 @@ namespace Tetrage.Core.Actions
                 { ActionType.Draw, drawButton },
                 { ActionType.Open, openButton },
                 { ActionType.Reach, reachButton },
-                { ActionType.Check, checkButton }
+                { ActionType.Check, checkButton },
+                { ActionType.Pass, passButton }
             };
         }
 
@@ -310,6 +312,16 @@ namespace Tetrage.Core.Actions
             {
                 var result = await _currentPlayer.CheckAsync(_gameContextProvider);
                 Debug.Log($"Test Check Result: {result.IsSuccess} - {result.ErrorMessage}");
+            }
+        }
+
+        [ContextMenu("Test Pass Action")]
+        private async void TestPassAction()
+        {
+            if (_currentPlayer != null)
+            {
+                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.Pass, _gameContextProvider);
+                Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
     }

@@ -38,21 +38,21 @@ namespace Tetrage.Managers
 
         /* -------- 5. プロパティ -------- */
         /// <summary>セットアップが完了したDealer</summary>
-        public Dealer Dealer 
-        { 
-            get 
+        public Dealer Dealer
+        {
+            get
             {
                 if (!_isInitialized)
                 {
                     throw new System.InvalidOperationException("GameManager が初期化されていません。");
                 }
-                return _dealer; 
+                return _dealer;
             }
         }
 
         /// <summary>セットアップ済みのStage</summary>
         public Stage Stage => _fieldSetupManager?.Stage;
-        
+
         /// <summary>セットアップ済みのPlayers</summary>
         public IReadOnlyList<IPlayer> Players => _fieldSetupManager?.Players;
 
@@ -73,19 +73,19 @@ namespace Tetrage.Managers
             {
                 // 1. FieldSetupManagerの生成
                 _fieldSetupManager = CreateFieldSetupManager(participantInfoList.Count);
-                
+
                 // 2. フィールドのセットアップ
                 _fieldSetupManager.SetupField(participantInfoList);
-                
+
                 // 3. Dealerの生成と初期化
-                _dealer = CreateDealer();
-                
+                _dealer = CreateDealer(participantInfoList);
+
                 // 4. Dealerにフィールド情報を設定
                 SetupDealer();
-                
+
                 // 5. 初期フェーズの設定
                 currentPhase = GamePhase.Starting;
-                
+
                 _isInitialized = true;
                 Debug.Log("GameManager: 初期化が完了しました");
             }
@@ -142,14 +142,14 @@ namespace Tetrage.Managers
         /// Dealerインスタンスを生成する
         /// 戦略パターンの注入もここで行う
         /// </summary>
-        private Dealer CreateDealer()
+        private Dealer CreateDealer(List<PlayerInfo> participantInfoList)
         {
             // 戦略パターンの設定が可能
             // var turnStrategy = new ClockwiseTurnStrategy();
             // var firstPlayerStrategy = new RandomFirstPlayerStrategy();
             // return new Dealer(turnStrategy, firstPlayerStrategy);
-            
-            return new Dealer();
+
+            return new Dealer(participantInfoList);
         }
 
         /// <summary>
@@ -160,13 +160,8 @@ namespace Tetrage.Managers
             // フィールド情報をDealerに設定
             _dealer.SetStage(_fieldSetupManager.Stage);
             _dealer.SetPlayers(_fieldSetupManager.Players.ToList());
-            
-            // 初期プレイヤーの決定
-            if (_fieldSetupManager.Players?.Count > 0)
-            {
-                _dealer.DecideFirstPlayer();
-            }
-            
+
+
             Debug.Log("GameManager: Dealerの設定が完了しました");
         }
 
@@ -180,7 +175,7 @@ namespace Tetrage.Managers
             }
 
             currentPhase = GamePhase.Playing;
-            _dealer.OnRoundStart();
+            _dealer.StartGame();
             Debug.Log("GameManager: ゲームが開始されました");
         }
 
@@ -193,7 +188,7 @@ namespace Tetrage.Managers
             }
 
             currentPhase = GamePhase.Playing;
-            _dealer.OnRoundStart();
+            _dealer.StartRound();
             Debug.Log("GameManager: ラウンドが開始されました");
         }
 

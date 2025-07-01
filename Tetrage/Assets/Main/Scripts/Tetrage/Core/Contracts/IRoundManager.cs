@@ -6,6 +6,7 @@ namespace Tetrage.Core.Contracts
     {
         event Action RoundStart;
         event Action RoundEnd;
+        public int RoundCount { get; }
         IDealerStrategy DealerStrategy { get; }
 
         void StartGame();
