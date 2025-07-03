@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 
 namespace Tetrage.Core.Contracts
 {
@@ -11,7 +12,9 @@ namespace Tetrage.Core.Contracts
 
         void StartGame();
         void EndGame();
-        void NextTurn();
+        void StartRoundLoop();
+        UniTaskVoid StartRound();
+        void NextRound();
         void OnRoundStart();
         void OnRoundEnd();
 
