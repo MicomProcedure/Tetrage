@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using UnityEngine;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.DTO;
-using Tetrage.Core.Constants;
-using Tetrage.Managers.DealerStrategies;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
-using Tetrage.Core.Enums;
-using System.Threading.Tasks;
+using Tetrage.Factories;
+
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -69,17 +66,21 @@ namespace Tetrage.Managers
         private CancellationTokenSource _actionCancellationTokenSource;
         private ActionManager _actionManager;
 
+        // タイムアウト処理用
+        private ITimeoutHandler _timeoutHandler;
+
         #endregion
 
         #region <---- コンストラクタ ---->
         /// <summary>
         /// Dealerクラスのコンストラクタ
         /// </summary>
-        public Dealer(List<PlayerInfo> participantInfoList)
+        public Dealer(List<PlayerInfo> participantInfoList, ITimeoutHandler timeoutHandler = null)
         {
             _players = new List<IPlayer>();
             _participantInfoList = participantInfoList;
             _roundCount = 0; // 初期化
+            _timeoutHandler = timeoutHandler ?? CreateDefaultTimeoutHandler();
             InitializeActionSystem();
             Debug.Log("Dealer: インスタンスが作成されました");
         }
@@ -87,12 +88,30 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応コンストラクタ
         /// </summary>
-        public Dealer(IDealerStrategy dealerStrategy, List<PlayerInfo> participantInfoList)
+        public Dealer(IDealerStrategy dealerStrategy, List<PlayerInfo> participantInfoList, ITimeoutHandler timeoutHandler = null)
         {
             _dealerStrategy = dealerStrategy;
             _participantInfoList = participantInfoList;
             _roundCount = 0; // 初期化
+            _timeoutHandler = timeoutHandler ?? CreateDefaultTimeoutHandler();
             InitializeActionSystem();
+        }
+
+        /// <summary>
+        /// デフォルトのタイムアウトハンドラーを作成
+        /// </summary>
+        private ITimeoutHandler CreateDefaultTimeoutHandler()
+        {
+            // ファクトリーを使用してデフォルトハンドラーを作成
+            return TimeoutHandlerFactory.CreateAutoPass();
+        }
+
+        /// <summary>
+        /// タイムアウトハンドラーを設定する
+        /// </summary>
+        public void SetTimeoutHandler(ITimeoutHandler timeoutHandler)
+        {
+            _timeoutHandler = timeoutHandler ?? CreateDefaultTimeoutHandler();
         }
         #endregion
 
@@ -133,7 +152,7 @@ namespace Tetrage.Managers
 
             FirstDeal();
 
-            StartRound().Forget();
+            StartRoundLoop();
             Debug.Log("Dealer: ラウンドを開始しました");
         }
 
@@ -160,6 +179,11 @@ namespace Tetrage.Managers
 
         }
 
+        public void StartRoundLoop()
+        {
+            StartRound().Forget();
+        }
+
         public async UniTaskVoid StartRound()
         {
             OnRoundStart();
@@ -174,12 +198,47 @@ namespace Tetrage.Managers
                 // アクション完了後の処理（次のターンへ進むなど）
                 await ProcessActionCompletionAsync(actionResult);
             }
+            else if (IsTimeoutResult(actionResult))
+            {
+                Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションがタイムアウト");
+
+                // タイムアウト時の処理を実行
+                await HandleTimeoutAsync(actionResult);
+            }
             else
             {
                 Debug.LogWarning($"Dealer: プレイヤーアクション失敗またはキャンセル - {actionResult.ErrorMessage}");
+                // その他のエラー処理: 次のターンに進む
+                NextTurn();
+                if (_currentPlayer != null)
+                {
+                    StartRound().Forget();
+                }
             }
         }
 
+        /// <summary>
+        /// タイムアウト時の処理を実行
+        /// </summary>
+        private async UniTask HandleTimeoutAsync(ActionResult timeoutResult)
+        {
+            if (_currentPlayer == null) return;
+
+            // タイムアウト処理をハンドラーに委譲
+            var context = new TimeoutContext(_currentPlayer, 0f, timeoutResult);
+            var result = await _timeoutHandler.HandleTimeoutAsync(context);
+
+            // ゲーム終了指示がある場合のみ特別処理
+            if (!result.ShouldContinueGame)
+            {
+                EndGame();
+                return;
+            }
+
+            // 通常はターン進行
+            NextTurn();
+            if (_currentPlayer != null) StartRound().Forget();
+        }
 
         public void EndGame()
         {
@@ -260,24 +319,10 @@ namespace Tetrage.Managers
 
                 UniTask<ActionResult> waitTask = _actionCompletionSource.Task;
 
-                // タイムアウト設定
+                // タイムアウト処理（0以下の場合は無制限待機）
                 if (timeoutSeconds > 0)
                 {
-                    var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_actionCancellationTokenSource.Token);
-                    timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-
-                    try
-                    {
-                        return await waitTask.AttachExternalCancellation(timeoutCts.Token);
-                    }
-                    catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !_actionCancellationTokenSource.Token.IsCancellationRequested)
-                    {
-                        return ActionResult.Failure($"プレイヤーアクションがタイムアウトしました（{timeoutSeconds}秒）");
-                    }
-                    finally
-                    {
-                        timeoutCts?.Dispose();
-                    }
+                    return await WaitWithTimeoutAsync(waitTask, timeoutSeconds);
                 }
 
                 return await waitTask;
@@ -290,6 +335,72 @@ namespace Tetrage.Managers
             {
                 CleanupActionWaiting();
             }
+        }
+
+        /// <summary>
+        /// タイムアウト機能付きでタスクを待機する
+        /// </summary>
+        /// <param name="task">待機するタスク</param>
+        /// <param name="timeoutSeconds">タイムアウト時間（秒）</param>
+        /// <returns>タスクの結果またはタイムアウトエラー</returns>
+        private async UniTask<ActionResult> WaitWithTimeoutAsync(UniTask<ActionResult> task, float timeoutSeconds)
+        {
+            var timeoutCts = CreateTimeoutCancellationToken(timeoutSeconds);
+
+            try
+            {
+                return await task.AttachExternalCancellation(timeoutCts.Token);
+            }
+            catch (OperationCanceledException) when (IsTimeoutCancellation(timeoutCts))
+            {
+                // タイムアウト情報を含めた結果を返す
+                return ActionResult.Failure(
+                    "TIMEOUT",
+                    additionalData: new
+                    {
+                        TimeoutSeconds = timeoutSeconds,
+                        PlayerId = _currentPlayer?.PlayerId ?? -1,
+                        Timestamp = DateTime.Now
+                    }
+                );
+            }
+            finally
+            {
+                timeoutCts?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// タイムアウト用のCancellationTokenSourceを作成する
+        /// </summary>
+        /// <param name="timeoutSeconds">タイムアウト時間（秒）</param>
+        /// <returns>タイムアウト設定済みのCancellationTokenSource</returns>
+        private CancellationTokenSource CreateTimeoutCancellationToken(float timeoutSeconds)
+        {
+            var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_actionCancellationTokenSource.Token);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+            return timeoutCts;
+        }
+
+        /// <summary>
+        /// キャンセルがタイムアウトによるものかを判定する
+        /// </summary>
+        /// <param name="timeoutCts">タイムアウト用CancellationTokenSource</param>
+        /// <returns>タイムアウトによるキャンセルの場合true</returns>
+        private bool IsTimeoutCancellation(CancellationTokenSource timeoutCts)
+        {
+            return timeoutCts.Token.IsCancellationRequested &&
+                   !_actionCancellationTokenSource.Token.IsCancellationRequested;
+        }
+
+        /// <summary>
+        /// ActionResultがタイムアウトによるものかを判定する
+        /// </summary>
+        /// <param name="result">判定するActionResult</param>
+        /// <returns>タイムアウトの場合true</returns>
+        public static bool IsTimeoutResult(ActionResult result)
+        {
+            return !result.IsSuccess && result.ErrorMessage == "TIMEOUT";
         }
 
         /// <summary>
