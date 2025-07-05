@@ -10,11 +10,10 @@ namespace Tetrage.Core.Contracts
         public int RoundCount { get; }
         IDealerStrategy DealerStrategy { get; }
 
-        void StartGame();
+        UniTask StartGameAsync();
         void EndGame();
-        void StartRoundLoop();
-        UniTaskVoid StartRound();
-        void NextRound();
+        UniTask StartRoundLoopAsync();
+        UniTask StartSingleRoundAsync();
         void OnRoundStart();
         void OnRoundEnd();
 

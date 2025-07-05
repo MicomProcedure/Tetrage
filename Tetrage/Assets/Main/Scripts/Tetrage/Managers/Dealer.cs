@@ -9,6 +9,7 @@ using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Factories;
 using Tetrage.Services;
+using System.Threading.Tasks;
 
 
 /// <summary>
@@ -51,49 +52,40 @@ namespace Tetrage.Managers
         public IDealerStrategy DealerStrategy { get { return _dealerStrategy; } }
 
         /// <summary>
-        /// 参加者情報リスト
-        /// </summary>
-        private List<PlayerInfo> _participantInfoList;
-        public List<PlayerInfo> ParticipantInfoList { get { return _participantInfoList; } }
-
-        /// <summary>
         /// ラウンド数
         /// </summary>
         private int _roundCount;
         public int RoundCount { get { return _roundCount; } }
 
         // プレイヤーアクション待機用
-        private UniTaskCompletionSource<ActionResult> _actionCompletionSource;
-        private CancellationTokenSource _actionCancellationTokenSource;
+        private ActionAwaiter _actionAwaiter;   // ActionAwaiter に責任を委譲
         private ActionManager _actionManager;
 
         // タイムアウト処理用
-        private ITimeoutHandler _timeoutHandler;
+        private ITimeoutHandler _timeoutHandler; // ActionAwaiter へ委譲予定
+
+        // ゲーム終了フラグ
+        private bool _gameFinished;
+
+        // ゲームが途中中断されたかどうか
+        private bool _gameInterrupted;
 
         #endregion
 
         #region コンストラクタ
-        /// <summary>
-        /// 基本的なDealerクラスのコンストラクタ
-        /// </summary>
-        public Dealer(List<PlayerInfo> participantInfoList)
-        {
-            _players = new List<IPlayer>();
-            _participantInfoList = participantInfoList;
-            _roundCount = 0;
-            _timeoutHandler = CreateDefaultTimeoutHandler();
-            InitializeActionSystem();
-            Debug.Log("Dealer: インスタンスが作成されました");
-        }
 
         /// <summary>
-        /// 戦略パターン対応コンストラクタ
+        /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(IDealerStrategy dealerStrategy, List<PlayerInfo> participantInfoList)
+        public Dealer(Stage stage, List<IPlayer> players, IDealerStrategy dealerStrategy)
         {
-            _players = new List<IPlayer>();
+            if (stage == null) throw new ArgumentNullException(nameof(stage));
+            if (players == null || players.Count == 0) throw new ArgumentNullException(nameof(players));
+            if (dealerStrategy == null) throw new ArgumentNullException(nameof(dealerStrategy));
+
+            _stage = stage;
+            _players = players;
             _dealerStrategy = dealerStrategy;
-            _participantInfoList = participantInfoList;
             _roundCount = 0; // 初期化
             _timeoutHandler = CreateDefaultTimeoutHandler();
             InitializeActionSystem();
@@ -115,41 +107,20 @@ namespace Tetrage.Managers
         public void SetTimeoutHandler(ITimeoutHandler timeoutHandler)
         {
             _timeoutHandler = timeoutHandler ?? CreateDefaultTimeoutHandler();
+            _actionAwaiter?.SetTimeoutHandler(_timeoutHandler);
             Debug.Log($"Dealer: タイムアウトハンドラーを変更しました - {_timeoutHandler.GetType().Name}");
         }
 
         #endregion
 
         #region 初期化メソッド
-        /// <summary>
-        /// Stageを設定する（初期化用）
-        /// </summary>
-        public void SetStage(Stage stage)
-        {
-            _stage = stage;
-        }
 
-        /// <summary>
-        /// プレイヤーリストを設定する（初期化用）
-        /// </summary>
-        public void SetPlayers(List<IPlayer> players)
-        {
-            _players = players ?? new List<IPlayer>();
-        }
-
-        /// <summary>
-        /// 現在のプレイヤーを設定する
-        /// </summary>
-        public void SetCurrentPlayer(IPlayer player)
-        {
-            _currentPlayer = player;
-        }
 
         #endregion
 
         #region ラウンド管理
 
-        public void StartGame()
+        public async UniTask StartGameAsync()
         {
             // 前提条件を検証
             ValidateStartGame();
@@ -157,8 +128,15 @@ namespace Tetrage.Managers
 
             FirstDeal();
 
-            StartRoundLoop();
-            Debug.Log("Dealer: ラウンドを開始しました");
+            Debug.Log("Dealer: ラウンドを開始します");
+
+            _gameFinished = false;
+
+            await StartRoundLoopAsync();
+
+            Debug.Log("Dealer: ゲームが終了します");
+
+            EndGame();
         }
 
         /// <summary>
@@ -184,104 +162,82 @@ namespace Tetrage.Managers
 
         }
 
+
+
         /// <summary>
-        /// ラウンドを開始する。
-        /// </summary> 
-        public void StartRoundLoop()
+        /// 勝敗が決まるまでラウンドを繰り返すメインループ
+        /// </summary>
+        /// <param name="cancellationToken">外部からゲーム全体をキャンセルしたい場合のトークン</param>
+        public async UniTask StartRoundLoopAsync(CancellationToken cancellationToken = default)
         {
-            // ラウンドを開始。勝敗が決まるまでループする。
-            StartRound().Forget();
+            while (!_gameFinished && !cancellationToken.IsCancellationRequested)
+            {
+
+                try
+                {
+                    await StartSingleRoundAsync(cancellationToken);
+                }
+                catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+                {
+                    Debug.Log($"Dealer: ラウンドループがキャンセルされました: {ex.Message}");
+                    _gameInterrupted = true;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Dealer: ラウンドループ中に致命的エラーが発生: {ex.Message}");
+                    _gameInterrupted = true;
+                    _gameFinished = true; // 強制終了
+                }
+            }
         }
 
         /// <summary>
-        /// ラウンドを回す。何度も呼び出すことで、ラウンドを繰り返す。
+        /// 単一ラウンドを処理
         /// </summary>
-        public async UniTaskVoid StartRound()
+        public async UniTask StartSingleRoundAsync(CancellationToken cancellationToken = default)
         {
-            OnRoundStart(); // ラウンド開始イベントを通知
+            OnRoundStart();
 
             try
             {
                 // プレイヤーのアクションを待つ
+                // タイムアウト時は自動で次のプレイヤーに移行する
                 var actionResult = await WaitForPlayerActionAsync();
 
-                if (actionResult.IsSuccess)
-                {
-                    Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクション完了 - {actionResult.AdditionalData}");
-
-                    // アクション完了後の処理（次のターンへ進むなど）
-                    await ProcessActionCompletionAsync(actionResult);
-                }
-                else
+                if (!actionResult.IsSuccess)
                 {
                     Debug.LogWarning($"Dealer: プレイヤーアクション失敗 - {actionResult.ErrorMessage}");
-
-                    // アクション実行失敗: 次のターンに進む
-                    if (_currentPlayer != null) NextRound();
                 }
-            }
-            catch (TimeoutService.TimeoutException ex)
-            {
-                // タイムアウト専用処理
-                Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションがタイムアウト");
 
-                // タイムアウト時の処理を実行
-                await HandleTimeoutAsync(ex);
+                actionResult.Log("Dealer: プレイヤーアクション結果");
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                // 手動キャンセル処理
                 Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションがキャンセルされました");
-
-                // キャンセル時は次のターンに進む
-                if (_currentPlayer != null) NextRound();
+                _gameFinished = true;
             }
-        }
 
-        /// <summary>
-        /// 次のプレイヤーのターンに移行する。
-        /// </summary>
-        public void NextRound()
-        {
-            // ラウンド終了イベントを通知
+            // 勝利条件チェック
+            if (CheckWinCondition())
+            {
+                _gameFinished = true;
+            }
+
             OnRoundEnd();
 
-            try
+            // 次のプレイヤーへ
+            if (!_gameFinished && _currentPlayer != null)
             {
-                ValidateStrategy();
+                _currentPlayer = _dealerStrategy.GetNextPlayer(_currentPlayer, _players);
+                Debug.Log($"Dealer: 次のターンは Player {_currentPlayer.PlayerId}");
             }
-            catch (InvalidOperationException e)
-            {
-                Debug.LogError(e.Message);
-                return;
-            }
-
-            if (_currentPlayer == null)
-            {
-                Debug.LogWarning("Dealer: 現在のプレイヤーが未設定のため、StartGame() を呼び出します");
-                StartGame();
-                return;
-            }
-
-            // 次のプレイヤーを取得
-            _currentPlayer = _dealerStrategy.GetNextPlayer(_currentPlayer, _players);
-            Debug.Log($"Dealer: 次のターンは Player {_currentPlayer.PlayerId}");
-
-            // 次のラウンドを開始
-            StartRound().Forget();
         }
-
 
         public void EndGame()
         {
             // 進行中のプレイヤーアクションをキャンセル
             CancelCurrentPlayerAction();
-
-            // ActionManagerのイベント購読を解除
-            if (_actionManager != null)
-            {
-                _actionManager.OnActionCompleted -= OnPlayerActionCompleted;
-            }
 
             // ラウンド終了イベントを通知
             OnRoundEnd();
@@ -290,17 +246,30 @@ namespace Tetrage.Managers
             _currentPlayer = null;
             _dealerStrategy?.ResetTurnOrder(_players);
 
+            // ActionAwaiter を破棄
+            _actionAwaiter?.Dispose();
+
+            if (_gameInterrupted)
+            {
+                Debug.Log("Dealer: ゲームが途中中断されました");
+            }
+
+            // ゲームが途中中断されたかどうかをリセット
+            _gameInterrupted = false;
+
             Debug.Log("Dealer: ゲームを終了しました");
         }
 
         public void OnRoundStart()
         {
             _roundCount++;
+            Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
             RoundStart?.Invoke();
         }
 
         public void OnRoundEnd()
         {
+            Debug.Log($"Dealer: ラウンド {_roundCount} を終了します");
             RoundEnd?.Invoke();
         }
 
@@ -310,8 +279,26 @@ namespace Tetrage.Managers
         /// </summary>
         private bool CheckWinCondition()
         {
-            // TODO: 実際の勝利条件ロジックを実装
+            // デバッグ用に10ラウンドで勝利とする
+#if UNITY_EDITOR
+            if (_roundCount >= 10)
+            {
+                return true;
+            }
+#endif
+
             return false;
+        }
+
+        // 既存インターフェース互換のオーバーロード
+        public async UniTask StartRoundLoopAsync()
+        {
+            await StartRoundLoopAsync(default);
+        }
+
+        public async UniTask StartSingleRoundAsync()
+        {
+            await StartSingleRoundAsync(default);
         }
 
         #endregion
@@ -330,10 +317,10 @@ namespace Tetrage.Managers
                 _actionManager.SetGameContextProvider(this);
                 ActionFactory.RegisterAllActions(_actionManager);
 
-                // アクション完了イベントを購読
-                _actionManager.OnActionCompleted += OnPlayerActionCompleted;
+                // ActionAwaiter を構築
+                _actionAwaiter = new ActionAwaiter(_actionManager, _timeoutHandler);
 
-                Debug.Log("Dealer: ActionSystemが初期化されました");
+                Debug.Log("Dealer: ActionSystemが初期化されました (ActionAwaiter使用)");
             }
         }
 
@@ -349,134 +336,16 @@ namespace Tetrage.Managers
                 return ActionResult.Failure("現在のプレイヤーが設定されていません");
             }
 
-            // 既存の待機をキャンセル
-            CancelCurrentPlayerAction();
-
-            // 新しいタスクを作成
-            _actionCompletionSource = new UniTaskCompletionSource<ActionResult>();  // アクション完了を待つタスク
-            _actionCancellationTokenSource = new CancellationTokenSource();  // アクション完了を待つタスクのキャンセルトークンソース
-
-            try
-            {
-                Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションを待機中...");
-
-                // TimeoutServiceを使用してアクション待機
-                // TimeoutExceptionとOperationCanceledExceptionは上位に伝播させる
-                return await TimeoutService.WaitWithTimeout(
-                    _actionCompletionSource.Task,
-                    timeoutSeconds,
-                    _actionCancellationTokenSource.Token
-                );
-            }
-            finally
-            {
-                // アクション待機の後処理
-                CleanupActionWaiting();
-            }
+            // ActionAwaiter に委譲
+            return await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer, timeoutSeconds);
         }
-
-
-        /// <summary>
-        /// タイムアウト時の処理を実行
-        /// </summary>
-        private async UniTask HandleTimeoutAsync(TimeoutService.TimeoutException timeoutException)
-        {
-            if (_currentPlayer == null) return;
-
-            // タイムアウト例外からActionResultを作成
-            var timeoutResult = ActionResult.Failure(
-                "TIMEOUT",
-                additionalData: new
-                {
-                    TimeoutSeconds = timeoutException.TimeoutSeconds,
-                    PlayerId = _currentPlayer?.PlayerId ?? -1,
-                    TimeoutOccurred = timeoutException.TimeoutOccurred
-                }
-            );
-
-            // タイムアウト処理をハンドラーに委譲
-            var context = new TimeoutContext(_currentPlayer, timeoutException.TimeoutSeconds, timeoutResult);
-            var result = await _timeoutHandler.HandleTimeoutAsync(context);
-
-            // ゲーム終了指示がある場合のみ特別処理
-            if (!result.ShouldContinueGame)
-            {
-                EndGame();
-                return;
-            }
-
-            // 通常はターン進行
-            if (_currentPlayer != null) NextRound();
-        }
-
-        /// <summary>
-        /// プレイヤーアクション完了時のイベントハンドラー
-        /// </summary>
-        private void OnPlayerActionCompleted(IAction action, IActionContext context, ActionResult result)
-        {
-            // 現在のプレイヤーのアクションかチェック
-            if (_actionCompletionSource != null &&
-                ReferenceEquals(context.RequesterPlayer, _currentPlayer))
-            {
-                Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクション {action.ActionType} が完了");
-
-                // 【重要】ここでプレイヤーのアクション待機のタスクを完了させる。
-                _actionCompletionSource.TrySetResult(result);
-            }
-        }
-
-        /// <summary>
-        /// アクション完了後の処理
-        /// </summary>
-        private async UniTask ProcessActionCompletionAsync(ActionResult actionResult)
-        {
-            // アクション完了後のゲームロジック
-            // 例：勝利条件チェック、次のターンへの移行など
-
-            await UniTask.Delay(500); // UI更新の時間を確保
-
-            // 勝利条件チェック（仮実装）
-            if (CheckWinCondition())
-            {
-                EndGame();
-                return;
-            }
-
-            // 次のプレイヤーのラウンドを開始
-            if (_currentPlayer != null)
-            {
-                NextRound();
-            }
-        }
-
-
 
         /// <summary>
         /// 現在のプレイヤーアクション待機をキャンセルする
         /// </summary>
         public void CancelCurrentPlayerAction()
         {
-            if (_actionCancellationTokenSource != null && !_actionCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                _actionCancellationTokenSource.Cancel();
-            }
-
-            if (_actionCompletionSource != null)
-            {
-                _actionCompletionSource.TrySetCanceled();
-            }
-
-            CleanupActionWaiting();
-        }
-
-        /// <summary>
-        /// アクション待機の後処理
-        /// </summary>
-        private void CleanupActionWaiting()
-        {
-            _actionCompletionSource = null;
-            _actionCancellationTokenSource?.Dispose();
-            _actionCancellationTokenSource = null;
+            _actionAwaiter?.CancelWaiting();
         }
 
         #endregion
