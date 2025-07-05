@@ -44,14 +44,7 @@ namespace Tetrage.Tests
             }
         }
 
-        private void Update()
-        {
-            // デバッグ情報表示
-            if (showDebugInfo && _dealer != null)
-            {
-                DisplayDebugInfo();
-            }
-        }
+
 
         private void OnGUI()
         {
@@ -107,11 +100,13 @@ namespace Tetrage.Tests
                 // イベントリスナーを設定
                 SetupEventListeners();
 
+                Debug.Log("DealerActionTester: テストセットアップ完了、ゲーム開始");
+                DisplayStepDebugInfo("テスト開始");
+
                 // ゲームを開始
                 StartGameAsync().Forget();
 
                 _testStarted = true;
-                Debug.Log("DealerActionTester: テストセットアップ完了");
             }
             catch (System.Exception ex)
             {
@@ -134,6 +129,8 @@ namespace Tetrage.Tests
 
             try
             {
+                DisplayStepDebugInfo("テスト停止");
+
                 // ゲームを終了
                 _dealer?.EndGame();
 
@@ -227,9 +224,13 @@ namespace Tetrage.Tests
         {
             try
             {
-                Debug.Log("DealerActionTester: ゲーム開始");
+                Debug.Log("DealerActionTester: ゲームループ開始");
+                DisplayStepDebugInfo("ゲームループ開始");
+
                 await _dealer.StartGameAsync();
-                Debug.Log("DealerActionTester: ゲーム終了");
+
+                Debug.Log("DealerActionTester: ゲームループ終了");
+                DisplayStepDebugInfo("ゲームループ終了");
             }
             catch (System.Exception ex)
             {
@@ -247,9 +248,11 @@ namespace Tetrage.Tests
         private void OnRoundStart()
         {
             Debug.Log($"DealerActionTester: ラウンド開始 - ラウンド{_dealer.RoundCount}");
+            DisplayStepDebugInfo("ラウンド開始");
 
             if (!_passActionExecuted)
             {
+                Debug.Log($"DealerActionTester: {passActionDelay}秒後にPassアクション実行を予約");
                 // 5秒後にPassアクションを実行
                 ExecutePassActionAfterDelay().Forget();
             }
@@ -261,6 +264,7 @@ namespace Tetrage.Tests
         private void OnRoundEnd()
         {
             Debug.Log($"DealerActionTester: ラウンド終了 - ラウンド{_dealer.RoundCount}");
+            DisplayStepDebugInfo("ラウンド終了");
         }
 
         /// <summary>
@@ -270,10 +274,13 @@ namespace Tetrage.Tests
         {
             try
             {
-                Debug.Log($"DealerActionTester: {passActionDelay}秒後にPassアクションを実行します");
+                Debug.Log($"DealerActionTester: {passActionDelay}秒待機開始");
 
                 // 指定時間待機
                 await UniTask.Delay((int)(passActionDelay * 1000));
+
+                Debug.Log($"DealerActionTester: {passActionDelay}秒待機完了、Passアクション実行開始");
+                DisplayStepDebugInfo("Passアクション実行前");
 
                 // 現在のプレイヤーを取得
                 var currentPlayer = _dealer.CurrentPlayer;
@@ -287,6 +294,9 @@ namespace Tetrage.Tests
 
                 // Passアクションを実行
                 var result = await currentPlayer.PassAsync();
+
+                Debug.Log($"DealerActionTester: Passアクション実行完了");
+                DisplayStepDebugInfo("Passアクション実行後");
 
                 if (result.IsSuccess)
                 {
@@ -312,20 +322,26 @@ namespace Tetrage.Tests
         #region デバッグ情報表示
 
         /// <summary>
-        /// デバッグ情報を表示する
+        /// ステップごとのデバッグ情報を表示する
         /// </summary>
-        private void DisplayDebugInfo()
+        /// <param name="stepName">ステップ名</param>
+        private void DisplayStepDebugInfo(string stepName)
         {
-            if (_dealer == null) return;
+            if (!showDebugInfo || _dealer == null) return;
 
-            // 一定間隔でデバッグ情報を出力（フレームレート調整）
-            if (Time.frameCount % 60 == 0) // 1秒に1回程度
+            var currentPlayer = _dealer.CurrentPlayer;
+            var roundCount = _dealer.RoundCount;
+            var playerInfo = currentPlayer != null ? $"{currentPlayer.UserId} (hands: {currentPlayer.Hands.Count})" : "なし";
+
+            Debug.Log($"DealerActionTester: [Step: {stepName}] ラウンド{roundCount} - 現在のプレイヤー: {playerInfo}");
+
+            // 詳細情報
+            if (currentPlayer != null)
             {
-                var currentPlayer = _dealer.CurrentPlayer;
-                var roundCount = _dealer.RoundCount;
-
-                Debug.Log($"DealerActionTester: [Debug] ラウンド{roundCount} - 現在のプレイヤー: {currentPlayer?.UserId ?? "なし"}");
+                Debug.Log($"DealerActionTester: [Step: {stepName}] プレイヤー詳細 - ID: {currentPlayer.PlayerId}, 手札: {currentPlayer.Hands.Count}枚, ターゲット: {currentPlayer.Target?.Count ?? 0}枚");
             }
+
+            Debug.Log($"DealerActionTester: [Step: {stepName}] ステージ状態 - Stack: {_stage?.Stack?.Count ?? 0}枚, Trash: {_stage?.Trash?.Count ?? 0}枚");
         }
 
         #endregion
@@ -340,6 +356,8 @@ namespace Tetrage.Tests
         {
             if (_dealer?.CurrentPlayer != null)
             {
+                Debug.Log("DealerActionTester: 手動でPassアクション実行を開始");
+                DisplayStepDebugInfo("手動Passアクション開始");
                 ExecutePassActionAfterDelay().Forget();
             }
             else
@@ -354,12 +372,17 @@ namespace Tetrage.Tests
         [ContextMenu("テスト状態リセット")]
         public void ResetTestState()
         {
+            Debug.Log("DealerActionTester: テスト状態リセット開始");
+            DisplayStepDebugInfo("テスト状態リセット");
+
             StopTest();
             _dealer = null;
             _stage = null;
             _players = null;
             _strategy = null;
             _passActionExecuted = false;
+
+            Debug.Log("DealerActionTester: テスト状態リセット完了");
         }
 
         #endregion
