@@ -83,57 +83,47 @@ namespace Tetrage.Core.Actions
         private void InitializeActionSystem()
         {
             _actionManager = ActionManager.Instance;
-            _gameContextProvider = FindGameContextProvider();
 
-            if (_gameContextProvider == null)
+            if (_actionManager == null)
             {
-                Debug.LogError("GameContextProviderが見つかりません");
+                Debug.LogError("ActionManagerが見つかりません");
                 return;
             }
 
-            // ActionManagerがまだ初期化されていない場合は初期化
-            if (_actionManager != null)
+            // ActionSystemInitializerが初期化されているかチェック
+            if (!ActionSystemInitializer.IsInitialized)
             {
-                _actionManager.SetGameContextProvider(_gameContextProvider);
-                ActionFactory.RegisterAllActions(_actionManager);
+                Debug.LogWarning("ActionSystemInitializerが初期化されていません。明示的にGameContextProviderを設定してください。");
+            }
+
+            // ActionManagerから現在のGameContextProviderを取得
+            _gameContextProvider = ActionSystemInitializer.GetGameContextProvider();
+
+            if (_gameContextProvider == null)
+            {
+                Debug.LogError("GameContextProviderが設定されていません。ActionSystemInitializerで初期化してください。");
             }
         }
 
         /// <summary>
-        /// GameContextProviderを自動検索
+        /// GameContextProviderを明示的に設定
         /// </summary>
-        private IGameContextProvider FindGameContextProvider()
+        public void SetGameContextProvider(IGameContextProvider gameContextProvider)
         {
-            // GameManagerからDealerインスタンスを取得
-            var gameManager = FindObjectOfType<Tetrage.Managers.GameManager>();
-            if (gameManager != null)
-            {
-                try
-                {
-                    var dealer = gameManager.Dealer;
-                    if (dealer != null)
-                    {
-                        return dealer;
-                    }
-                }
-                catch (System.InvalidOperationException)
-                {
-                    // GameManagerが初期化されていない場合は無視
-                    Debug.LogWarning("GameManagerが初期化されていません。別のIGameContextProviderを検索します。");
-                }
-            }
+            _gameContextProvider = gameContextProvider;
 
-            // その他のIGameContextProvider実装をMonoBehaviourから探す
-            var providers = FindObjectsOfType<MonoBehaviour>();
-            foreach (var provider in providers)
+            if (_gameContextProvider != null)
             {
-                if (provider is IGameContextProvider gameContextProvider)
-                {
-                    return gameContextProvider;
-                }
-            }
+                // ActionSystemInitializerで初期化
+                ActionSystemInitializer.InitializeActionSystem(_gameContextProvider);
+                _actionManager = ActionSystemInitializer.GetActionManager();
 
-            return null;
+                Debug.Log("ActionPanelController: GameContextProviderが設定されました");
+            }
+            else
+            {
+                Debug.LogError("ActionPanelController: GameContextProviderがnullです");
+            }
         }
 
         /// <summary>
@@ -172,7 +162,7 @@ namespace Tetrage.Core.Actions
 
                 if (button != null)
                 {
-                    bool canExecute = _currentPlayer.CanExecuteNewAction(actionType, _gameContextProvider);
+                    bool canExecute = _currentPlayer.CanExecuteNewAction(actionType);
                     button.interactable = canExecute;
                 }
             }
@@ -210,7 +200,7 @@ namespace Tetrage.Core.Actions
 
                 Debug.Log($"アクション実行開始: {actionType}");
 
-                var result = await _currentPlayer.ExecuteNewActionAsync(actionType, _gameContextProvider);
+                var result = await _currentPlayer.ExecuteNewActionAsync(actionType);
 
                 if (result.IsSuccess)
                 {
@@ -264,7 +254,7 @@ namespace Tetrage.Core.Actions
                 return;
             }
 
-            var availableActions = _currentPlayer.GetAvailableNewActionTypes(_gameContextProvider);
+            var availableActions = _currentPlayer.GetAvailableNewActionTypes();
             Debug.Log($"実行可能なアクション: {string.Join(", ", availableActions)}");
         }
 
@@ -280,7 +270,7 @@ namespace Tetrage.Core.Actions
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.DrawAsync(_gameContextProvider);
+                var result = await _currentPlayer.DrawAsync();
                 Debug.Log($"Test Draw Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -290,7 +280,7 @@ namespace Tetrage.Core.Actions
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.OpenAsync(_gameContextProvider);
+                var result = await _currentPlayer.OpenAsync();
                 Debug.Log($"Test Open Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -300,7 +290,7 @@ namespace Tetrage.Core.Actions
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.ReachAsync(_gameContextProvider);
+                var result = await _currentPlayer.ReachAsync();
                 Debug.Log($"Test Reach Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -310,7 +300,7 @@ namespace Tetrage.Core.Actions
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.CheckAsync(_gameContextProvider);
+                var result = await _currentPlayer.CheckAsync();
                 Debug.Log($"Test Check Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -320,7 +310,7 @@ namespace Tetrage.Core.Actions
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.Pass, _gameContextProvider);
+                var result = await _currentPlayer.PassAsync();
                 Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }

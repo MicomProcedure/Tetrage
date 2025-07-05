@@ -311,16 +311,20 @@ namespace Tetrage.Managers
         /// </summary>
         private void InitializeActionSystem()
         {
-            _actionManager = ActionManager.Instance;
+            // 新しいActionSystemInitializerを使用
+            ActionSystemInitializer.InitializeActionSystem(this);
+
+            _actionManager = ActionSystemInitializer.GetActionManager();
             if (_actionManager != null)
             {
-                _actionManager.SetGameContextProvider(this);
-                ActionFactory.RegisterAllActions(_actionManager);
-
                 // ActionAwaiter を構築
                 _actionAwaiter = new ActionAwaiter(_actionManager, _timeoutHandler);
 
-                Debug.Log("Dealer: ActionSystemが初期化されました (ActionAwaiter使用)");
+                Debug.Log("Dealer: ActionSystemが初期化されました (ActionSystemInitializer使用)");
+            }
+            else
+            {
+                Debug.LogError("Dealer: ActionSystemInitializerからActionManagerを取得できませんでした");
             }
         }
 
