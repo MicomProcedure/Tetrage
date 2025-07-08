@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using TMPro;
 using Cysharp.Threading.Tasks;
 
 public class DialogManager : MonoBehaviour
@@ -28,13 +29,14 @@ public class DialogManager : MonoBehaviour
 
         currentDialog = Instantiate(dialogPrefab, transform);
         // ダイアログUIの各要素を取得してセット
-        currentDialog.transform.Find("Title").GetComponent<Text>().text = title;
-        currentDialog.transform.Find("Message").GetComponent<Text>().text = message;
+        currentDialog.transform.Find("Title").GetComponent<TextMeshProUGUI>().text = title;
+        currentDialog.transform.Find("Message").GetComponent<TextMeshProUGUI>().text = message;
 
         var okButton = currentDialog.transform.Find("OkButton").GetComponent<Button>();
         var cancelButton = currentDialog.transform.Find("CancelButton").GetComponent<Button>();
 
         okButton.onClick.AddListener(() => {
+            Debug.Log(okButton != null ? "OKボタン取得成功" : "OKボタン取得失敗");
             onOk?.Invoke();
             Destroy(currentDialog);
         });
