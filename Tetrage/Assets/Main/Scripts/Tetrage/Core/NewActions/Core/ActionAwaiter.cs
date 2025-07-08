@@ -34,6 +34,7 @@ namespace Tetrage.Core.Actions
         }
         #endregion
 
+
         #region 公開API
         /// <summary>
         /// 指定プレイヤーのアクションを非同期に待機します。
