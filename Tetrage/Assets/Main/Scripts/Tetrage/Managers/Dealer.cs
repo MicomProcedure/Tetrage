@@ -57,6 +57,12 @@ namespace Tetrage.Managers
         private int _roundCount;
         public int RoundCount { get { return _roundCount; } }
 
+        /// <summary>
+        /// 最大ラウンド数（デフォルト: 10）
+        /// </summary>
+        private int _maxRounds = 10;
+        public int MaxRounds { get { return _maxRounds; } }
+
         // プレイヤーアクション待機用
         private ActionAwaiter _actionAwaiter;   // ActionAwaiter に責任を委譲
         private ActionManager _actionManager;
@@ -111,6 +117,24 @@ namespace Tetrage.Managers
             Debug.Log($"Dealer: タイムアウトハンドラーを変更しました - {_timeoutHandler.GetType().Name}");
         }
 
+        /// <summary>
+        /// 最大ラウンド数を設定する
+        /// </summary>
+        /// <param name="maxRounds">最大ラウンド数（1以上の値）</param>
+        public void SetMaxRounds(int maxRounds)
+        {
+            if (maxRounds < 1)
+            {
+                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. 最小値1に設定します");
+                _maxRounds = 1;
+            }
+            else
+            {
+                _maxRounds = maxRounds;
+                Debug.Log($"Dealer: 最大ラウンド数を{_maxRounds}に設定しました");
+            }
+        }
+
         #endregion
 
         #region 初期化メソッド
@@ -120,7 +144,7 @@ namespace Tetrage.Managers
 
         #region ラウンド管理
 
-        public async UniTask StartGameAsync()
+        public async UniTask StartGameAsync(float timeoutSeconds = 0)
         {
             // 前提条件を検証
             ValidateStartGame();
@@ -132,7 +156,7 @@ namespace Tetrage.Managers
 
             _gameFinished = false;
 
-            await StartRoundLoopAsync();
+            await StartRoundLoopAsync(timeoutSeconds);
 
             Debug.Log("Dealer: ゲームが終了します");
 
@@ -168,14 +192,14 @@ namespace Tetrage.Managers
         /// 勝敗が決まるまでラウンドを繰り返すメインループ
         /// </summary>
         /// <param name="cancellationToken">外部からゲーム全体をキャンセルしたい場合のトークン</param>
-        public async UniTask StartRoundLoopAsync(CancellationToken cancellationToken = default)
+        public async UniTask StartRoundLoopAsync(float timeoutSeconds = 0, CancellationToken cancellationToken = default)
         {
             while (!_gameFinished && !cancellationToken.IsCancellationRequested)
             {
 
                 try
                 {
-                    await StartSingleRoundAsync(cancellationToken);
+                    await StartSingleRoundAsync(timeoutSeconds, cancellationToken);
                 }
                 catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
                 {
@@ -195,15 +219,18 @@ namespace Tetrage.Managers
         /// <summary>
         /// 単一ラウンドを処理
         /// </summary>
-        public async UniTask StartSingleRoundAsync(CancellationToken cancellationToken = default)
+        public async UniTask StartSingleRoundAsync(float timeoutSeconds = 0, CancellationToken cancellationToken = default)
         {
             OnRoundStart();
 
             try
             {
+                // 現在のプレイヤーが設定されているかどうかを検証
+                if (!ValidateCurrentPlayer()) return;
+
                 // プレイヤーのアクションを待つ
                 // タイムアウト時は自動で次のプレイヤーに移行する
-                var actionResult = await WaitForPlayerActionAsync();
+                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer, timeoutSeconds: timeoutSeconds);
 
                 if (!actionResult.IsSuccess)
                 {
@@ -279,13 +306,12 @@ namespace Tetrage.Managers
         /// </summary>
         private bool CheckWinCondition()
         {
-            // デバッグ用に10ラウンドで勝利とする
-#if UNITY_EDITOR
-            if (_roundCount >= 10)
+            // 設定された最大ラウンド数で勝利とする
+            if (_roundCount >= _maxRounds)
             {
+                Debug.Log($"Dealer: 最大ラウンド数({_maxRounds})に到達しました。ゲームを終了します。");
                 return true;
             }
-#endif
 
             return false;
         }
@@ -328,21 +354,6 @@ namespace Tetrage.Managers
             }
         }
 
-        /// <summary>
-        /// プレイヤーのアクション完了を待機する
-        /// </summary>
-        /// <param name="timeoutSeconds">タイムアウト時間（秒）、0で無制限</param>
-        /// <returns>アクション実行結果</returns>
-        private async UniTask<ActionResult> WaitForPlayerActionAsync(float timeoutSeconds = 0)
-        {
-            if (_currentPlayer == null)
-            {
-                return ActionResult.Failure("現在のプレイヤーが設定されていません");
-            }
-
-            // ActionAwaiter に委譲
-            return await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer, timeoutSeconds);
-        }
 
         /// <summary>
         /// 現在のプレイヤーアクション待機をキャンセルする
@@ -376,6 +387,16 @@ namespace Tetrage.Managers
         {
             if (_dealerStrategy == null)
                 throw new InvalidOperationException("Dealer: ディーラー戦略が設定されていません");
+        }
+
+        private bool ValidateCurrentPlayer()
+        {
+            if (_currentPlayer == null)
+            {
+                Debug.LogError("Dealer: 現在のプレイヤーが設定されていません");
+                return false;
+            }
+            return true;
         }
 
         #endregion

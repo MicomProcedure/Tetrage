@@ -1,5 +1,6 @@
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Managers;
 using UnityEngine;
 
 namespace Tetrage.Core.Actions
@@ -11,6 +12,7 @@ namespace Tetrage.Core.Actions
     {
         private static ActionManager _actionManager;
         private static IGameContextProvider _gameContextProvider;
+        private static IRoundManager _roundManager;
         private static bool _isInitialized = false;
 
         /// <summary>
@@ -18,7 +20,7 @@ namespace Tetrage.Core.Actions
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（必須）</param>
         /// <param name="forceReinitialize">強制的に再初期化するかどうか</param>
-        public static void InitializeActionSystem(IGameContextProvider gameContextProvider, bool forceReinitialize = false)
+        public static void InitializeActionSystem(Dealer dealer, bool forceReinitialize = false)
         {
             if (_isInitialized && !forceReinitialize)
             {
@@ -26,20 +28,22 @@ namespace Tetrage.Core.Actions
                 return;
             }
 
-            if (gameContextProvider == null)
+            if (dealer == null)
             {
-                Debug.LogError("GameContextProviderが指定されていません。");
+                Debug.LogError("Dealerが指定されていません。");
                 return;
             }
 
             try
             {
                 // GameContextProviderの保存
-                _gameContextProvider = gameContextProvider;
+                _gameContextProvider = dealer;
+                _roundManager = dealer;
 
                 // ActionManagerの初期化
                 _actionManager = ActionManager.Instance;
-                _actionManager.SetGameContextProvider(gameContextProvider);
+                _actionManager.SetGameContextProvider(_gameContextProvider);
+                _actionManager.SetRoundManager(_roundManager);
 
                 // 全てのアクションファクトリを登録
                 ActionFactory.RegisterAllActions(_actionManager);

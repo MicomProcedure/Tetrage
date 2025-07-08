@@ -5,11 +5,12 @@ using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 namespace Tetrage.Core.Actions
 {
     /// <summary>
-    /// 新しいActionシステムに対応したアクションパネルコントローラー（ActionType対応版）
+    /// 新しいActionシステムに対応したアクションパネルコントローラー
     /// </summary>
     public class ActionPanelController : MonoBehaviour
     {
@@ -21,13 +22,15 @@ namespace Tetrage.Core.Actions
         [SerializeField] private Button passButton;
 
         [Header("Settings")]
-        [SerializeField] private bool autoUpdateButtons = true;
-        [SerializeField] private float updateInterval = 0.1f;
+        [SerializeField] private float _retryInterval = 0.5f;
+        [SerializeField] private int _maxRetries = 10;
 
         private ActionManager _actionManager;
         private IGameContextProvider _gameContextProvider;
+        private IRoundManager _roundManager;
         private Dictionary<ActionType, Button> _actionButtons;
         private IPlayer _currentPlayer;
+        private bool _isInitialized = false;
 
         private void Awake()
         {
@@ -37,11 +40,88 @@ namespace Tetrage.Core.Actions
 
         private void Start()
         {
-            InitializeActionSystem();
+            // ActionManagerの取得と初期化
+            _actionManager = ActionManager.Instance;
 
-            if (autoUpdateButtons)
+            if (_actionManager == null)
             {
-                StartButtonUpdateLoop();
+                Debug.LogError("ActionPanelController: ActionManagerが見つかりません");
+                return;
+            }
+
+            // 遅延初期化を試行
+            if (!TryInitialize())
+            {
+                // 初期化に失敗した場合、定期的にリトライ
+                StartCoroutine(RetryInitialization());
+            }
+        }
+
+        /// <summary>
+        /// ActionPanelControllerの初期化を試行
+        /// </summary>
+        /// <returns>初期化が成功した場合true</returns>
+        private bool TryInitialize()
+        {
+            if (_isInitialized) return true;
+
+            // ActionSystemInitializerが初期化されているかチェック
+            if (!ActionSystemInitializer.IsInitialized)
+            {
+                Debug.LogWarning("ActionPanelController: ActionSystemInitializerが未初期化です（リトライします）");
+                return false;
+            }
+
+            _gameContextProvider = _actionManager.GetGameContextProvider();
+            if (_gameContextProvider == null)
+            {
+                Debug.LogWarning("ActionPanelController: GameContextProviderが未設定です（リトライします）");
+                return false;
+            }
+
+            _roundManager = _actionManager.GetRoundManager();
+            if (_roundManager == null)
+            {
+                Debug.LogWarning("ActionPanelController: RoundManagerが未設定です（リトライします）");
+                return false;
+            }
+
+            // イベント購読
+            _roundManager.RoundStart += UpdateButtonStates;
+
+            // 初回ボタン状態更新
+            UpdateButtonStates();
+
+            _isInitialized = true;
+            Debug.Log("ActionPanelController: 初期化が完了しました");
+            return true;
+        }
+
+        /// <summary>
+        /// 初期化のリトライを行うコルーチン
+        /// </summary>
+        private IEnumerator RetryInitialization()
+        {
+
+            int retryCount = 0;
+
+            while (!_isInitialized && retryCount < _maxRetries)
+            {
+                yield return new WaitForSeconds(_retryInterval);
+
+                if (TryInitialize())
+                {
+                    yield break; // 初期化成功
+                }
+
+                retryCount++;
+                Debug.LogWarning($"ActionPanelController: 初期化リトライ {retryCount}/{_maxRetries}");
+            }
+
+            if (!_isInitialized)
+            {
+                Debug.LogError("ActionPanelController: 初期化に失敗しました（最大リトライ回数に達しました）");
+                DisableAllButtons();
             }
         }
 
@@ -77,66 +157,6 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        /// <summary>
-        /// アクションシステムを初期化
-        /// </summary>
-        private void InitializeActionSystem()
-        {
-            _actionManager = ActionManager.Instance;
-
-            if (_actionManager == null)
-            {
-                Debug.LogError("ActionManagerが見つかりません");
-                return;
-            }
-
-            // ActionSystemInitializerが初期化されているかチェック
-            if (!ActionSystemInitializer.IsInitialized)
-            {
-                Debug.LogWarning("ActionSystemInitializerが初期化されていません。明示的にGameContextProviderを設定してください。");
-            }
-
-            // ActionManagerから現在のGameContextProviderを取得
-            _gameContextProvider = ActionSystemInitializer.GetGameContextProvider();
-
-            if (_gameContextProvider == null)
-            {
-                Debug.LogError("GameContextProviderが設定されていません。ActionSystemInitializerで初期化してください。");
-            }
-        }
-
-        /// <summary>
-        /// GameContextProviderを明示的に設定
-        /// </summary>
-        public void SetGameContextProvider(IGameContextProvider gameContextProvider)
-        {
-            _gameContextProvider = gameContextProvider;
-
-            if (_gameContextProvider != null)
-            {
-                // ActionSystemInitializerで初期化
-                ActionSystemInitializer.InitializeActionSystem(_gameContextProvider);
-                _actionManager = ActionSystemInitializer.GetActionManager();
-
-                Debug.Log("ActionPanelController: GameContextProviderが設定されました");
-            }
-            else
-            {
-                Debug.LogError("ActionPanelController: GameContextProviderがnullです");
-            }
-        }
-
-        /// <summary>
-        /// ボタン更新ループを開始
-        /// </summary>
-        private async void StartButtonUpdateLoop()
-        {
-            while (this != null && gameObject.activeInHierarchy)
-            {
-                UpdateButtonStates();
-                await UniTask.Delay((int)(updateInterval * 1000));
-            }
-        }
 
         /// <summary>
         /// ボタンの状態（有効/無効）を更新
@@ -243,7 +263,15 @@ namespace Tetrage.Core.Actions
             Debug.LogWarning($"アクション失敗フィードバック: {actionType} - {result.ErrorMessage}");
         }
 
-        // === Inspector用のテストメソッド ===
+        private void OnDestroy()
+        {
+            if (_isInitialized && _roundManager != null)
+            {
+                _roundManager.RoundStart -= UpdateButtonStates;
+            }
+        }
+
+        #region テスト用メソッド
 
         [ContextMenu("Show Available Actions")]
         private void ShowAvailableActions()
@@ -314,5 +342,6 @@ namespace Tetrage.Core.Actions
                 Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
+        #endregion
     }
 }

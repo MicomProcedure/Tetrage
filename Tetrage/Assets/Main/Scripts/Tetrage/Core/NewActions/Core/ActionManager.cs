@@ -35,8 +35,11 @@ namespace Tetrage.Core.Actions
             }
         }
 
+        private ActionPanelController _actionPanelController;
+
         private readonly Dictionary<ActionType, Func<IPlayer, IGameContextProvider, IAction>> _actionFactories;
         private IGameContextProvider _gameContextProvider;
+        private IRoundManager _roundManager;
 
         /// <summary>
         /// アクション実行前イベント
@@ -59,6 +62,31 @@ namespace Tetrage.Core.Actions
         public void SetGameContextProvider(IGameContextProvider provider)
         {
             _gameContextProvider = provider ?? throw new ArgumentNullException(nameof(provider));
+        }
+
+        public IGameContextProvider GetGameContextProvider()
+        {
+            if (_gameContextProvider == null)
+            {
+                Debug.LogError("GameContextProviderが設定されていません");
+                return null;
+            }
+            return _gameContextProvider;
+        }
+
+        public void SetRoundManager(IRoundManager roundManager)
+        {
+            _roundManager = roundManager ?? throw new ArgumentNullException(nameof(roundManager));
+        }
+
+        public IRoundManager GetRoundManager()
+        {
+            if (_roundManager == null)
+            {
+                Debug.LogError("RoundManagerが設定されていません");
+                return null;
+            }
+            return _roundManager;
         }
 
         /// <summary>
@@ -139,17 +167,6 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        /// <summary>
-        /// アクションが実行可能かチェック（string版 - 後方互換性のため）
-        /// </summary>
-        public bool CanExecuteAction(string actionId, IPlayer requester)
-        {
-            if (string.IsNullOrEmpty(actionId) || !actionId.IsValidActionType())
-                return false;
-
-            var actionType = actionId.ToActionType();
-            return CanExecuteAction(actionType, requester);
-        }
 
         /// <summary>
         /// アクションを実行（ActionType版）
@@ -180,21 +197,6 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// アクションを実行（string版 - 後方互換性のため）
-        /// </summary>
-        public async UniTask<ActionResult> ExecuteActionAsync(string actionId, IPlayer requester)
-        {
-            if (string.IsNullOrEmpty(actionId))
-                return ActionResult.Failure("アクションIDが空です");
-
-            if (!actionId.IsValidActionType())
-                return ActionResult.Failure($"無効なActionType: {actionId}");
-
-            var actionType = actionId.ToActionType();
-            return await ExecuteActionAsync(actionType, requester);
-        }
-
-        /// <summary>
         /// 登録済みのActionType一覧を取得
         /// </summary>
         public IReadOnlyList<ActionType> GetRegisteredActionTypes()
@@ -220,14 +222,6 @@ namespace Tetrage.Core.Actions
                 .ToList();
         }
 
-        /// <summary>
-        /// プレイヤーが実行可能なアクション一覧を取得（string版 - 後方互換性のため）
-        /// </summary>
-        public IReadOnlyList<string> GetAvailableActions(IPlayer requester)
-        {
-            return GetAvailableActionTypes(requester)
-                .Select(actionType => actionType.ToActionId())
-                .ToList();
-        }
+
     }
 }
