@@ -18,11 +18,17 @@ namespace Tetrage.Actions
 
         public OpenAction(IPlayer requester, IGameContextProvider provider = null) : base(requester) // providerはデフォルト引数なので省略可能
         {
-            _provider = provider ?? (IGameContextProvider)Dealer.Instance; // providerを受け取るが、デフォルトではDealerの単一なインスタンスとなる
+            _provider = provider ?? Dealer.Instance; // Dealerインスタンスを直接取得
+
+            if (_provider == null)
+            {
+                throw new System.InvalidOperationException("IGameContextProvider が取得できません。Dealer.Instance が設定されているか確認してください。");
+            }
 
             // provider（Dealer）を使って他プレイヤーの参照を書き込み
             _others = _provider.Players
-                                 .Where(p => !ReferenceEquals(p, requester)).ToList();
+                                 ?.Where(p => !ReferenceEquals(p, requester)).ToList()
+                                 ?? new List<IPlayer>();
         }
 
         public override bool Validate()

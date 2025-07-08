@@ -15,7 +15,11 @@ namespace Tetrage.Actions
 
         public DrawAction(IPlayer requester, IGameContextProvider provider = null) : base(requester)
         {
-            _stage = provider?.Stage ?? Dealer.Instance.Stage;
+            _stage = provider?.Stage ?? Dealer.Instance?.Stage;
+            if (_stage == null)
+            {
+                throw new System.InvalidOperationException("Stage が設定されていません。IGameContextProvider または Dealer.Instance.Stage を確認してください。");
+            }
         }
 
         public override bool Validate()

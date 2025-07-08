@@ -5,9 +5,14 @@ using System.Collections.Generic;
 using Tetrage.Models;
 using System;
 using UnityEngine;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Managers
 {
+    /// <summary>
+    /// フィールドセットアップ管理クラス
+    /// 静的設定と動的参加者情報を組み合わせてフィールドを構築
+    /// </summary>
     public class FieldSetupManager
     {
         private readonly FieldSetupSettings _settings;
@@ -22,13 +27,15 @@ namespace Tetrage.Managers
             {
                 if (!_isSetup)
                 {
-                throw new InvalidOperationException("FieldSetupManager がまだセットアップされていません。");
+                    throw new InvalidOperationException("FieldSetupManager がまだセットアップされていません。");
                 }
                 return _players;
             }
         }
         // ステージのインスタンスを取得可能なプロパティ
-        public Stage Stage { get
+        public Stage Stage
+        {
+            get
             {
                 if (!_isSetup)
                 {
@@ -41,13 +48,13 @@ namespace Tetrage.Managers
         // フィールドのセットアップが完了したかどうかを示すフラグ
         private bool _isSetup = false;
 
-        
+
         /* --- コンストラクタ --- */
-        
+
         /// <summary>
         /// FieldSetupManagerのコンストラクタ
         /// </summary>
-        /// <param name="settings">フィールドセットアップ設定</param>
+        /// <param name="settings">フィールドセットアップ設定（静的設定のみ）</param>
         /// <param name="dependencies">フィールドセットアップ依存性</param>
         public FieldSetupManager(FieldSetupSettings settings, FieldSetupDependencies dependencies)
         {
@@ -55,13 +62,21 @@ namespace Tetrage.Managers
             _dependencies = dependencies;
         }
 
-        // フィールドのセットアップを行う。動作後、StageとPlayersのプロパティが有効になります。
-        public void SetupField()
+        /// <summary>
+        /// フィールドのセットアップを行う。動作後、StageとPlayersのプロパティが有効になります。
+        /// </summary>
+        /// <param name="participantInfoList">参加者情報リスト（Dealerから取得）</param>
+        public void SetupField(List<PlayerInfo> participantInfoList)
         {
+            if (participantInfoList == null || participantInfoList.Count == 0)
+            {
+                throw new ArgumentException("参加者情報リストが空です", nameof(participantInfoList));
+            }
+
             try
             {
                 _stage = SetupStage();
-                _players = SetupPlayers();
+                _players = SetupPlayers(participantInfoList);
                 _isSetup = true;
             }
             catch (Exception e)
@@ -87,8 +102,8 @@ namespace Tetrage.Managers
             var stageBuilder = new StageBuilder(
                 (StageModelFactory)_dependencies.StageModelFactory,
                 _dependencies.CardPileFactory,
-                _dependencies.CardModelFactory);
-            
+                _dependencies.CardFactory);
+
             var stage = stageBuilder
                 .UseView(
                     _settings.StageViewPrefab,
@@ -103,17 +118,28 @@ namespace Tetrage.Managers
 
             return stage;
         }
-        private List<IPlayer> SetupPlayers()
+
+        /// <summary>
+        /// プレイヤーを動的参加者情報に基づいてセットアップ
+        /// </summary>
+        /// <param name="participantInfoList">Dealerから取得した参加者情報</param>
+        private List<IPlayer> SetupPlayers(List<PlayerInfo> participantInfoList)
         {
             // return予定のプレイヤーリストを作成
             var players = new List<IPlayer>();
-            
+
             // 依存性注入されたPlayerModelFactoryを使用
             var playerBuilder = new PlayerBuilder((PlayerModelFactory)_dependencies.PlayerModelFactory);
 
+            // 位置数の検証
+            if (_settings.PlayerLocations.Count < participantInfoList.Count)
+            {
+                throw new InvalidOperationException($"プレイヤー位置数({_settings.PlayerLocations.Count})が参加者数({participantInfoList.Count})より少ないです");
+            }
+
             // 要請に応じてプレイヤーを作成する
             int playerIndex = 0;
-            foreach (var participantInfo in _settings.ParticipantInfoList)
+            foreach (var participantInfo in participantInfoList)
             {
                 var player = playerBuilder
                     .WithUserId(participantInfo.UserId)
@@ -124,9 +150,9 @@ namespace Tetrage.Managers
                         _settings.PlayerRoot,
                         _settings.PileViewPrefabDict
                     )
-                    .WithCardPileLayoutSettings(CardPileType.Hands, _settings.PlayerPilesLayoutSettings[participantInfo.PlayerType])
-                    .WithCardPileLayoutSettings(CardPileType.Tmp, _settings.PlayerPilesLayoutSettings[participantInfo.PlayerType])
-                    .WithCardPileLayoutSettings(CardPileType.Target, _settings.PlayerPilesLayoutSettings[participantInfo.PlayerType])
+                    .WithCardPileLayoutSettings(CardPileType.Hands, _settings.PlayerPilesLayoutSettings[CardPileType.Hands])
+                    .WithCardPileLayoutSettings(CardPileType.Tmp, _settings.PlayerPilesLayoutSettings[CardPileType.Tmp])
+                    .WithCardPileLayoutSettings(CardPileType.Target, _settings.PlayerPilesLayoutSettings[CardPileType.Target])
                     .Build();
                 players.Add(player);
                 playerIndex++;

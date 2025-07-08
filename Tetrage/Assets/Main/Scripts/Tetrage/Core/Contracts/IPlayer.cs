@@ -35,6 +35,16 @@ namespace Tetrage.Core.Contracts
         CardPile Tmp { get; }
 
         /// <summary>
+        /// プレイヤーがReach状態かどうか。
+        /// </summary>
+        bool IsReach { get; }
+
+        /// <summary>
+        /// プレイヤーをReach状態にする。
+        /// </summary>
+        void Reach();
+
+        /// <summary>
         /// 指定されたアクションを実行します。
         /// </summary>
         /// <param name="action">実行するゲームアクション。</param>
