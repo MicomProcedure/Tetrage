@@ -345,6 +345,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1234567891}
   - component: {fileID: 1234567892}
+  - component: {fileID: 1234567893}
   m_Layer: 0
   m_Name: DealerActionTester
   m_TagString: Untagged
@@ -398,6 +399,26 @@ MonoBehaviour:
   enableDetailedStepInfo: 0
   enablePlayerTracking: 0
   enableStageTracking: 0
+--- !u!114 &1234567893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1234567890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d0e43e06dce6437daf4e043d55b64c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showWindow: 1
+  _windowRect:
+    serializedVersion: 2
+    x: 10
+    y: 10
+    width: 350
+    height: 500
+  _windowTitle: "\u30C7\u30D0\u30C3\u30B0\u30A6\u30A3\u30F3\u30C9\u30A6"
 --- !u!1001 &1366135787
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -9,13 +9,14 @@ using Tetrage.Factories;
 using Tetrage.Core.Actions;
 using Cysharp.Threading.Tasks;
 
+
 namespace Tetrage.Tests
 {
     /// <summary>
     /// Dealer と Action システムのテストを行うクラス
     /// ActionFocusedDealerStrategy を使用してプレイヤーアクションの動作を確認
     /// </summary>
-    public class DealerActionTester : MonoBehaviour
+    public class DealerActionTester : MonoBehaviour, IDebuggable
     {
         [Header("テスト設定")]
         [SerializeField] private bool autoStartTest = true;
@@ -82,10 +83,8 @@ namespace Tetrage.Tests
             }
         }
 
-        private void OnGUI()
+        public void DrawDebugGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 350, 300));
-
             GUILayout.Label("=== Dealer Action Tester ===");
             GUILayout.Label($"現在のシナリオ: {testScenario}");
 
@@ -154,8 +153,6 @@ namespace Tetrage.Tests
                     StopTest();
                 }
             }
-
-            GUILayout.EndArea();
         }
 
         #endregion
