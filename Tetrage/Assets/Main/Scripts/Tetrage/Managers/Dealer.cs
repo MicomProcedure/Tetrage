@@ -346,6 +346,9 @@ namespace Tetrage.Managers
                 // ActionAwaiter を構築
                 _actionAwaiter = new ActionAwaiter(_actionManager, _timeoutHandler);
 
+                // ActionManagerにActionAwaiterを設定
+                _actionManager.SetActionAwaiter(_actionAwaiter);
+
                 Debug.Log("Dealer: ActionSystemが初期化されました (ActionSystemInitializer使用)");
             }
             else

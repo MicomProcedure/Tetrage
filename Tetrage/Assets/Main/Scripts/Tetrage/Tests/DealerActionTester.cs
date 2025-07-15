@@ -8,7 +8,9 @@ using Tetrage.Core.Contracts;
 using Tetrage.Factories;
 using Tetrage.Core.Actions;
 using Cysharp.Threading.Tasks;
-
+using Tetrage.Components;
+using Tetrage.Core.DTO;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Tests
 {
@@ -37,6 +39,10 @@ namespace Tetrage.Tests
         [SerializeField] private ActionPanelController actionPanelController;  // UIパネル参照
         [SerializeField] private bool enableAutoClickForScenario3 = false;  // 自動クリック機能
         [SerializeField] private float autoClickDelayForScenario3 = 3f;  // 自動クリック実行までの遅延
+
+        [Header("シナリオ4専用設定")]
+        [SerializeField] private FieldSetupComponent fieldSetupComponent;
+        [SerializeField] private int scenario4Rounds = 3; // シナリオ4のラウンド数
 
         [Header("デバッグ情報")]
         [SerializeField] private bool showDebugInfo = true;
@@ -70,7 +76,8 @@ namespace Tetrage.Tests
         {
             Scenario1,  // 通常のPassアクション実行テスト
             Scenario2,  // 3回目のループでタイムアウト発生テスト
-            Scenario3   // ActionPanelControllerからの入力でPassAction実行テスト（3ラウンド）
+            Scenario3,   // ActionPanelControllerからの入力でPassAction実行テスト（3ラウンド）
+            Scenario4   // FieldSetupManagerを利用したDrawActionのUIテスト
         }
 
         #region Unity生命周期
@@ -110,6 +117,12 @@ namespace Tetrage.Tests
                     timeoutSeconds = 0;
                 }
 
+                if (GUILayout.Button("シナリオ4 (FieldSetup + DrawActionテスト)"))
+                {
+                    testScenario = TestScenario.Scenario4;
+                    timeoutSeconds = 0;
+                }
+
                 // ログレベル選択
                 GUILayout.Label("ログレベル:");
                 if (GUILayout.Button($"現在: {logLevel}"))
@@ -146,6 +159,12 @@ namespace Tetrage.Tests
                     {
                         GUILayout.Label("*** 手動でPassボタンをクリックしてください ***", GUI.skin.box);
                     }
+                }
+                else if (testScenario == TestScenario.Scenario4)
+                {
+                    GUILayout.Label($"シナリオ4設定: FieldSetupComponent: {(fieldSetupComponent != null ? "設定済み" : "未設定")}");
+                    GUILayout.Label($"プレイヤー数: {playerCount}");
+                    GUILayout.Label($"最大ラウンド: {scenario4Rounds}");
                 }
 
                 if (GUILayout.Button("テスト停止"))
@@ -223,6 +242,12 @@ namespace Tetrage.Tests
                     // シナリオ3ではシナリオ3Rounds回のラウンドを設定
                     _dealer?.SetMaxRounds(scenario3Rounds);
                     break;
+                case TestScenario.Scenario4:
+                    LogImportant("シナリオ4 - FieldSetupManagerを利用したDrawActionのUIテスト（プレイヤー4人）");
+                    playerCount = 4; // プレイヤー数を4人に固定
+                    _dealer?.SetMaxRounds(scenario4Rounds); // シナリオ4のラウンド数を設定
+                    LogImportant($"[シナリオ4] プレイヤー数を{playerCount}に設定し、最大ラウンドを{scenario4Rounds}に設定しました。");
+                    break;
             }
         }
 
@@ -266,6 +291,33 @@ namespace Tetrage.Tests
         {
             LogDetailed("テスト環境をセットアップします");
 
+            if (testScenario == TestScenario.Scenario4)
+            {
+                SetupTestEnvironmentForScenario4();
+            }
+            else
+            {
+                SetupTestEnvironmentForScenarios123();
+            }
+
+            // 戦略を作成
+            _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
+            LogDetailed($"戦略作成完了 - 固定プレイヤー: {fixedPlayerIndex}");
+
+            // Dealer を作成
+            _dealer = new Dealer(_stage, _players, _strategy);
+            LogDetailed("Dealer作成完了");
+
+            // 最大ラウンド数はシナリオ初期化で設定するため、ここではデフォルト値のまま
+            // _dealer.SetMaxRounds(maxRounds);
+            // Debug.Log($"DealerActionTester: 最大ラウンド数設定完了 - {maxRounds}ラウンド");
+        }
+
+        /// <summary>
+        /// シナリオ1, 2, 3用のテスト環境を構築する
+        /// </summary>
+        private void SetupTestEnvironmentForScenarios123()
+        {
             // ファクトリーを作成
             var cardModelFactory = new CardModelFactory();
             var cardPileFactory = new CardPileFactory();
@@ -284,18 +336,55 @@ namespace Tetrage.Tests
                 _players.Add(player);
                 LogDetailed($"プレイヤー作成完了 - {player.UserId}");
             }
+        }
 
-            // 戦略を作成
-            _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
-            LogDetailed($"戦略作成完了 - 固定プレイヤー: {fixedPlayerIndex}");
+        /// <summary>
+        /// シナリオ4用のテスト環境を構築する
+        /// </summary>
+        private void SetupTestEnvironmentForScenario4()
+        {
+            LogImportant("[シナリオ4] FieldSetupManagerを使用して環境をセットアップします。");
+            if (fieldSetupComponent == null)
+            {
+                Debug.LogError("DealerActionTester: [シナリオ4] FieldSetupComponentが設定されていません。テストを中止します。");
+                throw new System.InvalidOperationException("FieldSetupComponent is not set.");
+            }
 
-            // Dealer を作成
-            _dealer = new Dealer(_stage, _players, _strategy);
-            LogDetailed("Dealer作成完了");
+            // 1. 参加者情報を作成
+            playerCount = 4;
+            var participantInfoList = new List<PlayerInfo>();
+            for (int i = 0; i < playerCount; i++)
+            {
+                participantInfoList.Add(new PlayerInfo { UserId = $"Player{i + 1}", PlayerType = PlayerType.Local });
+            }
+            LogDetailed($"[シナリオ4] {playerCount}人分の参加者情報を作成しました。");
 
-            // 最大ラウンド数はシナリオ初期化で設定するため、ここではデフォルト値のまま
-            // _dealer.SetMaxRounds(maxRounds);
-            // Debug.Log($"DealerActionTester: 最大ラウンド数設定完了 - {maxRounds}ラウンド");
+            // 2. 依存性を作成
+            var cardFactory = new CardModelFactory();
+            var cardPileFactory = new CardPileFactory();
+            var stageModelFactory = new StageModelFactory(cardPileFactory, cardFactory);
+            var playerModelFactory = new PlayerModelFactory(cardPileFactory, cardFactory);
+
+            var dependencies = new FieldSetupDependencies(
+                cardFactory,
+                stageModelFactory,
+                playerModelFactory,
+                cardPileFactory
+            );
+            LogDetailed("[シナリオ4] FieldSetupDependenciesを作成しました。");
+
+            // 3. 設定を取得
+            var settings = fieldSetupComponent.GetValidatedFieldSetupSettings(playerCount);
+            LogDetailed("[シナリオ4] FieldSetupSettingsを検証・取得しました。");
+
+            // 4. FieldSetupManagerを作成してフィールドをセットアップ
+            var fieldSetupManager = new FieldSetupManager(settings, dependencies);
+            fieldSetupManager.SetupField(participantInfoList);
+
+            // 5. 結果を取得
+            _stage = fieldSetupManager.Stage;
+            _players = fieldSetupManager.Players;
+            LogImportant("[シナリオ4] FieldSetupManagerによるフィールドセットアップが完了しました。");
         }
 
         /// <summary>
@@ -374,6 +463,9 @@ namespace Tetrage.Tests
                 case TestScenario.Scenario3:
                     HandleScenario3RoundStart();
                     break;
+                case TestScenario.Scenario4:
+                    HandleScenario4RoundStart();
+                    break;
             }
         }
 
@@ -439,6 +531,16 @@ namespace Tetrage.Tests
             {
                 LogImportant("[シナリオ3] 手動操作モード - 手動でPassボタンをクリックしてください");
             }
+        }
+
+        /// <summary>
+        /// シナリオ4のラウンド開始処理
+        /// </summary>
+        private void HandleScenario4RoundStart()
+        {
+            LogImportant("[シナリオ4] ラウンド開始。UI上のDrawボタンが有効になるはずです。");
+            LogImportant("[シナリオ4] UI操作: ActionPanelのDrawボタンをクリックして、カードを引けるかテストしてください。");
+            // シナリオ4では自動的なアクションは実行せず、UIからの入力を待つ
         }
 
         /// <summary>
@@ -840,6 +942,24 @@ namespace Tetrage.Tests
                 testScenario = TestScenario.Scenario3;
                 timeoutSeconds = 0;
                 LogImportant("シナリオ3に切り替えました");
+            }
+            else
+            {
+                Debug.LogWarning("DealerActionTester: テスト実行中はシナリオを変更できません");
+            }
+        }
+
+        /// <summary>
+        /// シナリオ4に切り替える
+        /// </summary>
+        [ContextMenu("シナリオ4に切り替え")]
+        public void SwitchToScenario4()
+        {
+            if (!_testStarted)
+            {
+                testScenario = TestScenario.Scenario4;
+                timeoutSeconds = 0;
+                LogImportant("シナリオ4に切り替えました");
             }
             else
             {

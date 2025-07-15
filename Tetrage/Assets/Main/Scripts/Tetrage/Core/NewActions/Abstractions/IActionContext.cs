@@ -13,30 +13,36 @@ namespace Tetrage.Core.Actions
         /// アクションを実行するプレイヤー
         /// </summary>
         IPlayer RequesterPlayer { get; }
-        
+
         /// <summary>
         /// 現在のステージ情報
         /// </summary>
         Stage CurrentStage { get; }
-        
+
         /// <summary>
         /// 参加している全プレイヤー
         /// </summary>
         IReadOnlyList<IPlayer> AllPlayers { get; }
-        
+
         /// <summary>
         /// 他のプレイヤー（リクエスター以外）
         /// </summary>
         IReadOnlyList<IPlayer> OtherPlayers { get; }
-        
+
         /// <summary>
         /// 現在のターンプレイヤー
         /// </summary>
         IPlayer CurrentTurnPlayer { get; }
-        
+
         /// <summary>
         /// ゲームコンテキストプロバイダー
         /// </summary>
         IGameContextProvider GameContext { get; }
+
+        /// <summary>
+        /// アクション待機・キャンセル制御を担当するActionAwaiter
+        /// ExecutorがCancellationTokenにアクセスするために使用
+        /// </summary>
+        ActionAwaiter ActionAwaiter { get; }
     }
-} 
+}

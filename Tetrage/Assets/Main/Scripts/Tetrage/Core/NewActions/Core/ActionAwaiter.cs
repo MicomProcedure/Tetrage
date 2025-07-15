@@ -23,6 +23,20 @@ namespace Tetrage.Core.Actions
         private IPlayer _waitingPlayer;
         #endregion
 
+        #region 公開プロパティ
+        /// <summary>
+        /// 現在の待機に関連するCancellationToken
+        /// 子タスクはこのトークンを使用してキャンセル伝播を受け取る
+        /// </summary>
+        public CancellationToken CurrentCancellationToken => _cancellationTokenSource?.Token ?? CancellationToken.None;
+
+        /// <summary>
+        /// 現在の待機タスク（読み取り専用）
+        /// </summary>
+        public UniTask<ActionResult> CurrentWaitingTask =>
+            _completionSource?.Task ?? UniTask.FromResult(ActionResult.Failure("Not waiting"));
+        #endregion
+
         #region コンストラクタ
         public ActionAwaiter(ActionManager actionManager, ITimeoutHandler timeoutHandler)
         {
@@ -62,7 +76,6 @@ namespace Tetrage.Core.Actions
         /// <param name="player">待機対象プレイヤー</param>
         /// <param name="timeoutSeconds">タイムアウト時間（0以下で無制限）</param>
         /// <returns>アクション実行結果</returns>
-        /// <exception cref="TimeoutService.TimeoutException">タイムアウト発生時</exception>
         /// <exception cref="OperationCanceledException">キャンセルされた場合</exception>
         public async UniTask<ActionResult> WaitForPlayerActionAsync(IPlayer player, float timeoutSeconds = 0)
         {
@@ -75,28 +88,42 @@ namespace Tetrage.Core.Actions
             _completionSource = new UniTaskCompletionSource<ActionResult>();
             _cancellationTokenSource = new CancellationTokenSource();
 
-            CancellationToken token = _cancellationTokenSource.Token;
+            var token = _cancellationTokenSource.Token;
 
             try
             {
                 Debug.Log($"ActionAwaiter: プレイヤー {_waitingPlayer.PlayerId} のアクションを待機中...");
 
-                // TimeoutService を使用して待機
-                return await TimeoutService.WaitWithTimeout(
-                    _completionSource.Task,
-                    timeoutSeconds,
-                    token);
+                if (timeoutSeconds > 0)
+                {
+                    return await _completionSource.Task
+                        .Timeout(TimeSpan.FromSeconds(timeoutSeconds))
+                        .AttachExternalCancellation(token);
+                }
+                else
+                {
+                    return await _completionSource.Task.AttachExternalCancellation(token);
+                }
             }
-            catch (TimeoutService.TimeoutException ex)
+            catch (TimeoutException)    // タイムアウトの時にここに入る
             {
-                // タイムアウト時の処理を委譲
                 Debug.Log($"ActionAwaiter: タイムアウト発生 - プレイヤー {_waitingPlayer.PlayerId}");
 
-                var timeoutContext = new TimeoutContext(_waitingPlayer, ex.TimeoutSeconds, ActionResult.Failure("TIMEOUT"));
-                var handleResult = await _timeoutHandler.HandleTimeoutAsync(timeoutContext);
+                // タイムアウト時はCancellationTokenをキャンセルして子タスクも停止させる
+                if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    _cancellationTokenSource.Cancel();
+                    Debug.Log("ActionAwaiter: タイムアウト時にCancellationTokenをキャンセルしました");
+                }
 
-                // TimeoutHandler の結果によってゲーム継続可否は呼び出し元で判断
+                var timeoutContext = new TimeoutContext(_waitingPlayer, timeoutSeconds, ActionResult.Failure("TIMEOUT"));
+                await _timeoutHandler.HandleTimeoutAsync(timeoutContext);
                 return timeoutContext.OriginalResult;
+            }
+            catch (OperationCanceledException)    // キャンセルの時にここに入る
+            {
+                Debug.Log("ActionAwaiter: 待機が外部からキャンセルされました。");
+                throw; // 呼び出し元にキャンセルを伝播させる
             }
             finally
             {

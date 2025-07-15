@@ -40,6 +40,7 @@ namespace Tetrage.Core.Actions
         private readonly Dictionary<ActionType, Func<IPlayer, IGameContextProvider, IAction>> _actionFactories;
         private IGameContextProvider _gameContextProvider;
         private IRoundManager _roundManager;
+        private ActionAwaiter _actionAwaiter; // ActionAwaiterを追加
 
         /// <summary>
         /// アクション実行前イベント
@@ -87,6 +88,19 @@ namespace Tetrage.Core.Actions
                 return null;
             }
             return _roundManager;
+        }
+
+        /// <summary>
+        /// ActionAwaiterを設定
+        /// </summary>
+        public void SetActionAwaiter(ActionAwaiter actionAwaiter)
+        {
+            _actionAwaiter = actionAwaiter;
+        }
+
+        public ActionAwaiter GetActionAwaiter()
+        {
+            return _actionAwaiter;
         }
 
         /// <summary>
@@ -157,7 +171,7 @@ namespace Tetrage.Core.Actions
             try
             {
                 var action = CreateAction(actionType, requester);
-                var context = new ActionContext(requester, _gameContextProvider);
+                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter);
                 return action.CanExecute(context);
             }
             catch (Exception ex)
@@ -176,7 +190,7 @@ namespace Tetrage.Core.Actions
             try
             {
                 var action = CreateAction(actionType, requester);
-                var context = new ActionContext(requester, _gameContextProvider);
+                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter);
 
                 // イベント発火
                 OnActionStarted?.Invoke(action, context);

@@ -2,6 +2,8 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System.Linq;
 using Tetrage.Models;
+using Tetrage.UI; // CardClickDispatcherを使用するために追加
+using System.Threading; // CancellationTokenを追加
 
 namespace Tetrage.Core.Actions
 {
@@ -21,14 +23,15 @@ namespace Tetrage.Core.Actions
                     return result;
                 }
 
-                // 2. プレイヤーにカード選択のUIを表示（現在は自動選択で仮実装）
+                // 2. プレイヤーにカード選択をUIで促し、待機
                 var selectedCard = await SelectCardFromTmp(context);
                 if (selectedCard == null)
                 {
-                    return ActionResult.Failure("カード選択に失敗しました");
+                    // このケースは、SelectCardFromTmpの最初のチェックでTmpが空の場合のみ発生
+                    return ActionResult.Failure("選択すべきカードがありませんでした。");
                 }
 
-                // 3. 選択されたカードをStackに戻し、選択されなかったカードをHandsに追加
+                // 3. 選択結果に基づいてカードを処理
                 var transferResult = await ProcessCardSelection(context, selectedCard);
                 if (!transferResult.IsSuccess)
                 {
@@ -36,7 +39,7 @@ namespace Tetrage.Core.Actions
                 }
 
                 Debug.Log($"Draw アクション実行完了: プレイヤー {context.RequesterPlayer.UserId}");
-                
+
                 return ActionResult.Success("Draw アクションが正常に実行されました");
             }
             catch (System.Exception ex)
@@ -69,60 +72,94 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// Tmpからカードを選択（現在は仮実装：最初のカードを選択）
+        /// Tmpからカードを選択（プレイヤーのクリック入力を待機）
+        /// ActionAwaiterのタイムアウトでキャンセルされた場合は自動で1枚選択する
         /// </summary>
         private async UniTask<Card> SelectCardFromTmp(IActionContext context)
         {
             var tmp = context.RequesterPlayer.Tmp;
-            
-            // TODO: 実際のUI選択処理を実装
-            // 現在は仮実装として最初のカードを選択
-            await UniTask.Delay(100); // UI表示の仮の時間
+            if (tmp.Count == 0)
+            {
+                Debug.LogError("Tmpに選択すべきカードがありません。");
+                return null;
+            }
 
-            return tmp.FirstOrDefault();
+            // ActionAwaiterのCancellationTokenを取得
+            var actionAwaiter = context.ActionAwaiter; // IActionContextにはActionAwaiterがある
+            var cancellationToken = actionAwaiter?.CurrentCancellationToken ?? CancellationToken.None;
+
+            var tcs = new UniTaskCompletionSource<Card>();
+
+            System.Action<Card> cardClickedHandler = null;
+            cardClickedHandler = (clickedCard) =>
+            {
+                // Tmpにあるカードがクリックされた場合のみ処理
+                if (tmp.Contains(clickedCard))
+                {
+                    tcs.TrySetResult(clickedCard);
+                }
+            };
+
+            CardClickDispatcher.OnCardClicked += cardClickedHandler;
+
+            try
+            {
+                Debug.Log($"プレイヤーのカード選択を待っています...");
+                // TODO: 選択可能なカードをUI上でハイライトする処理
+
+                // 外部キャンセル対応のみ（独自タイムアウトなし）
+                return await tcs.Task.AttachExternalCancellation(cancellationToken);
+            }
+            catch (System.OperationCanceledException)
+            {
+                Debug.LogWarning("カード選択が外部からキャンセルされました。強制的に1枚を選択します。");
+                // キャンセル時は強制選択を行う
+                var fallbackCard = tmp.FirstOrDefault();
+                if (fallbackCard != null)
+                {
+                    Debug.Log($"キャンセル時のフォールバックとして {fallbackCard} を選択しました。");
+                }
+                return fallbackCard;
+            }
+            finally
+            {
+                // 選択完了後、必ずイベント購読を解除
+                CardClickDispatcher.OnCardClicked -= cardClickedHandler;
+                // TODO: ハイライト解除処理
+            }
         }
 
         /// <summary>
-        /// 選択されたカードの処理（Stackに戻す、残りをHandsに移動）
+        /// 選択されたカードの処理（選択カードをHandsへ、残りをTrashへ）
         /// </summary>
         private async UniTask<ActionResult> ProcessCardSelection(IActionContext context, Card selectedCard)
         {
-            var stack = context.CurrentStage.Stack;
             var tmp = context.RequesterPlayer.Tmp;
             var hands = context.RequesterPlayer.Hands;
             var trash = context.CurrentStage.Trash;
 
-            // 選択されたカードをStackの一番上に戻す
-            bool returnSuccess = CardPile.TransferService.Transfer(tmp, stack, selectedCard);
-            if (!returnSuccess)
+            // 1. 選択されたカードをHandsに移動
+            bool toHandsSuccess = CardPile.TransferService.Transfer(tmp, hands, selectedCard);
+            if (!toHandsSuccess)
             {
-                return ActionResult.Failure("選択されたカードをStackに戻すことができませんでした");
+                return ActionResult.Failure($"選択されたカード {selectedCard} をHandsに移動できませんでした");
             }
+            Debug.Log($"選択されたカード {selectedCard} をHandsに移動しました。");
 
-            // 残りのカードをHandsに移動（満杯の場合はTrashに移動）
-            var remainingCards = tmp.ToList();
+            // 2. 残りのカード（選択されなかったカード）をTmpからTrashに移動
+            var remainingCards = tmp.ToList(); // ToList()でコピーを作成
             foreach (var card in remainingCards)
             {
-                // Handsが満杯かチェック
-                if (hands.Count >= hands.MaxCount)
+                bool toTrashSuccess = CardPile.TransferService.Transfer(tmp, trash, card);
+                if (!toTrashSuccess)
                 {
-                    // Handsから1枚をTrashに移動してから新しいカードを追加
-                    var cardToTrash = hands.FirstOrDefault();
-                    if (cardToTrash != null)
-                    {
-                        CardPile.TransferService.Transfer(hands, trash, cardToTrash);
-                    }
+                    return ActionResult.Failure($"選択されなかったカード {card} をTrashに移動できませんでした");
                 }
-
-                bool addSuccess = CardPile.TransferService.Transfer(tmp, hands, card);
-                if (!addSuccess)
-                {
-                    return ActionResult.Failure($"カードをHandsに移動できませんでした: {card.Suit} {card.Number}");
-                }
+                Debug.Log($"選択されなかったカード {card} をTrashに移動しました。");
             }
 
             await UniTask.Delay(100); // アニメーション時間の確保
             return ActionResult.Success();
         }
     }
-} 
+}

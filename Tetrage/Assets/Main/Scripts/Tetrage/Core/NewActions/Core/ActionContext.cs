@@ -16,21 +16,24 @@ namespace Tetrage.Core.Actions
         public IReadOnlyList<IPlayer> OtherPlayers { get; }
         public IPlayer CurrentTurnPlayer { get; }
         public IGameContextProvider GameContext { get; }
-        
+        public ActionAwaiter ActionAwaiter { get; }
+
         public ActionContext(
-            IPlayer requesterPlayer, 
-            IGameContextProvider gameContext)
+            IPlayer requesterPlayer,
+            IGameContextProvider gameContext,
+            ActionAwaiter actionAwaiter = null)
         {
             RequesterPlayer = requesterPlayer;
             GameContext = gameContext;
+            ActionAwaiter = actionAwaiter;
             CurrentStage = gameContext.Stage;
             AllPlayers = gameContext.Players;
             CurrentTurnPlayer = gameContext.CurrentPlayer;
-            
+
             // リクエスト者以外のプレイヤーを取得
             OtherPlayers = AllPlayers
                 .Where(p => !ReferenceEquals(p, requesterPlayer))
                 .ToList();
         }
     }
-} 
+}
