@@ -1,6 +1,7 @@
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using MackySoft.Navigathena.SceneManagement;
+using UnityEngine.SceneManagement;
 
 public class SceneNavigator : MonoBehaviour
 {
@@ -18,39 +19,75 @@ public class SceneNavigator : MonoBehaviour
         LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
+    private async UniTask UnloadAllOtherScenes(string exceptScene)
+    {
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            var scene = SceneManager.GetSceneAt(i);
+            if (scene.name != exceptScene && scene.isLoaded)
+            {
+                await SceneManager.UnloadSceneAsync(scene);
+            }
+        }
+    }
+
     public async void GoToTitle()
     {
-        await ShowLoadingPanelAsync();
+        LoadingScreenController.Instance?.CreateLoadingCanvas();
+        LoadingScreenController.Instance?.Show();
+
         var sceneTask = GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier("TitleScene"));
-        var delayTask = UniTask.Delay(3000);
-        await UniTask.WhenAll(sceneTask, delayTask);
-        HideAndDestroyLoadingPanel();
+        await sceneTask;
+
+        var newScene = SceneManager.GetActiveScene().name;
+        await UnloadAllOtherScenes(newScene);
+
+        LoadingScreenController.Instance?.Hide();
+        LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
     public async void GoToGame()
     {
-        await ShowLoadingPanelAsync();
+        LoadingScreenController.Instance?.CreateLoadingCanvas();
+        LoadingScreenController.Instance?.Show();
+
         var sceneTask = GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier("GameScene"));
-        var delayTask = UniTask.Delay(3000);
-        await UniTask.WhenAll(sceneTask, delayTask);
-        HideAndDestroyLoadingPanel();
+        await sceneTask;
+
+        var newScene = SceneManager.GetActiveScene().name;
+        await UnloadAllOtherScenes(newScene);
+
+        LoadingScreenController.Instance?.Hide();
+        LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
     public async void GoToResult()
     {
-        await ShowLoadingPanelAsync();
+        LoadingScreenController.Instance?.CreateLoadingCanvas();
+        LoadingScreenController.Instance?.Show();
+
         var sceneTask = GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier("ResultScene"));
-        var delayTask = UniTask.Delay(3000);
-        await UniTask.WhenAll(sceneTask, delayTask);
-        HideAndDestroyLoadingPanel();
+        await sceneTask;
+
+        var newScene = SceneManager.GetActiveScene().name;
+        await UnloadAllOtherScenes(newScene);
+
+        LoadingScreenController.Instance?.Hide();
+        LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
     public async void GoBack()
     {
-        await ShowLoadingPanelAsync();
+        LoadingScreenController.Instance?.CreateLoadingCanvas();
+        LoadingScreenController.Instance?.Show();
+
         var sceneTask = GlobalSceneNavigator.Instance.Pop();
-        var delayTask = UniTask.Delay(3000);
-        await UniTask.WhenAll(sceneTask, delayTask);
-        HideAndDestroyLoadingPanel();
+        await sceneTask;
+
+        var newScene = SceneManager.GetActiveScene().name;
+        await UnloadAllOtherScenes(newScene);
+
+        LoadingScreenController.Instance?.Hide();
+        LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 }

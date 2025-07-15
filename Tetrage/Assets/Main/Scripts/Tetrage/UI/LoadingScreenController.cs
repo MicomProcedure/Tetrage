@@ -4,10 +4,10 @@ public class LoadingScreenController : MonoBehaviour
 {
     public static LoadingScreenController Instance { get; private set; }
 
-    [SerializeField] private GameObject loadingPanel;
     [SerializeField] private GameObject loadingCanvasPrefab;
 
     private GameObject loadingCanvasInstance;
+    private GameObject loadingPanel;
 
     void Awake()
     {
@@ -27,6 +27,8 @@ public class LoadingScreenController : MonoBehaviour
         if (loadingCanvasInstance == null && loadingCanvasPrefab != null)
         {
             loadingCanvasInstance = Instantiate(loadingCanvasPrefab);
+            // Panelを自動取得（"LoadingPanel"という名前のGameObjectを想定）
+            loadingPanel = loadingCanvasInstance.transform.Find("LoadingPanel")?.gameObject ?? loadingCanvasInstance;
         }
     }
 
@@ -36,6 +38,7 @@ public class LoadingScreenController : MonoBehaviour
         {
             Destroy(loadingCanvasInstance);
             loadingCanvasInstance = null;
+            loadingPanel = null;
         }
     }
 
