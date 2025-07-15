@@ -19,30 +19,23 @@ public class SceneNavigator : MonoBehaviour
         LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
-    private async UniTask UnloadAllOtherScenes(string exceptScene)
-    {
-        for (int i = 0; i < SceneManager.sceneCount; i++)
-        {
-            var scene = SceneManager.GetSceneAt(i);
-            if (scene.name != exceptScene && scene.isLoaded)
-            {
-                await SceneManager.UnloadSceneAsync(scene);
-            }
-        }
-    }
-
     public async void GoToTitle()
     {
         LoadingScreenController.Instance?.CreateLoadingCanvas();
         LoadingScreenController.Instance?.Show();
 
+        // シーン遷移前に「今のシーン名」を記録
+        var sceneToUnload = SceneManager.GetActiveScene().name;
+
         var sceneTask = GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier("TitleScene"));
         await sceneTask;
 
-        var newScene = SceneManager.GetActiveScene().name;
-        await UnloadAllOtherScenes(newScene);
+        // 新しいシーンがアクティブになった後、「もともとあったシーン」だけをアンロード
+        if (SceneManager.GetSceneByName(sceneToUnload).isLoaded)
+        {
+            await SceneManager.UnloadSceneAsync(sceneToUnload);
+        }
 
-        LoadingScreenController.Instance?.Hide();
         LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
@@ -51,13 +44,16 @@ public class SceneNavigator : MonoBehaviour
         LoadingScreenController.Instance?.CreateLoadingCanvas();
         LoadingScreenController.Instance?.Show();
 
+        var sceneToUnload = SceneManager.GetActiveScene().name;
+
         var sceneTask = GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier("GameScene"));
         await sceneTask;
 
-        var newScene = SceneManager.GetActiveScene().name;
-        await UnloadAllOtherScenes(newScene);
+        if (SceneManager.GetSceneByName(sceneToUnload).isLoaded)
+        {
+            await SceneManager.UnloadSceneAsync(sceneToUnload);
+        }
 
-        LoadingScreenController.Instance?.Hide();
         LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
@@ -66,13 +62,16 @@ public class SceneNavigator : MonoBehaviour
         LoadingScreenController.Instance?.CreateLoadingCanvas();
         LoadingScreenController.Instance?.Show();
 
+        var sceneToUnload = SceneManager.GetActiveScene().name;
+
         var sceneTask = GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier("ResultScene"));
         await sceneTask;
 
-        var newScene = SceneManager.GetActiveScene().name;
-        await UnloadAllOtherScenes(newScene);
+        if (SceneManager.GetSceneByName(sceneToUnload).isLoaded)
+        {
+            await SceneManager.UnloadSceneAsync(sceneToUnload);
+        }
 
-        LoadingScreenController.Instance?.Hide();
         LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 
@@ -81,13 +80,16 @@ public class SceneNavigator : MonoBehaviour
         LoadingScreenController.Instance?.CreateLoadingCanvas();
         LoadingScreenController.Instance?.Show();
 
+        var sceneToUnload = SceneManager.GetActiveScene().name;
+
         var sceneTask = GlobalSceneNavigator.Instance.Pop();
         await sceneTask;
 
-        var newScene = SceneManager.GetActiveScene().name;
-        await UnloadAllOtherScenes(newScene);
+        if (SceneManager.GetSceneByName(sceneToUnload).isLoaded)
+        {
+            await SceneManager.UnloadSceneAsync(sceneToUnload);
+        }
 
-        LoadingScreenController.Instance?.Hide();
         LoadingScreenController.Instance?.DestroyLoadingCanvas();
     }
 }

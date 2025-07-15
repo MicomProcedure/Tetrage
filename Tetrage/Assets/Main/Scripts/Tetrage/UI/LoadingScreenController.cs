@@ -32,8 +32,18 @@ public class LoadingScreenController : MonoBehaviour
         }
     }
 
+    public void Hide()
+    {
+        if (loadingPanel != null)
+        {
+            loadingPanel.SetActive(false);
+        }
+    }
+
     public void DestroyLoadingCanvas()
     {
+        // まず非表示にする
+        Hide();
         if (loadingCanvasInstance != null)
         {
             Destroy(loadingCanvasInstance);
@@ -45,10 +55,5 @@ public class LoadingScreenController : MonoBehaviour
     public void Show()
     {
         loadingPanel?.SetActive(true);
-    }
-
-    public void Hide()
-    {
-        loadingPanel?.SetActive(false);
     }
 }
