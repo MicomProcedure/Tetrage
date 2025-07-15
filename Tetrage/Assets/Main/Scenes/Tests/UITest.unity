@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &94099472
+--- !u!1 &534048216
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,37 +127,39 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 94099475}
-  - component: {fileID: 94099474}
+  - component: {fileID: 534048218}
+  - component: {fileID: 534048217}
   m_Layer: 0
-  m_Name: Dialog
+  m_Name: LoadSceneManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &94099474
+--- !u!114 &534048217
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94099472}
+  m_GameObject: {fileID: 534048216}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ebb5e4bde1c7504b91784e989e37c6b, type: 3}
+  m_Script: {fileID: 11500000, guid: 6efade9e0bef40e4183ced3ea5d5715a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &94099475
+  loadingPanel: {fileID: 672592866624518909, guid: f42eda023c0aafc4d98cc4935f281827, type: 3}
+  loadingCanvasPrefab: {fileID: 672592866624518909, guid: f42eda023c0aafc4d98cc4935f281827, type: 3}
+--- !u!4 &534048218
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 94099472}
+  m_GameObject: {fileID: 534048216}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1075.1942, y: 412.56848, z: -2.6340082}
+  m_LocalPosition: {x: 809.10406, y: 470.45316, z: -5.6251984}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -933,5 +935,5 @@ SceneRoots:
   - {fileID: 1478633923}
   - {fileID: 800030043}
   - {fileID: 7900014265371996905}
-  - {fileID: 94099475}
   - {fileID: 677719712}
+  - {fileID: 534048218}
