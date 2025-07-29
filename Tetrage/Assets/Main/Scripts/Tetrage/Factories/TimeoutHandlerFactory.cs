@@ -26,6 +26,24 @@ namespace Tetrage.Factories
         }
 
         /// <summary>
+        /// タイムアウト時にゲーム終了するハンドラー
+        /// </summary>
+        public static ITimeoutHandler CreateGameEnd()
+        {
+            return new GameEndTimeoutHandler();
+        }
+
+        /// <summary>
+        /// UI通知 + ゲーム終了の組み合わせ
+        /// </summary>
+        public static ITimeoutHandler CreateNotificationWithGameEnd(float notificationDuration = 2f)
+        {
+            return new CompositeTimeoutHandler()
+                .AddHandler(new UINotificationTimeoutHandler(notificationDuration))
+                .AddHandler(new GameEndTimeoutHandler());
+        }
+
+        /// <summary>
         /// UI通知 + 自動パスの組み合わせ
         /// </summary>
         public static ITimeoutHandler CreateNotificationWithAutoPass(float notificationDuration = 3f)

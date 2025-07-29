@@ -63,7 +63,7 @@ namespace Tetrage.Models
             }
         }
 
-        public bool CanFlip { get; set; } = true;
+        public bool CanFlip { get; set; } = false;
 
         public event Action<Card> CardChanged;
 

@@ -70,11 +70,17 @@ namespace Tetrage.Managers
         // タイムアウト処理用
         private ITimeoutHandler _timeoutHandler; // ActionAwaiter へ委譲予定
 
+        // タイムアウトフラグ
+        private bool _doTimeout = false;
+        public bool DoTimeout { get { return _doTimeout; } }
+
         // ゲーム終了フラグ
-        private bool _gameFinished;
+        private bool _isGameFinished = false;
+        public bool IsGameFinished { get { return _isGameFinished; } }
 
         // ゲームが途中中断されたかどうか
-        private bool _gameInterrupted;
+        private bool _isGameInterrupted = false;
+        public bool IsGameInterrupted { get { return _isGameInterrupted; } }
 
         #endregion
 
@@ -92,6 +98,7 @@ namespace Tetrage.Managers
             _stage = stage;
             _players = players;
             _dealerStrategy = dealerStrategy;
+
             _roundCount = 0; // 初期化
             _timeoutHandler = CreateDefaultTimeoutHandler();
             InitializeActionSystem();
@@ -103,8 +110,8 @@ namespace Tetrage.Managers
         /// </summary>
         private ITimeoutHandler CreateDefaultTimeoutHandler()
         {
-            // ファクトリーを使用してデフォルトハンドラーを作成
-            return TimeoutHandlerFactory.CreateAutoPass();
+            // ファクトリーを使用してゲーム終了ハンドラーを作成
+            return TimeoutHandlerFactory.CreateGameEnd();
         }
 
         /// <summary>
@@ -154,7 +161,7 @@ namespace Tetrage.Managers
 
             Debug.Log("Dealer: ラウンドを開始します");
 
-            _gameFinished = false;
+            _isGameFinished = false;
 
             await StartRoundLoopAsync(timeoutSeconds);
 
@@ -194,7 +201,7 @@ namespace Tetrage.Managers
         /// <param name="cancellationToken">外部からゲーム全体をキャンセルしたい場合のトークン</param>
         public async UniTask StartRoundLoopAsync(float timeoutSeconds = 0, CancellationToken cancellationToken = default)
         {
-            while (!_gameFinished && !cancellationToken.IsCancellationRequested)
+            while (!_isGameFinished && !cancellationToken.IsCancellationRequested)
             {
 
                 try
@@ -204,14 +211,14 @@ namespace Tetrage.Managers
                 catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
                 {
                     Debug.Log($"Dealer: ラウンドループがキャンセルされました: {ex.Message}");
-                    _gameInterrupted = true;
+                    _isGameInterrupted = true;
                     break;
                 }
                 catch (Exception ex)
                 {
                     Debug.LogError($"Dealer: ラウンドループ中に致命的エラーが発生: {ex.Message}");
-                    _gameInterrupted = true;
-                    _gameFinished = true; // 強制終了
+                    _isGameInterrupted = true;
+                    _isGameFinished = true; // 強制終了
                 }
             }
         }
@@ -223,6 +230,8 @@ namespace Tetrage.Managers
         {
             OnRoundStart();
 
+            _doTimeout = timeoutSeconds > 0;
+
             try
             {
                 // 現在のプレイヤーが設定されているかどうかを検証
@@ -230,11 +239,19 @@ namespace Tetrage.Managers
 
                 // プレイヤーのアクションを待つ
                 // タイムアウト時は自動で次のプレイヤーに移行する
-                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer, timeoutSeconds: timeoutSeconds);
+                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer, _doTimeout, timeoutSeconds: timeoutSeconds);
 
                 if (!actionResult.IsSuccess)
                 {
                     Debug.LogWarning($"Dealer: プレイヤーアクション失敗 - {actionResult.ErrorMessage}");
+
+                    // タイムアウトによるゲーム終了かチェック
+                    if (actionResult.ErrorMessage == "GAME_END_BY_TIMEOUT")
+                    {
+                        Debug.Log("Dealer: タイムアウトによるゲーム終了が指示されました");
+                        _isGameFinished = true;
+                        return;
+                    }
                 }
 
                 actionResult.Log("Dealer: プレイヤーアクション結果");
@@ -242,19 +259,19 @@ namespace Tetrage.Managers
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションがキャンセルされました");
-                _gameFinished = true;
+                _isGameFinished = true;
             }
 
             // 勝利条件チェック
             if (CheckWinCondition())
             {
-                _gameFinished = true;
+                _isGameFinished = true;
             }
 
             OnRoundEnd();
 
             // 次のプレイヤーへ
-            if (!_gameFinished && _currentPlayer != null)
+            if (!_isGameFinished && _currentPlayer != null)
             {
                 _currentPlayer = _dealerStrategy.GetNextPlayer(_currentPlayer, _players);
                 Debug.Log($"Dealer: 次のターンは Player {_currentPlayer.PlayerId}");
@@ -276,13 +293,13 @@ namespace Tetrage.Managers
             // ActionAwaiter を破棄
             _actionAwaiter?.Dispose();
 
-            if (_gameInterrupted)
+            if (_isGameInterrupted)
             {
                 Debug.Log("Dealer: ゲームが途中中断されました");
             }
 
             // ゲームが途中中断されたかどうかをリセット
-            _gameInterrupted = false;
+            _isGameInterrupted = false;
 
             Debug.Log("Dealer: ゲームを終了しました");
         }

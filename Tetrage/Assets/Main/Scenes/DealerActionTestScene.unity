@@ -455,7 +455,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoStartTest: 1
-  testScenario: 2
+  testScenario: 3
   passActionDelay: 5
   playerCount: 2
   fixedPlayerIndex: 0
@@ -469,7 +469,7 @@ MonoBehaviour:
   enableAutoClickForScenario3: 0
   autoClickDelayForScenario3: 3
   fieldSetupComponent: {fileID: 1666381403}
-  scenario4Rounds: 3
+  scenario4Rounds: 4
   showDebugInfo: 1
   logLevel: 3
   enableDetailedStepInfo: 0

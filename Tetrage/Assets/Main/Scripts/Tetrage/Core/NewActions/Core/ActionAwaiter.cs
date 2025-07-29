@@ -19,8 +19,11 @@ namespace Tetrage.Core.Actions
         private ITimeoutHandler _timeoutHandler;
 
         private UniTaskCompletionSource<ActionResult> _completionSource;
-        private CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource _actionCts;
+        private CancellationTokenSource _timeoutCts; // タイムアウト専用のCancellationTokenSource
         private IPlayer _waitingPlayer;
+        private float _currentTimeoutSeconds; // 現在のタイムアウト時間
+        private bool _isWaiting; // 待機中かどうかのフラグ
         #endregion
 
         #region 公開プロパティ
@@ -28,7 +31,7 @@ namespace Tetrage.Core.Actions
         /// 現在の待機に関連するCancellationToken
         /// 子タスクはこのトークンを使用してキャンセル伝播を受け取る
         /// </summary>
-        public CancellationToken CurrentCancellationToken => _cancellationTokenSource?.Token ?? CancellationToken.None;
+        public CancellationToken CurrentCancellationToken => _actionCts?.Token ?? CancellationToken.None;
 
         /// <summary>
         /// 現在の待機タスク（読み取り専用）
@@ -85,10 +88,12 @@ namespace Tetrage.Core.Actions
             CancelWaiting();
 
             _waitingPlayer = player;
+            _currentTimeoutSeconds = timeoutSeconds;
+            _isWaiting = true;
             _completionSource = new UniTaskCompletionSource<ActionResult>();
-            _cancellationTokenSource = new CancellationTokenSource();
+            _actionCts = new CancellationTokenSource();
 
-            var token = _cancellationTokenSource.Token;
+            var token = _actionCts.Token;
 
             try
             {
@@ -96,29 +101,19 @@ namespace Tetrage.Core.Actions
 
                 if (timeoutSeconds > 0)
                 {
-                    return await _completionSource.Task
-                        .Timeout(TimeSpan.FromSeconds(timeoutSeconds))
-                        .AttachExternalCancellation(token);
+                    // タイムアウト用のCancellationTokenSourceを作成
+                    _timeoutCts = new CancellationTokenSource();
+
+                    // タイムアウトタスクを開始
+                    StartTimeoutTask(timeoutSeconds);
+
+                    // CompletionSourceのタスクのみを待機（タイムアウトは独自実装で処理）
+                    return await _completionSource.Task.AttachExternalCancellation(token);
                 }
                 else
                 {
                     return await _completionSource.Task.AttachExternalCancellation(token);
                 }
-            }
-            catch (TimeoutException)    // タイムアウトの時にここに入る
-            {
-                Debug.Log($"ActionAwaiter: タイムアウト発生 - プレイヤー {_waitingPlayer.PlayerId}");
-
-                // タイムアウト時はCancellationTokenをキャンセルして子タスクも停止させる
-                if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    _cancellationTokenSource.Cancel();
-                    Debug.Log("ActionAwaiter: タイムアウト時にCancellationTokenをキャンセルしました");
-                }
-
-                var timeoutContext = new TimeoutContext(_waitingPlayer, timeoutSeconds, ActionResult.Failure("TIMEOUT"));
-                await _timeoutHandler.HandleTimeoutAsync(timeoutContext);
-                return timeoutContext.OriginalResult;
             }
             catch (OperationCanceledException)    // キャンセルの時にここに入る
             {
@@ -137,9 +132,9 @@ namespace Tetrage.Core.Actions
         /// </summary>
         public void CancelWaiting()
         {
-            if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+            if (_actionCts != null && !_actionCts.Token.IsCancellationRequested)
             {
-                _cancellationTokenSource.Cancel();
+                _actionCts.Cancel();
             }
 
             _completionSource?.TrySetCanceled();
@@ -152,6 +147,80 @@ namespace Tetrage.Core.Actions
         public void SetTimeoutHandler(ITimeoutHandler timeoutHandler)
         {
             _timeoutHandler = timeoutHandler ?? throw new ArgumentNullException(nameof(timeoutHandler));
+        }
+
+        /// <summary>
+        /// 現在の待機中のタイムアウト時間をリセットします
+        /// UI入力が発生した時などに呼び出すことで、タイムアウト時間を延長できます
+        /// </summary>
+        public void ResetTimeout()
+        {
+            if (!_isWaiting || _currentTimeoutSeconds <= 0)
+            {
+                Debug.Log("ActionAwaiter: タイムアウトリセット要求 - 待機中でないか、タイムアウト設定されていません");
+                return;
+            }
+
+            Debug.Log($"ActionAwaiter: タイムアウトをリセットします ({_currentTimeoutSeconds}秒)");
+
+            // 現在のタイムアウト用CancellationTokenをキャンセル
+            _timeoutCts?.Cancel();
+            _timeoutCts?.Dispose();
+
+            // 新しいタイムアウト用CancellationTokenSourceを作成
+            _timeoutCts = new CancellationTokenSource();
+
+            // 新しいタイムアウトタスクを開始
+            StartTimeoutTask(_currentTimeoutSeconds);
+        }
+
+        /// <summary>
+        /// タイムアウトタスクを開始
+        /// </summary>
+        private void StartTimeoutTask(float timeoutSeconds)
+        {
+            if (_timeoutCts == null) return;
+
+            var timeoutTask = UniTask.Delay(TimeSpan.FromSeconds(timeoutSeconds), cancellationToken: _timeoutCts.Token)
+                .ContinueWith(() => HandleTimeoutAsync().Forget()); // タイムアウト時にタイムアウト処理を実行
+
+        }
+
+        /// <summary>
+        /// タイムアウト発生時の処理
+        /// </summary>
+        private async UniTaskVoid HandleTimeoutAsync()
+        {
+            if (!_isWaiting || _completionSource == null) return; // 待機中でないか、CompletionSourceがnullの場合は処理しない
+
+            Debug.Log($"ActionAwaiter: タイムアウト発生 - プレイヤー {_waitingPlayer?.PlayerId}");
+
+            // CancellationTokenをキャンセルして子タスクも停止させる
+            if (_actionCts != null && !_actionCts.Token.IsCancellationRequested)
+            {
+                _actionCts.Cancel();
+                Debug.Log("ActionAwaiter: タイムアウト時にCancellationTokenをキャンセルしました");
+            }
+
+            // タイムアウトにまつわる処理を実行
+            var timeoutContext = new TimeoutContext(_waitingPlayer, _currentTimeoutSeconds, ActionResult.Failure("TIMEOUT"));
+            var timeoutResult = await _timeoutHandler.HandleTimeoutAsync(timeoutContext);
+
+            // TimeoutHandleResultに基づいてActionResultを作成
+            ActionResult finalResult;
+            if (timeoutResult.ShouldContinueGame)
+            {
+                // ゲーム継続の場合は元のタイムアウト結果を返す
+                finalResult = timeoutContext.OriginalResult;
+            }
+            else
+            {
+                // ゲーム終了の場合は特別なActionResultを作成
+                finalResult = ActionResult.Failure("GAME_END_BY_TIMEOUT", additionalData: new { TimeoutResult = timeoutResult });
+            }
+
+            // CompletionSourceに結果を設定
+            _completionSource?.TrySetResult(finalResult);
         }
         #endregion
 
@@ -177,10 +246,15 @@ namespace Tetrage.Core.Actions
         #region リソース解放
         private void Cleanup()
         {
+            _isWaiting = false;
+            _currentTimeoutSeconds = 0;
             _waitingPlayer = null;
             _completionSource = null;
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
+            _actionCts?.Dispose();
+            _actionCts = null;
+            _timeoutCts?.Cancel();
+            _timeoutCts?.Dispose();
+            _timeoutCts = null;
         }
 
         public void Dispose()
