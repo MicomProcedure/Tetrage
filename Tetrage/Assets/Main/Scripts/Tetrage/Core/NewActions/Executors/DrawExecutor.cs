@@ -93,9 +93,6 @@ namespace Tetrage.Core.Actions
             System.Action<Card> cardClickedHandler = null;
             cardClickedHandler = (clickedCard) =>
             {
-                // タイムアウトをリセット（UI入力があったため）
-                actionAwaiter?.ResetTimeout();
-
                 // Tmpにあるカードがクリックされた場合のみ処理
                 if (tmp.Contains(clickedCard))
                 {

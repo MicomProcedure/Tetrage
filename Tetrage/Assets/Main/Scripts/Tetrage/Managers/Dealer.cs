@@ -4,12 +4,8 @@ using System.Threading;
 using UnityEngine;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
-using Tetrage.Core.DTO;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
-using Tetrage.Factories;
-using Tetrage.Services;
-using System.Threading.Tasks;
 
 
 /// <summary>
@@ -67,13 +63,6 @@ namespace Tetrage.Managers
         private ActionAwaiter _actionAwaiter;   // ActionAwaiter に責任を委譲
         private ActionManager _actionManager;
 
-        // タイムアウト処理用
-        private ITimeoutHandler _timeoutHandler; // ActionAwaiter へ委譲予定
-
-        // タイムアウトフラグ
-        private bool _doTimeout = false;
-        public bool DoTimeout { get { return _doTimeout; } }
-
         // ゲーム終了フラグ
         private bool _isGameFinished = false;
         public bool IsGameFinished { get { return _isGameFinished; } }
@@ -100,28 +89,8 @@ namespace Tetrage.Managers
             _dealerStrategy = dealerStrategy;
 
             _roundCount = 0; // 初期化
-            _timeoutHandler = CreateDefaultTimeoutHandler();
             InitializeActionSystem();
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
-        }
-
-        /// <summary>
-        /// デフォルトのタイムアウトハンドラーを作成
-        /// </summary>
-        private ITimeoutHandler CreateDefaultTimeoutHandler()
-        {
-            // ファクトリーを使用してゲーム終了ハンドラーを作成
-            return TimeoutHandlerFactory.CreateGameEnd();
-        }
-
-        /// <summary>
-        /// タイムアウトハンドラーを設定する
-        /// </summary>
-        public void SetTimeoutHandler(ITimeoutHandler timeoutHandler)
-        {
-            _timeoutHandler = timeoutHandler ?? CreateDefaultTimeoutHandler();
-            _actionAwaiter?.SetTimeoutHandler(_timeoutHandler);
-            Debug.Log($"Dealer: タイムアウトハンドラーを変更しました - {_timeoutHandler.GetType().Name}");
         }
 
         /// <summary>
@@ -141,11 +110,6 @@ namespace Tetrage.Managers
                 Debug.Log($"Dealer: 最大ラウンド数を{_maxRounds}に設定しました");
             }
         }
-
-        #endregion
-
-        #region 初期化メソッド
-
 
         #endregion
 
@@ -175,21 +139,20 @@ namespace Tetrage.Managers
         /// </summary>
         public void FirstDeal()
         {
-            #region デッキ準備 & 配布
+            // デッキ準備 & 配布
             // 山札シャッフル
             _dealerStrategy.ShuffleDeck(_stage.Stack);
 
             // 初期ターゲットカード設定
             _dealerStrategy.SetupInitialTargets(_players, _stage.Stack);
-            #endregion
 
-            #region ターン順序初期化
+            // ターン順序初期化
             _dealerStrategy.ResetTurnOrder(_players);
 
             // 最初のプレイヤーを決定
             _currentPlayer = _dealerStrategy.DecideFirstPlayer(_players);
             Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {_currentPlayer.PlayerId}");
-            #endregion
+
 
         }
 
@@ -198,17 +161,18 @@ namespace Tetrage.Managers
         /// <summary>
         /// 勝敗が決まるまでラウンドを繰り返すメインループ
         /// </summary>
-        /// <param name="cancellationToken">外部からゲーム全体をキャンセルしたい場合のトークン</param>
-        public async UniTask StartRoundLoopAsync(float timeoutSeconds = 0, CancellationToken cancellationToken = default)
+        /// <param name="gameCts">外部からゲーム全体をキャンセルしたい場合のトークン</param>
+        public async UniTask StartRoundLoopAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
-            while (!_isGameFinished && !cancellationToken.IsCancellationRequested)
+            // ゲーム終了かキャンセルされるまでラウンドのループを繰り返す
+            while (!_isGameFinished && !gameCts.IsCancellationRequested)
             {
-
+                // 単一ラウンドを開始
                 try
                 {
-                    await StartSingleRoundAsync(timeoutSeconds, cancellationToken);
+                    await StartSingleRoundAsync(timeoutSeconds, gameCts);
                 }
-                catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException ex) when (gameCts.IsCancellationRequested)
                 {
                     Debug.Log($"Dealer: ラウンドループがキャンセルされました: {ex.Message}");
                     _isGameInterrupted = true;
@@ -226,11 +190,10 @@ namespace Tetrage.Managers
         /// <summary>
         /// 単一ラウンドを処理
         /// </summary>
-        public async UniTask StartSingleRoundAsync(float timeoutSeconds = 0, CancellationToken cancellationToken = default)
+        public async UniTask StartSingleRoundAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            // ラウンド開始イベントを通知
             OnRoundStart();
-
-            _doTimeout = timeoutSeconds > 0;
 
             try
             {
@@ -238,25 +201,16 @@ namespace Tetrage.Managers
                 if (!ValidateCurrentPlayer()) return;
 
                 // プレイヤーのアクションを待つ
-                // タイムアウト時は自動で次のプレイヤーに移行する
-                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer, _doTimeout, timeoutSeconds: timeoutSeconds);
+                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer);
 
                 if (!actionResult.IsSuccess)
                 {
                     Debug.LogWarning($"Dealer: プレイヤーアクション失敗 - {actionResult.ErrorMessage}");
-
-                    // タイムアウトによるゲーム終了かチェック
-                    if (actionResult.ErrorMessage == "GAME_END_BY_TIMEOUT")
-                    {
-                        Debug.Log("Dealer: タイムアウトによるゲーム終了が指示されました");
-                        _isGameFinished = true;
-                        return;
-                    }
                 }
 
                 actionResult.Log("Dealer: プレイヤーアクション結果");
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (gameCts.IsCancellationRequested)
             {
                 Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションがキャンセルされました");
                 _isGameFinished = true;
@@ -347,7 +301,7 @@ namespace Tetrage.Managers
         #endregion
 
 
-        #region プレイヤーアクション待機システム
+        #region アクション待機システム
 
         /// <summary>
         /// ActionSystemを初期化する
@@ -360,8 +314,8 @@ namespace Tetrage.Managers
             _actionManager = ActionSystemInitializer.GetActionManager();
             if (_actionManager != null)
             {
-                // ActionAwaiter を構築
-                _actionAwaiter = new ActionAwaiter(_actionManager, _timeoutHandler);
+                // ActionAwaiter を構築（タイムアウトハンドラーなし）
+                _actionAwaiter = new ActionAwaiter(_actionManager);
 
                 // ActionManagerにActionAwaiterを設定
                 _actionManager.SetActionAwaiter(_actionAwaiter);
