@@ -17,8 +17,12 @@ namespace Tetrage.Managers
     {
 
         #region イベント
+        public event Action TurnStart;
+        public event Action TurnEnd;
         public event Action RoundStart;
         public event Action RoundEnd;
+        public event Action GameStart;
+        public event Action GameEnd;
 
         #endregion
 
@@ -50,13 +54,19 @@ namespace Tetrage.Managers
         /// <summary>
         /// ラウンド数
         /// </summary>
-        private int _roundCount;
+        private int _roundCount = 0;
         public int RoundCount { get { return _roundCount; } }
+
+        /// <summary>
+        /// ターン数
+        /// </summary>
+        private int _turnCount = 0;
+        public int TurnCount { get { return _turnCount; } } 
 
         /// <summary>
         /// 最大ラウンド数（デフォルト: 10）
         /// </summary>
-        private int _maxRounds = 10;
+        private int _maxRounds = 100;
         public int MaxRounds { get { return _maxRounds; } }
 
         // プレイヤーアクション待機用
@@ -89,6 +99,7 @@ namespace Tetrage.Managers
             _dealerStrategy = dealerStrategy;
 
             _roundCount = 0; // 初期化
+            _turnCount = 0; // 初期化
             InitializeActionSystem();
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
         }
@@ -121,13 +132,16 @@ namespace Tetrage.Managers
             ValidateStartGame();
             ValidateStrategy();
 
+            // 初めてラウンドを開始する際の処理（山札シャッフル、ターゲットカード設定、ターン順序初期化、最初のプレイヤーを決定）
             FirstDeal();
 
-            Debug.Log("Dealer: ラウンドを開始します");
+            // ゲーム開始イベントを通知
+            OnGameStart();
 
+            // ゲーム終了フラグをリセット
             _isGameFinished = false;
 
-            await StartRoundLoopAsync(timeoutSeconds);
+            await StartTurnLoopAsync(timeoutSeconds);
 
             Debug.Log("Dealer: ゲームが終了します");
 
@@ -162,7 +176,7 @@ namespace Tetrage.Managers
         /// 勝敗が決まるまでラウンドを繰り返すメインループ
         /// </summary>
         /// <param name="gameCts">外部からゲーム全体をキャンセルしたい場合のトークン</param>
-        public async UniTask StartRoundLoopAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
+        public async UniTask StartTurnLoopAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
             // ゲーム終了かキャンセルされるまでラウンドのループを繰り返す
             while (!_isGameFinished && !gameCts.IsCancellationRequested)
@@ -170,7 +184,7 @@ namespace Tetrage.Managers
                 // 単一ラウンドを開始
                 try
                 {
-                    await StartSingleRoundAsync(timeoutSeconds, gameCts);
+                    await StartSingleTurnAsync(timeoutSeconds, gameCts);
                 }
                 catch (OperationCanceledException ex) when (gameCts.IsCancellationRequested)
                 {
@@ -190,10 +204,10 @@ namespace Tetrage.Managers
         /// <summary>
         /// 単一ラウンドを処理
         /// </summary>
-        public async UniTask StartSingleRoundAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
+        public async UniTask StartSingleTurnAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
             // ラウンド開始イベントを通知
-            OnRoundStart();
+            OnTurnStart();
 
             try
             {
@@ -222,7 +236,7 @@ namespace Tetrage.Managers
                 _isGameFinished = true;
             }
 
-            OnRoundEnd();
+            OnTurnEnd();
 
             // 次のプレイヤーへ
             if (!_isGameFinished && _currentPlayer != null)
@@ -238,7 +252,7 @@ namespace Tetrage.Managers
             CancelCurrentPlayerAction();
 
             // ラウンド終了イベントを通知
-            OnRoundEnd();
+            OnTurnEnd();
 
             // 状態をリセット
             _currentPlayer = null;
@@ -258,18 +272,8 @@ namespace Tetrage.Managers
             Debug.Log("Dealer: ゲームを終了しました");
         }
 
-        public void OnRoundStart()
-        {
-            _roundCount++;
-            Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
-            RoundStart?.Invoke();
-        }
 
-        public void OnRoundEnd()
-        {
-            Debug.Log($"Dealer: ラウンド {_roundCount} を終了します");
-            RoundEnd?.Invoke();
-        }
+
 
 
         /// <summary>
@@ -288,18 +292,52 @@ namespace Tetrage.Managers
         }
 
         // 既存インターフェース互換のオーバーロード
-        public async UniTask StartRoundLoopAsync()
+        public async UniTask StartTurnLoopAsync()
         {
-            await StartRoundLoopAsync(default);
+            await StartTurnLoopAsync(default);
         }
 
-        public async UniTask StartSingleRoundAsync()
+        public async UniTask StartSingleTurnAsync()
         {
-            await StartSingleRoundAsync(default);
+            await StartSingleTurnAsync(default);
         }
 
         #endregion
 
+        #region イベント通知
+        public void OnTurnStart()
+        {
+            _turnCount++;
+            Debug.Log($"Dealer: ターン {_turnCount} を開始します");
+            TurnStart?.Invoke();
+        }
+        public void OnTurnEnd()
+        {
+            TurnEnd?.Invoke();
+        }
+
+        public void OnRoundStart()
+        {
+            _roundCount++;
+            Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
+            RoundStart?.Invoke();
+        }
+        public void OnRoundEnd()
+        {
+            RoundEnd?.Invoke();
+        }
+
+        public void OnGameStart()
+        {
+            GameStart?.Invoke();
+        }
+
+        public void OnGameEnd()
+        {
+            GameEnd?.Invoke();
+        }
+
+        #endregion
 
         #region アクション待機システム
 
