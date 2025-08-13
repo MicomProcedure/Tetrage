@@ -251,7 +251,7 @@ namespace Tetrage.Managers
             // 進行中のプレイヤーアクションをキャンセル
             CancelCurrentPlayerAction();
 
-            // ラウンド終了イベントを通知
+            // ターン終了イベントを通知
             OnTurnEnd();
 
             // 状態をリセット

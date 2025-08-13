@@ -17,8 +17,8 @@ namespace Tetrage.Managers
 
         #region 設定コンポーネント
         [Header("Field Setup Configuration")]
-        [SerializeField] private FieldSetupComponent fieldSetupComponent;
-        [SerializeField] private GameMode gameMode = GameMode.Debug;
+        [SerializeField] private FieldSetupComponent _fieldSetupComponent;
+        [SerializeField] private GameMode _gameMode = GameMode.Debug;
 
         #endregion
 
@@ -47,11 +47,6 @@ namespace Tetrage.Managers
             }
         }
 
-        /// <summary>セットアップ済みのStage</summary>
-        public Stage Stage => _fieldSetupManager?.Stage;
-
-        /// <summary>セットアップ済みのPlayers</summary>
-        public IReadOnlyList<IPlayer> Players => _fieldSetupManager?.Players;
 
         /// <summary>セットアップ済みのDealerStrategy</summary>
         public IDealerStrategy DealerStrategy { get; private set; }
@@ -81,7 +76,7 @@ namespace Tetrage.Managers
                 _fieldSetupManager.SetupField(participantInfoList);
 
                 // 3. Dealerの生成と初期化
-                _dealer = DealerFactory.CreateDealer(_fieldSetupManager, gameMode);
+                _dealer = DealerFactory.CreateDealer(_fieldSetupManager, _gameMode);
 
                 _isInitialized = true;
                 Debug.Log("GameManager: 初期化が完了しました");
@@ -99,14 +94,14 @@ namespace Tetrage.Managers
         /// <param name="participantCount">参加者数</param>
         private FieldSetupManager CreateFieldSetupManager(int participantCount)
         {
-            if (fieldSetupComponent == null)
+            if (_fieldSetupComponent == null)
             {
                 throw new System.InvalidOperationException("FieldSetupComponent が見つかりません。Inspector で設定してください。");
             }
 
             // FieldSetupComponentから検証済みの設定を取得
-            var settings = fieldSetupComponent.GetValidatedFieldSetupSettings(participantCount);
-            var dependencies = fieldSetupComponent.CreateFieldSetupDependencies();
+            var settings = _fieldSetupComponent.GetValidatedFieldSetupSettings(participantCount);
+            var dependencies = _fieldSetupComponent.CreateFieldSetupDependencies();
 
             return new FieldSetupManager(settings, dependencies);
         }
