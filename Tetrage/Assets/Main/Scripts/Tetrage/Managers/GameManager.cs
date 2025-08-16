@@ -53,13 +53,18 @@ namespace Tetrage.Managers
 
         #endregion
 
+        #region ライフサイクル
+
+
+        #endregion
+
         #region 初期化メソッド
         /// <summary>
         /// GameManagerの初期化
         /// </summary>
         /// <param name="participantInfoList">参加者情報リスト</param>
         /// <param name="dealerStrategy">DealerStrategy</param>
-        public void Initialize(List<PlayerInfo> participantInfoList) 
+        public void Initialize(List<PlayerInfo> participantInfoList)
         {
             if (_isInitialized)
             {
@@ -141,6 +146,7 @@ namespace Tetrage.Managers
         /// <summary>
         /// GameManagerをリセットする（テスト用）
         /// </summary>
+        [ContextMenu("Reset")]
         public void Reset()
         {
             _dealer = null;

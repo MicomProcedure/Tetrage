@@ -14,6 +14,10 @@ namespace Tetrage.Core.Actions
         private static IGameContextProvider _gameContextProvider;
         private static IRoundManager _roundManager;
         private static bool _isInitialized = false;
+        /// <summary>
+        /// アクションシステムが初期化されているかチェック
+        /// </summary>
+        public static bool IsInitialized => _isInitialized;
 
         /// <summary>
         /// Actionシステムを初期化する
@@ -57,10 +61,7 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        /// <summary>
-        /// アクションシステムが初期化されているかチェック
-        /// </summary>
-        public static bool IsInitialized => _isInitialized;
+
 
         /// <summary>
         /// 現在のActionManagerインスタンスを取得
