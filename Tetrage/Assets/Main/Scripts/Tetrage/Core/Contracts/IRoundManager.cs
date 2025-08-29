@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace Tetrage.Core.Contracts
@@ -15,7 +16,7 @@ namespace Tetrage.Core.Contracts
         public int RoundCount { get; }
         IDealerStrategy DealerStrategy { get; }
 
-        UniTask StartGameAsync(float timeoutSeconds = 0);
+        UniTask StartGameAsync(float timeoutSeconds = 0, CancellationToken gameCts = default);
         void EndGame();
         UniTask StartTurnLoopAsync();
         UniTask StartSingleTurnAsync();

@@ -36,6 +36,12 @@ public class GameManagerDebugEntry : MonoBehaviour
         await _gameManager.StartGame();
     }
 
+    [ContextMenu("StopGame")]
+    void StopGame()
+    {
+        _gameManager.StopGame();
+    }
+
     [ContextMenu("Reset")]
     void Reset()
     {

@@ -1,12 +1,10 @@
 using UnityEngine;
 using Tetrage.Core.Enums;
 using Tetrage.Core.DTO;
-using Tetrage.Core.Contracts;
-using Tetrage.Models;
 using Tetrage.Components;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
+using System.Threading;
 
 namespace Tetrage.Managers
 {
@@ -30,6 +28,8 @@ namespace Tetrage.Managers
 
         #region 状態管理
         private bool _isInitialized = false;
+        private bool _isGameRunning = false;
+        private CancellationTokenSource _gameCts;
 
         #endregion
 
@@ -47,9 +47,11 @@ namespace Tetrage.Managers
             }
         }
 
+        /// <summary>ゲーム実行中かどうか</summary>
+        public bool IsGameRunning => _isGameRunning;
 
-        /// <summary>セットアップ済みのDealerStrategy</summary>
-        public IDealerStrategy DealerStrategy { get; private set; }
+        /// <summary>初期化済みかどうか</summary>
+        public bool IsInitialized => _isInitialized;
 
         #endregion
 
@@ -84,6 +86,9 @@ namespace Tetrage.Managers
                 _dealer = DealerFactory.CreateDealer(_fieldSetupManager, _gameMode);
 
                 _isInitialized = true;
+
+                EventSubscribe();
+
                 Debug.Log("GameManager: 初期化が完了しました");
             }
             catch (System.Exception ex)
@@ -111,6 +116,19 @@ namespace Tetrage.Managers
             return new FieldSetupManager(settings, dependencies);
         }
 
+        private void EventSubscribe()
+        {
+            _dealer.GameEnd += OnGameEnd;
+        }
+
+        private void EventUnsubscribe()
+        {
+            if (_dealer != null)
+            {
+                _dealer.GameEnd -= OnGameEnd;
+            }
+        }
+
 
         #endregion
 
@@ -123,17 +141,45 @@ namespace Tetrage.Managers
                 return;
             }
 
+            if (_isGameRunning)
+            {
+                Debug.LogWarning("GameManager: ゲームが既に実行中です");
+                return;
+            }
+
             try
             {
-                await _dealer.StartGameAsync();
-                Debug.Log("GameManager: ゲームが開始されました");
+                _isGameRunning = true;
+                _gameCts = new CancellationTokenSource();
+                
+                await _dealer.StartGameAsync(0f, _gameCts.Token);
+                Debug.Log("GameManager: ゲームが正常に終了しました");
+            }
+            catch (System.OperationCanceledException)
+            {
+                Debug.Log("GameManager: ゲームがキャンセルされました");
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"GameManager: ゲーム開始中にエラーが発生: {ex.Message}");
+                Debug.LogError($"GameManager: ゲーム実行中にエラーが発生: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                _isGameRunning = false;
             }
         }
 
+        #endregion
+
+        #region イベントハンドラ
+
+        private void OnGameEnd()
+        {
+            Debug.Log("GameManager: ゲーム終了イベントを受信");
+            _isGameRunning = false;
+            EventUnsubscribe();
+        }
 
         #endregion
 
@@ -144,15 +190,49 @@ namespace Tetrage.Managers
         }
 
         /// <summary>
-        /// GameManagerをリセットする（テスト用）
+        /// ゲームを停止してGameManagerをリセットする
         /// </summary>
-        [ContextMenu("Reset")]
-        public void Reset()
+        [ContextMenu("Stop and Reset")]
+        public void StopAndReset()
         {
+            Debug.Log("GameManager: 停止とリセットを実行");
+            
+            // ゲーム停止
+            _gameCts?.Cancel();
+            
+            // イベント購読解除
+            EventUnsubscribe();
+            
+            // リソース破棄
+            _gameCts?.Dispose();
+            _gameCts = null;
+            
+            // 状態リセット
             _dealer = null;
             _fieldSetupManager = null;
             _isInitialized = false;
+            _isGameRunning = false;
+            
+            Debug.Log("GameManager: 停止とリセット完了");
         }
+
+        /// <summary>
+        /// StopAndResetの別名（後方互換性）
+        /// </summary>
+        [ContextMenu("Reset")]
+        public void Reset() => StopAndReset();
+
+        /// <summary>
+        /// StopGameの実装をStopAndResetに統一
+        /// </summary>
+        public void StopGame() => StopAndReset();
+
+        public void OnDestroy()
+        {
+            Debug.Log("GameManager: OnDestroy実行");
+            StopAndReset();
+        }
+
         #endregion
     }
 }

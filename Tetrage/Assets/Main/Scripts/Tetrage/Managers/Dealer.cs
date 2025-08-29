@@ -126,7 +126,7 @@ namespace Tetrage.Managers
 
         #region ラウンド管理
 
-        public async UniTask StartGameAsync(float timeoutSeconds = 0)
+        public async UniTask StartGameAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
             // 前提条件を検証
             ValidateStartGame();
@@ -141,7 +141,7 @@ namespace Tetrage.Managers
             // ゲーム終了フラグをリセット
             _isGameFinished = false;
 
-            await StartTurnLoopAsync(timeoutSeconds);
+            await StartTurnLoopAsync(timeoutSeconds, gameCts);
 
             Debug.Log("Dealer: ゲームが終了します");
 
@@ -268,6 +268,8 @@ namespace Tetrage.Managers
 
             // ゲームが途中中断されたかどうかをリセット
             _isGameInterrupted = false;
+
+            OnGameEnd(); // ゲーム終了イベントを通知
 
             Debug.Log("Dealer: ゲームを終了しました");
         }
