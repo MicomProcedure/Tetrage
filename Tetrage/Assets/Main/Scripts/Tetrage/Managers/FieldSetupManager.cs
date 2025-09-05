@@ -32,6 +32,7 @@ namespace Tetrage.Managers
                 return _players;
             }
         }
+        
         // ステージのインスタンスを取得可能なプロパティ
         public Stage Stage
         {
@@ -45,9 +46,10 @@ namespace Tetrage.Managers
             }
         }
 
+
+
         // フィールドのセットアップが完了したかどうかを示すフラグ
         private bool _isSetup = false;
-
 
         /* --- コンストラクタ --- */
 
@@ -65,7 +67,7 @@ namespace Tetrage.Managers
         /// <summary>
         /// フィールドのセットアップを行う。動作後、StageとPlayersのプロパティが有効になります。
         /// </summary>
-        /// <param name="participantInfoList">参加者情報リスト（Dealerから取得）</param>
+        /// <param name="participantInfoList">参加者情報リスト</param>
         public void SetupField(List<PlayerInfo> participantInfoList)
         {
             if (participantInfoList == null || participantInfoList.Count == 0)
@@ -75,9 +77,12 @@ namespace Tetrage.Managers
 
             try
             {
+                // フィールド要素の構築
                 _stage = SetupStage();
                 _players = SetupPlayers(participantInfoList);
+                
                 _isSetup = true;
+                Debug.Log("FieldSetupManager: フィールドのセットアップが完了しました");
             }
             catch (Exception e)
             {
@@ -122,7 +127,7 @@ namespace Tetrage.Managers
         /// <summary>
         /// プレイヤーを動的参加者情報に基づいてセットアップ
         /// </summary>
-        /// <param name="participantInfoList">Dealerから取得した参加者情報</param>
+        /// <param name="participantInfoList">参加者情報</param>
         private List<IPlayer> SetupPlayers(List<PlayerInfo> participantInfoList)
         {
             // return予定のプレイヤーリストを作成

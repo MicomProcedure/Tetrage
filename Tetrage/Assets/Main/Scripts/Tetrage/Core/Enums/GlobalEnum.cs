@@ -10,6 +10,12 @@ namespace Tetrage.Core.Enums
         Ending // 勝敗判定・結果表示フェーズ
     }
 
+    public enum GameMode
+    {
+        Debug,
+        Release,
+    }
+
     /// <summary>
     /// カードのスートを表す列挙型
     /// </summary>
@@ -64,7 +70,12 @@ namespace Tetrage.Core.Enums
         /// <summary>
         /// チェックアクション
         /// </summary>
-        Check
+        Check,
+
+        /// <summary>
+        /// 何もしないアクション（パス）
+        /// </summary>
+        Pass
     }
 
 }

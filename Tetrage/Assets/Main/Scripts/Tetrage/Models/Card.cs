@@ -1,8 +1,6 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using System;
 using Tetrage.Core.Enums;
-using Tetrage.Core.Contracts;
 
 namespace Tetrage.Models
 {
@@ -65,7 +63,7 @@ namespace Tetrage.Models
             }
         }
 
-        public bool CanFlip { get; set; } = true;
+        public bool CanFlip { get; set; } = false;
 
         public event Action<Card> CardChanged;
 
@@ -103,6 +101,11 @@ namespace Tetrage.Models
         public void Unhighlight()
         {
             IsHighlighted = false;
+        }
+
+        public override string ToString()
+        {
+            return $"{Suit} {Number}";
         }
     }
 }

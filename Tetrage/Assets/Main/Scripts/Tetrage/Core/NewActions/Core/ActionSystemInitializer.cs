@@ -1,5 +1,6 @@
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Managers;
 using UnityEngine;
 
 namespace Tetrage.Core.Actions
@@ -7,28 +8,23 @@ namespace Tetrage.Core.Actions
     /// <summary>
     /// アクションシステムの初期化を担当するクラス
     /// </summary>
-    public class ActionSystemInitializer : MonoBehaviour
+    public static class ActionSystemInitializer
     {
-        [SerializeField] private bool _initializeOnAwake = true;
-
-        private ActionManager _actionManager;
-        private IGameContextProvider _gameContextProvider;
-        private bool _isInitialized = false;
-
-        private void Awake()
-        {
-            if (_initializeOnAwake)
-            {
-                InitializeActionSystem();
-            }
-        }
+        private static ActionManager _actionManager;
+        private static IGameContextProvider _gameContextProvider;
+        private static IRoundManager _roundManager;
+        private static bool _isInitialized = false;
+        /// <summary>
+        /// アクションシステムが初期化されているかチェック
+        /// </summary>
+        public static bool IsInitialized => _isInitialized;
 
         /// <summary>
         /// Actionシステムを初期化する
         /// </summary>
-        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は Dealerインスタンスを使用）</param>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（必須）</param>
         /// <param name="forceReinitialize">強制的に再初期化するかどうか</param>
-        public void InitializeActionSystem(IGameContextProvider gameContextProvider = null, bool forceReinitialize = false)
+        public static void InitializeActionSystem(Dealer dealer, bool forceReinitialize = false)
         {
             if (_isInitialized && !forceReinitialize)
             {
@@ -36,22 +32,22 @@ namespace Tetrage.Core.Actions
                 return;
             }
 
-            gameContextProvider ??= FindGameContextProvider();
-
-            if (gameContextProvider == null)
+            if (dealer == null)
             {
-                Debug.LogError("GameContextProviderが見つかりません。Dealerインスタンスが適切に設定されているか確認してください。");
+                Debug.LogError("Dealerが指定されていません。");
                 return;
             }
 
             try
             {
                 // GameContextProviderの保存
-                _gameContextProvider = gameContextProvider;
+                _gameContextProvider = dealer;
+                _roundManager = dealer;
 
                 // ActionManagerの初期化
                 _actionManager = ActionManager.Instance;
-                _actionManager.SetGameContextProvider(gameContextProvider);
+                _actionManager.SetGameContextProvider(_gameContextProvider);
+                _actionManager.SetRoundManager(_roundManager);
 
                 // 全てのアクションファクトリを登録
                 ActionFactory.RegisterAllActions(_actionManager);
@@ -65,48 +61,47 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        /// <summary>
-        /// GameContextProviderを自動検索
-        /// </summary>
-        private IGameContextProvider FindGameContextProvider()
-        {
-            // Dealerインスタンスを取得
-            var dealer = Tetrage.Managers.Dealer.Instance;
-            if (dealer != null)
-            {
-                return dealer;
-            }
 
-            // その他のIGameContextProvider実装をMonoBehaviourから探す
-            var providers = FindObjectsOfType<MonoBehaviour>();
-            foreach (var provider in providers)
-            {
-                if (provider is IGameContextProvider gameContextProvider)
-                {
-                    return gameContextProvider;
-                }
-            }
-
-            return null;
-        }
 
         /// <summary>
         /// 現在のActionManagerインスタンスを取得
         /// </summary>
-        public ActionManager GetActionManager()
+        public static ActionManager GetActionManager()
         {
             return _actionManager ?? ActionManager.Instance;
         }
 
         /// <summary>
-        /// Inspector上でアクションをテスト実行するためのメソッド
+        /// 現在のGameContextProviderを取得
         /// </summary>
-        [ContextMenu("Test Draw Action")]
-        public async void TestDrawAction()
+        public static IGameContextProvider GetGameContextProvider()
         {
-            if (_gameContextProvider?.CurrentPlayer != null)
+            return _gameContextProvider;
+        }
+
+        /// <summary>
+        /// アクションシステムをリセット（テスト用）
+        /// </summary>
+        public static void ResetActionSystem()
+        {
+            _actionManager = null;
+            _gameContextProvider = null;
+            _isInitialized = false;
+            Debug.Log("アクションシステムをリセットしました");
+        }
+
+        #region テスト用メソッド
+
+        /// <summary>
+        /// Draw アクションをテスト実行
+        /// </summary>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
+        public static async void TestDrawAction(IGameContextProvider gameContextProvider = null)
+        {
+            var provider = gameContextProvider ?? _gameContextProvider;
+            if (provider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync(ActionType.Draw, _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Draw, provider.CurrentPlayer);
                 Debug.Log($"Draw Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -115,12 +110,16 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        [ContextMenu("Test Open Action")]
-        public async void TestOpenAction()
+        /// <summary>
+        /// Open アクションをテスト実行
+        /// </summary>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
+        public static async void TestOpenAction(IGameContextProvider gameContextProvider = null)
         {
-            if (_gameContextProvider?.CurrentPlayer != null)
+            var provider = gameContextProvider ?? _gameContextProvider;
+            if (provider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync(ActionType.Open, _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Open, provider.CurrentPlayer);
                 Debug.Log($"Open Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -129,12 +128,16 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        [ContextMenu("Test Reach Action")]
-        public async void TestReachAction()
+        /// <summary>
+        /// Reach アクションをテスト実行
+        /// </summary>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
+        public static async void TestReachAction(IGameContextProvider gameContextProvider = null)
         {
-            if (_gameContextProvider?.CurrentPlayer != null)
+            var provider = gameContextProvider ?? _gameContextProvider;
+            if (provider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync(ActionType.Reach, _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Reach, provider.CurrentPlayer);
                 Debug.Log($"Reach Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -143,12 +146,16 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        [ContextMenu("Test Check Action")]
-        public async void TestCheckAction()
+        /// <summary>
+        /// Check アクションをテスト実行
+        /// </summary>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
+        public static async void TestCheckAction(IGameContextProvider gameContextProvider = null)
         {
-            if (_gameContextProvider?.CurrentPlayer != null)
+            var provider = gameContextProvider ?? _gameContextProvider;
+            if (provider?.CurrentPlayer != null)
             {
-                var result = await GetActionManager().ExecuteActionAsync(ActionType.Check, _gameContextProvider.CurrentPlayer);
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Check, provider.CurrentPlayer);
                 Debug.Log($"Check Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
             }
             else
@@ -156,5 +163,44 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("テスト実行用のプレイヤーが見つかりません");
             }
         }
+
+        /// <summary>
+        /// Pass アクションをテスト実行
+        /// </summary>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
+        public static async void TestPassAction(IGameContextProvider gameContextProvider = null)
+        {
+            var provider = gameContextProvider ?? _gameContextProvider;
+            if (provider?.CurrentPlayer != null)
+            {
+                var result = await GetActionManager().ExecuteActionAsync(ActionType.Pass, provider.CurrentPlayer);
+                Debug.Log($"Pass Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
+            }
+            else
+            {
+                Debug.LogWarning("テスト実行用のプレイヤーが見つかりません");
+            }
+        }
+
+        /// <summary>
+        /// 指定されたアクションタイプをテスト実行
+        /// </summary>
+        /// <param name="actionType">実行するアクションタイプ</param>
+        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
+        public static async void TestAction(ActionType actionType, IGameContextProvider gameContextProvider = null)
+        {
+            var provider = gameContextProvider ?? _gameContextProvider;
+            if (provider?.CurrentPlayer != null)
+            {
+                var result = await GetActionManager().ExecuteActionAsync(actionType, provider.CurrentPlayer);
+                Debug.Log($"{actionType} Action結果: {(result.IsSuccess ? "成功" : "失敗")} - {result.ErrorMessage}");
+            }
+            else
+            {
+                Debug.LogWarning("テスト実行用のプレイヤーが見つかりません");
+            }
+        }
+
+        #endregion
     }
 }

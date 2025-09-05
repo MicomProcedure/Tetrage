@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Tetrage.Actions;
+// using Tetrage.Actions;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Contracts;
 using System.Threading.Tasks;
@@ -72,17 +72,17 @@ namespace Tetrage.Models
         /// 指定されたアクションを実行します。
         /// </summary>
         /// <param name="action">実行するゲームアクション。</param>
-        public async UniTask PerformAction(GameAction action) // async UniTask に変更
-        {
-            // アクションが有効か検証
-            if (!action.Validate())
-            {
-                Debug.LogWarning($"Action '{action.GetType().Name}' for Player {UserId} is not valid.");
-                return;
-            }
+        // public async UniTask PerformAction(GameAction action) // async UniTask に変更
+        // {
+        //     // アクションが有効か検証
+        //     if (!action.Validate())
+        //     {
+        //         Debug.LogWarning($"Action '{action.GetType().Name}' for Player {UserId} is not valid.");
+        //         return;
+        //     }
 
-            // アクションの実行を待ちます
-            await action.Execute();
-        }
+        //     // アクションの実行を待ちます
+        //     await action.Execute();
+        // }
     }
 }

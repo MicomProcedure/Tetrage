@@ -12,53 +12,51 @@ namespace Tetrage.Core.Actions
     /// アクション管理・実行制御を担当するクラス（ActionType専用版）
     /// Singleton パターンで実装
     /// </summary>
-    public class ActionManager : MonoBehaviour
+    public class ActionManager
     {
         private static ActionManager _instance;
-        public static ActionManager Instance 
-        { 
-            get 
+        private static readonly object _lock = new object();
+
+        public static ActionManager Instance
+        {
+            get
             {
                 if (_instance == null)
                 {
-                    var gameObject = new GameObject("ActionManager");
-                    _instance = gameObject.AddComponent<ActionManager>();
-                    DontDestroyOnLoad(gameObject);
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new ActionManager();
+                        }
+                    }
                 }
                 return _instance;
             }
         }
-        
+
+        private ActionPanelController _actionPanelController;
+
         private readonly Dictionary<ActionType, Func<IPlayer, IGameContextProvider, IAction>> _actionFactories;
         private IGameContextProvider _gameContextProvider;
-        
+        private IRoundManager _roundManager;
+        private ActionAwaiter _actionAwaiter; // ActionAwaiterを追加
+
         /// <summary>
         /// アクション実行前イベント
         /// </summary>
         public event Action<IAction, IActionContext> OnActionStarted;
-        
+
         /// <summary>
         /// アクション実行完了イベント
         /// </summary>
         public event Action<IAction, IActionContext, ActionResult> OnActionCompleted;
-        
-        public ActionManager()
+
+        private ActionManager()
         {
             _actionFactories = new Dictionary<ActionType, Func<IPlayer, IGameContextProvider, IAction>>();
         }
-        
-        private void Awake()
-        {
-            if (_instance != null && _instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        
+
         /// <summary>
         /// ゲームコンテキストプロバイダーを設定
         /// </summary>
@@ -66,7 +64,45 @@ namespace Tetrage.Core.Actions
         {
             _gameContextProvider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
-        
+
+        public IGameContextProvider GetGameContextProvider()
+        {
+            if (_gameContextProvider == null)
+            {
+                Debug.LogError("GameContextProviderが設定されていません");
+                return null;
+            }
+            return _gameContextProvider;
+        }
+
+        public void SetRoundManager(IRoundManager roundManager)
+        {
+            _roundManager = roundManager ?? throw new ArgumentNullException(nameof(roundManager));
+        }
+
+        public IRoundManager GetRoundManager()
+        {
+            if (_roundManager == null)
+            {
+                Debug.LogError("RoundManagerが設定されていません");
+                return null;
+            }
+            return _roundManager;
+        }
+
+        /// <summary>
+        /// ActionAwaiterを設定
+        /// </summary>
+        public void SetActionAwaiter(ActionAwaiter actionAwaiter)
+        {
+            _actionAwaiter = actionAwaiter;
+        }
+
+        public ActionAwaiter GetActionAwaiter()
+        {
+            return _actionAwaiter;
+        }
+
         /// <summary>
         /// アクションファクトリを登録（ActionType版）
         /// </summary>
@@ -74,11 +110,11 @@ namespace Tetrage.Core.Actions
         {
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
-            
+
             _actionFactories[actionType] = factory;
             Debug.Log($"アクションファクトリを登録しました: {actionType}");
         }
-        
+
         /// <summary>
         /// アクションファクトリを登録（string版 - 後方互換性のため）
         /// </summary>
@@ -86,14 +122,14 @@ namespace Tetrage.Core.Actions
         {
             if (string.IsNullOrEmpty(actionId))
                 throw new ArgumentException("アクションIDは空にできません", nameof(actionId));
-            
+
             if (!actionId.IsValidActionType())
                 throw new ArgumentException($"無効なActionType: {actionId}", nameof(actionId));
-            
+
             var actionType = actionId.ToActionType();
             RegisterActionFactory(actionType, factory);
         }
-        
+
         /// <summary>
         /// 指定されたアクションを作成（ActionType版）
         /// </summary>
@@ -103,15 +139,15 @@ namespace Tetrage.Core.Actions
             {
                 throw new ArgumentException($"未登録のアクションタイプ: {actionType}");
             }
-            
+
             if (_gameContextProvider == null)
             {
                 throw new InvalidOperationException("GameContextProviderが設定されていません");
             }
-            
+
             return _actionFactories[actionType](requester, _gameContextProvider);
         }
-        
+
         /// <summary>
         /// 指定されたアクションを作成（string版 - 後方互換性のため）
         /// </summary>
@@ -119,14 +155,14 @@ namespace Tetrage.Core.Actions
         {
             if (string.IsNullOrEmpty(actionId))
                 throw new ArgumentException("アクションIDは空にできません", nameof(actionId));
-            
+
             if (!actionId.IsValidActionType())
                 throw new ArgumentException($"無効なActionType: {actionId}", nameof(actionId));
-            
+
             var actionType = actionId.ToActionType();
             return CreateAction(actionType, requester);
         }
-        
+
         /// <summary>
         /// アクションが実行可能かチェック（ActionType版）
         /// </summary>
@@ -135,7 +171,7 @@ namespace Tetrage.Core.Actions
             try
             {
                 var action = CreateAction(actionType, requester);
-                var context = new ActionContext(requester, _gameContextProvider);
+                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter);
                 return action.CanExecute(context);
             }
             catch (Exception ex)
@@ -144,19 +180,8 @@ namespace Tetrage.Core.Actions
                 return false;
             }
         }
-        
-        /// <summary>
-        /// アクションが実行可能かチェック（string版 - 後方互換性のため）
-        /// </summary>
-        public bool CanExecuteAction(string actionId, IPlayer requester)
-        {
-            if (string.IsNullOrEmpty(actionId) || !actionId.IsValidActionType())
-                return false;
-            
-            var actionType = actionId.ToActionType();
-            return CanExecuteAction(actionType, requester);
-        }
-        
+
+
         /// <summary>
         /// アクションを実行（ActionType版）
         /// </summary>
@@ -165,17 +190,17 @@ namespace Tetrage.Core.Actions
             try
             {
                 var action = CreateAction(actionType, requester);
-                var context = new ActionContext(requester, _gameContextProvider);
-                
+                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter);
+
                 // イベント発火
                 OnActionStarted?.Invoke(action, context);
-                
+
                 // アクション実行
                 var result = await action.ExecuteAsync(context);
-                
+
                 // イベント発火
                 OnActionCompleted?.Invoke(action, context, result);
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -184,22 +209,7 @@ namespace Tetrage.Core.Actions
                 return ActionResult.Failure($"アクション実行エラー: {ex.Message}");
             }
         }
-        
-        /// <summary>
-        /// アクションを実行（string版 - 後方互換性のため）
-        /// </summary>
-        public async UniTask<ActionResult> ExecuteActionAsync(string actionId, IPlayer requester)
-        {
-            if (string.IsNullOrEmpty(actionId))
-                return ActionResult.Failure("アクションIDが空です");
-            
-            if (!actionId.IsValidActionType())
-                return ActionResult.Failure($"無効なActionType: {actionId}");
-            
-            var actionType = actionId.ToActionType();
-            return await ExecuteActionAsync(actionType, requester);
-        }
-        
+
         /// <summary>
         /// 登録済みのActionType一覧を取得
         /// </summary>
@@ -207,7 +217,7 @@ namespace Tetrage.Core.Actions
         {
             return _actionFactories.Keys.ToList();
         }
-        
+
         /// <summary>
         /// 登録済みのアクションID一覧を取得（string版 - 後方互換性のため）
         /// </summary>
@@ -215,7 +225,7 @@ namespace Tetrage.Core.Actions
         {
             return _actionFactories.Keys.Select(actionType => actionType.ToActionId()).ToList();
         }
-        
+
         /// <summary>
         /// プレイヤーが実行可能なActionType一覧を取得
         /// </summary>
@@ -225,15 +235,7 @@ namespace Tetrage.Core.Actions
                 .Where(actionType => CanExecuteAction(actionType, requester))
                 .ToList();
         }
-        
-        /// <summary>
-        /// プレイヤーが実行可能なアクション一覧を取得（string版 - 後方互換性のため）
-        /// </summary>
-        public IReadOnlyList<string> GetAvailableActions(IPlayer requester)
-        {
-            return GetAvailableActionTypes(requester)
-                .Select(actionType => actionType.ToActionId())
-                .ToList();
-        }
+
+
     }
-} 
+}

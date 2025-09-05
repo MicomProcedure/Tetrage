@@ -39,7 +39,8 @@ namespace Tetrage.UI
         public event Action Clicked;
         public event Action FlipAnimationHalfway;
 
-        public void OnPointerClick(PointerEventData e) {
+        public void OnPointerClick(PointerEventData e)
+        {
             Debug.Log($"CardView: OnPointerClick {e.pointerId}");
             Clicked?.Invoke();
         }

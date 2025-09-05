@@ -147,7 +147,7 @@ namespace Tetrage.Models
             {
                 // 上限超過時の処理
                 Debug.LogWarning($"[{Name}] cannot add card: reached maxCount {_maxCount}");
-                return false;   
+                return false;
             }
 
             _cards.Add(card);
@@ -174,7 +174,7 @@ namespace Tetrage.Models
         /// <summary>
         /// シャッフル
         /// </summary>
-        public void Shuffle()
+        public void RandomShuffle()
         {
             for (int i = _cards.Count - 1; i > 0; i--)
             {
@@ -186,9 +186,82 @@ namespace Tetrage.Models
         }
 
         /// <summary>
+        /// カード順序を指定されたリストの順序で再構築する
+        /// FixedPlayerStrategyでの特定順序シャッフルなどに使用
+        /// </summary>
+        /// <param name="orderedCards">新しい順序のカードリスト</param>
+        /// <returns>再構築が成功した場合true</returns>
+        public bool Reconstruct(IEnumerable<Card> orderedCards)
+        {
+            if (orderedCards == null)
+            {
+                Debug.LogWarning($"[{Name}] Reconstruct: orderedCardsがnullです");
+                return false;
+            }
+
+            var orderedList = orderedCards.ToList();
+
+            // 枚数チェック
+            if (orderedList.Count != _cards.Count)
+            {
+                Debug.LogWarning($"[{Name}] Reconstruct: カード枚数が一致しません。現在:{_cards.Count}枚, 指定:{orderedList.Count}枚");
+                return false;
+            }
+
+            // 全てのカードが元々このパイルに含まれているかチェック
+            foreach (var card in orderedList)
+            {
+                if (!_cards.Contains(card))
+                {
+                    Debug.LogWarning($"[{Name}] Reconstruct: 指定されたカードがこのパイルに含まれていません - {card.Suit} {card.Number}");
+                    return false;
+                }
+            }
+
+            // 重複チェック
+            if (orderedList.Count != orderedList.Distinct().Count())
+            {
+                Debug.LogWarning($"[{Name}] Reconstruct: 指定されたリストに重複があります");
+                return false;
+            }
+
+            // 再構築実行
+            _cards.Clear();
+            _cards.AddRange(orderedList);
+
+            Debug.Log($"[{Name}] Reconstruct: カード順序を再構築しました - {_cards.Count}枚");
+
+            // 再構築完了を通知
+            NotifyCardsInitialized();
+
+            return true;
+        }
+
+        /// <summary>
+        /// カード順序をカスタムComparisonで並び替える
+        /// FixedPlayerStrategyでのスート・ランク順ソートなどに使用
+        /// </summary>
+        /// <param name="comparison">カードの比較関数</param>
+        public void SortCards(Comparison<Card> comparison)
+        {
+            if (comparison == null)
+            {
+                Debug.LogWarning($"[{Name}] SortCards: comparisonがnullです");
+                return;
+            }
+
+            _cards.Sort(comparison);
+
+            Debug.Log($"[{Name}] SortCards: カードをソートしました - {_cards.Count}枚");
+
+            // ソート完了を通知
+            NotifyCardsInitialized();
+        }
+
+        /// <summary>
         /// 先頭 count 枚を覗く
         /// </summary>
-        public IReadOnlyList<Card> Peek(int count) // いらない可能性がある
+        public IReadOnlyList<Card> Peek(int count)
         {
             return _cards.Take(count).ToList();
         }

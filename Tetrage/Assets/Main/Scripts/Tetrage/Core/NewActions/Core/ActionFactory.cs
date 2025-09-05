@@ -13,12 +13,12 @@ namespace Tetrage.Core.Actions
     public static class ActionFactory
     {
         private static readonly ActionRegistry _registry = new ActionRegistry();
-        
+
         /// <summary>
         /// デフォルトのActionRegistryを取得
         /// </summary>
         public static ActionRegistry Registry => _registry;
-        
+
         /// <summary>
         /// 静的初期化：デフォルトのアクションを登録
         /// </summary>
@@ -26,7 +26,7 @@ namespace Tetrage.Core.Actions
         {
             RegisterDefaultActions();
         }
-        
+
         /// <summary>
         /// デフォルトのアクションを登録
         /// </summary>
@@ -37,10 +37,11 @@ namespace Tetrage.Core.Actions
             _registry.RegisterAction<OpenValidator, OpenExecutor>(ActionType.Open);
             _registry.RegisterAction<ReachValidator, ReachExecutor>(ActionType.Reach);
             _registry.RegisterAction<CheckValidator, CheckExecutor>(ActionType.Check);
-            
+            _registry.RegisterAction<PassValidator, PassExecutor>(ActionType.Pass);
+
             Debug.Log("デフォルトアクションの登録完了");
         }
-        
+
         /// <summary>
         /// アクションを作成する
         /// </summary>
@@ -52,7 +53,7 @@ namespace Tetrage.Core.Actions
         {
             if (requester == null)
                 throw new ArgumentNullException(nameof(requester));
-            
+
             try
             {
                 return _registry.CreateAction(actionType, requester);
@@ -63,7 +64,7 @@ namespace Tetrage.Core.Actions
                 throw;
             }
         }
-        
+
         /// <summary>
         /// 新しいアクションを登録する（型指定版）
         /// </summary>
@@ -73,7 +74,7 @@ namespace Tetrage.Core.Actions
         {
             _registry.RegisterAction<TValidator, TExecutor>(actionType);
         }
-        
+
         /// <summary>
         /// 新しいアクションを登録する（ファクトリ関数版）
         /// </summary>
@@ -84,7 +85,7 @@ namespace Tetrage.Core.Actions
         {
             _registry.RegisterAction(actionType, validatorFactory, executorFactory);
         }
-        
+
         /// <summary>
         /// 指定されたアクションタイプがサポートされているかチェック
         /// </summary>
@@ -92,7 +93,7 @@ namespace Tetrage.Core.Actions
         {
             return _registry.IsActionRegistered(actionType);
         }
-        
+
         /// <summary>
         /// 利用可能なActionType一覧を取得
         /// </summary>
@@ -100,7 +101,7 @@ namespace Tetrage.Core.Actions
         {
             return _registry.GetRegisteredActionTypes();
         }
-        
+
         /// <summary>
         /// ActionManagerにすべてのアクションファクトリを登録する
         /// </summary>
@@ -108,19 +109,19 @@ namespace Tetrage.Core.Actions
         {
             if (actionManager == null)
                 throw new ArgumentNullException(nameof(actionManager));
-            
+
             var actionTypes = _registry.GetRegisteredActionTypes();
             foreach (var actionType in actionTypes)
             {
                 var actionId = actionType.ToActionId();
                 // ActionManagerの既存インターフェースに合わせてファクトリ関数を登録
-                actionManager.RegisterActionFactory(actionId, (requester, gameContextProvider) => 
+                actionManager.RegisterActionFactory(actionId, (requester, gameContextProvider) =>
                     _registry.CreateAction(actionType, requester));
             }
-            
+
             Debug.Log($"ActionManagerに登録完了: {string.Join(", ", actionTypes)}");
         }
-        
+
         /// <summary>
         /// 全てのアクション定義をクリア（テスト用）
         /// </summary>
@@ -128,7 +129,7 @@ namespace Tetrage.Core.Actions
         {
             _registry.Clear();
         }
-        
+
         /// <summary>
         /// デフォルトアクションを再登録（テスト後のリセット用）
         /// </summary>
@@ -138,4 +139,4 @@ namespace Tetrage.Core.Actions
             RegisterDefaultActions();
         }
     }
-} 
+}

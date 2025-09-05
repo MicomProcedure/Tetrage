@@ -17,6 +17,7 @@ namespace Tetrage.Components
     /// </summary>
     public class FieldSetupComponent : MonoBehaviour
     {
+        #region Inspector設定
         [Header("Configuration")]
         [SerializeField] private FieldSetupPrefabConfig prefabConfig;
 
@@ -32,11 +33,15 @@ namespace Tetrage.Components
         [SerializeField] private CardPileLayoutAsset targetPileLayoutAsset;
         [SerializeField] private CardPileLayoutAsset trashPileLayoutAsset;
         [SerializeField] private CardPileLayoutAsset stackPileLayoutAsset;
+        #endregion
 
+        #region 内部キャッシュ
         // キャッシュされた設定（一度構築したらキャッシュ）
         private FieldSetupSettings _cachedSettings;
         private bool _isValidated = false;
+        #endregion
 
+        #region プロパティ
         /// <summary>
         /// PrefabConfigを取得
         /// </summary>
@@ -86,9 +91,9 @@ namespace Tetrage.Components
         /// StackPileLayoutAssetを取得
         /// </summary>
         public CardPileLayoutAsset StackPileLayoutAsset => stackPileLayoutAsset;
+        #endregion
 
-        /* ========== 新機能: 統合された設定取得メソッド ========== */
-
+        #region 統合設定取得・検証API
         /// <summary>
         /// 設定検証済みのFieldSetupSettingsを取得
         /// 上位モジュールはこのメソッドのみを呼び出すだけで完全な設定を取得可能
@@ -137,6 +142,25 @@ namespace Tetrage.Components
         }
 
         /// <summary>
+        /// FieldSetupDependenciesを生成する
+        /// </summary>
+        public FieldSetupDependencies CreateFieldSetupDependencies()
+        {
+            // 各種ファクトリーを生成（依存関係順）
+            var cardFactory = new CardModelFactory();
+            var cardPileFactory = new CardPileFactory();
+            var stageFactory = new StageModelFactory(cardPileFactory, cardFactory);
+            var playerFactory = new PlayerModelFactory(cardPileFactory, cardFactory);
+
+            return new FieldSetupDependencies(
+                cardFactory,
+                stageFactory,
+                playerFactory,
+                cardPileFactory
+            );
+        }
+
+        /// <summary>
         /// 設定をリセット（キャッシュクリア）
         /// Inspector設定変更時などに呼び出し
         /// </summary>
@@ -147,9 +171,9 @@ namespace Tetrage.Components
             _isValidated = false;
             Debug.Log("FieldSetupComponent: 設定をリセットしました");
         }
+        #endregion
 
-        /* ========== 内部実装: 検証とビルド ========== */
-
+        #region 内部実装: 検証・ビルド
         /// <summary>
         /// 全設定の検証を実行
         /// </summary>
@@ -240,9 +264,9 @@ namespace Tetrage.Components
                 stackPileLayoutAsset
             );
         }
+        #endregion
 
-        /* ========== 従来の互換性維持メソッド ========== */
-
+        #region 互換性維持API（従来）
         /// <summary>
         /// カードパイルレイアウト設定の辞書を取得
         /// </summary>
@@ -318,7 +342,9 @@ namespace Tetrage.Components
             if (asset == null)
                 throw new InvalidOperationException($"{assetName}が設定されていません");
         }
+        #endregion
 
+        #region UnityEditor用メソッド
         #if UNITY_EDITOR
         /// <summary>
         /// Inspector用の設定検証ボタン
@@ -356,13 +382,14 @@ namespace Tetrage.Components
             }
         }
         #endif
+        #endregion
 
-        /* ========== Unity イベント ========== */
-
+        #region Unityイベント
         private void OnValidate()
         {
             // Inspector設定変更時にキャッシュをクリア
             ResetSettings();
         }
+        #endregion
     }
 }

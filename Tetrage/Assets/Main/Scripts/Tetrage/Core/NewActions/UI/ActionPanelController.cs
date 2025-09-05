@@ -5,11 +5,12 @@ using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 namespace Tetrage.Core.Actions
 {
     /// <summary>
-    /// 新しいActionシステムに対応したアクションパネルコントローラー（ActionType対応版）
+    /// 新しいActionシステムに対応したアクションパネルコントローラー
     /// </summary>
     public class ActionPanelController : MonoBehaviour
     {
@@ -18,32 +19,112 @@ namespace Tetrage.Core.Actions
         [SerializeField] private Button openButton;
         [SerializeField] private Button reachButton;
         [SerializeField] private Button checkButton;
-        
+        [SerializeField] private Button passButton;
+
         [Header("Settings")]
-        [SerializeField] private bool autoUpdateButtons = true;
-        [SerializeField] private float updateInterval = 0.1f;
-        
+        [SerializeField] private float _retryInterval = 0.5f;
+        [SerializeField] private int _maxRetries = 10;
+
         private ActionManager _actionManager;
         private IGameContextProvider _gameContextProvider;
+        private IRoundManager _roundManager;
         private Dictionary<ActionType, Button> _actionButtons;
         private IPlayer _currentPlayer;
-        
+        private bool _isInitialized = false;
+
         private void Awake()
         {
             InitializeButtonMappings();
             SetupButtonClickHandlers();
         }
-        
+
         private void Start()
         {
-            InitializeActionSystem();
-            
-            if (autoUpdateButtons)
+            // ActionManagerの取得と初期化
+            _actionManager = ActionManager.Instance;
+
+            if (_actionManager == null)
             {
-                StartButtonUpdateLoop();
+                Debug.LogError("ActionPanelController: ActionManagerが見つかりません");
+                return;
+            }
+
+            // 遅延初期化を試行
+            if (!TryInitialize())
+            {
+                // 初期化に失敗した場合、定期的にリトライ
+                StartCoroutine(RetryInitialization());
             }
         }
-        
+
+        /// <summary>
+        /// ActionPanelControllerの初期化を試行
+        /// </summary>
+        /// <returns>初期化が成功した場合true</returns>
+        private bool TryInitialize()
+        {
+            if (_isInitialized) return true;
+
+            // ActionSystemInitializerが初期化されているかチェック
+            if (!ActionSystemInitializer.IsInitialized)
+            {
+                Debug.LogWarning("ActionPanelController: ActionSystemInitializerが未初期化です（リトライします）");
+                return false;
+            }
+
+            _gameContextProvider = _actionManager.GetGameContextProvider();
+            if (_gameContextProvider == null)
+            {
+                Debug.LogWarning("ActionPanelController: GameContextProviderが未設定です（リトライします）");
+                return false;
+            }
+
+            _roundManager = _actionManager.GetRoundManager();
+            if (_roundManager == null)
+            {
+                Debug.LogWarning("ActionPanelController: RoundManagerが未設定です（リトライします）");
+                return false;
+            }
+
+            // イベント購読
+            _roundManager.RoundStart += UpdateButtonStates;
+
+            // 初回ボタン状態更新
+            UpdateButtonStates();
+
+            _isInitialized = true;
+            Debug.Log("ActionPanelController: 初期化が完了しました");
+            return true;
+        }
+
+        /// <summary>
+        /// 初期化のリトライを行うコルーチン
+        /// </summary>
+        private IEnumerator RetryInitialization()
+        {
+
+            int retryCount = 0;
+
+            while (!_isInitialized && retryCount < _maxRetries)
+            {
+                yield return new WaitForSeconds(_retryInterval);
+
+                if (TryInitialize())
+                {
+                    yield break; // 初期化成功
+                }
+
+                retryCount++;
+                Debug.LogWarning($"ActionPanelController: 初期化リトライ {retryCount}/{_maxRetries}");
+            }
+
+            if (!_isInitialized)
+            {
+                Debug.LogError("ActionPanelController: 初期化に失敗しました（最大リトライ回数に達しました）");
+                DisableAllButtons();
+            }
+        }
+
         /// <summary>
         /// ボタンとActionTypeのマッピングを初期化
         /// </summary>
@@ -54,10 +135,11 @@ namespace Tetrage.Core.Actions
                 { ActionType.Draw, drawButton },
                 { ActionType.Open, openButton },
                 { ActionType.Reach, reachButton },
-                { ActionType.Check, checkButton }
+                { ActionType.Check, checkButton },
+                { ActionType.Pass, passButton }
             };
         }
-        
+
         /// <summary>
         /// ボタンのクリックハンドラーを設定
         /// </summary>
@@ -67,73 +149,15 @@ namespace Tetrage.Core.Actions
             {
                 var actionType = pair.Key;
                 var button = pair.Value;
-                
+
                 if (button != null)
                 {
                     button.onClick.AddListener(() => ExecuteActionAsync(actionType).Forget());
                 }
             }
         }
-        
-        /// <summary>
-        /// アクションシステムを初期化
-        /// </summary>
-        private void InitializeActionSystem()
-        {
-            _actionManager = ActionManager.Instance;
-            _gameContextProvider = FindGameContextProvider();
-            
-            if (_gameContextProvider == null)
-            {
-                Debug.LogError("GameContextProviderが見つかりません");
-                return;
-            }
-            
-            // ActionManagerがまだ初期化されていない場合は初期化
-            if (_actionManager != null)
-            {
-                _actionManager.SetGameContextProvider(_gameContextProvider);
-                ActionFactory.RegisterAllActions(_actionManager);
-            }
-        }
-        
-        /// <summary>
-        /// GameContextProviderを自動検索
-        /// </summary>
-        private IGameContextProvider FindGameContextProvider()
-        {
-            // Dealerインスタンスを取得
-            var dealer = Tetrage.Managers.Dealer.Instance;
-            if (dealer != null)
-            {
-                return dealer;
-            }
 
-            // その他のIGameContextProvider実装をMonoBehaviourから探す
-            var providers = FindObjectsOfType<MonoBehaviour>();
-            foreach (var provider in providers)
-            {
-                if (provider is IGameContextProvider gameContextProvider)
-                {
-                    return gameContextProvider;
-                }
-            }
 
-            return null;
-        }
-        
-        /// <summary>
-        /// ボタン更新ループを開始
-        /// </summary>
-        private async void StartButtonUpdateLoop()
-        {
-            while (this != null && gameObject.activeInHierarchy)
-            {
-                UpdateButtonStates();
-                await UniTask.Delay((int)(updateInterval * 1000));
-            }
-        }
-        
         /// <summary>
         /// ボタンの状態（有効/無効）を更新
         /// </summary>
@@ -141,29 +165,29 @@ namespace Tetrage.Core.Actions
         {
             if (_actionManager == null || _gameContextProvider == null)
                 return;
-            
+
             _currentPlayer = _gameContextProvider.CurrentPlayer;
-            
+
             if (_currentPlayer == null)
             {
                 DisableAllButtons();
                 return;
             }
-            
+
             // 各ボタンの状態を更新（ActionType版）
             foreach (var pair in _actionButtons)
             {
                 var actionType = pair.Key;
                 var button = pair.Value;
-                
+
                 if (button != null)
                 {
-                    bool canExecute = _currentPlayer.CanExecuteNewAction(actionType, _gameContextProvider);
+                    bool canExecute = _currentPlayer.CanExecuteNewAction(actionType);
                     button.interactable = canExecute;
                 }
             }
         }
-        
+
         /// <summary>
         /// 全てのボタンを無効化
         /// </summary>
@@ -177,7 +201,7 @@ namespace Tetrage.Core.Actions
                 }
             }
         }
-        
+
         /// <summary>
         /// アクションを実行（ActionType版）
         /// </summary>
@@ -188,16 +212,16 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("ActionManagerまたは現在のプレイヤーが設定されていません");
                 return;
             }
-            
+
             try
             {
                 // 実行前にボタンを一時的に無効化
                 DisableAllButtons();
-                
+
                 Debug.Log($"アクション実行開始: {actionType}");
-                
-                var result = await _currentPlayer.ExecuteNewActionAsync(actionType, _gameContextProvider);
-                
+
+                var result = await _currentPlayer.ExecuteNewActionAsync(actionType);
+
                 if (result.IsSuccess)
                 {
                     Debug.Log($"アクション成功: {actionType}");
@@ -220,7 +244,7 @@ namespace Tetrage.Core.Actions
                 UpdateButtonStates();
             }
         }
-        
+
         /// <summary>
         /// アクション成功時の処理
         /// </summary>
@@ -229,7 +253,7 @@ namespace Tetrage.Core.Actions
             // TODO: 成功時のフィードバック（UI、音、エフェクトなど）
             Debug.Log($"アクション成功フィードバック: {actionType}");
         }
-        
+
         /// <summary>
         /// アクション失敗時の処理
         /// </summary>
@@ -238,9 +262,17 @@ namespace Tetrage.Core.Actions
             // TODO: 失敗時のフィードバック（エラーメッセージ表示など）
             Debug.LogWarning($"アクション失敗フィードバック: {actionType} - {result.ErrorMessage}");
         }
-        
-        // === Inspector用のテストメソッド ===
-        
+
+        private void OnDestroy()
+        {
+            if (_isInitialized && _roundManager != null)
+            {
+                _roundManager.RoundStart -= UpdateButtonStates;
+            }
+        }
+
+        #region テスト用メソッド
+
         [ContextMenu("Show Available Actions")]
         private void ShowAvailableActions()
         {
@@ -249,56 +281,67 @@ namespace Tetrage.Core.Actions
                 Debug.LogWarning("現在のプレイヤーが設定されていません");
                 return;
             }
-            
-            var availableActions = _currentPlayer.GetAvailableNewActionTypes(_gameContextProvider);
+
+            var availableActions = _currentPlayer.GetAvailableNewActionTypes();
             Debug.Log($"実行可能なアクション: {string.Join(", ", availableActions)}");
         }
-        
+
         [ContextMenu("Force Update Button States")]
         private void ForceUpdateButtonStates()
         {
             UpdateButtonStates();
             Debug.Log("ボタン状態を強制更新しました");
         }
-        
+
         [ContextMenu("Test Draw Action")]
         private async void TestDrawAction()
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.DrawAsync(_gameContextProvider);
+                var result = await _currentPlayer.DrawAsync();
                 Debug.Log($"Test Draw Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
-        
+
         [ContextMenu("Test Open Action")]
         private async void TestOpenAction()
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.OpenAsync(_gameContextProvider);
+                var result = await _currentPlayer.OpenAsync();
                 Debug.Log($"Test Open Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
-        
+
         [ContextMenu("Test Reach Action")]
         private async void TestReachAction()
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.ReachAsync(_gameContextProvider);
+                var result = await _currentPlayer.ReachAsync();
                 Debug.Log($"Test Reach Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
-        
+
         [ContextMenu("Test Check Action")]
         private async void TestCheckAction()
         {
             if (_currentPlayer != null)
             {
-                var result = await _currentPlayer.CheckAsync(_gameContextProvider);
+                var result = await _currentPlayer.CheckAsync();
                 Debug.Log($"Test Check Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
+
+        [ContextMenu("Test Pass Action")]
+        private async void TestPassAction()
+        {
+            if (_currentPlayer != null)
+            {
+                var result = await _currentPlayer.PassAsync();
+                Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
+            }
+        }
+        #endregion
     }
-} 
+}

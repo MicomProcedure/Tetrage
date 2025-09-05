@@ -15,30 +15,15 @@ namespace Tetrage.Core.Actions
         /// </summary>
         /// <param name="player">実行するプレイヤー</param>
         /// <param name="actionType">実行するアクションタイプ</param>
-        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は自動検索）</param>
         /// <returns>アクション実行結果</returns>
         public static async UniTask<ActionResult> ExecuteNewActionAsync(
             this IPlayer player,
-            ActionType actionType,
-            IGameContextProvider gameContextProvider = null)
+            ActionType actionType)
         {
             var actionManager = ActionManager.Instance;
-
-            // GameContextProviderが指定されていない場合は自動検索
-            if (gameContextProvider == null)
+            if (actionManager == null)
             {
-                gameContextProvider = FindGameContextProvider();
-                if (gameContextProvider == null)
-                {
-                    return ActionResult.Failure("GameContextProviderが見つかりません");
-                }
-            }
-
-            // ActionManagerの初期化確認
-            if (actionManager != null)
-            {
-                actionManager.SetGameContextProvider(gameContextProvider);
-                ActionFactory.RegisterAllActions(actionManager);
+                return ActionResult.Failure("ActionManagerが見つかりません");
             }
 
             return await actionManager.ExecuteActionAsync(actionType, player);
@@ -49,30 +34,15 @@ namespace Tetrage.Core.Actions
         /// </summary>
         /// <param name="player">チェックするプレイヤー</param>
         /// <param name="actionType">チェックするアクションタイプ</param>
-        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は自動検索）</param>
         /// <returns>実行可能な場合true</returns>
         public static bool CanExecuteNewAction(
             this IPlayer player,
-            ActionType actionType,
-            IGameContextProvider gameContextProvider = null)
+            ActionType actionType)
         {
             var actionManager = ActionManager.Instance;
-
-            // GameContextProviderが指定されていない場合は自動検索
-            if (gameContextProvider == null)
+            if (actionManager == null)
             {
-                gameContextProvider = FindGameContextProvider();
-                if (gameContextProvider == null)
-                {
-                    return false;
-                }
-            }
-
-            // ActionManagerの初期化確認
-            if (actionManager != null)
-            {
-                actionManager.SetGameContextProvider(gameContextProvider);
-                ActionFactory.RegisterAllActions(actionManager);
+                return false;
             }
 
             return actionManager.CanExecuteAction(actionType, player);
@@ -82,29 +52,14 @@ namespace Tetrage.Core.Actions
         /// プレイヤーが実行可能なアクション一覧を取得
         /// </summary>
         /// <param name="player">対象プレイヤー</param>
-        /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は自動検索）</param>
         /// <returns>実行可能なActionTypeの一覧</returns>
         public static System.Collections.Generic.IReadOnlyList<ActionType> GetAvailableNewActionTypes(
-            this IPlayer player,
-            IGameContextProvider gameContextProvider = null)
+            this IPlayer player)
         {
             var actionManager = ActionManager.Instance;
-
-            // GameContextProviderが指定されていない場合は自動検索
-            if (gameContextProvider == null)
+            if (actionManager == null)
             {
-                gameContextProvider = FindGameContextProvider();
-                if (gameContextProvider == null)
-                {
-                    return new System.Collections.Generic.List<ActionType>();
-                }
-            }
-
-            // ActionManagerの初期化確認
-            if (actionManager != null)
-            {
-                actionManager.SetGameContextProvider(gameContextProvider);
-                ActionFactory.RegisterAllActions(actionManager);
+                return new System.Collections.Generic.List<ActionType>();
             }
 
             return actionManager.GetAvailableActionTypes(player);
@@ -115,33 +70,41 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// Draw アクションを実行
         /// </summary>
-        public static async UniTask<ActionResult> DrawAsync(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static async UniTask<ActionResult> DrawAsync(this IPlayer player)
         {
-            return await player.ExecuteNewActionAsync(ActionType.Draw, gameContextProvider);
+            return await player.ExecuteNewActionAsync(ActionType.Draw);
         }
 
         /// <summary>
         /// Open アクションを実行
         /// </summary>
-        public static async UniTask<ActionResult> OpenAsync(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static async UniTask<ActionResult> OpenAsync(this IPlayer player)
         {
-            return await player.ExecuteNewActionAsync(ActionType.Open, gameContextProvider);
+            return await player.ExecuteNewActionAsync(ActionType.Open);
         }
 
         /// <summary>
         /// Reach アクションを実行
         /// </summary>
-        public static async UniTask<ActionResult> ReachAsync(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static async UniTask<ActionResult> ReachAsync(this IPlayer player)
         {
-            return await player.ExecuteNewActionAsync(ActionType.Reach, gameContextProvider);
+            return await player.ExecuteNewActionAsync(ActionType.Reach);
         }
 
         /// <summary>
         /// Check アクションを実行
         /// </summary>
-        public static async UniTask<ActionResult> CheckAsync(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static async UniTask<ActionResult> CheckAsync(this IPlayer player)
         {
-            return await player.ExecuteNewActionAsync(ActionType.Check, gameContextProvider);
+            return await player.ExecuteNewActionAsync(ActionType.Check);
+        }
+
+        /// <summary>
+        /// Pass アクションを実行
+        /// </summary>
+        public static async UniTask<ActionResult> PassAsync(this IPlayer player)
+        {
+            return await player.ExecuteNewActionAsync(ActionType.Pass);
         }
 
         // === 実行可能性チェック用の便利メソッド ===
@@ -149,58 +112,41 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// Draw アクションが実行可能かチェック
         /// </summary>
-        public static bool CanDraw(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static bool CanDraw(this IPlayer player)
         {
-            return player.CanExecuteNewAction(ActionType.Draw, gameContextProvider);
+            return player.CanExecuteNewAction(ActionType.Draw);
         }
 
         /// <summary>
         /// Open アクションが実行可能かチェック
         /// </summary>
-        public static bool CanOpen(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static bool CanOpen(this IPlayer player)
         {
-            return player.CanExecuteNewAction(ActionType.Open, gameContextProvider);
+            return player.CanExecuteNewAction(ActionType.Open);
         }
 
         /// <summary>
         /// Reach アクションが実行可能かチェック
         /// </summary>
-        public static bool CanReach(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static bool CanReach(this IPlayer player)
         {
-            return player.CanExecuteNewAction(ActionType.Reach, gameContextProvider);
+            return player.CanExecuteNewAction(ActionType.Reach);
         }
 
         /// <summary>
         /// Check アクションが実行可能かチェック
         /// </summary>
-        public static bool CanCheck(this IPlayer player, IGameContextProvider gameContextProvider = null)
+        public static bool CanCheck(this IPlayer player)
         {
-            return player.CanExecuteNewAction(ActionType.Check, gameContextProvider);
+            return player.CanExecuteNewAction(ActionType.Check);
         }
 
         /// <summary>
-        /// GameContextProviderを自動検索
+        /// Pass アクションが実行可能かチェック
         /// </summary>
-        private static IGameContextProvider FindGameContextProvider()
+        public static bool CanPass(this IPlayer player)
         {
-            // Dealerインスタンスを取得
-            var dealer = Tetrage.Managers.Dealer.Instance;
-            if (dealer != null)
-            {
-                return dealer;
-            }
-
-            // その他のIGameContextProvider実装をMonoBehaviourから探す
-            var providers = UnityEngine.Object.FindObjectsOfType<UnityEngine.MonoBehaviour>();
-            foreach (var provider in providers)
-            {
-                if (provider is IGameContextProvider gameContextProvider)
-                {
-                    return gameContextProvider;
-                }
-            }
-
-            return null;
+            return player.CanExecuteNewAction(ActionType.Pass);
         }
     }
 }
