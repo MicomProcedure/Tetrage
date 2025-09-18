@@ -13,8 +13,8 @@ namespace Tetrage.UI
         #endregion
 
         #region 内部状態
-        // 既知の子Transformを記録して追加検知に使う
-        private HashSet<int> _knownChildIds = new HashSet<int>();
+        // 既知の子Transformを記録して追加/削除を検知する
+        private Dictionary<int, Transform> _knownChildren = new Dictionary<int, Transform>();
         #endregion
 
         #region Unityライフサイクル
@@ -50,18 +50,28 @@ namespace Tetrage.UI
         // 子の追加・削除があれば呼ばれる。新規追加の子だけ回転をランダム化する
         protected override void OnTransformChildrenChanged()
         {
-            // 追加された子を検出して回転を適用
-            var currentIds = new HashSet<int>();
+            // 現在の子をマップ化しつつ、追加分は回転適用
+            var currentMap = new Dictionary<int, Transform>();
             foreach (Transform child in transform)
             {
                 int id = child.GetInstanceID();
-                if (!_knownChildIds.Contains(id))
+                if (!_knownChildren.ContainsKey(id))
                 {
                     ApplyRandomZRotation(child);
                 }
-                currentIds.Add(id);
+                currentMap[id] = child;
             }
-            _knownChildIds = currentIds;
+
+            // 削除された子を検出し、回転をリセット
+            foreach (var kv in _knownChildren)
+            {
+                if (!currentMap.ContainsKey(kv.Key))
+                {
+                    ResetZRotation(kv.Value);
+                }
+            }
+
+            _knownChildren = currentMap;
 
             base.OnTransformChildrenChanged();
         }
@@ -70,10 +80,10 @@ namespace Tetrage.UI
         #region ヘルパー
         private void InitializeKnownChildren()
         {
-            _knownChildIds.Clear();
+            _knownChildren.Clear();
             foreach (Transform child in transform)
             {
-                _knownChildIds.Add(child.GetInstanceID());
+                _knownChildren[child.GetInstanceID()] = child;
             }
         }
 
@@ -82,6 +92,14 @@ namespace Tetrage.UI
             float angle = Random.Range(_minZRotation, _maxZRotation);
             var euler = t.localEulerAngles;
             euler.z = angle;
+            t.localRotation = Quaternion.Euler(euler);
+        }
+
+        private void ResetZRotation(Transform t)
+        {
+            if (t == null) return;
+            var euler = t.localEulerAngles;
+            euler.z = 0f;
             t.localRotation = Quaternion.Euler(euler);
         }
         #endregion
