@@ -58,7 +58,7 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// ActionPanelControllerの初期化を試行
+        /// ActionPanelControllerの初期化を試行。Dealerへの、UIボタン更新メソッドの登録を行う。
         /// </summary>
         /// <returns>初期化が成功した場合true</returns>
         private bool TryInitialize()
@@ -72,6 +72,7 @@ namespace Tetrage.Core.Actions
                 return false;
             }
 
+            // GameContextProvider（Dealer）をActionManagerから取得
             _gameContextProvider = _actionManager.GetGameContextProvider();
             if (_gameContextProvider == null)
             {
@@ -79,6 +80,7 @@ namespace Tetrage.Core.Actions
                 return false;
             }
 
+            // RoundManager（Dealer）をActionManagerから取得
             _roundManager = _actionManager.GetRoundManager();
             if (_roundManager == null)
             {
@@ -86,10 +88,10 @@ namespace Tetrage.Core.Actions
                 return false;
             }
 
-            // イベント購読
-            _roundManager.RoundStart += UpdateButtonStates;
+            // イベント購読。DealerのTurnStartイベントに、UIボタン更新メソッドを登録
+            _roundManager.TurnStart += UpdateButtonStates;
 
-            // 初回ボタン状態更新
+            // 初回ボタン状態更新。UIボタン更新メソッドを実行
             UpdateButtonStates();
 
             _isInitialized = true;
@@ -267,7 +269,7 @@ namespace Tetrage.Core.Actions
         {
             if (_isInitialized && _roundManager != null)
             {
-                _roundManager.RoundStart -= UpdateButtonStates;
+                _roundManager.TurnStart -= UpdateButtonStates;
             }
         }
 
