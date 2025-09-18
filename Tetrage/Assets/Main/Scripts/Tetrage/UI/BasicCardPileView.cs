@@ -9,11 +9,15 @@ namespace Tetrage.UI
 {
     public class BasicCardPileView : MonoBehaviour, ICardPileView
     {
+        #region イベント
         /// <summary>
         /// このビューが破棄されたときに発行されるイベント。
         /// Presenter はここを購読し Dispose を呼びます。
         /// </summary>
         public event Action Destroyed;
+        #endregion
+
+        #region レイアウト設定 / フィールド
         /// <summary>
         /// このcardpileviewObjectのシーン上の子であるカード表示用ViewのTransformリスト
         /// </summary>
@@ -29,12 +33,16 @@ namespace Tetrage.UI
         public float CardViewMaxSpacing => _cardViewMaxSpacing;
         [SerializeField] protected Vector3 _cardViewPositionOffset = InGameConsts.DEFAULT_CARD_VIEW_POSITION_OFFSET;
         public Vector3 CardViewPositionOffset => _cardViewPositionOffset;
+        #endregion
 
+        #region Unityライフサイクル
         private void OnDestroy()
         {
             Destroyed?.Invoke();
         }
+        #endregion
 
+        #region Public API（非override）
         /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
         public void AddCardView(CardView cardView)
         {
@@ -54,20 +62,26 @@ namespace Tetrage.UI
 
         /// <summary>オブジェクトの名前を変更します。</summary>
         public void RenameObject(string newName) => gameObject.name = "PileView." + newName;
+        #endregion
 
+        #region Public API（override可）
         /// <summary>ビューを更新します。</summary>
         public virtual void RefreshView()
         {
             LayoutCardView();
         }
+        #endregion
 
+        #region Unityライフサイクル（override可）
         // 子 Transform に増減があった場合にも自動でレイアウト更新
         protected virtual void OnTransformChildrenChanged()
         {
             RefreshView();
         }
+        #endregion
 
-        /// <summary>カード表示用ViewのTransformを調整します。</summary>
+        #region レイアウトAPI（override可）
+        /// <summary>カード表示用ViewのTransformを調整します。カードの表示位置を変更する場合はオーバーライドしてください。</summary>
         protected virtual void LayoutCardView()
         {
             UpdateCardViewObjects();
@@ -81,7 +95,9 @@ namespace Tetrage.UI
             // ② 各カードの X 座標を純粋関数で得る
             SetCardViewPositions(count, spacing, centerOffset);
         }
+        #endregion
 
+        #region ヘルパー（非override）
         /// <summary>間隔と中心オフセットを算出</summary>
         protected void CalculateSpacingAndOffset(int totalCount, out float spacing, out float centerOffset)
         {
@@ -89,7 +105,9 @@ namespace Tetrage.UI
             spacing = Mathf.Clamp(raw, _cardViewMinSpacing, _cardViewMaxSpacing);
             centerOffset = spacing * (totalCount - 1) / 2f;
         }
+        #endregion
 
+        #region レイアウトAPI（override可）
         /// <summary>指定した回数分カード表示用Viewの座標を設定</summary>
         protected virtual void SetCardViewPositions(int count, float spacing, float centerOffset)
         {
@@ -105,7 +123,9 @@ namespace Tetrage.UI
             float x = index * spacing - centerOffset;
             _cardViewObjects[index].localPosition = new Vector3(x, 0, 0) + _cardViewPositionOffset;
         }
+        #endregion
 
+        #region レイアウト設定API（非override）
         /// <summary>カード表示用Viewを置いておく幅と最小間隔を設定</summary>
         /// <param name="cardPileWidth">カード表示用Viewを置いておく幅</param>
         /// <param name="cardViewMinSpacing">カード表示用Viewの最小間隔</param>
@@ -130,7 +150,9 @@ namespace Tetrage.UI
             _cardViewMaxSpacing = layoutSettings.MaxSpacing;
             _cardViewPositionOffset = layoutSettings.PositionOffset;
         }
+        #endregion
 
+        #region レイアウトAPI（override可）
         /// <summary>カード表示用ViewのTransformリストを子オブジェクト子オブジェクトから取得</summary>
         protected virtual void UpdateCardViewObjects()
         {
@@ -142,6 +164,7 @@ namespace Tetrage.UI
                 _cardViewObjects.Add(child);
             }
         }
+        #endregion
 
     }
 }
