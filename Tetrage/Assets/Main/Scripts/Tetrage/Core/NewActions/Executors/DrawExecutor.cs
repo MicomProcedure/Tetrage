@@ -24,11 +24,12 @@ namespace Tetrage.Core.Actions
                 }
 
                 // 2. プレイヤーにカード選択をUIで促し、待機
-                var selectedCard = await SelectCardFromTmp(context);
+                var selectedCard = await SelectCardFromPile(context, context.RequesterPlayer.Tmp);  // Tmpからカードを選択
+
+                // 選択されたカードがない場合はエラー
                 if (selectedCard == null)
                 {
-                    // このケースは、SelectCardFromTmpの最初のチェックでTmpが空の場合のみ発生
-                    return ActionResult.Failure("選択すべきカードがありませんでした。");
+                    return ActionResult.Failure("選択すべきカードの取得に失敗しました。");
                 }
 
                 // 3. 選択結果に基づいてカードを処理
@@ -72,20 +73,68 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// Tmpからカードを選択（プレイヤーのクリック入力を待機）
-        /// ActionAwaiterのタイムアウトでキャンセルされた場合は自動で1枚選択する
+        /// 選択されたカードの処理（選択カードをHandsへ、残りをStackの1番上に戻す）
         /// </summary>
-        private async UniTask<Card> SelectCardFromTmp(IActionContext context)
+        private async UniTask<ActionResult> ProcessCardSelection(IActionContext context, Card selectedCard)
         {
             var tmp = context.RequesterPlayer.Tmp;
-            if (tmp.Count == 0)
+            var hands = context.RequesterPlayer.Hands;
+            var stack = context.CurrentStage.Stack;
+
+            // 1. 選択されたカードをHandsに移動
+            bool toHandsSuccess = CardPile.TransferService.Transfer(tmp, hands, selectedCard);
+
+            // 選択されたカードをHandsに移動できなかった場合はエラー
+            if (!toHandsSuccess)
             {
-                Debug.LogError("Tmpに選択すべきカードがありません。");
+                return ActionResult.Failure($"選択されたカード {selectedCard} をHandsに移動できませんでした");
+            }
+            Debug.Log($"選択されたカード {selectedCard} をHandsに移動しました。");
+
+            // 2. 残りのカード（選択されなかったカード）をTmpからStackの1番上に戻す
+            var remainingCards = tmp.ToList(); // ToList()でコピーを作成
+            foreach (var card in remainingCards)
+            {
+                bool toTrashSuccess = CardPile.TransferService.Transfer(tmp, stack, card);
+                if (!toTrashSuccess)
+                {
+                    return ActionResult.Failure($"選択されなかったカード {card} をStackの1番上に戻すことができませんでした");
+                }
+                Debug.Log($"選択されなかったカード {card} をStackの1番上に戻しました。");
+            }
+
+            // 3.手札が保持容量を超える場合、1枚を選んでTrashへ移動する
+            if (hands.Count == hands.MaxCount)
+            {
+                var discard = await SelectCardFromPile(context, hands);  // Handsからカードを選択
+
+                // 選択されたカードがない場合はエラー
+                if (discard == null)
+                {
+                    return ActionResult.Failure("捨て札にするカードの取得に失敗しました。");
+                }
+
+                // 選択されたカードをTrashへ移動
+                context.CurrentStage.Discard(hands, discard);
+                Debug.Log($"手札超過により {discard} を捨て札へ移動しました");
+            }
+
+            await UniTask.Delay(100); // アニメーション時間の確保
+            return ActionResult.Success();
+        }
+
+        /// <summary>
+        /// 指定のCardPileから1枚選択を待機。外部キャンセル時はフォールバック選択を返し、必ず購読解除する。
+        /// </summary>
+        private async UniTask<Card> SelectCardFromPile(IActionContext context, CardPile pile)
+        {
+            if (pile == null || pile.Count == 0)
+            {
+                Debug.LogWarning($"{pile.Name}に選択すべきカードがありません。");
                 return null;
             }
 
-            // ActionAwaiterのCancellationTokenを取得
-            var actionAwaiter = context.ActionAwaiter; // IActionContextにはActionAwaiterがある
+            var actionAwaiter = context.ActionAwaiter;
             var cancellationToken = actionAwaiter?.CurrentCancellationToken ?? CancellationToken.None;
 
             var tcs = new UniTaskCompletionSource<Card>();
@@ -93,8 +142,7 @@ namespace Tetrage.Core.Actions
             System.Action<Card> cardClickedHandler = null;
             cardClickedHandler = (clickedCard) =>
             {
-                // Tmpにあるカードがクリックされた場合のみ処理
-                if (tmp.Contains(clickedCard))
+                if (pile.Contains(clickedCard))
                 {
                     tcs.TrySetResult(clickedCard);
                 }
@@ -104,62 +152,19 @@ namespace Tetrage.Core.Actions
 
             try
             {
-                Debug.Log($"プレイヤーのカード選択を待っています...");
-                // TODO: 選択可能なカードをUI上でハイライトする処理
-
-                // 外部キャンセル対応のみ（独自タイムアウトなし）
+                Debug.Log($"{pile.Name}からカード選択を待機中...");
                 return await tcs.Task.AttachExternalCancellation(cancellationToken);
             }
             catch (System.OperationCanceledException)
             {
-                Debug.LogWarning("カード選択が外部からキャンセルされました。強制的に1枚を選択します。");
-                // キャンセル時は強制選択を行う
-                var fallbackCard = tmp.FirstOrDefault();
-                if (fallbackCard != null)
-                {
-                    Debug.Log($"キャンセル時のフォールバックとして {fallbackCard} を選択しました。");
-                }
+                var fallbackCard = pile.FirstOrDefault();
+                Debug.LogWarning($"{pile.Name}の選択がキャンセルされました。フォールバックとして {fallbackCard} を選択します。");
                 return fallbackCard;
             }
             finally
             {
-                // 選択完了後、必ずイベント購読を解除
                 CardClickDispatcher.OnCardClicked -= cardClickedHandler;
-                // TODO: ハイライト解除処理
             }
-        }
-
-        /// <summary>
-        /// 選択されたカードの処理（選択カードをHandsへ、残りをTrashへ）
-        /// </summary>
-        private async UniTask<ActionResult> ProcessCardSelection(IActionContext context, Card selectedCard)
-        {
-            var tmp = context.RequesterPlayer.Tmp;
-            var hands = context.RequesterPlayer.Hands;
-            var trash = context.CurrentStage.Trash;
-
-            // 1. 選択されたカードをHandsに移動
-            bool toHandsSuccess = CardPile.TransferService.Transfer(tmp, hands, selectedCard);
-            if (!toHandsSuccess)
-            {
-                return ActionResult.Failure($"選択されたカード {selectedCard} をHandsに移動できませんでした");
-            }
-            Debug.Log($"選択されたカード {selectedCard} をHandsに移動しました。");
-
-            // 2. 残りのカード（選択されなかったカード）をTmpからTrashに移動
-            var remainingCards = tmp.ToList(); // ToList()でコピーを作成
-            foreach (var card in remainingCards)
-            {
-                bool toTrashSuccess = CardPile.TransferService.Transfer(tmp, trash, card);
-                if (!toTrashSuccess)
-                {
-                    return ActionResult.Failure($"選択されなかったカード {card} をTrashに移動できませんでした");
-                }
-                Debug.Log($"選択されなかったカード {card} をTrashに移動しました。");
-            }
-
-            await UniTask.Delay(100); // アニメーション時間の確保
-            return ActionResult.Success();
         }
     }
 }

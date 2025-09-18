@@ -21,7 +21,7 @@ namespace Tetrage.Factories
         private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
         private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
         private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
-        private int _handsCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY;                         // 手札の容量
+        private int _handsCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY + 1;                         // 手札の容量（一枚のみキャパオーバーを許容する）
         private int _tmpCapacity = InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY;                            // 一時保持カードの容量
         private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
         private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
@@ -32,7 +32,7 @@ namespace Tetrage.Factories
         public PlayerBuilder(PlayerModelFactory innerFactory)
         {
             Assert.IsNotNull(innerFactory, "innerFactory(PlayerModelFactory) が null です");
-            
+
             _innerFactory = innerFactory;
 
             // デフォルト設定
@@ -44,7 +44,7 @@ namespace Tetrage.Factories
                 { CardPileType.Hands, CardPileLayoutSettings.Default },
                 { CardPileType.Tmp, CardPileLayoutSettings.Default }
             };
-            
+
 
         }
 
@@ -54,16 +54,16 @@ namespace Tetrage.Factories
         /// <param name="parent">プレイヤー表示用ビューの親</param>
         /// <param name="cardPileViewsDict">カードパイル表示用ビューのディクショナリ</param>
         public PlayerBuilder UseView(
-            BasicPlayerView viewPrefab, 
+            BasicPlayerView viewPrefab,
             Vector3 spawnPosition,
-            Transform parent, 
+            Transform parent,
             Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
         {
             Assert.IsNotNull(viewPrefab, "viewPrefab が null です");
             Assert.IsNotNull(parent, "parent が null です");
             Assert.IsNotNull(cardPileViewsDict, "cardPileViewsDict が null です");
             ValidateCardPileViewDict(cardPileViewsDict);
-            
+
             _useView = true;
             _viewPrefab = viewPrefab;
             _viewSpawnPosition = spawnPosition;
@@ -124,7 +124,7 @@ namespace Tetrage.Factories
 
             if (_useView)
             {
-              // プレイヤー View を生成
+                // プレイヤー View を生成
                 playerView = Object.Instantiate(_viewPrefab, _viewSpawnPosition, Quaternion.identity, _viewParent); // Quaternion.identityは回転なしの意味
 
                 // View付きでカードパイルを生成
@@ -214,4 +214,4 @@ namespace Tetrage.Factories
             }
         }
     }
-} 
+}
