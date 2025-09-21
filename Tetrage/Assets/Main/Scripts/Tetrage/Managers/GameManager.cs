@@ -5,10 +5,11 @@ using Tetrage.Components;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Managers
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : MonoBehaviour, IDebuggable
     {
 
 
@@ -151,7 +152,7 @@ namespace Tetrage.Managers
             {
                 _isGameRunning = true;
                 _gameCts = new CancellationTokenSource();
-                
+
                 await _dealer.StartGameAsync(0f, _gameCts.Token);
                 Debug.Log("GameManager: ゲームが正常に終了しました");
             }
@@ -183,6 +184,15 @@ namespace Tetrage.Managers
 
         #endregion
 
+        #region デバッグ描画用
+
+        public void DrawDebugGUI()
+        {
+
+        }
+
+        #endregion
+
         #region Unity固有メソッド
         private void Update()
         {
@@ -196,23 +206,23 @@ namespace Tetrage.Managers
         public void StopAndReset()
         {
             Debug.Log("GameManager: 停止とリセットを実行");
-            
+
             // ゲーム停止
             _gameCts?.Cancel();
-            
+
             // イベント購読解除
             EventUnsubscribe();
-            
+
             // リソース破棄
             _gameCts?.Dispose();
             _gameCts = null;
-            
+
             // 状態リセット
             _dealer = null;
             _fieldSetupManager = null;
             _isInitialized = false;
             _isGameRunning = false;
-            
+
             Debug.Log("GameManager: 停止とリセット完了");
         }
 
