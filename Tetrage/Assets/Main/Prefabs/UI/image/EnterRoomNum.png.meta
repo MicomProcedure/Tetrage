@@ -1,0 +1,676 @@
+fileFormatVersion: 2
+guid: 3421377015db02046b486c68002ed1d0
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2102166608173103801
+    second: EnterRoomNum_0
+  - first:
+      213: -8300918228732879383
+    second: EnterRoomNum_1
+  - first:
+      213: -8434503131843841874
+    second: EnterRoomNum_2
+  - first:
+      213: 2370525767344011503
+    second: EnterRoomNum_3
+  - first:
+      213: -4540779306018425133
+    second: EnterRoomNum_4
+  - first:
+      213: -4712942701996456551
+    second: EnterRoomNum_5
+  - first:
+      213: -7980179343094130871
+    second: EnterRoomNum_6
+  - first:
+      213: 1829240793076710800
+    second: EnterRoomNum_7
+  - first:
+      213: -236928828751483821
+    second: EnterRoomNum_8
+  - first:
+      213: 6540219847929789696
+    second: EnterRoomNum_9
+  - first:
+      213: 2775657489706562732
+    second: EnterRoomNum_10
+  - first:
+      213: 2391387224484142870
+    second: EnterRoomNum_11
+  - first:
+      213: 1709176214463727541
+    second: EnterRoomNum_12
+  - first:
+      213: 8960886304763457839
+    second: EnterRoomNum_13
+  - first:
+      213: -1793953074621915240
+    second: EnterRoomNum_14
+  - first:
+      213: -3154348680083418101
+    second: EnterRoomNum_15
+  - first:
+      213: 4488288662733710895
+    second: EnterRoomNum_16
+  - first:
+      213: 8415606207321885274
+    second: EnterRoomNum_17
+  - first:
+      213: 6415321337016552838
+    second: EnterRoomNum_18
+  - first:
+      213: 7702887006738700
+    second: EnterRoomNum_19
+  - first:
+      213: 1725966403537489342
+    second: EnterRoomNum_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: EnterRoomNum_0
+      rect:
+        serializedVersion: 2
+        x: 276
+        y: 644
+        width: 215
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ba78d274656c2d10800000000000000
+      internalID: 2102166608173103801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_1
+      rect:
+        serializedVersion: 2
+        x: 493
+        y: 646
+        width: 48
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9eddfc2e9d63dcc80800000000000000
+      internalID: -8300918228732879383
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_2
+      rect:
+        serializedVersion: 2
+        x: 543
+        y: 644
+        width: 106
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea03789e610a2fa80800000000000000
+      internalID: -8434503131843841874
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_3
+      rect:
+        serializedVersion: 2
+        x: 655
+        y: 646
+        width: 42
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe8337530acc5e020800000000000000
+      internalID: 2370525767344011503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_4
+      rect:
+        serializedVersion: 2
+        x: 705
+        y: 646
+        width: 50
+        height: 46
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d6b35d7749ebf0c0800000000000000
+      internalID: -4540779306018425133
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_5
+      rect:
+        serializedVersion: 2
+        x: 760
+        y: 647
+        width: 47
+        height: 49
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9954bb03593489eb0800000000000000
+      internalID: -4712942701996456551
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_6
+      rect:
+        serializedVersion: 2
+        x: 809
+        y: 646
+        width: 107
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 947d6f21b25b04190800000000000000
+      internalID: -7980179343094130871
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_7
+      rect:
+        serializedVersion: 2
+        x: 920
+        y: 646
+        width: 27
+        height: 50
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 09dbdff3fc4c26910800000000000000
+      internalID: 1829240793076710800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_8
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 646
+        width: 15
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35ce73d4c7246bcf0800000000000000
+      internalID: -236928828751483821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_9
+      rect:
+        serializedVersion: 2
+        x: 970
+        y: 644
+        width: 19
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00d70d4dc4783ca50800000000000000
+      internalID: 6540219847929789696
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_10
+      rect:
+        serializedVersion: 2
+        x: 242
+        y: 533
+        width: 790
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca4bc14e7cd158620800000000000000
+      internalID: 2775657489706562732
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_11
+      rect:
+        serializedVersion: 2
+        x: 379
+        y: 345
+        width: 150
+        height: 175
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61fd8c3b20aef2120800000000000000
+      internalID: 2391387224484142870
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_12
+      rect:
+        serializedVersion: 2
+        x: 561
+        y: 346
+        width: 152
+        height: 176
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b748a126b638b710800000000000000
+      internalID: 1709176214463727541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_13
+      rect:
+        serializedVersion: 2
+        x: 745
+        y: 347
+        width: 150
+        height: 174
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f21b61c0e967b5c70800000000000000
+      internalID: 8960886304763457839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_14
+      rect:
+        serializedVersion: 2
+        x: 379
+        y: 255
+        width: 150
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 89fd073fe299a17e0800000000000000
+      internalID: -1793953074621915240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_15
+      rect:
+        serializedVersion: 2
+        x: 563
+        y: 257
+        width: 150
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b04d7e186908934d0800000000000000
+      internalID: -3154348680083418101
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_16
+      rect:
+        serializedVersion: 2
+        x: 745
+        y: 257
+        width: 150
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f26e7af32ca994e30800000000000000
+      internalID: 4488288662733710895
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_17
+      rect:
+        serializedVersion: 2
+        x: 562
+        y: 169
+        width: 151
+        height: 85
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a5a4efcf14d3ac470800000000000000
+      internalID: 8415606207321885274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_18
+      rect:
+        serializedVersion: 2
+        x: 745
+        y: 168
+        width: 150
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68d0bd424ccc70950800000000000000
+      internalID: 6415321337016552838
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_19
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 56
+        width: 277
+        height: 97
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c0918c32cbd5b1000800000000000000
+      internalID: 7702887006738700
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnterRoomNum_20
+      rect:
+        serializedVersion: 2
+        x: 667
+        y: 54
+        width: 278
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ebd4c19ac4dd3f710800000000000000
+      internalID: 1725966403537489342
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      EnterRoomNum_0: 2102166608173103801
+      EnterRoomNum_1: -8300918228732879383
+      EnterRoomNum_10: 2775657489706562732
+      EnterRoomNum_11: 2391387224484142870
+      EnterRoomNum_12: 1709176214463727541
+      EnterRoomNum_13: 8960886304763457839
+      EnterRoomNum_14: -1793953074621915240
+      EnterRoomNum_15: -3154348680083418101
+      EnterRoomNum_16: 4488288662733710895
+      EnterRoomNum_17: 8415606207321885274
+      EnterRoomNum_18: 6415321337016552838
+      EnterRoomNum_19: 7702887006738700
+      EnterRoomNum_2: -8434503131843841874
+      EnterRoomNum_20: 1725966403537489342
+      EnterRoomNum_3: 2370525767344011503
+      EnterRoomNum_4: -4540779306018425133
+      EnterRoomNum_5: -4712942701996456551
+      EnterRoomNum_6: -7980179343094130871
+      EnterRoomNum_7: 1829240793076710800
+      EnterRoomNum_8: -236928828751483821
+      EnterRoomNum_9: 6540219847929789696
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

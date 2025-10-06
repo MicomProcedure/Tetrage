@@ -2,20 +2,18 @@ using UnityEngine;
 
 public class PanelButton : MonoBehaviour
 {
-    public GameObject targetPanel; // 表示したいパネル
+    public GameObject[] targetPanelS; // 表示したいパネル
+    public GameObject[] targetPanelH; // 隠したいパネル
 
     public void ShowPanel()
     {
-        targetPanel.SetActive(true);
+        foreach(var targetPanelS in targetPanelS)
+        targetPanelS.SetActive(true);
     }
 
     public void HidePanel()
     {
-        targetPanel.SetActive(false);
-    }
-
-    public void TogglePanel()
-    {
-        targetPanel.SetActive(!targetPanel.activeSelf);
+        foreach(var targetPanelH in targetPanelH)
+        targetPanelH.SetActive(false);
     }
 }
