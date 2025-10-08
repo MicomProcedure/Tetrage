@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      kkrn_icon_user_4_0: 8241042064671765187
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
