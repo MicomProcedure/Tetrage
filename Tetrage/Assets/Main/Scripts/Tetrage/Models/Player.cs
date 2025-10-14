@@ -5,13 +5,14 @@ using Tetrage.Core.Enums;
 using Tetrage.Core.Contracts;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Models
 {
     /// <summary>
     /// ゲーム内のプレイヤーを表します。
     /// </summary>
-    public class Player : IPlayer
+    public class Player : IPlayer, IIdentifiable<PlayerId>
     {
         private static int _playerCount = 0;
 
@@ -19,9 +20,14 @@ namespace Tetrage.Models
         public string UserId { get; }
 
         /// <summary>
-        /// プレイヤーの一意な識別子。
+        /// プレイヤーの一意な識別子（後方互換用）。強い型 <see cref="Id"/> を暗黙変換して返す。
         /// </summary>
-        public int PlayerId { get; }
+        public int PlayerId => Id;
+
+        /// <summary>
+        /// 強い型のプレイヤーID（不変）
+        /// </summary>
+        public PlayerId Id { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
@@ -44,14 +50,29 @@ namespace Tetrage.Models
 
         public Player(string userId, CardPile target, CardPile hands, CardPile tmp) // UserID をコンストラクタで受け取るように変更
         {
-            PlayerId = _playerCount++;
+            Id = new PlayerId(_playerCount++);
 
             Target = target;
             Hands = hands;
             Tmp = tmp;
 
-            // UserID が指定されなかった場合は、PlayerID を元にしたデフォルト値を設定
-            UserId = userId ?? $"Player_{PlayerId}";
+            // UserID が指定されなかった場合は、Id を元にしたデフォルト値を設定
+            UserId = userId ?? $"Player_{(int)Id}";
+        }
+
+        /// <summary>
+        /// プレイヤーIDを指定して初期化するコンストラクタ（推奨）。
+        /// </summary>
+        public Player(PlayerId id, string userId, CardPile target, CardPile hands, CardPile tmp)
+        {
+            Id = id;
+
+            Target = target;
+            Hands = hands;
+            Tmp = tmp;
+
+            // UserID が指定されなかった場合は、Id を元にしたデフォルト値を設定
+            UserId = userId ?? $"Player_{(int)Id}";
         }
 
 
@@ -68,21 +89,6 @@ namespace Tetrage.Models
             IsReach = true;
         }
 
-        /// <summary>
-        /// 指定されたアクションを実行します。
-        /// </summary>
-        /// <param name="action">実行するゲームアクション。</param>
-        // public async UniTask PerformAction(GameAction action) // async UniTask に変更
-        // {
-        //     // アクションが有効か検証
-        //     if (!action.Validate())
-        //     {
-        //         Debug.LogWarning($"Action '{action.GetType().Name}' for Player {UserId} is not valid.");
-        //         return;
-        //     }
 
-        //     // アクションの実行を待ちます
-        //     await action.Execute();
-        // }
     }
 }
