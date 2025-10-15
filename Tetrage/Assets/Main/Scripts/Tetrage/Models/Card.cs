@@ -80,20 +80,6 @@ namespace Tetrage.Models
         }
 
         /// <summary>
-        /// カードを初期化するコンストラクタ
-        /// </summary>
-        public Card(Suit suit, int number, bool isVisible)
-        {
-            // 既存互換用のコンストラクタ。DeckId=1、Suitのenum値をインデックスとみなして決定論的にIDを合成する。
-            // TODO: CardIDを合成するヘルパーが出来次第、カードIDの生成をカードファクトリに移行する
-            int v = ((1 & 0xFF) << 16) | (((int)suit & 0xFF) << 8) | (Mathf.Max(1, number) & 0xFF);
-            Id = new CardId(v);
-            _suit = suit;
-            _number = Mathf.Max(1, number);
-            _isVisible = isVisible;
-        }
-
-        /// <summary>
         /// カードを初期化するコンストラクタ（推奨）
         /// </summary>
         public Card(CardId id, Suit suit, int number, bool isVisible)
