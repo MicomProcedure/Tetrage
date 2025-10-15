@@ -1,7 +1,6 @@
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
-using Tetrage.Title;
 
 namespace Tetrage.Network
 {
