@@ -19,7 +19,7 @@ namespace Tetrage.Factories
         public Card CreateCard(Suit suit, int number) //1枚のカードオブジェクトを生成.
         {
             // CardId を DeckId×suitIndex×number で決定論的に合成して生成
-            var cardId = CardIdComposer.Compose(DefaultDeckId, 1, number);
+            var cardId = CardIdComposer.Compose(DefaultDeckId, (int)suit, number);
             return new Card(cardId, suit, number, isVisible: false);
         }
 
