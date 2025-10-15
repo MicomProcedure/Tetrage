@@ -1,6 +1,8 @@
 using UnityEngine;
 
-public class PanelButton : MonoBehaviour
+namespace Tetrage.Title
+{
+    public class PanelButton : MonoBehaviour
 {
     public GameObject[] targetPanelS; // 表示したいパネル
     public GameObject[] targetPanelH; // 隠したいパネル
@@ -15,5 +17,6 @@ public class PanelButton : MonoBehaviour
     {
         foreach(var targetPanelH in targetPanelH)
         targetPanelH.SetActive(false);
+    }
     }
 }
