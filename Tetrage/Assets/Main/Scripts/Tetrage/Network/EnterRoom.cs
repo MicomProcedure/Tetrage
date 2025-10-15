@@ -95,7 +95,8 @@ namespace Tetrage.Network
             if (!string.IsNullOrEmpty(pendingJoinRoomCode))
             {
                 Debug.Log("保留中の部屋に参加: " + pendingJoinRoomCode);
-                PhotonNetwork.JoinRoom(pendingJoinRoomCode);
+
+                JoinRoom(pendingJoinRoomCode);
                 pendingJoinRoomCode = null;
             }
         }

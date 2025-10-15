@@ -13,7 +13,7 @@ namespace Tetrage.Title
     [SerializeField] private EnterMasterServer enterMasterServer;
     [SerializeField] private CreateRoom createRoom;
     [SerializeField] private EnterRoom enterRoom;
-
+    [SerializeField] private ExitRoom exitRoom;
 
 
     #region Public Interface Methods
@@ -46,6 +46,14 @@ namespace Tetrage.Title
         if (enterRoom != null)
         {
             enterRoom.JoinRoom();
+        }
+    }
+
+    public void OnClickExitRoom()
+    {
+        if (exitRoom != null)
+        {
+            exitRoom.OnExitRoom();
         }
     }
 

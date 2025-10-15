@@ -1,6 +1,11 @@
-[System.Serializable]
-public class PlayerProfileData
+using System;
+
+namespace Tetrage.Title
 {
-    public int iconIndex = 0;
-    public string playerName = "Player";
+    [Serializable]
+    public class PlayerProfileData
+    {
+        public int IconIndex = 0;
+        public string PlayerName = "Player";
+    }
 }
