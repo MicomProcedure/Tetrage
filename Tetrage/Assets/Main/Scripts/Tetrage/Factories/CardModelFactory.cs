@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Tetrage.Models;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Ids;
 
 
 namespace Tetrage.Factories
@@ -11,11 +12,15 @@ namespace Tetrage.Factories
     /// </summary>
     public class CardModelFactory : ICardFactory
     {
+        // 単一デッキ前提の既定 DeckId。複数デッキ対応時は差し替え/DI する。
+        private static readonly DeckId DefaultDeckId = new DeckId(1);
+
         /// <inheritdoc/>
         public Card CreateCard(Suit suit, int number) //1枚のカードオブジェクトを生成.
         {
-            // 初期表示は裏向き(false)のカードモデルをコンストラクタで生成
-            return new Card(suit, number, isVisible: false);
+            // CardId を DeckId×suitIndex×number で決定論的に合成して生成
+            var cardId = CardIdComposer.Compose(DefaultDeckId, (int)suit, number);
+            return new Card(cardId, suit, number, isVisible: false);
         }
 
         /// <inheritdoc/>
@@ -38,4 +43,4 @@ namespace Tetrage.Factories
             return list;
         }
     }
-} 
+}

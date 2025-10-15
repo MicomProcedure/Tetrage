@@ -4,11 +4,17 @@ using System.Collections.Generic;
 using Tetrage.Core.Enums;
 using System.Linq;
 using System;
+using Tetrage.Core.Contracts;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Models
 {
-    public class CardPile : IEnumerable<Card>
+    public class CardPile : IEnumerable<Card>, IIdentifiable<PileId>
     {
+        /// <summary>
+        /// パイル一意ID（不変）
+        /// </summary>
+        public PileId Id { get; }
 
 
         // 内部のカードリスト
@@ -97,7 +103,7 @@ namespace Tetrage.Models
         /// <param name="initialCards">初期に含めるカードのコレクション</param>
         /// <param name="maxCount">この束の最大枚数</param>
         public CardPile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
-            : this(name, maxCount)
+            : this(new PileId(0), name, maxCount)
         {
             if (initialCards == null) return;
 
@@ -121,7 +127,16 @@ namespace Tetrage.Models
         /// <param name="name">束の名前（デバッグ用）</param>
         /// <param name="maxCount">この束の最大枚数（上限なしなら int.MaxValue）</param>
         public CardPile(string name, int maxCount = int.MaxValue)
+            : this(new PileId(0), name, maxCount)
         {
+        }
+
+        /// <summary>
+        /// ID付きコンストラクタ（推奨）
+        /// </summary>
+        public CardPile(PileId id, string name, int maxCount = int.MaxValue)
+        {
+            Id = id;
             Name = name;
             // カードの束の上限が負だった場合、規定値に設定
             if (maxCount < 0)

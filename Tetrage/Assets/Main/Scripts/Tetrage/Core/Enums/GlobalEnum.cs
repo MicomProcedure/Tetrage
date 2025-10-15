@@ -75,7 +75,17 @@ namespace Tetrage.Core.Enums
         /// <summary>
         /// 何もしないアクション（パス）
         /// </summary>
-        Pass
+        Pass,
+
+        /// <summary>
+        /// 勝利判定を仕掛けるアクション：テトラージソロアクション
+        /// </summary>
+        TetrageSolo,
+
+        /// <summary>
+        /// 勝利判定を仕掛けるアクション：テトラージマルチアクション
+        /// </summary>
+        TetrageMulti,
     }
 
 }

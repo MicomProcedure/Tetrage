@@ -1,0 +1,28 @@
+using Tetrage.Core.Ids;
+
+namespace Tetrage.Core.Ids
+{
+    /// <summary>
+    /// 予約済みの PileId を定義するヘルパ。
+    /// </summary>
+    public static class PileIds
+    {
+        #region 固定パイル（グローバル）
+        /// <summary>ステージの山札</summary>
+        public static readonly PileId Stack = new PileId(1);
+        /// <summary>捨て札</summary>
+        public static readonly PileId Trash = new PileId(2);
+        #endregion
+
+        #region プレイヤー固有パイル（ActorNumber 由来）
+        /// <summary>各プレイヤーの手札</summary>
+        public static PileId PlayerHands(int PlayerId) => new PileId(1000 + PlayerId);
+        /// <summary>各プレイヤーのターゲット</summary>
+        public static PileId PlayerTarget(int PlayerId) => new PileId(2000 + PlayerId);
+        /// <summary>各プレイヤーの一時置き場</summary>
+        public static PileId PlayerTmp(int PlayerId) => new PileId(3000 + PlayerId);
+        #endregion
+    }
+}
+
+

@@ -146,7 +146,7 @@ namespace Tetrage.Components
         /// </summary>
         public FieldSetupDependencies CreateFieldSetupDependencies()
         {
-            // 各種ファクトリーを生成（依存関係順）
+            // 各種ファクトリーを生成（依存関係順）（TODO: ここをRegistry付きのファクトリに変更する）
             var cardFactory = new CardModelFactory();
             var cardPileFactory = new CardPileFactory();
             var stageFactory = new StageModelFactory(cardPileFactory, cardFactory);
@@ -345,7 +345,7 @@ namespace Tetrage.Components
         #endregion
 
         #region UnityEditor用メソッド
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         /// <summary>
         /// Inspector用の設定検証ボタン
         /// </summary>
@@ -381,7 +381,7 @@ namespace Tetrage.Components
                 Debug.LogError($"FieldSetupComponent: FieldSetupSettings構築テストに失敗しました - {e.Message}");
             }
         }
-        #endif
+#endif
         #endregion
 
         #region Unityイベント

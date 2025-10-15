@@ -1,11 +1,18 @@
 using UnityEngine;
 using System;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Contracts;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Models
 {
-    public class Card
+    public class Card : IIdentifiable<CardId>
     {
+        /// <summary>
+        /// カード一意ID（不変）
+        /// </summary>
+        public CardId Id { get; }
+
         private Suit _suit;
         public Suit Suit
         {
@@ -73,10 +80,11 @@ namespace Tetrage.Models
         }
 
         /// <summary>
-        /// カードを初期化するコンストラクタ
+        /// カードを初期化するコンストラクタ（推奨）
         /// </summary>
-        public Card(Suit suit, int number, bool isVisible)
+        public Card(CardId id, Suit suit, int number, bool isVisible)
         {
+            Id = id;
             _suit = suit;
             _number = Mathf.Max(1, number);
             _isVisible = isVisible;
