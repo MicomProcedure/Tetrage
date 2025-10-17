@@ -44,6 +44,19 @@ namespace Tetrage.Network.Gameplay
         }
     }
 
+    public sealed class PhotonActionContext : INetworkActionContext
+    {
+        private readonly INetworkBroadcaster _broadcaster;
+        public PhotonActionContext(INetworkBroadcaster broadcaster)
+        {
+            _broadcaster = broadcaster;
+        }
+        public void Request(ActionRequestedEvent request)
+        {
+            _broadcaster.Raise(EventCode.ActionRequested, request);
+        }
+    }
+
     public sealed class PhotonReceiver : INetworkReceiver, IOnEventCallback
     {
         private readonly ISerializer _serializer;
