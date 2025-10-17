@@ -90,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3542035315044076511, guid: 19579818a8776454fb54580f3ebd7d6e, type: 3}
       propertyPath: m_text
-      value: CHECK
+      value: "\u30C1\u30A7\u30C3\u30AF"
       objectReference: {fileID: 0}
     - target: {fileID: 8328852189532307594, guid: 19579818a8776454fb54580f3ebd7d6e, type: 3}
       propertyPath: m_Name

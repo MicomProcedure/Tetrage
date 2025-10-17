@@ -90,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3542035315044076511, guid: 19579818a8776454fb54580f3ebd7d6e, type: 3}
       propertyPath: m_text
-      value: OPEN
+      value: "\u30AA\u30FC\u30D7\u30F3"
       objectReference: {fileID: 0}
     - target: {fileID: 8328852189532307594, guid: 19579818a8776454fb54580f3ebd7d6e, type: 3}
       propertyPath: m_Name

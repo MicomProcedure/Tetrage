@@ -15,7 +15,7 @@ namespace Tetrage.UI
             int count = _cardViewObjects.Count;
             if (count == 0) return;
 
-            SetCardViewPositions(count, 0, 0);
+            SetCardViewPositions(count, 0.1f, 0);
         }
 
         // スタックの場合はカード表示用Viewの座標を0,0,0にする
