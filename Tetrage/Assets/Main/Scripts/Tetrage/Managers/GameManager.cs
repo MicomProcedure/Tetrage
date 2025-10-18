@@ -175,9 +175,9 @@ namespace Tetrage.Managers
                         playerActorNumbers = null,
                     };
                     _netCtl.BroadcastGameStarted(started);
+                    await _dealer.StartGameAsync(0f, _gameCts.Token);   // ゲーム開始（ホスト）
                 }
 
-                await _dealer.StartGameAsync(0f, _gameCts.Token);
                 Debug.Log("GameManager: ゲームが正常に終了しました");
             }
             catch (System.OperationCanceledException)
