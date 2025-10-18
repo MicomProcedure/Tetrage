@@ -1,6 +1,7 @@
 using Photon.Pun;
 using UnityEngine;
 using Tetrage.Title;
+using System;
 
 /// <summary>
 /// ルーム参加管理クラス
@@ -12,6 +13,15 @@ namespace Tetrage.Network
         [SerializeField] private NumberInputController numberInputController;
 
         private string pendingJoinRoomCode;
+
+        #region Events
+        
+        /// <summary>
+        /// 部屋参加失敗時のイベント
+        /// </summary>
+        public static event Action<string> OnRoomJoinFailed;
+        
+        #endregion
 
         #region Public Methods
 
@@ -86,6 +96,40 @@ namespace Tetrage.Network
         public override void OnJoinedRoom()
         {
             Debug.Log("部屋参加成功: " + PhotonNetwork.CurrentRoom.Name);
+        }
+
+        public override void OnJoinRoomFailed(short returnCode, string message)
+        {
+            Debug.LogError($"部屋参加失敗: {message} (ReturnCode: {returnCode})");
+            
+            string errorMessage = "";
+            
+            // エラーメッセージに応じて適切な処理を行う
+            switch (returnCode)
+            {
+                case 32760: // RoomNotFound
+                    errorMessage = "指定された部屋が見つかりませんでした。部屋コードを確認してください。";
+                    Debug.LogError(errorMessage);
+                    break;
+                case 32761: // RoomFull
+                    errorMessage = "部屋が満員です。";
+                    Debug.LogError(errorMessage);
+                    break;
+                case 32762: // RoomClosed
+                    errorMessage = "部屋が閉じられています。";
+                    Debug.LogError(errorMessage);
+                    break;
+                default:
+                    errorMessage = $"不明なエラーが発生しました: {message}";
+                    Debug.LogError(errorMessage);
+                    break;
+            }
+            
+            // イベントを発火してUIに通知
+            OnRoomJoinFailed?.Invoke(errorMessage);
+            
+            // 保留中の部屋コードをクリア
+            pendingJoinRoomCode = null;
         }
 
         public override void OnJoinedLobby()

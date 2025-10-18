@@ -18,9 +18,13 @@ namespace Tetrage.Managers
             {
                 return new Dealer(fieldSetupManager.Stage, fieldSetupManager.Players, new FixedPlayerStrategy());
             }
+            else if (gameMode == GameMode.Release)
+            {
+                return new Dealer(fieldSetupManager.Stage, fieldSetupManager.Players, new RealDealerStrategy());
+            }
             else
             {
-                throw new System.InvalidOperationException("GameModeがDebugではありません");
+                throw new System.InvalidOperationException("GameModeがDebugまたはReleaseではありません");
             }
             }
             catch (System.InvalidOperationException ex)

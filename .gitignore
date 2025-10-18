@@ -91,3 +91,7 @@ Tetrage/[Aa]ssets/[Ss]treamingAssets/aa/*
 *.diff
 *_list-archive.zip
 *_list-file.txt
+
+# font
+Tetrage/Assets/Main/Prefabs/UI/Kinkakuji-Normal SDF.asset
+Tetrage/Assets/Main/Prefabs/UI/Kinkakuji-Normal SDF.asset.meta
