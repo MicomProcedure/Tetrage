@@ -1,13 +1,18 @@
 using Photon.Pun;
 using UnityEngine;
+using Tetrage.Title;
 
-public class ExitRoom : MonoBehaviourPunCallbacks
+namespace Tetrage.Network
 {
-    public void OnExitRoom()
+    public class ExitRoom : MonoBehaviourPunCallbacks
     {
-        PhotonNetwork.LeaveRoom();
-        PhotonNetwork.LeaveLobby();
-        PhotonNetwork.Disconnect();
-        Debug.Log("部屋から退出しました");
+        [SerializeField] public NetworkErrorUI networkErrorUI;
+        public void OnExitRoom()
+        {
+            PhotonNetwork.LeaveRoom();
+            Debug.Log("部屋から退出しました");
+            networkErrorUI.ShowErrorMessagePanel("部屋から退出しました");
+        }
     }
 }
+

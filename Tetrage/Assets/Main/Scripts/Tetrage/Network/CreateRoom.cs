@@ -1,6 +1,7 @@
-using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using Photon.Pun;
+using Tetrage.Title;
 
 namespace Tetrage.Network
 {
@@ -11,7 +12,8 @@ namespace Tetrage.Network
     {
         private string pendingRoomCode;
         private RoomOptions pendingRoomOptions;
-    
+        [SerializeField] private NetworkErrorUI networkErrorUI;
+        [SerializeField] private PanelButton panelButton;
 
         #region Public Methods
         /// <summary>
@@ -58,11 +60,16 @@ namespace Tetrage.Network
         {
             Debug.Log("部屋作成成功: " + PhotonNetwork.CurrentRoom.Name);
             PlayerPrefs.SetString("RoomCode", PhotonNetwork.CurrentRoom.Name);
+            panelButton.ShowPanel();
+            panelButton.HidePanel();
         }
 
         public override void OnCreateRoomFailed(short returnCode, string message)
         {
-            Debug.LogError("部屋作成失敗: " + message);
+            Debug.LogError($"部屋作成失敗: {message} (ReturnCode: {returnCode})");
+            
+            string errorMessage = GetCreateRoomErrorMessage(returnCode, message);
+            networkErrorUI.ShowErrorMessagePanel(errorMessage);
         }
 
         public override void OnJoinedLobby()
@@ -75,6 +82,39 @@ namespace Tetrage.Network
                 PhotonNetwork.CreateRoom(pendingRoomCode, pendingRoomOptions);
                 pendingRoomCode = null;
                 pendingRoomOptions = null;
+            }
+        }
+        #endregion
+
+        #region Error Message Handling
+        /// <summary>
+        /// ルーム作成失敗時のエラーメッセージを取得
+        /// </summary>
+        /// <param name="returnCode">リターンコード</param>
+        /// <param name="message">エラーメッセージ</param>
+        /// <returns>ユーザーフレンドリーなエラーメッセージ</returns>
+        private string GetCreateRoomErrorMessage(short returnCode, string message)
+        {
+            switch (returnCode)
+            {
+                case 32760: // RoomAlreadyExists
+                    return "同じ名前の部屋が既に存在します。しばらく待ってから再度お試しください。";
+                case 32761: // RoomFull
+                    return "部屋が満員です。";
+                case 32762: // RoomClosed
+                    return "部屋が閉じられています。";
+                case 32763: // MaxCcuReached
+                    return "サーバーの同時接続数が上限に達しました。しばらく待ってから再度お試しください。";
+                case 32764: // MaxRoomsReached
+                    return "作成可能な部屋数が上限に達しました。しばらく待ってから再度お試しください。";
+                case 32765: // RegionListEmpty
+                    return "利用可能なリージョンがありません。";
+                case 32766: // ApplicationNameNotSet
+                    return "アプリケーション名が設定されていません。";
+                case 32767: // MaxPlayersOutOfRange
+                    return "最大プレイヤー数が範囲外です。";
+                default:
+                    return $"部屋の作成に失敗しました: {message}";
             }
         }
         #endregion
