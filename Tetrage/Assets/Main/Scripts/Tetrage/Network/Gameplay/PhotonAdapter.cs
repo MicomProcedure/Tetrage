@@ -57,10 +57,12 @@ namespace Tetrage.Network.Gameplay
         }
     }
 
-    public sealed class PhotonReceiver : INetworkReceiver, IOnEventCallback
+    public sealed class PhotonReceiver : INetworkReceiver, IOnEventCallback, IDisposable
     {
         private readonly ISerializer _serializer;
         private readonly Dictionary<byte, Action<byte[]>> _handlers = new Dictionary<byte, Action<byte[]>>();
+        private bool _active;
+        private bool _disposed;
 
         public PhotonReceiver(ISerializer serializer)
         {
@@ -76,16 +78,32 @@ namespace Tetrage.Network.Gameplay
             };
         }
 
+        #region Start/Stop
+        /// <summary>
+        /// ネットワーク受信の開始（冪等）
+        /// </summary>
         public void Start()
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(PhotonReceiver));
+            if (_active) return;
             PhotonNetwork.AddCallbackTarget(this);
+            _active = true;
         }
 
+        /// <summary>
+        /// ネットワーク受信の停止（冪等）
+        /// </summary>
         public void Stop()
         {
+            if (!_active) return;
             PhotonNetwork.RemoveCallbackTarget(this);
+            _active = false;
         }
+        #endregion
 
+        /// <summary>
+        /// ネットワークイベントの受信
+        /// </summary>
         public void OnEvent(EventData photonEvent)
         {
             if (_handlers.TryGetValue(photonEvent.Code, out var h))
@@ -96,6 +114,19 @@ namespace Tetrage.Network.Gameplay
                 }
             }
         }
+
+        #region IDisposable
+        /// <summary>
+        /// 受信停止を保証して破棄します。
+        /// </summary>
+        public void Dispose()
+        {
+            if (_disposed) return;
+            Stop();
+            _disposed = true;
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
 
