@@ -6,6 +6,11 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using Tetrage.Core.Contracts;
+using Tetrage.Network.Gameplay;
+using Tetrage.Core.Ids;
+using Tetrage.Models;
+using Photon.Pun;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Managers
 {
@@ -24,6 +29,7 @@ namespace Tetrage.Managers
         #region 管理対象インスタンス
         private FieldSetupManager _fieldSetupManager;
         private Dealer _dealer;
+        private IGameplayNetworkController _netCtl;
 
         #endregion
 
@@ -31,6 +37,7 @@ namespace Tetrage.Managers
         private bool _isInitialized = false;
         private bool _isGameRunning = false;
         private CancellationTokenSource _gameCts;
+        private bool _networkInitialized = false;
 
         #endregion
 
@@ -89,6 +96,9 @@ namespace Tetrage.Managers
                 _isInitialized = true;
 
                 EventSubscribe();
+
+                // ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
+                InitializeNetworking();
 
                 Debug.Log("GameManager: 初期化が完了しました");
             }
@@ -153,6 +163,20 @@ namespace Tetrage.Managers
                 _isGameRunning = true;
                 _gameCts = new CancellationTokenSource();
 
+                // ホストの場合は初期宣言（GameStarted）を発行（簡易：DeckId=1/仮）
+                if (PhotonNetwork.IsMasterClient && _networkInitialized)
+                {
+                    var started = new GameStartedEvent
+                    {
+                        deckId = InGameConsts.DEFAULT_DECK_ID,
+                        suitOrder = new byte[] { 0, 1, 2, 3 },
+                        minNumber = 1,
+                        maxNumber = 13,
+                        playerActorNumbers = null,
+                    };
+                    _netCtl.BroadcastGameStarted(started);
+                }
+
                 await _dealer.StartGameAsync(0f, _gameCts.Token);
                 Debug.Log("GameManager: ゲームが正常に終了しました");
             }
@@ -213,6 +237,19 @@ namespace Tetrage.Managers
             // イベント購読解除
             EventUnsubscribe();
 
+            // ネットワーク停止
+            if (_networkInitialized)
+            {
+                _netCtl?.Stop();
+                // 所有オブジェクトの明示破棄
+                if (_netCtl is System.IDisposable d)
+                {
+                    d.Dispose();
+                }
+                _netCtl = null;
+                _networkInitialized = false;
+            }
+
             // リソース破棄
             _gameCts?.Dispose();
             _gameCts = null;
@@ -243,6 +280,44 @@ namespace Tetrage.Managers
             StopAndReset();
         }
 
+        private void OnDisable()
+        {
+            // ライフサイクル連携: 無効化時も確実に停止・解除
+            StopAndReset();
+        }
+
+        #endregion
+
+        #region ネットワーク初期化/受信ハンドラ
+        private IdRegistry<CardId, Card> _cardRegistry;
+        private IdRegistry<PileId, CardPile> _pileRegistry;
+        private IdRegistry<PlayerId, Player> _playerRegistry;
+
+        private void InitializeNetworking()
+        {
+            if (_networkInitialized) return;
+
+            // レジストリの生成（登録はフィールド構築側で行う想定）
+            _cardRegistry = new IdRegistry<CardId, Card>();
+            _pileRegistry = new IdRegistry<PileId, CardPile>();
+            _playerRegistry = new IdRegistry<PlayerId, Player>();
+
+            _netCtl = new GameplayNetworkController();
+            _netCtl.Initialize(
+                PhotonNetwork.IsMasterClient,
+                _pileRegistry,
+                _cardRegistry,
+                _playerRegistry,
+                onActionRequestedHost: OnActionRequestedReceived,
+                onGameStartedOptional: OnGameStartedReceived
+            );
+            _netCtl.Start();
+            _networkInitialized = true;
+        }
+
+        private void OnGameStartedReceived(GameStartedEvent e) { Debug.Log($"GameManager: GameStarted {e.deckId}"); }
+        private void OnTurnStartedReceived(TurnStartedEvent e) { Debug.Log($"TurnStarted seq={e.sequence} player={e.currentPlayerActorNumber}"); }
+        private void OnActionRequestedReceived(ActionRequestedEvent e) { /* 旧ハンドラは廃止。Controller/Handlerに委譲 */ }
         #endregion
     }
 }

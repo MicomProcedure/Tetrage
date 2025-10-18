@@ -1,4 +1,6 @@
 using System;
+using Tetrage.Core.Ids;
+using Tetrage.Models;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -18,6 +20,23 @@ namespace Tetrage.Network.Gameplay
         void On<T>(EventCode code, Action<T> handler);
         void Start();
         void Stop();
+    }
+
+    // ゲームプレイ用のネットワーク制御インターフェース（GameManagerから参照）
+    public interface IGameplayNetworkController
+    {
+        void Initialize(
+            bool isHost,
+            IdRegistry<PileId, CardPile> pileRegistry,
+            IdRegistry<CardId, Card> cardRegistry,
+            IdRegistry<PlayerId, Player> playerRegistry,
+            Action<ActionRequestedEvent> onActionRequestedHost,
+            Action<GameStartedEvent> onGameStartedOptional = null
+        );
+        void Start();
+        void Stop();
+        void BroadcastGameStarted(GameStartedEvent e);
+        void BroadcastActionResult(ActionResultEvent e);
     }
 }
 

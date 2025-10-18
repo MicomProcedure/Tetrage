@@ -1,5 +1,6 @@
 using System;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -44,6 +45,7 @@ namespace Tetrage.Network.Gameplay
     public struct ActionRequestedEvent
     {
         public int sequence;
+        public int clientSequence; // クライアント側の識別用
         public int actorPlayerId;
         public ActionType actionType;
         public CardId[] targetCardIds; // 単数 or 複数対象
@@ -53,6 +55,7 @@ namespace Tetrage.Network.Gameplay
     public struct ActionResultEvent
     {
         public int sequence;
+        public int clientSequence; // エコーバック（関連付け）
         public int actorPlayerId;
         public ActionType actionType;
         public bool accepted;      // 成否
