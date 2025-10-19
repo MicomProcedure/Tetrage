@@ -3,9 +3,9 @@ using System.Linq;
 namespace Tetrage.Core.Actions
 {
     /// <summary>
-    /// Reach アクションの実行条件を検証するクラス
+    /// TetrageSolo アクションの実行条件を検証するクラス
     /// </summary>
-    public class ReachValidator : IActionValidator
+    public class TetrageSoloValidator : IActionValidator
     {
         public ValidationResult Validate(IActionContext context)
         {
@@ -14,21 +14,9 @@ namespace Tetrage.Core.Actions
             {
                 return ValidationResult.Invalid("自分のターンではありません");
             }
-
-            if(context.RequesterPlayer.IsReach)
-            {
-                return ValidationResult.Invalid("リーチをしています");
-            }
             
+            // TODO: プレイヤーが自分のスートと同じスートを手札に揃えているかどうかの判定
             var hands = context.RequesterPlayer.Hands;
-            
-            // 手札が満杯かチェック（容量は定数から取得する想定）
-            // TODO: プレイヤーの手札容量を定数から取得
-            var maxHandCapacity = 3; // 仮の値
-            if (hands.Count < maxHandCapacity)
-            {
-                return ValidationResult.Invalid("手札が満杯ではありません");
-            }
             
             // 手札が空でないかチェック
             if (!hands.Any())
@@ -36,11 +24,13 @@ namespace Tetrage.Core.Actions
                 return ValidationResult.Invalid("手札にカードがありません");
             }
             
-            // 全てのカードのスートが一致しているかチェック
+            // 全てのカードのスートが一致していて、そのスートと自分のターゲットスートが一致しているかチェック
             var firstSuit = hands.First().Suit;
             var allSuitsSame = hands.All(card => card.Suit == firstSuit);
+            var targetSuit = context.RequesterPlayer.Target.First().Suit;
+            var isTargetSuit = allSuitsSame && firstSuit == targetSuit;
             
-            if (!allSuitsSame)
+            if (!isTargetSuit)
             {
                 return ValidationResult.Invalid("手札のスートが全て一致していません");
             }

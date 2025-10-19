@@ -461,6 +461,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardViewPrefab: {fileID: 6479867437534543680, guid: c26331c70e68b4aec989a7035b8a4053, type: 3}
+  cardImageMapper: {fileID: 11400000, guid: c2dba1c9d552e469f9f31d4add92026e, type: 2}
   pileViewPrefabs:
   - {fileID: 3340305892033893497, guid: 59cdcafdcfe084df0a25283d25cf1e1a, type: 3}
   - {fileID: 3600912846972201006, guid: 1bfb12b8ba15b174abb6ad5c709d7a4e, type: 3}

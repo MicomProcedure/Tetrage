@@ -14,6 +14,11 @@ namespace Tetrage.Core.Actions
             {
                 return ValidationResult.Invalid("自分のターンではありません");
             }
+
+            if(context.RequesterPlayer.IsReach)
+            {
+                return ValidationResult.Invalid("リーチをしているプレイヤーはOpenできません");
+            }
             
             // 相手プレイヤーの手札に裏向きのカードが存在するかチェック
             var hasHiddenCards = context.OtherPlayers
