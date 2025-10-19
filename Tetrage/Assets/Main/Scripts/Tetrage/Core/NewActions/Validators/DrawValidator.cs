@@ -29,6 +29,11 @@ namespace Tetrage.Core.Actions
             {
                 return ValidationResult.Invalid("Tmpが空ではありません");
             }
+
+            if(context.RequesterPlayer.IsReach)
+            {
+                return ValidationResult.Invalid("リーチをしているプレイヤーはDrawできません");
+            }
             
             return ValidationResult.Valid();
         }

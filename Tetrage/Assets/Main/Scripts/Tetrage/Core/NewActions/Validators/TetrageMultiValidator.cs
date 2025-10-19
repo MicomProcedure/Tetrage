@@ -1,26 +1,28 @@
+using System.Linq;
+
 namespace Tetrage.Core.Actions
 {
     /// <summary>
-    /// Pass アクションの実行条件を検証するクラス
-    /// 何もしないアクションなので、基本的に常に実行可能
+    /// Draw アクションの実行条件を検証するクラス
     /// </summary>
-    public class PassValidator : IActionValidator
+    public class TetrageMultiValidator : IActionValidator
     {
         public ValidationResult Validate(IActionContext context)
         {
+            
             // 基本チェック: リクエスターがターン中のプレイヤーか
             if (!ReferenceEquals(context.RequesterPlayer, context.CurrentTurnPlayer))
             {
                 return ValidationResult.Invalid("自分のターンではありません");
             }
-            if(!context.RequesterPlayer.IsReach)
-            {
-                return ValidationResult.Invalid("リーチをしていないプレイヤーはPassできません");
-            }
 
-            // Passアクションは何もしないアクションなので、
-            // 基本的な条件さえ満たしていれば常に実行可能
+            //リーチをしていないことを確認
+            if (context.RequesterPlayer.IsReach)
+            {
+                return ValidationResult.Invalid("リーチをしているプレイヤーはTetrageMultiできません");
+            }
+            
             return ValidationResult.Valid();
         }
     }
-}
+} 

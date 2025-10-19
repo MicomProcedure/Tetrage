@@ -14,6 +14,11 @@ namespace Tetrage.Core.Actions
             {
                 return ValidationResult.Invalid("自分のターンではありません");
             }
+
+            if(context.RequesterPlayer.IsReach)
+            {
+                return ValidationResult.Invalid("リーチをしています");
+            }
             
             var hands = context.RequesterPlayer.Hands;
             
