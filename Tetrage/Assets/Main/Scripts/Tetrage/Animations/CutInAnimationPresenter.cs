@@ -1,19 +1,33 @@
 using System.Threading;
 using UnityEngine;
 
-public class CutInAnimationPresenter : MonoBehaviour
+public class CutInAnimationController : MonoBehaviour
 {
+    [Header("View")]
     [SerializeField] private CutInAnimationView view;
 
-    private async void Start()
+    private CancellationTokenSource cts;
+
+    // 外部から呼び出してカットインを再生
+    public void PlayCutIn()
     {
-        // CancellationTokenSourceを作成
-        var cts = new CancellationTokenSource();
-        // CancellationTokenを取得 
+        // 前回の再生中ならキャンセル
+        cts?.Cancel();
+        cts?.Dispose();
+
+        // 新しいCancellationTokenを作成
+        cts = new CancellationTokenSource();
         var token = cts.Token;
 
-        await view.StartCutIn(token);
+        // 非同期でアニメーションを開始（待たずに実行）
+        _ = view.StartCutIn(token);
+    }
 
-        cts.Cancel();
+    // オブジェクトが無効化されたときにアニメーションをキャンセル
+    private void OnDisable()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+        cts = null;
     }
 }
