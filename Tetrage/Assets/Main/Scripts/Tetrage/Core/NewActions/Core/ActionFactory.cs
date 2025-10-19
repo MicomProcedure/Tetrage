@@ -38,6 +38,8 @@ namespace Tetrage.Core.Actions
             _registry.RegisterAction<ReachValidator, ReachExecutor>(ActionType.Reach);
             _registry.RegisterAction<CheckValidator, CheckExecutor>(ActionType.Check);
             _registry.RegisterAction<PassValidator, PassExecutor>(ActionType.Pass);
+            _registry.RegisterAction<TetrageSoloValidator, TetrageSoloExecutor>(ActionType.TetrageSolo);
+            _registry.RegisterAction<TetrageMultiValidator, TetrageMultiExecutor>(ActionType.TetrageMulti);
 
             Debug.Log("デフォルトアクションの登録完了");
         }
