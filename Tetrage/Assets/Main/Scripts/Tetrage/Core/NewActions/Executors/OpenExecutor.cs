@@ -3,6 +3,8 @@ using UnityEngine;
 using System.Linq;
 using Tetrage.Models;
 using System.Collections.Generic;
+using Tetrage.UI; // CardClickDispatcherを使用するために追加
+using System.Threading; // CancellationTokenを追加
 
 namespace Tetrage.Core.Actions
 {
@@ -63,26 +65,48 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// 裏向きカードを選択（現在は仮実装：ランダム選択）
+        /// 裏向きカードを選択
+        /// hiddenCardsの中からプレイヤーがクリックしたカードを待機して返す
         /// </summary>
         private async UniTask<Card> SelectHiddenCard(IActionContext context, List<Card> hiddenCards)
         {
-            // TODO: 実際のUI選択処理を実装
-            // プレイヤーが相手の手札から裏向きカードを選択するUI
-            
-            await UniTask.Delay(100); // UI表示の仮の時間
-
-            // 仮実装：ランダムに選択
-            if (hiddenCards.Any())
+            if (hiddenCards == null || hiddenCards.Count == 0)
             {
-                var randomIndex = UnityEngine.Random.Range(0, hiddenCards.Count);
-                var selectedCard = hiddenCards[randomIndex];
-                
-                Debug.Log($"仮実装：ランダムに選択されたカード - {selectedCard.Suit} {selectedCard.Number}");
-                return selectedCard;
+                Debug.LogWarning("選択可能な裏向きカードがありません。");
+                return null;
             }
 
-            return null;
+            var actionAwaiter = context.ActionAwaiter;
+            var cancellationToken = actionAwaiter?.CurrentCancellationToken ?? CancellationToken.None;
+
+            var tcs = new UniTaskCompletionSource<Card>();
+
+            System.Action<Card> cardClickedHandler = null;
+            cardClickedHandler = (clickedCard) =>
+            {
+                if (hiddenCards.Contains(clickedCard))
+                {
+                    tcs.TrySetResult(clickedCard);
+                }
+            };
+
+            CardClickDispatcher.OnCardClicked += cardClickedHandler;
+
+            try
+            {
+                Debug.Log("裏向きカードの選択を待機中...");
+                return await tcs.Task.AttachExternalCancellation(cancellationToken);
+            }
+            catch (System.OperationCanceledException)
+            {
+                var fallbackCard = hiddenCards.FirstOrDefault();
+                Debug.LogWarning($"カード選択がキャンセルされました。フォールバックとして {fallbackCard} を選択します。");
+                return fallbackCard;
+            }
+            finally
+            {
+                CardClickDispatcher.OnCardClicked -= cardClickedHandler;
+            }
         }
     }
 } 
