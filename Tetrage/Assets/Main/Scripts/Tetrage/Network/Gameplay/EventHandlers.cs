@@ -7,7 +7,9 @@ namespace Tetrage.Network.Gameplay
         void OnGameStarted(GameStartedEvent e);
         void OnTurnStarted(TurnStartedEvent e);
         void OnCardMoved(CardMovedEvent e);
+        void OnListOrderDeclared(ListOrderDeclaredEvent e);
         void OnCardVisibilityChanged(CardVisibilityChangedEvent e);
+        void OnPileShuffledWithSeed(PileShuffledWithSeedEvent e);
         void OnActionRequested(ActionRequestedEvent e);
         void OnActionResult(ActionResultEvent e);
     }
@@ -40,7 +42,12 @@ namespace Tetrage.Network.Gameplay
         public void OnGameStarted(GameStartedEvent e)
         {
             _onGameStartedUi?.Invoke(e);
-            _applier.ResetSequences();
+            // 初期同期（プレイヤー順など）を適用
+            _applier.Apply(e);
+        }
+        public void OnListOrderDeclared(ListOrderDeclaredEvent e)
+        {
+            _applier.Apply(e);
         }
 
         public void OnTurnStarted(TurnStartedEvent e)
@@ -54,6 +61,11 @@ namespace Tetrage.Network.Gameplay
         }
 
         public void OnCardVisibilityChanged(CardVisibilityChangedEvent e)
+        {
+            _applier.Apply(e);
+        }
+
+        public void OnPileShuffledWithSeed(PileShuffledWithSeedEvent e)
         {
             _applier.Apply(e);
         }

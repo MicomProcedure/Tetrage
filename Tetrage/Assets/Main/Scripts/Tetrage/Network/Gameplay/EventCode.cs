@@ -15,6 +15,8 @@ namespace Tetrage.Network.Gameplay
         ReachDeclared = 8,
         ActionRequested = 20,
         ActionResult = 21,
+        PileShuffledWithSeed = 22,
+        ListOrderDeclared = 23,
     }
 }
 

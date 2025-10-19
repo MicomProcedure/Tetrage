@@ -201,6 +201,22 @@ namespace Tetrage.Models
         }
 
         /// <summary>
+        /// 決定論的シャッフル（Fisher–Yates）。同じ seed で同じ順序になります。
+        /// </summary>
+        /// <param name="seed">乱数シード</param>
+        public void RandomShuffle(int seed)
+        {
+            var rng = new System.Random(seed);
+            for (int i = _cards.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(0, i + 1);
+                var tmp = _cards[i];
+                _cards[i] = _cards[j];
+                _cards[j] = tmp;
+            }
+        }
+
+        /// <summary>
         /// カード順序を指定されたリストの順序で再構築する
         /// FixedPlayerStrategyでの特定順序シャッフルなどに使用
         /// </summary>

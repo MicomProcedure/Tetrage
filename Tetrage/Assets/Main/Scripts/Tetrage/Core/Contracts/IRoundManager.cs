@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core.Contracts
 {
@@ -14,8 +15,8 @@ namespace Tetrage.Core.Contracts
         event Action GameEnd;
         public int TurnCount { get; }
         public int RoundCount { get; }
-        IDealerStrategy DealerStrategy { get; }
-
+        IDealerPlanner DealerPlanner { get; }
+        IEventEmitter<DealerPlan> DealerPlanEmitter { get; }
         UniTask StartGameAsync(float timeoutSeconds = 0, CancellationToken gameCts = default);
         void EndGame();
         UniTask StartTurnLoopAsync();

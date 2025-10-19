@@ -1,5 +1,6 @@
 using System;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Core.DTO
 {
@@ -9,8 +10,9 @@ namespace Tetrage.Core.DTO
     [Serializable]
     public struct PlayerInfo
     {
+        public PlayerId Id;   // プレイヤーのID
         public string UserId;   // プレイヤーのユーザーID
         public PlayerType PlayerType; // プレイヤーの種類
-        
+
     }
 }

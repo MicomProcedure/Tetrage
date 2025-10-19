@@ -44,10 +44,15 @@ namespace Tetrage.Network.Gameplay
             _broadcaster = new PhotonBroadcaster(_serializer);
             _receiver = new PhotonReceiver(_serializer);
 
-            _receiver.On<GameStartedEvent>(EventCode.GameStarted, e => _handler.OnGameStarted(e));
+            _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
+            {
+                _handler.OnGameStarted(e);
+            });
             _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e => _handler.OnTurnStarted(e));
+            _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => _handler.OnListOrderDeclared(e));
             _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => _handler.OnCardMoved(e));
             _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => _handler.OnCardVisibilityChanged(e));
+            _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => _handler.OnPileShuffledWithSeed(e));
             _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => _handler.OnActionResult(e));
             _receiver.On<ActionRequestedEvent>(EventCode.ActionRequested, e =>
             {
@@ -78,15 +83,7 @@ namespace Tetrage.Network.Gameplay
             _started = false;
         }
 
-        public void BroadcastGameStarted(GameStartedEvent e)
-        {
-            _broadcaster.Raise(EventCode.GameStarted, e);
-        }
-
-        public void BroadcastActionResult(ActionResultEvent e)
-        {
-            _broadcaster.Raise(EventCode.ActionResult, e);
-        }
+        public INetworkBroadcaster GetBroadcaster() => _broadcaster;
 
         #region IDisposable
         /// <summary>

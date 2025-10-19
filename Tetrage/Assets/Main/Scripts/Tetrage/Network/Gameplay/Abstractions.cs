@@ -35,8 +35,7 @@ namespace Tetrage.Network.Gameplay
         );
         void Start();
         void Stop();
-        void BroadcastGameStarted(GameStartedEvent e);
-        void BroadcastActionResult(ActionResultEvent e);
+        INetworkBroadcaster GetBroadcaster();
     }
 }
 

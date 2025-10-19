@@ -69,6 +69,12 @@ namespace Tetrage.Network.Gameplay
             _serializer = serializer;
         }
 
+        /// <summary>
+        /// ネットワークイベントのハンドラを登録
+        /// </summary>
+        /// <typeparam name="T">DTO型</typeparam>
+        /// <param name="code">イベントコード</param>
+        /// <param name="handler">ハンドラ</param>
         public void On<T>(EventCode code, Action<T> handler)
         {
             _handlers[(byte)code] = (bytes) =>

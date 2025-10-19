@@ -47,19 +47,6 @@ namespace Tetrage.Models
 
         public bool IsReach { get; private set; }
 
-
-        public Player(string userId, CardPile target, CardPile hands, CardPile tmp) // UserID をコンストラクタで受け取るように変更
-        {
-            Id = new PlayerId(_playerCount++);
-
-            Target = target;
-            Hands = hands;
-            Tmp = tmp;
-
-            // UserID が指定されなかった場合は、Id を元にしたデフォルト値を設定
-            UserId = userId ?? $"Player_{(int)Id}";
-        }
-
         /// <summary>
         /// プレイヤーIDを指定して初期化するコンストラクタ（推奨）。
         /// </summary>

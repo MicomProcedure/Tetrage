@@ -8,6 +8,7 @@ using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Factories
 {
@@ -20,6 +21,7 @@ namespace Tetrage.Factories
         private Vector3 _viewSpawnPosition;                 // プレイヤー表示用ビューの生成位置
         private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
         private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
+        private PlayerId _id;                               // プレイヤーID
         private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
         private int _handsCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY + 1;                         // 手札の容量（一枚のみキャパオーバーを許容する）
         private int _tmpCapacity = InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY;                            // 一時保持カードの容量
@@ -72,6 +74,12 @@ namespace Tetrage.Factories
             return this;
         }
 
+        public PlayerBuilder WithPlayerId(PlayerId id)
+        {
+            _id = id;
+            return this;
+        }
+
         /// <summary>Viewを使用しないよう設定する</summary>
         public PlayerBuilder WithoutView()
         {
@@ -111,6 +119,11 @@ namespace Tetrage.Factories
         /// <returns>生成された Player のインスタンス</returns>
         public IPlayer Build()
         {
+            if (_id == default(PlayerId))
+            {
+                Debug.LogError("PlayerBuilder: id が null です。UserIdを使用して生成してください。");
+            }
+
             // カードパイル生成用ビルダーを作成
             var cardPileBuilder = new CardPileBuilder(new CardPileFactory());
 
@@ -172,7 +185,7 @@ namespace Tetrage.Factories
             }
 
             // プレイヤーモデル生成
-            IPlayer player = _innerFactory.CreatePlayer(_userId, target, hands, tmp);
+            IPlayer player = _innerFactory.CreatePlayer(_id, _userId, target, hands, tmp);
 
             if (_useView)
             {

@@ -43,13 +43,13 @@ namespace Tetrage.Managers.DealerStrategies
             // プレイヤーリストが空の場合は例外をスロー
             if (players == null || players.Count == 0)
                 throw new ArgumentException("プレイヤーリストがnullまたは空です", nameof(players));
-            
+
             // ターン順序が未設定の場合は初期化
             if (_turnOrder == null || _turnOrder.Count == 0)
             {
                 ResetTurnOrder(players);
             }
-            
+
             _firstPlayer = _turnOrder[0];
             Debug.Log($"RealDealerStrategy: 最初のプレイヤーを決定しました - Player {_firstPlayer.PlayerId}");
             return _firstPlayer;
@@ -208,7 +208,7 @@ namespace Tetrage.Managers.DealerStrategies
                 for (int playerIndex = 0; playerIndex < players.Count; playerIndex++)
                 {
                     var player = players[playerIndex];
-                    
+
                     // 山札が空になった場合は配布を停止
                     if (stack.Count == 0)
                     {
