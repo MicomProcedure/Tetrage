@@ -28,6 +28,12 @@ namespace Tetrage.Core.DTO
         public int Seed;        // シャッフルSeed（Fisher–Yates 用）
     }
 
+    public struct TurnOrderEffect
+    {
+        public PlayerId PlayerId;   // 対象プレイヤー
+        public int Order;        // プレイヤー順
+    }
+
     /// <summary>
     /// 初期セットアップや配布など、複数の効果を束ねるプラン。
     /// </summary>
@@ -36,6 +42,7 @@ namespace Tetrage.Core.DTO
         public IReadOnlyList<CardMoveEffect> Moves;          // カード移動の集合
         public IReadOnlyList<VisibilityEffect> Visibility;   // 可視変更の集合
         public IReadOnlyList<PileShuffleSeedEffect> ShuffleSeeds; // 決定論シャッフルSeedの配布
+        public IReadOnlyList<TurnOrderEffect> TurnOrder; // ターン順
     }
 }
 

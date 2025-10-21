@@ -17,10 +17,24 @@ namespace Tetrage.Network.Gameplay
         private int _lastSequence;
 
         // 受信したプレイヤーの並び順（GameStartedで確定）
-        public System.Collections.Generic.IReadOnlyList<Player> OrderedPlayers { get; private set; }
+        public IReadOnlyList<Player> OrderedPlayers { get; private set; }
 
-        // 任意キーの並び順レジストリ
-        private readonly Dictionary<string, int[]> _listOrderRegistry = new Dictionary<string, int[]>();
+        #region ListOrder データ型
+        public readonly struct ListOrderData
+        {
+            public readonly ListOrderIdKind IdKind;
+            public readonly int[] OrderedIds;
+
+            public ListOrderData(ListOrderIdKind idKind, int[] orderedIds)
+            {
+                IdKind = idKind;
+                OrderedIds = orderedIds;
+            }
+        }
+        #endregion
+
+        // 任意キーの並び順レジストリ（Id種別付き）
+        private readonly Dictionary<ListOrderKey, ListOrderData> _listOrderRegistry = new Dictionary<ListOrderKey, ListOrderData>();
 
         public NetworkEventApplier(
             IdRegistry<PileId, CardPile> pileRegistry,
@@ -137,13 +151,42 @@ namespace Tetrage.Network.Gameplay
         public void Apply(ListOrderDeclaredEvent e)
         {
             if (!ShouldApply(e.sequence)) return;
-            if (string.IsNullOrEmpty(e.listKey) || e.orderedIds == null) return;
-            _listOrderRegistry[e.listKey] = e.orderedIds;
+            if (e.orderedIds == null) return;
+            _listOrderRegistry[e.listKey] = new ListOrderData(e.idKind, e.orderedIds);
+
+            // プレイヤー手番の宣言であれば、OrderedPlayers も更新する
+            if (_playerRegistry != null && e.idKind == ListOrderIdKind.PlayerId && e.listKey == ListOrderKey.TurnOrder)
+            {
+                var ordered = new List<Player>(e.orderedIds.Length);
+                for (int i = 0; i < e.orderedIds.Length; i++)
+                {
+                    var actor = e.orderedIds[i];
+                    if (_playerRegistry.TryGet(new PlayerId(actor), out var p))
+                    {
+                        ordered.Add(p);
+                    }
+                }
+                if (ordered.Count > 0)
+                {
+                    OrderedPlayers = ordered;
+                }
+            }
         }
 
-        public bool TryGetListOrder(string listKey, out int[] orderedIds)
+        public bool TryGetListOrder(ListOrderKey listKey, out int[] orderedIds)
         {
-            return _listOrderRegistry.TryGetValue(listKey, out orderedIds);
+            if (_listOrderRegistry.TryGetValue(listKey, out var data))
+            {
+                orderedIds = data.OrderedIds;
+                return true;
+            }
+            orderedIds = null;
+            return false;
+        }
+
+        public bool TryGetListOrder(ListOrderKey listKey, out ListOrderData data)
+        {
+            return _listOrderRegistry.TryGetValue(listKey, out data);
         }
 
         public void ResetSequences()

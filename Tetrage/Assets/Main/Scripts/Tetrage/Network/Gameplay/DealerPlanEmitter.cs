@@ -1,4 +1,5 @@
 using Tetrage.Core.DTO;
+using System.Collections.Generic;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -29,6 +30,10 @@ namespace Tetrage.Network.Gameplay
                     var s = plan.ShuffleSeeds[i];
                     EmitPileShuffleSeed(s.PileId.Value, s.Seed);
                 }
+            }
+            if (plan.TurnOrder != null)
+            {
+                EmitTurnOrder(plan);
             }
 
 
@@ -78,6 +83,28 @@ namespace Tetrage.Network.Gameplay
                 seed = seed,
             };
             _broadcaster.Raise(EventCode.PileShuffledWithSeed, dto);
+        }
+
+        public void EmitTurnOrder(DealerPlan plan)
+        {
+            if (plan.TurnOrder == null || plan.TurnOrder.Count == 0) return;
+
+            // orderで昇順にソートしてからActorNumber配列に変換
+            var temp = new List<TurnOrderEffect>(plan.TurnOrder);
+            temp.Sort((a, b) => a.Order.CompareTo(b.Order));
+
+            var ids = new int[temp.Count];
+            for (int i = 0; i < temp.Count; i++) ids[i] = temp[i].PlayerId.Value;
+
+            var dto = new ListOrderDeclaredEvent
+            {
+                sequence = ++_sequence,
+                stateVersion = ++_stateVersion,
+                idKind = ListOrderIdKind.PlayerId,
+                listKey = ListOrderKey.TurnOrder,
+                orderedIds = ids,
+            };
+            _broadcaster.Raise(EventCode.ListOrderDeclared, dto);
         }
     }
 }
