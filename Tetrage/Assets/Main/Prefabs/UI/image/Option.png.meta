@@ -38,15 +38,6 @@ TextureImporter:
   - first:
       213: -2004742024621655150
     second: Option_11
-  - first:
-      213: 312629725905868403
-    second: Option_12
-  - first:
-      213: 5278826725026157054
-    second: Option_13
-  - first:
-      213: -3378897531540869336
-    second: Option_14
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -138,19 +129,6 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
@@ -158,10 +136,10 @@ TextureImporter:
       name: Option_0
       rect:
         serializedVersion: 2
-        x: 327
-        y: 522
-        width: 107
-        height: 112
+        x: 366
+        y: 546
+        width: 96
+        height: 101
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -180,10 +158,10 @@ TextureImporter:
       name: Option_1
       rect:
         serializedVersion: 2
-        x: 454
-        y: 523
-        width: 117
-        height: 117
+        x: 482
+        y: 546
+        width: 105
+        height: 107
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -202,10 +180,10 @@ TextureImporter:
       name: Option_2
       rect:
         serializedVersion: 2
-        x: 589
-        y: 568
-        width: 53
-        height: 56
+        x: 606
+        y: 546
+        width: 86
+        height: 91
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -224,10 +202,10 @@ TextureImporter:
       name: Option_3
       rect:
         serializedVersion: 2
-        x: 590
-        y: 522
-        width: 95
-        height: 102
+        x: 733
+        y: 547
+        width: 65
+        height: 74
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -246,10 +224,10 @@ TextureImporter:
       name: Option_4
       rect:
         serializedVersion: 2
-        x: 728
-        y: 523
-        width: 73
-        height: 84
+        x: 840
+        y: 546
+        width: 86
+        height: 91
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -268,10 +246,10 @@ TextureImporter:
       name: Option_5
       rect:
         serializedVersion: 2
-        x: 845
-        y: 588
-        width: 53
-        height: 28
+        x: 258
+        y: 403
+        width: 42
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -290,10 +268,10 @@ TextureImporter:
       name: Option_6
       rect:
         serializedVersion: 2
-        x: 846
-        y: 522
-        width: 95
-        height: 102
+        x: 302
+        y: 403
+        width: 37
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -312,10 +290,10 @@ TextureImporter:
       name: Option_7
       rect:
         serializedVersion: 2
-        x: 164
-        y: 374
-        width: 61
-        height: 58
+        x: 339
+        y: 403
+        width: 57
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -334,10 +312,10 @@ TextureImporter:
       name: Option_8
       rect:
         serializedVersion: 2
-        x: 232
-        y: 374
-        width: 54
-        height: 60
+        x: 316
+        y: 272
+        width: 39
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -356,10 +334,10 @@ TextureImporter:
       name: Option_9
       rect:
         serializedVersion: 2
-        x: 298
-        y: 408
-        width: 29
-        height: 16
+        x: 355
+        y: 272
+        width: 39
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -378,10 +356,10 @@ TextureImporter:
       name: Option_10
       rect:
         serializedVersion: 2
-        x: 299
-        y: 373
-        width: 50
-        height: 55
+        x: 275
+        y: 92
+        width: 290
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -400,10 +378,10 @@ TextureImporter:
       name: Option_11
       rect:
         serializedVersion: 2
-        x: 370
-        y: 374
-        width: 42
-        height: 58
+        x: 747
+        y: 92
+        width: 288
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -414,72 +392,6 @@ TextureImporter:
       bones: []
       spriteID: 29bf02c00c9bd24e0800000000000000
       internalID: -2004742024621655150
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Option_12
-      rect:
-        serializedVersion: 2
-        x: 393
-        y: 419
-        width: 16
-        height: 15
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 376d8de441fa65400800000000000000
-      internalID: 312629725905868403
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Option_13
-      rect:
-        serializedVersion: 2
-        x: 252
-        y: 155
-        width: 305
-        height: 112
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: ef1d50020f8224940800000000000000
-      internalID: 5278826725026157054
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Option_14
-      rect:
-        serializedVersion: 2
-        x: 724
-        y: 158
-        width: 304
-        height: 112
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 82fef04e89ebb11d0800000000000000
-      internalID: -3378897531540869336
       vertices: []
       indices: 
       edges: []
@@ -502,9 +414,6 @@ TextureImporter:
       Option_1: -1769563548989760786
       Option_10: -2289097780274355733
       Option_11: -2004742024621655150
-      Option_12: 312629725905868403
-      Option_13: 5278826725026157054
-      Option_14: -3378897531540869336
       Option_2: -3554255112061793866
       Option_3: -8934260852576888845
       Option_4: -2674778427757990678
