@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Tetrage.Core.Contracts;
 using Tetrage.Models;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Managers.DealerStrategies
 {

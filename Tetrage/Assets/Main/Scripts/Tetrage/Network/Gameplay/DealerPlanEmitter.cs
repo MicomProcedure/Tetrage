@@ -1,4 +1,4 @@
-using Tetrage.Core.Contracts;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -8,6 +8,7 @@ namespace Tetrage.Network.Gameplay
     public sealed class DealerPlanEmitter : IEventEmitter<DealerPlan>
     {
         private readonly INetworkBroadcaster _broadcaster;
+        public INetworkBroadcaster Broadcaster => _broadcaster;
         private int _sequence;
         private int _stateVersion;
 
@@ -29,6 +30,8 @@ namespace Tetrage.Network.Gameplay
                     EmitPileShuffleSeed(s.PileId.Value, s.Seed);
                 }
             }
+
+
 
             // 続いて Moves/Visibility を処理
             if (plan.Moves != null)

@@ -38,6 +38,7 @@ namespace Tetrage.Managers
         private bool _isGameRunning = false;
         private CancellationTokenSource _gameCts;
         [SerializeField] private bool _networkInitialized = false;
+        private bool _remoteGameEnded = false;
 
         #endregion
 
@@ -108,11 +109,14 @@ namespace Tetrage.Managers
                 // ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 InitializeNetworking();
 
-                // Dealerへ Broadcaster を提供（Hostのみ有効。Guestはnullのまま）
-                var bc = _netCtl?.GetBroadcaster();
-                if (bc != null)
+                // Dealerへ Broadcaster を提供（Hostのみ）
+                if (PhotonNetwork.IsMasterClient)
                 {
-                    _dealer.SetEmitter(new DealerPlanEmitter(bc));
+                    var bc = _netCtl?.Broadcaster;
+                    if (bc != null)
+                    {
+                        _dealer.SetEmitter(new DealerPlanEmitter(bc));
+                    }
                 }
 
                 Debug.Log("GameManager: 初期化が完了しました");
@@ -200,7 +204,7 @@ namespace Tetrage.Managers
                 _isGameRunning = true;
                 _gameCts = new CancellationTokenSource();
 
-                // ホストの場合は初期宣言（GameStarted）を発行（簡易：DeckId=1/仮）
+                // ホスト: 初期宣言を送信してDealerを実行／ゲスト: 終了まで待機
                 if (PhotonNetwork.IsMasterClient && _networkInitialized)
                 {
                     var started = new GameStartedEvent
@@ -211,9 +215,14 @@ namespace Tetrage.Managers
                         maxNumber = 13,
                         playerActorNumbers = null,
                     };
-                    _netCtl.GetBroadcaster()?.Raise(EventCode.GameStarted, started);
-                    await _dealer.StartGameAsync(0f, _gameCts.Token);   // ゲーム開始（ホスト）
+                    _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
+                    await _dealer.StartGameAsync(0f, _gameCts.Token);
                 }
+                else
+                {
+                    await WaitForGameEndAsync();
+                }
+
 
                 Debug.Log("GameManager: ゲームが正常に終了しました");
             }
@@ -232,6 +241,13 @@ namespace Tetrage.Managers
             }
         }
 
+        private async UniTask WaitForGameEndAsync()
+        {
+            if (PhotonNetwork.IsMasterClient) return;
+            _remoteGameEnded = false;
+            await UniTask.WaitUntil(() => _remoteGameEnded || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InRoom);
+        }
+
         #endregion
 
         #region イベントハンドラ
@@ -240,6 +256,7 @@ namespace Tetrage.Managers
         {
             Debug.Log("GameManager: ゲーム終了イベントを受信");
             _isGameRunning = false;
+            _remoteGameEnded = true;
             EventUnsubscribe();
         }
 

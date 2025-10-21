@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Tetrage.Core.Ids;
 
-namespace Tetrage.Core.Contracts
+namespace Tetrage.Core.DTO
 {
     /// <summary>
     /// ディーラーによる効果（モデル変更）を表現するDTO群。副作用なしで返す。

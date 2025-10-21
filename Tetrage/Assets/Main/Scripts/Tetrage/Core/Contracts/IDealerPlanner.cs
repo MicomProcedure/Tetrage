@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Tetrage.Models;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Core.Contracts
 {

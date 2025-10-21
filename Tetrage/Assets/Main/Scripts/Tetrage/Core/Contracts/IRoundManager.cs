@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Tetrage.Network.Gameplay;
+using Tetrage.Core.DTO;
 
 namespace Tetrage.Core.Contracts
 {

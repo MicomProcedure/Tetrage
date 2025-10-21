@@ -15,7 +15,7 @@ namespace Tetrage.Network.Gameplay
 
         public DefaultHostActionProcessor(IGameplayNetworkController netCtl)
         {
-            _broadcaster = netCtl.GetBroadcaster();
+            _broadcaster = netCtl.Broadcaster;
         }
 
         public void Process(ActionRequestedEvent e)

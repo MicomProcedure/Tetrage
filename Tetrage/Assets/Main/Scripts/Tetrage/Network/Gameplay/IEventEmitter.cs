@@ -5,6 +5,7 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public interface IEventEmitter<T>
     {
+        public INetworkBroadcaster Broadcaster { get; }
         void Emit(T payload);
     }
 }

@@ -7,6 +7,8 @@ using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
+using Photon.Pun;
+using Tetrage.Core.DTO;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -143,6 +145,11 @@ namespace Tetrage.Managers
 
         public async UniTask StartGameAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: StartGameAsync はホストのみ実行します。無視しました");
+                return;
+            }
             // 前提条件を検証
             ValidateStartGame();
             ValidateStrategy();
@@ -168,6 +175,11 @@ namespace Tetrage.Managers
         /// </summary>
         public void FirstDeal()
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: FirstDeal はホストのみ実行します。無視しました");
+                return;
+            }
             // デッキ準備 & 配布（副作用なしプラン → イベント発行 → 受信適用）
             // 1) 山札シャッフル（決定論で構築される前提のため、原則空プラン）
             var shufflePlan = _dealerPlanner.PlanShuffleDeck(_stage.Stack);
@@ -178,7 +190,8 @@ namespace Tetrage.Managers
             _dealerPlanEmitter?.Emit(targetPlan);
 
             // 3) ターン順序初期化（副作用なしのため内部状態のみ更新）
-            _ = _dealerPlanner.PlanResetTurnOrder(_players);
+            var turnOrder = _dealerPlanner.PlanResetTurnOrder(_players);
+            _dealerPlanEmitter?.Broadcaster.Raise(EventCode.ListOrderDeclared, turnOrder);
 
             // 4) 最初のプレイヤーを決定
             var firstPlayer = _dealerPlanner.DecideFirstPlayer(_players);
@@ -196,6 +209,11 @@ namespace Tetrage.Managers
         /// <param name="gameCts">外部からゲーム全体をキャンセルしたい場合のトークン</param>
         public async UniTask StartTurnLoopAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: StartTurnLoopAsync はホストのみ実行します。無視しました");
+                return;
+            }
             // ゲーム終了かキャンセルされるまでラウンドのループを繰り返す
             while (!_isGameFinished && !gameCts.IsCancellationRequested)
             {
@@ -224,6 +242,11 @@ namespace Tetrage.Managers
         /// </summary>
         public async UniTask StartSingleTurnAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: StartSingleTurnAsync はホストのみ実行します。無視しました");
+                return;
+            }
             // ラウンド開始イベントを通知
             OnTurnStart();
 
@@ -429,6 +452,11 @@ namespace Tetrage.Managers
                 return false;
             }
             return true;
+        }
+
+        private static bool IsHost()
+        {
+            return PhotonNetwork.IsConnectedAndReady && PhotonNetwork.IsMasterClient;
         }
 
         #endregion

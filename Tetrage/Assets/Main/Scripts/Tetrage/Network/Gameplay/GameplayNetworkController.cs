@@ -11,6 +11,7 @@ namespace Tetrage.Network.Gameplay
     {
         private readonly ISerializer _serializer;
         private INetworkBroadcaster _broadcaster;
+        public INetworkBroadcaster Broadcaster => _broadcaster;
         private INetworkReceiver _receiver;
         private IGameplayEventHandler _handler;
         private bool _isHost;
@@ -82,8 +83,6 @@ namespace Tetrage.Network.Gameplay
             _receiver.Stop();
             _started = false;
         }
-
-        public INetworkBroadcaster GetBroadcaster() => _broadcaster;
 
         #region IDisposable
         /// <summary>
