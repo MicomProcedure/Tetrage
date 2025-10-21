@@ -497,8 +497,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u30C6\u30C8\u30E9\u30FC\u30B8\u30E5\n\u30BD\u30ED"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
-  m_sharedMaterial: {fileID: -2925243465209541341, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c5e2db2b1ff7a1349a9b870f26088d41, type: 2}
+  m_sharedMaterial: {fileID: 7579567994608388481, guid: c5e2db2b1ff7a1349a9b870f26088d41, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
