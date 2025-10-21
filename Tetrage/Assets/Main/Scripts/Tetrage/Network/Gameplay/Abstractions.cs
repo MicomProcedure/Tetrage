@@ -26,6 +26,9 @@ namespace Tetrage.Network.Gameplay
     public interface IGameplayNetworkController
     {
         INetworkBroadcaster Broadcaster { get; }
+        IGameplayEventBus EventBus { get; }
+        TurnGate TurnGate { get; }
+        void AttachGameContext(Tetrage.Core.GameContext ctx);
         void Initialize(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,

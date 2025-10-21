@@ -1,10 +1,14 @@
 using Tetrage.Core.Ids;
 using Tetrage.Core.Enums;
 using Tetrage.Models;
+using Tetrage.Core;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 namespace Tetrage.Network.Gameplay
 {
+
+    // IGameplayEventBus は GameplayEventBus.cs に統一。
     /// <summary>
     /// 受信イベントをローカルモデルへ適用する責務のクラス（Guest向け）。
     /// </summary>
@@ -13,6 +17,9 @@ namespace Tetrage.Network.Gameplay
         private readonly IdRegistry<CardId, Card> _cardRegistry;
         private readonly IdRegistry<PileId, CardPile> _pileRegistry;
         private readonly IdRegistry<PlayerId, Player> _playerRegistry;
+        private readonly IGameplayEventBus _bus;
+        private readonly TurnGate _turnGate;
+        private GameContext _context;
 
         private int _lastSequence;
 
@@ -39,12 +46,23 @@ namespace Tetrage.Network.Gameplay
         public NetworkEventApplier(
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<CardId, Card> cardRegistry,
-            IdRegistry<PlayerId, Player> playerRegistry = null)
+            IdRegistry<PlayerId, Player> playerRegistry = null,
+            IGameplayEventBus bus = null,
+            TurnGate turnGate = null,
+            GameContext context = null)
         {
             _pileRegistry = pileRegistry;
             _cardRegistry = cardRegistry;
             _playerRegistry = playerRegistry;
+            _bus = bus;
+            _turnGate = turnGate;
             _lastSequence = 0;
+            _context = context;
+        }
+
+        public void AttachContext(GameContext context)
+        {
+            _context = context;
         }
 
         private bool ShouldApply(int sequence)
@@ -61,6 +79,7 @@ namespace Tetrage.Network.Gameplay
             if (!_pileRegistry.TryGet(new PileId(e.toPileId), out var to)) return;
             if (!_cardRegistry.TryGet(new CardId(e.cardId), out var card)) return;
             CardPile.TransferService.Transfer(from, to, card);
+            _bus?.PublishCardMoved(e);
         }
 
         public void Apply(CardVisibilityChangedEvent e)
@@ -71,6 +90,7 @@ namespace Tetrage.Network.Gameplay
             {
                 card.Flip();
             }
+            _bus?.PublishCardVisibilityChanged(e);
         }
 
         public void Apply(ActionResultEvent e)
@@ -112,6 +132,7 @@ namespace Tetrage.Network.Gameplay
                     // Draw/Passなど、モデル変更不要なものは無処理。
                     break;
             }
+            _bus?.PublishActionResult(e);
         }
 
         public void Apply(PileShuffledWithSeedEvent e)
@@ -120,6 +141,7 @@ namespace Tetrage.Network.Gameplay
             if (!_pileRegistry.TryGet(new PileId(e.pileId), out var pile)) return;
             // 決定論的シャッフル（同じseedで同一順序）
             pile.RandomShuffle(e.seed);
+            _bus?.PublishPileShuffled(e);
         }
 
         /// <summary>
@@ -145,6 +167,8 @@ namespace Tetrage.Network.Gameplay
                 }
             }
             OrderedPlayers = ordered;
+            _context?.SetPlayersInternal(ordered);
+            _bus?.PublishGameStarted(e);
         }
 
 
@@ -169,8 +193,31 @@ namespace Tetrage.Network.Gameplay
                 if (ordered.Count > 0)
                 {
                     OrderedPlayers = ordered;
+                    _context?.SetPlayersInternal(ordered);
                 }
             }
+            _bus?.PublishListOrderDeclared(e);
+        }
+
+        public void Apply(TurnStartedEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            if (_playerRegistry != null)
+            {
+                if (_playerRegistry.TryGet(new PlayerId(e.currentPlayerActorNumber), out var p))
+                {
+                    // GameContextがあれば反映するが、本実装ではEventBus購読でUIへ伝播する想定
+                }
+            }
+            if (_playerRegistry != null && _context != null)
+            {
+                if (_playerRegistry.TryGet(new PlayerId(e.currentPlayerActorNumber), out var p))
+                {
+                    _context.SetCurrentPlayerInternal(p);
+                }
+            }
+            _bus?.PublishTurnStarted(e);
+            _turnGate?.Release(e.currentPlayerActorNumber);
         }
 
         public bool TryGetListOrder(ListOrderKey listKey, out int[] orderedIds)

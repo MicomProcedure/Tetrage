@@ -27,8 +27,7 @@ namespace Tetrage.Tests
 
         #region テスト用インスタンス
         private Dealer _dealer;
-        private Stage _stage;
-        private List<IPlayer> _players;
+        private IGameContextProvider _gameContext;
         private ActionFocusedDealerStrategy _strategy;
         private DealerPlanEmitter _dealerPlanEmitter;
         private RealDealerPlanner _dealerPlanner;
@@ -58,7 +57,7 @@ namespace Tetrage.Tests
             }
             else
             {
-                GUILayout.Label($"現在のプレイヤー: {_dealer?.CurrentPlayer?.UserId ?? "なし"}");
+                GUILayout.Label($"現在のプレイヤー: {_gameContext?.UserPlayer?.UserId ?? "なし"}");
                 GUILayout.Label($"ラウンド数: {_dealer?.RoundCount ?? 0}/{_dealer?.MaxRounds ?? maxRounds}");
                 if (GUILayout.Button("テスト停止"))
                 {
@@ -114,17 +113,19 @@ namespace Tetrage.Tests
             var stageModelFactory = new StageModelFactory(cardPileFactory, cardModelFactory);
             var playerModelFactory = new PlayerModelFactory(cardPileFactory, cardModelFactory);
 
-            _stage = stageModelFactory.SetupStage(playerCount);
-            _players = new List<IPlayer>();
+            var stage = stageModelFactory.SetupStage(playerCount);
+            var players = new List<IPlayer>();
             for (int i = 0; i < playerCount; i++)
             {
-                _players.Add(playerModelFactory.CreatePlayer(new PlayerId(i), $"TestPlayer_{i}"));
+                players.Add(playerModelFactory.CreatePlayer(new PlayerId(i), $"TestPlayer_{i}"));
             }
+
+            _gameContext = new Tetrage.Core.GameContext(stage, players, players[fixedPlayerIndex], null);
 
             _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
             _dealerPlanner = new RealDealerPlanner();
             _dealerPlanEmitter = new DealerPlanEmitter(null);
-            _dealer = new Dealer(_stage, _players, _dealerPlanner, _dealerPlanEmitter);
+            _dealer = new Dealer(_gameContext, _dealerPlanner, _dealerPlanEmitter);
         }
 
         private void SetupEventListeners()

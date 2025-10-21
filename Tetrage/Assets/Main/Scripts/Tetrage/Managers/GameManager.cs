@@ -95,11 +95,19 @@ namespace Tetrage.Managers
                 // 2. フィールドのセットアップ
                 _fieldSetupManager.SetupField(effectiveParticipants);
 
+                // 2.5 GameContextの生成
+                var gameContext = new Tetrage.Core.GameContext(
+                    _fieldSetupManager.Stage,
+                    _fieldSetupManager.Players,
+                    _fieldSetupManager.Players != null && _fieldSetupManager.Players.Count > 0 ? _fieldSetupManager.Players[0] : null,
+                    _netCtl.EventBus
+                );
+
                 // 3. Dealerの生成と初期化（ブロードキャスタを注入）
                 _dealer = DealerFactory.CreateDealer(
-                    _fieldSetupManager,
                     _gameMode,
-                    broadcaster: null // InitializeNetworking 後に差し替える
+                    gameContext,
+                    _netCtl?.Broadcaster
                 );
 
                 _isInitialized = true;
@@ -113,10 +121,12 @@ namespace Tetrage.Managers
                 if (PhotonNetwork.IsMasterClient)
                 {
                     var bc = _netCtl?.Broadcaster;
-                    if (bc != null)
-                    {
-                        _dealer.SetEmitter(new DealerPlanEmitter(bc));
-                    }
+                    if (bc == null) throw new System.InvalidOperationException("Broadcaster が見つかりません。");
+
+                    _dealer.SetEmitter(new DealerPlanEmitter(bc));
+                    _dealer.SetTurnGate(_netCtl.TurnGate);
+                    _dealer.SetLifecycleEmitter(new GameLifecycleEmitter(bc));
+
                 }
 
                 Debug.Log("GameManager: 初期化が完了しました");
@@ -213,7 +223,7 @@ namespace Tetrage.Managers
                         suitOrder = new byte[] { 0, 1, 2, 3 },
                         minNumber = 1,
                         maxNumber = 13,
-                        playerActorNumbers = null,
+                        playerActorNumbers = BuildInitialPlayerOrder(),
                     };
                     _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
                     await _dealer.StartGameAsync(0f, _gameCts.Token);
@@ -367,6 +377,28 @@ namespace Tetrage.Managers
             );
             _netCtl.Start();
             _networkInitialized = true;
+
+            // GameContext を構築しネットワークへ接続
+            var bus = _netCtl.EventBus;
+            IPlayer userPlayer = null;
+            if (_fieldSetupManager.Players != null && _fieldSetupManager.Players.Count > 0)
+            {
+                userPlayer = _fieldSetupManager.Players[0]; // TODO: LocalPlayer解決に置換
+            }
+            var context = new Tetrage.Core.GameContext(_fieldSetupManager.Stage, _fieldSetupManager.Players, userPlayer, bus);
+            _netCtl.AttachGameContext(context);
+        }
+
+        private int[] BuildInitialPlayerOrder()
+        {
+            if (_playerRegistry == null) return null;
+            var list = new List<int>();
+            // 現状は登録順序を採用。必要なら座席順や任意の順序に変更可。
+            foreach (var kv in _playerRegistry.Entries)
+            {
+                list.Add(kv.Key.Value);
+            }
+            return list.ToArray();
         }
 
         private void OnGameStartedReceived(GameStartedEvent e) { Debug.Log($"GameManager: GameStarted {e.deckId}"); }

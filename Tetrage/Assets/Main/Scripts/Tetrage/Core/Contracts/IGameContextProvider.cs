@@ -1,6 +1,7 @@
 using UnityEngine;
 using Tetrage.Models;
 using System.Collections.Generic;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core.Contracts
 {
@@ -12,6 +13,9 @@ namespace Tetrage.Core.Contracts
         /// <summary>現在の手番プレイヤー（存在しない場合は null）</summary>
         IPlayer CurrentPlayer { get; }
 
+        /// <summary>ユーザーが操作しているプレイヤー（存在しない場合は null）</summary>
+        IPlayer UserPlayer { get; }
+
         /// <summary>参加している全プレイヤーを取得</summary>
         IReadOnlyList<IPlayer> Players { get; }
 
@@ -19,5 +23,8 @@ namespace Tetrage.Core.Contracts
         /// ステージを取得
         /// </summary>
         Stage Stage { get; }
+
+        /// <summary>適用後イベントを購読できるイベントバス</summary>
+        IGameplayEventBus Events { get; }
     }
 }

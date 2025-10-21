@@ -12,7 +12,6 @@ namespace Tetrage.Core.Actions
     {
         private static ActionManager _actionManager;
         private static IGameContextProvider _gameContextProvider;
-        private static IRoundManager _roundManager;
         private static bool _isInitialized = false;
         /// <summary>
         /// アクションシステムが初期化されているかチェック
@@ -24,7 +23,7 @@ namespace Tetrage.Core.Actions
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（必須）</param>
         /// <param name="forceReinitialize">強制的に再初期化するかどうか</param>
-        public static void InitializeActionSystem(Dealer dealer, bool forceReinitialize = false)
+        public static void InitializeActionSystem(IGameContextProvider gameContextProvider, bool forceReinitialize = false)
         {
             if (_isInitialized && !forceReinitialize)
             {
@@ -32,28 +31,56 @@ namespace Tetrage.Core.Actions
                 return;
             }
 
-            if (dealer == null)
+            if (gameContextProvider == null)
             {
-                Debug.LogError("Dealerが指定されていません。");
+                Debug.LogError("GameContextProviderが指定されていません。");
                 return;
             }
 
             try
             {
                 // GameContextProviderの保存
-                _gameContextProvider = dealer;
-                _roundManager = dealer;
+                _gameContextProvider = gameContextProvider;
 
                 // ActionManagerの初期化
                 _actionManager = ActionManager.Instance;
                 _actionManager.SetGameContextProvider(_gameContextProvider);
-                _actionManager.SetRoundManager(_roundManager);
 
                 // 全てのアクションファクトリを登録
                 ActionFactory.RegisterAllActions(_actionManager);
 
                 _isInitialized = true;
                 Debug.Log("アクションシステムの初期化が完了しました");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"アクションシステムの初期化中にエラーが発生: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Actionシステムを初期化する（依存をインターフェースで受ける新API）。
+        /// </summary>
+        public static void InitializeActionSystem(IGameContextProvider gameContextProvider, IRoundManager roundManager, bool forceReinitialize = false)
+        {
+            if (_isInitialized && !forceReinitialize)
+            {
+                Debug.Log("Actionシステムは既に初期化済みです");
+                return;
+            }
+            if (gameContextProvider == null || roundManager == null)
+            {
+                Debug.LogError("InitializeActionSystem に無効な依存が渡されました");
+                return;
+            }
+            try
+            {
+                _gameContextProvider = gameContextProvider;
+                _actionManager = ActionManager.Instance;
+                _actionManager.SetGameContextProvider(_gameContextProvider);
+                ActionFactory.RegisterAllActions(_actionManager);
+                _isInitialized = true;
+                Debug.Log("アクションシステムの初期化が完了しました (interface-based)");
             }
             catch (System.Exception ex)
             {

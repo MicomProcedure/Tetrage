@@ -15,7 +15,7 @@ using Tetrage.Core.DTO;
 /// </summary>
 namespace Tetrage.Managers
 {
-    public class Dealer : IGameContextProvider, IRoundManager
+    public class Dealer : IRoundManager
     {
 
         #region イベント
@@ -29,23 +29,7 @@ namespace Tetrage.Managers
         #endregion
 
         #region フィールド
-        /// <summary>
-        /// 現在のステージ情報。
-        /// </summary>
-        private Stage _stage;
-        public Stage Stage { get { return _stage; } }
 
-        /// <summary>
-        /// ゲームに参加しているプレイヤーのリスト。
-        /// </summary>
-        private List<IPlayer> _players;
-        public IReadOnlyList<IPlayer> Players => _players;
-
-        /// <summary>
-        /// 現在のプレイヤー。
-        /// </summary>
-        private IPlayer _currentPlayer;
-        public IPlayer CurrentPlayer { get { return _currentPlayer; } }
 
         /// <summary>
         /// ディーラー戦略
@@ -58,6 +42,9 @@ namespace Tetrage.Managers
         /// </summary>
         private IEventEmitter<DealerPlan> _dealerPlanEmitter;
         public IEventEmitter<DealerPlan> DealerPlanEmitter => _dealerPlanEmitter;
+        private TurnGate _turnGate; // Hostのみ使用
+        private IEventEmitter<TurnStartedEvent> _lifecycleEmitter; // Hostのみ使用
+        private IGameContextProvider _gameContext; // 読み取り専用のコンテキスト
 
         /// <summary>
         /// ラウンド数
@@ -96,19 +83,19 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(Stage stage, List<IPlayer> players, IDealerPlanner dealerPlanner, IEventEmitter<DealerPlan> dealerPlanEmitter)
+        public Dealer(IGameContextProvider gameContext, IDealerPlanner dealerPlanner, IEventEmitter<DealerPlan> dealerPlanEmitter)
         {
-            if (stage == null) throw new ArgumentNullException(nameof(stage));
-            if (players == null || players.Count == 0) throw new ArgumentNullException(nameof(players));
+            if (gameContext == null) throw new ArgumentNullException(nameof(gameContext));
             if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
 
-            _stage = stage;
-            _players = players;
+            _gameContext = gameContext;
             _dealerPlanner = dealerPlanner;
             _dealerPlanEmitter = dealerPlanEmitter;
             _roundCount = 0; // 初期化
             _turnCount = 0; // 初期化
+
             InitializeActionSystem();
+            // GameContext は GameManager 側で生成後に注入されるため、ActionSystem 初期化は後段で行う
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
         }
 
@@ -120,6 +107,24 @@ namespace Tetrage.Managers
         {
             _dealerPlanEmitter = emitter;
         }
+
+        /// <summary>
+        /// TurnGate を注入（Hostのみ）。GameplayNetworkController から取得して渡す想定。
+        /// </summary>
+        public void SetTurnGate(TurnGate gate)
+        {
+            _turnGate = gate;
+        }
+
+        /// <summary>
+        /// 進行イベント用のEmitterを注入（Hostのみ）。
+        /// </summary>
+        public void SetLifecycleEmitter(IEventEmitter<TurnStartedEvent> emitter)
+        {
+            _lifecycleEmitter = emitter;
+        }
+
+
 
         /// <summary>
         /// 最大ラウンド数を設定する
@@ -163,6 +168,12 @@ namespace Tetrage.Managers
             // ゲーム終了フラグをリセット
             _isGameFinished = false;
 
+            // 初回のTurnStartedが適用されるまで待機（CurrentPlayerが設定されるまで）
+            if (_turnGate != null)
+            {
+                await _turnGate.WaitNextAsync();
+            }
+
             await StartTurnLoopAsync(timeoutSeconds, gameCts);
 
             Debug.Log("Dealer: ゲームが終了します");
@@ -182,21 +193,22 @@ namespace Tetrage.Managers
             }
             // デッキ準備 & 配布（副作用なしプラン → イベント発行 → 受信適用）
             // 1) 山札シャッフル（決定論で構築される前提のため、原則空プラン）
-            var shufflePlan = _dealerPlanner.PlanShuffleDeck(_stage.Stack);
+            var shufflePlan = _dealerPlanner.PlanShuffleDeck(_gameContext.Stage.Stack);
             _dealerPlanEmitter?.Emit(shufflePlan);
 
             // 2) 初期ターゲット設定
-            var targetPlan = _dealerPlanner.PlanTargetSetup(_players, _stage.Stack);
+            var targetPlan = _dealerPlanner.PlanTargetSetup(_gameContext.Players, _gameContext.Stage.Stack);
             _dealerPlanEmitter?.Emit(targetPlan);
 
             // 3) ターン順序初期化（副作用なしのため内部状態のみ更新）
-            var turnOrder = _dealerPlanner.PlanResetTurnOrder(_players);
+            var turnOrder = _dealerPlanner.PlanResetTurnOrder(_gameContext.Players);
             _dealerPlanEmitter?.Broadcaster.Raise(EventCode.ListOrderDeclared, turnOrder);
 
             // 4) 最初のプレイヤーを決定
-            var firstPlayer = _dealerPlanner.DecideFirstPlayer(_players);
-            _currentPlayer = firstPlayer;
+            var firstPlayer = _dealerPlanner.DecideFirstPlayer(_gameContext.Players);
             Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.PlayerId}");
+            // 最初の手番を宣言（適用はApplierが行い、CurrentPlayerを設定）
+            _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = firstPlayer.PlayerId });
 
 
         }
@@ -255,8 +267,8 @@ namespace Tetrage.Managers
                 // 現在のプレイヤーが設定されているかどうかを検証
                 if (!ValidateCurrentPlayer()) return;
 
-                // プレイヤーのアクションを待つ
-                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_currentPlayer);
+                // プレイヤーのアクションを待つ（現在手番のプレイヤー）
+                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
 
                 if (!actionResult.IsSuccess)
                 {
@@ -267,7 +279,7 @@ namespace Tetrage.Managers
             }
             catch (OperationCanceledException) when (gameCts.IsCancellationRequested)
             {
-                Debug.Log($"Dealer: プレイヤー {_currentPlayer.PlayerId} のアクションがキャンセルされました");
+                Debug.Log($"Dealer: プレイヤー {_gameContext.CurrentPlayer?.PlayerId} のアクションがキャンセルされました");
                 _isGameFinished = true;
             }
 
@@ -280,10 +292,19 @@ namespace Tetrage.Managers
             OnTurnEnd();
 
             // 次のプレイヤーへ
-            if (!_isGameFinished && _currentPlayer != null)
+            if (!_isGameFinished && _gameContext.CurrentPlayer != null)
             {
-                _currentPlayer = _dealerPlanner.GetNextPlayer(_currentPlayer, _players);
-                Debug.Log($"Dealer: 次のターンは Player {_currentPlayer.PlayerId}");
+                // 次手番を決定し、TurnStarted を発行（Emitter経由）し、適用完了を待つ
+                var next = _dealerPlanner.GetNextPlayer(_gameContext.CurrentPlayer, _gameContext.Players);
+                if (next != null && PhotonNetwork.IsMasterClient)
+                {
+                    _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = next.PlayerId });
+                    if (_turnGate != null)
+                    {
+                        await _turnGate.WaitNextAsync();
+                    }
+                    Debug.Log($"Dealer: 次のターンは Player {next.PlayerId}");
+                }
             }
         }
 
@@ -296,8 +317,7 @@ namespace Tetrage.Managers
             OnTurnEnd();
 
             // 状態をリセット
-            _currentPlayer = null;
-            _dealerPlanner?.PlanResetTurnOrder(_players);
+            // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない
 
             // ActionAwaiter を破棄
             _actionAwaiter?.Dispose();
@@ -389,8 +409,13 @@ namespace Tetrage.Managers
         /// </summary>
         private void InitializeActionSystem()
         {
-            // 新しいActionSystemInitializerを使用
-            ActionSystemInitializer.InitializeActionSystem(this);
+            if (_gameContext == null)
+            {
+                Debug.LogWarning("Dealer: GameContext が未設定のため ActionSystem を初期化できませんでした");
+                return;
+            }
+            // 新しいActionSystemInitializerを使用（コンテキストと自身のIRoundManagerを渡す）
+            ActionSystemInitializer.InitializeActionSystem(_gameContext, this);
 
             _actionManager = ActionSystemInitializer.GetActionManager();
             if (_actionManager != null)
@@ -428,10 +453,10 @@ namespace Tetrage.Managers
         /// <exception cref="InvalidOperationException">条件を満たさない場合</exception>
         private void ValidateStartGame()
         {
-            if (_players == null || _players.Count == 0)
+            if (_gameContext.Players == null || _gameContext.Players.Count == 0)
                 throw new InvalidOperationException("Dealer: プレイヤーが存在しません");
 
-            if (_stage == null)
+            if (_gameContext.Stage == null)
                 throw new InvalidOperationException("Dealer: Stage が未設定です");
         }
 
@@ -446,7 +471,7 @@ namespace Tetrage.Managers
 
         private bool ValidateCurrentPlayer()
         {
-            if (_currentPlayer == null)
+            if (_gameContext.UserPlayer == null)
             {
                 Debug.LogError("Dealer: 現在のプレイヤーが設定されていません");
                 return false;

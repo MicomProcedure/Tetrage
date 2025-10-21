@@ -1,6 +1,7 @@
 using System;
 using Tetrage.Core.Ids;
 using Tetrage.Models;
+using Tetrage.Core;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -13,7 +14,9 @@ namespace Tetrage.Network.Gameplay
         private INetworkBroadcaster _broadcaster;
         public INetworkBroadcaster Broadcaster => _broadcaster;
         private INetworkReceiver _receiver;
-        private IGameplayEventHandler _handler;
+        private IGameplayEventBus _bus;
+        private TurnGate _turnGate;
+        private GameContext _gameContext;
         private bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
         private bool _started;
@@ -33,28 +36,27 @@ namespace Tetrage.Network.Gameplay
             Action<GameStartedEvent> onGameStartedOptional = null)
         {
             _isHost = isHost;
-            var applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry);
-            _handler = new DefaultGameplayEventHandler(
-                applier,
-                isHost,
-                onActionRequestedHost,
-                onGameStartedOptional,
-                e => UnityEngine.Debug.Log($"TurnStarted seq={e.sequence} player={e.currentPlayerActorNumber}")
-            );
+            _bus = new SimpleGameplayEventBus();
+            _turnGate = new TurnGate();
+            var applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext);
             _hostActionProcessor = new DefaultHostActionProcessor(this);
             _broadcaster = new PhotonBroadcaster(_serializer);
             _receiver = new PhotonReceiver(_serializer);
 
             _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
             {
-                _handler.OnGameStarted(e);
+                onGameStartedOptional?.Invoke(e);
+                applier.Apply(e);
             });
-            _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e => _handler.OnTurnStarted(e));
-            _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => _handler.OnListOrderDeclared(e));
-            _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => _handler.OnCardMoved(e));
-            _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => _handler.OnCardVisibilityChanged(e));
-            _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => _handler.OnPileShuffledWithSeed(e));
-            _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => _handler.OnActionResult(e));
+            _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e =>
+            {
+                applier.Apply(e);
+            });
+            _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => applier.Apply(e));
+            _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => applier.Apply(e));
+            _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => applier.Apply(e));
+            _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => applier.Apply(e));
+            _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => applier.Apply(e));
             _receiver.On<ActionRequestedEvent>(EventCode.ActionRequested, e =>
             {
                 if (_isHost)
@@ -64,9 +66,18 @@ namespace Tetrage.Network.Gameplay
                 }
                 else
                 {
-                    _handler.OnActionRequested(e);
+                    // ゲスト側は現状通知不要。必要になればUI通知デリゲートを追加する。
                 }
             });
+        }
+
+        public TurnGate TurnGate => _turnGate;
+        public IGameplayEventBus EventBus => _bus;
+
+        public void AttachGameContext(Tetrage.Core.GameContext ctx)
+        {
+            _gameContext = ctx;
+            // Applierはコンストラクタ注入済みだが、必要ならContext連携を追加
         }
 
         public void Start()
@@ -100,7 +111,6 @@ namespace Tetrage.Network.Gameplay
                 if (_receiver is IDisposable d) d.Dispose();
                 _receiver = null;
                 _broadcaster = null;
-                _handler = null;
                 _hostActionProcessor = null;
                 _disposed = true;
                 GC.SuppressFinalize(this);
@@ -108,6 +118,7 @@ namespace Tetrage.Network.Gameplay
         }
         #endregion
     }
+
 
 }
 
