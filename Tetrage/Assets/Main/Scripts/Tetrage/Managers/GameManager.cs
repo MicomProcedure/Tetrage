@@ -161,6 +161,15 @@ namespace Tetrage.Managers
             {
                 var src = input[i];
                 src.Id = new PlayerId(actors[i].ActorNumber);
+                
+                // Photonのカスタムプロパティから取得
+                if (actors[i].CustomProperties.ContainsKey("IconIndex"))
+                {
+                    src.PlayerIconIndex = (int)actors[i].CustomProperties["IconIndex"];
+                }
+                
+                // NickNameをUserIdとして使用
+                src.UserId = actors[i].NickName;
                 remapped.Add(src);
             }
             // 余りはそのまま（オフライン想定）
