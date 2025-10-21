@@ -6,7 +6,9 @@ using Tetrage.Models;
 using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
-
+using Tetrage.Network.Gameplay;
+using Photon.Pun;
+using Tetrage.Core.DTO;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -48,8 +50,14 @@ namespace Tetrage.Managers
         /// <summary>
         /// ディーラー戦略
         /// </summary>
-        private IDealerStrategy _dealerStrategy;
-        public IDealerStrategy DealerStrategy { get { return _dealerStrategy; } }
+        private IDealerPlanner _dealerPlanner;
+        public IDealerPlanner DealerPlanner { get { return _dealerPlanner; } }
+
+        /// <summary>
+        /// ディーラー戦略のイベント発行用
+        /// </summary>
+        private IEventEmitter<DealerPlan> _dealerPlanEmitter;
+        public IEventEmitter<DealerPlan> DealerPlanEmitter => _dealerPlanEmitter;
 
         /// <summary>
         /// ラウンド数
@@ -61,7 +69,7 @@ namespace Tetrage.Managers
         /// ターン数
         /// </summary>
         private int _turnCount = 0;
-        public int TurnCount { get { return _turnCount; } } 
+        public int TurnCount { get { return _turnCount; } }
 
         /// <summary>
         /// 最大ラウンド数（デフォルト: 10）
@@ -88,20 +96,29 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(Stage stage, List<IPlayer> players, IDealerStrategy dealerStrategy)
+        public Dealer(Stage stage, List<IPlayer> players, IDealerPlanner dealerPlanner, IEventEmitter<DealerPlan> dealerPlanEmitter)
         {
             if (stage == null) throw new ArgumentNullException(nameof(stage));
             if (players == null || players.Count == 0) throw new ArgumentNullException(nameof(players));
-            if (dealerStrategy == null) throw new ArgumentNullException(nameof(dealerStrategy));
+            if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
 
             _stage = stage;
             _players = players;
-            _dealerStrategy = dealerStrategy;
-
+            _dealerPlanner = dealerPlanner;
+            _dealerPlanEmitter = dealerPlanEmitter;
             _roundCount = 0; // 初期化
             _turnCount = 0; // 初期化
             InitializeActionSystem();
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
+        }
+
+        /// <summary>
+        /// 後からEmitterを差し替える（GameManagerのネットワーク初期化完了後に注入）。
+        /// Hostのみ設定。Guestはnullのまま。
+        /// </summary>
+        public void SetEmitter(IEventEmitter<DealerPlan> emitter)
+        {
+            _dealerPlanEmitter = emitter;
         }
 
         /// <summary>
@@ -128,6 +145,11 @@ namespace Tetrage.Managers
 
         public async UniTask StartGameAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: StartGameAsync はホストのみ実行します。無視しました");
+                return;
+            }
             // 前提条件を検証
             ValidateStartGame();
             ValidateStrategy();
@@ -153,19 +175,28 @@ namespace Tetrage.Managers
         /// </summary>
         public void FirstDeal()
         {
-            // デッキ準備 & 配布
-            // 山札シャッフル
-            _dealerStrategy.ShuffleDeck(_stage.Stack);
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: FirstDeal はホストのみ実行します。無視しました");
+                return;
+            }
+            // デッキ準備 & 配布（副作用なしプラン → イベント発行 → 受信適用）
+            // 1) 山札シャッフル（決定論で構築される前提のため、原則空プラン）
+            var shufflePlan = _dealerPlanner.PlanShuffleDeck(_stage.Stack);
+            _dealerPlanEmitter?.Emit(shufflePlan);
 
-            // 初期ターゲットカード設定
-            _dealerStrategy.SetupInitialTargets(_players, _stage.Stack);
+            // 2) 初期ターゲット設定
+            var targetPlan = _dealerPlanner.PlanTargetSetup(_players, _stage.Stack);
+            _dealerPlanEmitter?.Emit(targetPlan);
 
-            // ターン順序初期化
-            _dealerStrategy.ResetTurnOrder(_players);
+            // 3) ターン順序初期化（副作用なしのため内部状態のみ更新）
+            var turnOrder = _dealerPlanner.PlanResetTurnOrder(_players);
+            _dealerPlanEmitter?.Broadcaster.Raise(EventCode.ListOrderDeclared, turnOrder);
 
-            // 最初のプレイヤーを決定
-            _currentPlayer = _dealerStrategy.DecideFirstPlayer(_players);
-            Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {_currentPlayer.PlayerId}");
+            // 4) 最初のプレイヤーを決定
+            var firstPlayer = _dealerPlanner.DecideFirstPlayer(_players);
+            _currentPlayer = firstPlayer;
+            Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.PlayerId}");
 
 
         }
@@ -178,6 +209,11 @@ namespace Tetrage.Managers
         /// <param name="gameCts">外部からゲーム全体をキャンセルしたい場合のトークン</param>
         public async UniTask StartTurnLoopAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: StartTurnLoopAsync はホストのみ実行します。無視しました");
+                return;
+            }
             // ゲーム終了かキャンセルされるまでラウンドのループを繰り返す
             while (!_isGameFinished && !gameCts.IsCancellationRequested)
             {
@@ -206,6 +242,11 @@ namespace Tetrage.Managers
         /// </summary>
         public async UniTask StartSingleTurnAsync(float timeoutSeconds = 0, CancellationToken gameCts = default)
         {
+            if (!IsHost())
+            {
+                Debug.Log("Dealer: StartSingleTurnAsync はホストのみ実行します。無視しました");
+                return;
+            }
             // ラウンド開始イベントを通知
             OnTurnStart();
 
@@ -241,7 +282,7 @@ namespace Tetrage.Managers
             // 次のプレイヤーへ
             if (!_isGameFinished && _currentPlayer != null)
             {
-                _currentPlayer = _dealerStrategy.GetNextPlayer(_currentPlayer, _players);
+                _currentPlayer = _dealerPlanner.GetNextPlayer(_currentPlayer, _players);
                 Debug.Log($"Dealer: 次のターンは Player {_currentPlayer.PlayerId}");
             }
         }
@@ -256,7 +297,7 @@ namespace Tetrage.Managers
 
             // 状態をリセット
             _currentPlayer = null;
-            _dealerStrategy?.ResetTurnOrder(_players);
+            _dealerPlanner?.PlanResetTurnOrder(_players);
 
             // ActionAwaiter を破棄
             _actionAwaiter?.Dispose();
@@ -399,7 +440,7 @@ namespace Tetrage.Managers
         /// </summary>
         private void ValidateStrategy()
         {
-            if (_dealerStrategy == null)
+            if (_dealerPlanner == null)
                 throw new InvalidOperationException("Dealer: ディーラー戦略が設定されていません");
         }
 
@@ -411,6 +452,11 @@ namespace Tetrage.Managers
                 return false;
             }
             return true;
+        }
+
+        private static bool IsHost()
+        {
+            return PhotonNetwork.IsConnectedAndReady && PhotonNetwork.IsMasterClient;
         }
 
         #endregion

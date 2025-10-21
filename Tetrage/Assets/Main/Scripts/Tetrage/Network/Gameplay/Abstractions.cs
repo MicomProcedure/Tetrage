@@ -25,6 +25,7 @@ namespace Tetrage.Network.Gameplay
     // ゲームプレイ用のネットワーク制御インターフェース（GameManagerから参照）
     public interface IGameplayNetworkController
     {
+        INetworkBroadcaster Broadcaster { get; }
         void Initialize(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,
@@ -35,8 +36,6 @@ namespace Tetrage.Network.Gameplay
         );
         void Start();
         void Stop();
-        void BroadcastGameStarted(GameStartedEvent e);
-        void BroadcastActionResult(ActionResultEvent e);
     }
 }
 

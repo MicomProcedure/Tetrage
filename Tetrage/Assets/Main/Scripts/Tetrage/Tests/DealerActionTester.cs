@@ -7,6 +7,8 @@ using Tetrage.Managers;
 using Tetrage.Managers.DealerStrategies;
 using Tetrage.Core.Contracts;
 using Tetrage.Factories;
+using Tetrage.Core.Ids;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Tests
 {
@@ -28,6 +30,8 @@ namespace Tetrage.Tests
         private Stage _stage;
         private List<IPlayer> _players;
         private ActionFocusedDealerStrategy _strategy;
+        private DealerPlanEmitter _dealerPlanEmitter;
+        private RealDealerPlanner _dealerPlanner;
         private bool _testStarted = false;
         #endregion
 
@@ -114,11 +118,13 @@ namespace Tetrage.Tests
             _players = new List<IPlayer>();
             for (int i = 0; i < playerCount; i++)
             {
-                _players.Add(playerModelFactory.CreatePlayer($"TestPlayer_{i}"));
+                _players.Add(playerModelFactory.CreatePlayer(new PlayerId(i), $"TestPlayer_{i}"));
             }
 
             _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
-            _dealer = new Dealer(_stage, _players, _strategy);
+            _dealerPlanner = new RealDealerPlanner();
+            _dealerPlanEmitter = new DealerPlanEmitter(null);
+            _dealer = new Dealer(_stage, _players, _dealerPlanner, _dealerPlanEmitter);
         }
 
         private void SetupEventListeners()

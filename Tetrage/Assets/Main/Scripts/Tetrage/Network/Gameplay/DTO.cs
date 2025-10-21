@@ -11,7 +11,7 @@ namespace Tetrage.Network.Gameplay
         public byte[] suitOrder;
         public int minNumber;
         public int maxNumber;
-        public int[] playerActorNumbers;
+        public int[] playerActorNumbers; // ターン順/座席順
     }
 
     [Serializable]
@@ -20,6 +20,16 @@ namespace Tetrage.Network.Gameplay
         public int sequence;
         public int stateVersion;
         public int currentPlayerActorNumber;
+    }
+
+
+    [Serializable]
+    public struct ListOrderDeclaredEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public string listKey; // 任意の識別キー（例: "turnOrder", "uiSeats"）
+        public int[] orderedIds; // 並び順（IDはドメインに依存。PlayerならActorNumber）
     }
 
     [Serializable]
@@ -39,6 +49,15 @@ namespace Tetrage.Network.Gameplay
         public int stateVersion;
         public int cardId;
         public bool isVisible;
+    }
+
+    [Serializable]
+    public struct PileShuffledWithSeedEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public int pileId;
+        public int seed;
     }
 
     [Serializable]

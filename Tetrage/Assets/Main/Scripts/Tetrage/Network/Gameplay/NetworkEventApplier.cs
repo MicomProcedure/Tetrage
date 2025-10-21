@@ -1,6 +1,7 @@
 using Tetrage.Core.Ids;
 using Tetrage.Core.Enums;
 using Tetrage.Models;
+using System.Collections.Generic;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -14,6 +15,12 @@ namespace Tetrage.Network.Gameplay
         private readonly IdRegistry<PlayerId, Player> _playerRegistry;
 
         private int _lastSequence;
+
+        // 受信したプレイヤーの並び順（GameStartedで確定）
+        public System.Collections.Generic.IReadOnlyList<Player> OrderedPlayers { get; private set; }
+
+        // 任意キーの並び順レジストリ
+        private readonly Dictionary<string, int[]> _listOrderRegistry = new Dictionary<string, int[]>();
 
         public NetworkEventApplier(
             IdRegistry<PileId, CardPile> pileRegistry,
@@ -91,6 +98,52 @@ namespace Tetrage.Network.Gameplay
                     // Draw/Passなど、モデル変更不要なものは無処理。
                     break;
             }
+        }
+
+        public void Apply(PileShuffledWithSeedEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            if (!_pileRegistry.TryGet(new PileId(e.pileId), out var pile)) return;
+            // 決定論的シャッフル（同じseedで同一順序）
+            pile.RandomShuffle(e.seed);
+        }
+
+        /// <summary>
+        /// GameStarted: プレイヤー順の確定など初期同期の適用。
+        /// </summary>
+        public void Apply(GameStartedEvent e)
+        {
+            // 初期同期のため、連番はリセットして良い
+            ResetSequences();
+
+            if (e.playerActorNumbers == null || e.playerActorNumbers.Length == 0)
+            {
+                return;
+            }
+
+            var ordered = new List<Player>(e.playerActorNumbers.Length);
+            for (int i = 0; i < e.playerActorNumbers.Length; i++)
+            {
+                var actor = e.playerActorNumbers[i];
+                if (_playerRegistry.TryGet(new PlayerId(actor), out var p))
+                {
+                    ordered.Add(p);
+                }
+            }
+            OrderedPlayers = ordered;
+        }
+
+
+        public void Apply(ListOrderDeclaredEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            if (string.IsNullOrEmpty(e.listKey) || e.orderedIds == null) return;
+            _listOrderRegistry[e.listKey] = e.orderedIds;
+        }
+
+        public bool TryGetListOrder(string listKey, out int[] orderedIds)
+        {
+            return _listOrderRegistry.TryGetValue(listKey, out orderedIds);
         }
 
         public void ResetSequences()

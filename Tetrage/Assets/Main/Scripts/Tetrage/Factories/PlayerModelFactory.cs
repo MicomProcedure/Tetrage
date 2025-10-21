@@ -5,6 +5,7 @@ using Tetrage.Core.Contracts;
 using Tetrage.Core.Constants;
 using Tetrage.Factories;
 using UnityEngine.Assertions;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Factories
 {
@@ -26,7 +27,7 @@ namespace Tetrage.Factories
         {
             Assert.IsNotNull(cardPileFactory, "cardPileFactory が null です");
             Assert.IsNotNull(cardModelFactory, "cardModelFactory が null です");
-            
+
             _cardPileFactory = cardPileFactory;
             _cardModelFactory = cardModelFactory;
         }
@@ -36,7 +37,7 @@ namespace Tetrage.Factories
         /// </summary>
         /// <param name="userId">プレイヤーのユーザーID</param>
         /// <returns>生成されたIPlayerインターフェースのインスタンス。</returns>
-        public IPlayer CreatePlayer(string userId)
+        public IPlayer CreatePlayer(PlayerId id, string userId)
         {
             Assert.IsFalse(string.IsNullOrEmpty(userId), "userId が null または空です");
 
@@ -46,7 +47,7 @@ namespace Tetrage.Factories
             var target = CreateDefaultTarget();
 
             // プレイヤーモデルを生成
-            IPlayer player = new Player(userId, target, hands, tmp);
+            IPlayer player = new Player(id, userId, target, hands, tmp);
             return player;
         }
 
@@ -58,14 +59,14 @@ namespace Tetrage.Factories
         /// <param name="hands">手札カードパイル</param>
         /// <param name="tmp">一時保管カードパイル</param>
         /// <returns>生成されたIPlayerインターフェースのインスタンス</returns>
-        public IPlayer CreatePlayer(string userId, CardPile target, CardPile hands, CardPile tmp)
+        public IPlayer CreatePlayer(PlayerId id, string userId, CardPile target, CardPile hands, CardPile tmp)
         {
             Assert.IsFalse(string.IsNullOrEmpty(userId), "userId が null または空です");
             Assert.IsNotNull(target, "target が null です");
             Assert.IsNotNull(hands, "hands が null です");
             Assert.IsNotNull(tmp, "tmp が null です");
 
-            IPlayer player = new Player(userId, target, hands, tmp);
+            IPlayer player = new Player(id, userId, target, hands, tmp);
             return player;
         }
 

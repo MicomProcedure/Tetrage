@@ -37,9 +37,11 @@ namespace Tetrage.Managers
         private bool _isInitialized = false;
         private bool _isGameRunning = false;
         private CancellationTokenSource _gameCts;
-        private bool _networkInitialized = false;
+        [SerializeField] private bool _networkInitialized = false;
+        private bool _remoteGameEnded = false;
 
         #endregion
+
 
         #region プロパティ
         /// <summary>セットアップが完了したDealer</summary>
@@ -87,11 +89,18 @@ namespace Tetrage.Managers
                 // 1. FieldSetupManagerの生成
                 _fieldSetupManager = CreateFieldSetupManager(participantInfoList.Count);
 
-                // 2. フィールドのセットアップ
-                _fieldSetupManager.SetupField(participantInfoList);
+                // 1.5 ネットワーク接続時は PlayerId=ActorNumber へマッピング
+                var effectiveParticipants = RemapPlayerInfosToActorNumbers(participantInfoList);
 
-                // 3. Dealerの生成と初期化
-                _dealer = DealerFactory.CreateDealer(_fieldSetupManager, _gameMode);
+                // 2. フィールドのセットアップ
+                _fieldSetupManager.SetupField(effectiveParticipants);
+
+                // 3. Dealerの生成と初期化（ブロードキャスタを注入）
+                _dealer = DealerFactory.CreateDealer(
+                    _fieldSetupManager,
+                    _gameMode,
+                    broadcaster: null // InitializeNetworking 後に差し替える
+                );
 
                 _isInitialized = true;
 
@@ -99,6 +108,16 @@ namespace Tetrage.Managers
 
                 // ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 InitializeNetworking();
+
+                // Dealerへ Broadcaster を提供（Hostのみ）
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    var bc = _netCtl?.Broadcaster;
+                    if (bc != null)
+                    {
+                        _dealer.SetEmitter(new DealerPlanEmitter(bc));
+                    }
+                }
 
                 Debug.Log("GameManager: 初期化が完了しました");
             }
@@ -125,6 +144,28 @@ namespace Tetrage.Managers
             var dependencies = _fieldSetupComponent.CreateFieldSetupDependencies();
 
             return new FieldSetupManager(settings, dependencies);
+        }
+
+        /// <summary>
+        /// PlayerId を ActorNumber に強制マップする（オンライン時の統一）。
+        /// オフライン/未接続時は入力をそのまま返す。
+        /// </summary>
+        private List<PlayerInfo> RemapPlayerInfosToActorNumbers(List<PlayerInfo> input)
+        {
+            if (!PhotonNetwork.IsConnectedAndReady) return input;
+            var remapped = new List<PlayerInfo>(input.Count);
+            // ここでは単純に順番どおりにActorNumberを割り当てる例。実際はルーム参加者列挙で対応。
+            // 注意: 本実装は最小例です。実運用では PhotonNetwork.PlayerList を参照してください。
+            var actors = PhotonNetwork.PlayerList; // 並び順はJoin順。必要に応じてソート。
+            for (int i = 0; i < input.Count && i < actors.Length; i++)
+            {
+                var src = input[i];
+                src.Id = new PlayerId(actors[i].ActorNumber);
+                remapped.Add(src);
+            }
+            // 余りはそのまま（オフライン想定）
+            for (int i = remapped.Count; i < input.Count; i++) remapped.Add(input[i]);
+            return remapped;
         }
 
         private void EventSubscribe()
@@ -163,7 +204,7 @@ namespace Tetrage.Managers
                 _isGameRunning = true;
                 _gameCts = new CancellationTokenSource();
 
-                // ホストの場合は初期宣言（GameStarted）を発行（簡易：DeckId=1/仮）
+                // ホスト: 初期宣言を送信してDealerを実行／ゲスト: 終了まで待機
                 if (PhotonNetwork.IsMasterClient && _networkInitialized)
                 {
                     var started = new GameStartedEvent
@@ -174,10 +215,15 @@ namespace Tetrage.Managers
                         maxNumber = 13,
                         playerActorNumbers = null,
                     };
-                    _netCtl.BroadcastGameStarted(started);
+                    _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
+                    await _dealer.StartGameAsync(0f, _gameCts.Token);
+                }
+                else
+                {
+                    await WaitForGameEndAsync();
                 }
 
-                await _dealer.StartGameAsync(0f, _gameCts.Token);
+
                 Debug.Log("GameManager: ゲームが正常に終了しました");
             }
             catch (System.OperationCanceledException)
@@ -195,6 +241,13 @@ namespace Tetrage.Managers
             }
         }
 
+        private async UniTask WaitForGameEndAsync()
+        {
+            if (PhotonNetwork.IsMasterClient) return;
+            _remoteGameEnded = false;
+            await UniTask.WaitUntil(() => _remoteGameEnded || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InRoom);
+        }
+
         #endregion
 
         #region イベントハンドラ
@@ -203,6 +256,7 @@ namespace Tetrage.Managers
         {
             Debug.Log("GameManager: ゲーム終了イベントを受信");
             _isGameRunning = false;
+            _remoteGameEnded = true;
             EventUnsubscribe();
         }
 

@@ -32,7 +32,7 @@ namespace Tetrage.Managers
                 return _players;
             }
         }
-        
+
         // ステージのインスタンスを取得可能なプロパティ
         public Stage Stage
         {
@@ -80,7 +80,7 @@ namespace Tetrage.Managers
                 // フィールド要素の構築
                 _stage = SetupStage();
                 _players = SetupPlayers(participantInfoList);
-                
+
                 _isSetup = true;
                 Debug.Log("FieldSetupManager: フィールドのセットアップが完了しました");
             }
@@ -148,6 +148,7 @@ namespace Tetrage.Managers
             {
                 var player = playerBuilder
                     .WithUserId(participantInfo.UserId)
+                    .WithPlayerId(participantInfo.Id)
                     .WithPlayerType(participantInfo.PlayerType)
                     .UseView(
                         _settings.PlayerViewPrefabDict[participantInfo.PlayerType],

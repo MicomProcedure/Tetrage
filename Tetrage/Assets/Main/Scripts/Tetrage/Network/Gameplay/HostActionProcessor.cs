@@ -11,11 +11,11 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class DefaultHostActionProcessor : IHostActionProcessor
     {
-        private readonly IGameplayNetworkController _netCtl;
+        private readonly INetworkBroadcaster _broadcaster;
 
         public DefaultHostActionProcessor(IGameplayNetworkController netCtl)
         {
-            _netCtl = netCtl;
+            _broadcaster = netCtl.Broadcaster;
         }
 
         public void Process(ActionRequestedEvent e)
@@ -30,7 +30,7 @@ namespace Tetrage.Network.Gameplay
                 reason = string.Empty,
                 targetCardIds = e.targetCardIds,
             };
-            _netCtl.BroadcastActionResult(result);
+            _broadcaster.Raise(EventCode.ActionResult, result);
         }
     }
 }
