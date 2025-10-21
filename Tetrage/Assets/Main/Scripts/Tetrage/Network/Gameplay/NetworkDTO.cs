@@ -4,6 +4,27 @@ using Tetrage.Core.Ids;
 
 namespace Tetrage.Network.Gameplay
 {
+    /// <summary>
+    /// ListOrder の用途を定義するキー
+    /// </summary>
+    public enum ListOrderKey
+    {
+        TurnOrder = 1,
+        UiSeats = 2,
+        // 必要に応じて追加: PileCardOrder 等は複合キーが必要なため別途
+    }
+    /// <summary>
+    /// ListOrderDeclaredEvent で伝える ID の種類
+    /// </summary>
+    public enum ListOrderIdKind
+    {
+        Int = 0,
+        PlayerId = 1,
+        CardId = 2,
+        PileId = 3,
+        DeckId = 4,
+    }
+
     [Serializable]
     public struct GameStartedEvent
     {
@@ -28,8 +49,10 @@ namespace Tetrage.Network.Gameplay
     {
         public int sequence;
         public int stateVersion;
-        public string listKey; // 任意の識別キー（例: "turnOrder", "uiSeats"）
-        public int[] orderedIds; // 並び順（IDはドメインに依存。PlayerならActorNumber）
+        /// <summary>並べ替え対象のID種別（IIdentifiableのIdに対応）</summary>
+        public ListOrderIdKind idKind;
+        public ListOrderKey listKey; // 用途固定の列挙型
+        public int[] orderedIds; // 並び順（IDラッパの実体はint。PlayerId/CardId/PileId等）
     }
 
     [Serializable]
