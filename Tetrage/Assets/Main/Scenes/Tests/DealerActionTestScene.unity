@@ -818,6 +818,14 @@ PrefabInstance:
       propertyPath: m_fontSizeBase
       value: 40
       objectReference: {fileID: 0}
+    - target: {fileID: 3211881818299276290, guid: 8be0c8a48816d4e9d941f3557b8e869e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
+    - target: {fileID: 3211881818299276290, guid: 8be0c8a48816d4e9d941f3557b8e869e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: -2925243465209541341, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
     - target: {fileID: 4054045087363605402, guid: 8be0c8a48816d4e9d941f3557b8e869e, type: 3}
       propertyPath: gameManager
       value: 
