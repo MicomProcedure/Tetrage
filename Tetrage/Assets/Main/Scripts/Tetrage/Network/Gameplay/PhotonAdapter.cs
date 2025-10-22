@@ -55,6 +55,8 @@ namespace Tetrage.Network.Gameplay
         {
             RaiseToActors(code, payload, new int[] { targetActorNumber });
         }
+
+        // RaiseToOthersExcept は実装しない（呼び出し側でTargetActorsを算出して RaiseToActors を使用）
     }
 
     public sealed class PhotonActionContext : INetworkActionContext

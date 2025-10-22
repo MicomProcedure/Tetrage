@@ -1,3 +1,7 @@
+using Tetrage.Core.Enums;
+using Tetrage.Core.Ids;
+using System.Linq;
+
 namespace Tetrage.Network.Gameplay
 {
     public interface IHostActionProcessor
@@ -20,19 +24,60 @@ namespace Tetrage.Network.Gameplay
 
         public void Process(ActionRequestedEvent e)
         {
-            // 最小実装: リクエスターのみに結果を返す（Othersへの効果配信はこの後の実装で追加）
             var seq = _netCtl.Sequence;
-            var result = new ActionResultEvent
+
+            switch (e.actionType)
             {
-                sequence = seq.NextSequence(),
-                clientSequence = e.clientSequence,
-                actorPlayerId = e.actorPlayerId,
-                actionType = e.actionType,
-                accepted = true,
-                reason = string.Empty,
-                targetCardIds = e.targetCardIds,
-            };
-            _netCtl.Broadcaster.RaiseToActor(EventCode.ActionResult, result, e.actorPlayerId);
+                case ActionType.Draw:
+                    {
+                        if (e.targetCardIds != null && e.targetCardIds.Length > 0)
+                        {
+                            var selected = e.targetCardIds[0];
+                            var moved = new CardMovedEvent
+                            {
+                                sequence = seq.NextSequence(),
+                                stateVersion = seq.NextStateVersion(),
+                                cardId = selected.Value,
+                                fromPileId = PileIds.PlayerTmp(e.actorPlayerId).Value,
+                                toPileId = PileIds.PlayerHands(e.actorPlayerId).Value,
+                            };
+                            // Others を算出して個別送信（All送信は使わない）
+                            var othersInt = Photon.Pun.PhotonNetwork.PlayerList.Select(p => p.ActorNumber)
+                                                                                .Where(a => a != e.actorPlayerId)
+                                                                                .ToArray();
+                            _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, moved, othersInt);
+
+                        }
+
+                        var res = new ActionResultEvent
+                        {
+                            sequence = seq.NextSequence(),
+                            clientSequence = e.clientSequence,
+                            actorPlayerId = e.actorPlayerId,
+                            actionType = e.actionType,
+                            accepted = true,
+                            reason = string.Empty,
+                            targetCardIds = e.targetCardIds,
+                        };
+                        _netCtl.Broadcaster.RaiseToActor(EventCode.ActionResult, res, e.actorPlayerId);
+                        break;
+                    }
+                default:
+                    {
+                        var res = new ActionResultEvent
+                        {
+                            sequence = seq.NextSequence(),
+                            clientSequence = e.clientSequence,
+                            actorPlayerId = e.actorPlayerId,
+                            actionType = e.actionType,
+                            accepted = true,
+                            reason = string.Empty,
+                            targetCardIds = e.targetCardIds,
+                        };
+                        _netCtl.Broadcaster.RaiseToActor(EventCode.ActionResult, res, e.actorPlayerId);
+                        break;
+                    }
+            }
         }
     }
 }

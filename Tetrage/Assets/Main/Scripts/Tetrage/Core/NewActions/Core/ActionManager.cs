@@ -50,7 +50,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// アクション実行完了イベント
         /// </summary>
-        public event Action<IAction, IActionContext, ActionResult> OnActionCompleted;
+        public event Action<IAction, IActionContext, ActionResult> ActionCompleted;
 
         private ActionManager()
         {
@@ -199,7 +199,7 @@ namespace Tetrage.Core.Actions
                 var result = await action.ExecuteAsync(context);
 
                 // イベント発火
-                OnActionCompleted?.Invoke(action, context, result);
+                ActionCompleted?.Invoke(action, context, result);
 
                 return result;
             }
