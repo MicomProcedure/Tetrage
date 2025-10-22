@@ -36,14 +36,14 @@ namespace Tetrage.Network.Gameplay
 
                         if (e.targetCardIds != null && e.targetCardIds.Length > 0)
                         {
-                            // [0]: Handsへ（Tmp -> Hands）
+                            // [0]: Handsへ（Stack -> Hands）
                             var selected = e.targetCardIds[0];
                             var movedSelected = new CardMovedEvent
                             {
                                 sequence = seq.NextSequence(),
                                 stateVersion = seq.NextStateVersion(),
                                 cardId = selected.Value,
-                                fromPileId = PileIds.PlayerTmp(e.actorPlayerId).Value,
+                                fromPileId = PileIds.Stack.Value,
                                 toPileId = PileIds.PlayerHands(e.actorPlayerId).Value,
                             };
                             _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedSelected, othersInt);
@@ -74,16 +74,16 @@ namespace Tetrage.Network.Gameplay
                                     }
                                     else
                                     {
-                                        // Tmp -> Stack
-                                        var movedToStack = new CardMovedEvent
-                                        {
-                                            sequence = seq.NextSequence(),
-                                            stateVersion = seq.NextStateVersion(),
-                                            cardId = cid.Value,
-                                            fromPileId = PileIds.PlayerTmp(e.actorPlayerId).Value,
-                                            toPileId = PileIds.Stack.Value,
-                                        };
-                                        _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedToStack, othersInt);
+                                        // Stack -> Stack（意味がないのでコメントアウト）
+                                        // var movedToStack = new CardMovedEvent
+                                        // {
+                                        //     sequence = seq.NextSequence(),
+                                        //     stateVersion = seq.NextStateVersion(),
+                                        //     cardId = cid.Value,
+                                        //     fromPileId = PileIds.Stack.Value,
+                                        //     toPileId = PileIds.Stack.Value,
+                                        // };
+                                        // _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedToStack, othersInt);
                                     }
                                 }
                             }
@@ -99,7 +99,8 @@ namespace Tetrage.Network.Gameplay
                             reason = string.Empty,
                             targetCardIds = e.targetCardIds,
                         };
-                        _netCtl.Broadcaster.RaiseToActor(EventCode.ActionResult, res, e.actorPlayerId);
+                        // アクション結果は全プレイヤーに送信
+                        _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
                         break;
                     }
                 default:
