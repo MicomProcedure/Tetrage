@@ -13,6 +13,7 @@ namespace Tetrage.Network
         [SerializeField] private NumberInputController numberInputController;
         [SerializeField] private NetworkErrorUI networkErrorUI;
         [SerializeField] private PanelButton panelButton;
+        [SerializeField] private CreateRoom createRoom;
         private string pendingJoinRoomCode;
 
 
@@ -24,7 +25,7 @@ namespace Tetrage.Network
         public void JoinRoom()
         {
 
-            string code = numberInputController.DisplayText.text;
+            string code = createRoom?.IsRandomRoomNumber ?? false ? numberInputController.DisplayText.text : createRoom?.FixedRoomCode;
             if (!ValidateRoomCode(code))
             {
                 return;
