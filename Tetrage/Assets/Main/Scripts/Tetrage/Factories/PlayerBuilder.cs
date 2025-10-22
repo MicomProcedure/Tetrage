@@ -23,6 +23,7 @@ namespace Tetrage.Factories
         private bool _useView;                             // プレイヤー表示用ビューの使用フラグ
         private PlayerId _id;                               // プレイヤーID
         private string _userId = InGameConsts.DEFAULT_PLAYER_ID;                                        // ユーザーID
+        private int _iconIndex = InGameConsts.DEFAULT_PLAYER_ICON_INDEX;                                        // アイコンインデックス
         private int _handsCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY + 1;                         // 手札の容量（一枚のみキャパオーバーを許容する）
         private int _tmpCapacity = InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY;                            // 一時保持カードの容量
         private int _targetCapacity = InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY;                      // ターゲットカードの容量
@@ -77,6 +78,12 @@ namespace Tetrage.Factories
         public PlayerBuilder WithPlayerId(PlayerId id)
         {
             _id = id;
+            return this;
+        }
+
+        public PlayerBuilder WithIconIndex(int iconIndex)
+        {
+            _iconIndex = iconIndex;
             return this;
         }
 
@@ -185,7 +192,7 @@ namespace Tetrage.Factories
             }
 
             // プレイヤーモデル生成
-            IPlayer player = _innerFactory.CreatePlayer(_id, _userId, target, hands, tmp);
+            IPlayer player = _innerFactory.CreatePlayer(_id, _userId, _iconIndex, target, hands, tmp);
 
             if (_useView)
             {

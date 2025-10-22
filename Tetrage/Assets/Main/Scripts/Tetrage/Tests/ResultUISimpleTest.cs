@@ -54,6 +54,7 @@ namespace Tetrage.Tests
             public string UserId { get; set; }
             public int PlayerId { get; set; }
             public PlayerId Id { get; set; }
+            public int IconIndex { get; set; }
             public CardPile Target { get; set; }
             public CardPile Hands { get; set; }
             public CardPile Tmp { get; set; }
