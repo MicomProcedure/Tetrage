@@ -93,5 +93,5 @@ Tetrage/[Aa]ssets/[Ss]treamingAssets/aa/*
 *_list-file.txt
 
 # font
-Tetrage/Assets/Main/Prefabs/UI/Kinkakuji-Normal SDF.asset
-Tetrage/Assets/Main/Prefabs/UI/Kinkakuji-Normal SDF.asset.meta
+Tetrage/Assets/TextMesh Pro/Fonts/Kinkakuji-Normal SDF.asset
+Tetrage/Assets/TextMesh Pro/Fonts/Kinkakuji-Normal SDF.asset.meta
