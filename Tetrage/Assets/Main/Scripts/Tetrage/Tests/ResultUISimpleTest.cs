@@ -21,7 +21,8 @@ namespace Tetrage.Tests
         [SerializeField] private ResultUI resultUI;
 
         [Header("Test Data Settings")]
-        [SerializeField] private List<TestPlayerData> testPlayers = new List<TestPlayerData>
+        [SerializeField]
+        private List<TestPlayerData> testPlayers = new List<TestPlayerData>
         {
             new TestPlayerData { UserId = "Mira.", TargetSuit = Suit.Spade, IconIndex = 0 },
             new TestPlayerData { UserId = "Takakusaki", TargetSuit = Suit.Heart, IconIndex = 1 },
@@ -52,22 +53,23 @@ namespace Tetrage.Tests
         {
             public string UserId { get; set; }
             public int PlayerId { get; set; }
+            public PlayerId Id { get; set; }
             public CardPile Target { get; set; }
             public CardPile Hands { get; set; }
             public CardPile Tmp { get; set; }
             public bool IsReach { get; set; }
-            
+
             public void Reach() { }
 
             public MockPlayer(string userId, int playerId, Suit targetSuit)
             {
                 UserId = userId;
                 PlayerId = playerId;
-                
+
                 // Target カードパイルを作成（1枚のカードを持つ）
                 var card = new Card(new CardId(playerId * 100), targetSuit, 1, true); // スートのみ重要、数字は仮で1
                 Target = new CardPile($"Target_{userId}", new[] { card }, 1);
-                
+
                 // Hands と Tmp は空で初期化（ResultUI では使用しない）
                 Hands = new CardPile($"Hands_{userId}", 0);
                 Tmp = new CardPile($"Tmp_{userId}", 0);
@@ -94,7 +96,7 @@ namespace Tetrage.Tests
 
             var players = CreateMockPlayers();
             var iconMap = CreateIconMap();
-            
+
             string[] winners = new string[]
             {
                 testPlayers[0].UserId,
@@ -104,9 +106,9 @@ namespace Tetrage.Tests
             Debug.Log("=== Test: 2 Winners, 2 Losers ===");
             Debug.Log($"勝者: {string.Join(", ", winners)}");
             LogPlayerInfo();
-            
+
             resultUI.DisplayResult(winners, players, iconMap);
-            
+
             Debug.Log("=== Test Complete ===");
         }
 
@@ -209,14 +211,14 @@ namespace Tetrage.Tests
         private IReadOnlyList<IPlayer> CreateMockPlayers()
         {
             var players = new List<IPlayer>();
-            
+
             for (int i = 0; i < testPlayers.Count; i++)
             {
                 var testData = testPlayers[i];
                 var mockPlayer = new MockPlayer(testData.UserId, i, testData.TargetSuit);
                 players.Add(mockPlayer);
             }
-            
+
             return players;
         }
 
@@ -226,7 +228,7 @@ namespace Tetrage.Tests
         private Dictionary<string, int> CreateIconMap()
         {
             var iconMap = new Dictionary<string, int>();
-            
+
             foreach (var testData in testPlayers)
             {
                 if (!string.IsNullOrEmpty(testData.UserId))
@@ -234,7 +236,7 @@ namespace Tetrage.Tests
                     iconMap[testData.UserId] = testData.IconIndex;
                 }
             }
-            
+
             return iconMap;
         }
 
