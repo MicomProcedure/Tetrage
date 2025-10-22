@@ -3,7 +3,6 @@ using Cysharp.Threading.Tasks;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using MackySoft.Navigathena.SceneManagement;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
@@ -30,10 +29,18 @@ namespace Tetrage.Managers
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            // PUN2: ホストのレベルロードで他クライアントも同期させる
+            PhotonNetwork.AutomaticallySyncScene = true;
+
             SceneManager.sceneLoaded += OnSceneLoaded;
             _lifecycleCts = new System.Threading.CancellationTokenSource();
             Debug.Log("ApplicationManager: 初期化");
         }
+        #endregion
+
+        #region PUN制御
+        /// <summary>現在のクライアントがシーン遷移を制御できるか（オフライン or ホスト）</summary>
+        public static bool CanControlScene => !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
         #endregion
 
         #region Fields
@@ -41,6 +48,8 @@ namespace Tetrage.Managers
         private const string TitleSceneName = "TitleScene";
         private const string GameSceneName = "GameScene";
         private const string ResultSceneName = "ResultScene";
+        private readonly List<string> _sceneHistory = new List<string>();
+        private bool _isLoading = false;
         #endregion
 
         #region Unity Events
@@ -57,25 +66,23 @@ namespace Tetrage.Managers
         }
         #endregion
 
-        #region Scene Navigation
-        public async UniTask GoToTitleAsync()
-        {
-            await GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier(TitleSceneName));
-        }
-
-        public async UniTask GoToGameAsync()
-        {
-            await GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier(GameSceneName));
-        }
-
-        public async UniTask GoToResultAsync()
-        {
-            await GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier(ResultSceneName));
-        }
+        #region Scene Navigation (SceneManager ベース)
+        public async UniTask GoToTitleAsync() { await LoadSceneByNameAsync(TitleSceneName); }
+        public async UniTask GoToGameAsync() { await LoadSceneByNameAsync(GameSceneName); }
+        public async UniTask GoToResultAsync() { await LoadSceneByNameAsync(ResultSceneName); }
 
         public async UniTask GoBackAsync()
         {
-            await GlobalSceneNavigator.Instance.Pop();
+            if (_isLoading) return;
+            if (_sceneHistory.Count == 0) return;
+            if (!CanControlScene)
+            {
+                Debug.LogWarning("ApplicationManager: ホストのみシーン遷移が可能です");
+                return;
+            }
+            string previous = _sceneHistory[_sceneHistory.Count - 1];
+            _sceneHistory.RemoveAt(_sceneHistory.Count - 1);
+            await LoadSceneDirectAsync(previous);
         }
 
         // UI ボタン等から呼べる薄いラッパー
@@ -83,6 +90,50 @@ namespace Tetrage.Managers
         public void GoToGame() { GoToGameAsync().Forget(); }
         public void GoToResult() { GoToResultAsync().Forget(); }
         public void GoBack() { GoBackAsync().Forget(); }
+
+        private async UniTask LoadSceneByNameAsync(string sceneName)
+        {
+            if (_isLoading) return;
+            string current = SceneManager.GetActiveScene().name;
+            if (!string.IsNullOrEmpty(current) && current != sceneName)
+            {
+                _sceneHistory.Add(current);
+            }
+            await LoadSceneDirectAsync(sceneName);
+        }
+
+        private async UniTask LoadSceneDirectAsync(string sceneName)
+        {
+            if (_isLoading) return;
+            _isLoading = true;
+            try
+            {
+                if (PhotonNetwork.InRoom)
+                {
+                    if (!PhotonNetwork.IsMasterClient)
+                    {
+                        Debug.LogWarning("ApplicationManager: ホストのみシーン遷移が可能です");
+                        return;
+                    }
+                    // MasterClient が Photon 経由で同期遷移
+                    PhotonNetwork.LoadLevel(sceneName);
+                    await Cysharp.Threading.Tasks.UniTask.WaitUntil(
+                        () => SceneManager.GetActiveScene().name == sceneName,
+                        cancellationToken: _lifecycleCts.Token
+                    );
+                }
+                else
+                {
+                    // オフライン時は通常ロード
+                    var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+                    await op.ToUniTask(cancellationToken: _lifecycleCts.Token);
+                }
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
         #endregion
 
         #region Scene Handling
