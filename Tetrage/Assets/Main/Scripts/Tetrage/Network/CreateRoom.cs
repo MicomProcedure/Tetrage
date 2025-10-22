@@ -97,20 +97,12 @@ namespace Tetrage.Network
         {
             switch (returnCode)
             {
-                case 32760: // RoomAlreadyExists
-                    return "同じ名前の部屋が既に存在します。しばらく待ってから再度お試しください。";
-                case 32761: // RoomFull
+                case 32765: // RoomFull
                     return "部屋が満員です。";
                 case 32762: // RoomClosed
                     return "部屋が閉じられています。";
-                case 32763: // MaxCcuReached
-                    return "サーバーの同時接続数が上限に達しました。しばらく待ってから再度お試しください。";
-                case 32764: // MaxRoomsReached
-                    return "作成可能な部屋数が上限に達しました。しばらく待ってから再度お試しください。";
-                case 32765: // RegionListEmpty
-                    return "利用可能なリージョンがありません。";
-                case 32766: // ApplicationNameNotSet
-                    return "アプリケーション名が設定されていません。";
+                case 32766: // RoomAlreadyExists
+                    return "同じ名前の部屋が既に存在します。しばらく待ってから再度お試しください。";
                 case 32767: // MaxPlayersOutOfRange
                     return "最大プレイヤー数が範囲外です。";
                 default:
