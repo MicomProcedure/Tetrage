@@ -140,6 +140,7 @@ namespace Tetrage.Managers
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (scene.name != GameSceneName) return;
+            Debug.Log("ApplicationManager: GameSceneが読み込まれました");
             InitializeGameSceneAsync(_lifecycleCts.Token).Forget();
         }
         #endregion
@@ -155,6 +156,7 @@ namespace Tetrage.Managers
             await UniTask.WaitUntil(() =>
             {
                 gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Exclude);
+                Debug.Log("ApplicationManager: GameManagerが見つかりました");
                 return gameManager != null;
             }, cancellationToken: ct);
 
@@ -194,6 +196,9 @@ namespace Tetrage.Managers
                 Debug.LogError($"ApplicationManager: GameManager 初期化エラー: {ex.Message}");
                 throw;
             }
+
+            // ゲームを開始
+            gameManager.StartGame().Forget();
         }
         #endregion
 
