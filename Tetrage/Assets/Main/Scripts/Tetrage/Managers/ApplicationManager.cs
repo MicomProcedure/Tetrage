@@ -3,7 +3,6 @@ using Cysharp.Threading.Tasks;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using MackySoft.Navigathena.SceneManagement;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
@@ -41,6 +40,8 @@ namespace Tetrage.Managers
         private const string TitleSceneName = "TitleScene";
         private const string GameSceneName = "GameScene";
         private const string ResultSceneName = "ResultScene";
+        private readonly List<string> _sceneHistory = new List<string>();
+        private bool _isLoading = false;
         #endregion
 
         #region Unity Events
@@ -57,25 +58,18 @@ namespace Tetrage.Managers
         }
         #endregion
 
-        #region Scene Navigation
-        public async UniTask GoToTitleAsync()
-        {
-            await GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier(TitleSceneName));
-        }
-
-        public async UniTask GoToGameAsync()
-        {
-            await GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier(GameSceneName));
-        }
-
-        public async UniTask GoToResultAsync()
-        {
-            await GlobalSceneNavigator.Instance.Push(new BuiltInSceneIdentifier(ResultSceneName));
-        }
+        #region Scene Navigation (SceneManager ベース)
+        public async UniTask GoToTitleAsync() { await LoadSceneByNameAsync(TitleSceneName); }
+        public async UniTask GoToGameAsync() { await LoadSceneByNameAsync(GameSceneName); }
+        public async UniTask GoToResultAsync() { await LoadSceneByNameAsync(ResultSceneName); }
 
         public async UniTask GoBackAsync()
         {
-            await GlobalSceneNavigator.Instance.Pop();
+            if (_isLoading) return;
+            if (_sceneHistory.Count == 0) return;
+            string previous = _sceneHistory[_sceneHistory.Count - 1];
+            _sceneHistory.RemoveAt(_sceneHistory.Count - 1);
+            await LoadSceneDirectAsync(previous);
         }
 
         // UI ボタン等から呼べる薄いラッパー
@@ -83,6 +77,31 @@ namespace Tetrage.Managers
         public void GoToGame() { GoToGameAsync().Forget(); }
         public void GoToResult() { GoToResultAsync().Forget(); }
         public void GoBack() { GoBackAsync().Forget(); }
+
+        private async UniTask LoadSceneByNameAsync(string sceneName)
+        {
+            if (_isLoading) return;
+            string current = SceneManager.GetActiveScene().name;
+            if (!string.IsNullOrEmpty(current) && current != sceneName)
+            {
+                _sceneHistory.Add(current);
+            }
+            await LoadSceneDirectAsync(sceneName);
+        }
+
+        private async UniTask LoadSceneDirectAsync(string sceneName)
+        {
+            _isLoading = true;
+            try
+            {
+                var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+                await op.ToUniTask(cancellationToken: _lifecycleCts.Token);
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
         #endregion
 
         #region Scene Handling
