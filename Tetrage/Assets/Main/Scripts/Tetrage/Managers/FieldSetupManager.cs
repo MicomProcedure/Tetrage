@@ -133,8 +133,8 @@ namespace Tetrage.Managers
             // return予定のプレイヤーリストを作成
             var players = new List<IPlayer>();
 
-            // 依存性注入されたPlayerModelFactoryを使用
-            var playerBuilder = new PlayerBuilder((PlayerModelFactory)_dependencies.PlayerModelFactory);
+            // 依存性注入されたIPlayerFactoryを使用（RegisteringPlayerFactory対応）
+            var playerBuilder = new PlayerBuilder(_dependencies.PlayerModelFactory);
 
             // 位置数の検証
             if (_settings.PlayerLocations.Count < participantInfoList.Count)
@@ -163,6 +163,11 @@ namespace Tetrage.Managers
                     .Build();
                 players.Add(player);
                 playerIndex++;
+            }
+            Debug.Log("FieldSetupManager: プレイヤーのセットアップが完了しました");
+            foreach (var player in players)
+            {
+                Debug.Log($"FieldSetupManager: プレイヤーID: {player.Id}, ユーザーID: {player.UserId}");
             }
             return players;
         }

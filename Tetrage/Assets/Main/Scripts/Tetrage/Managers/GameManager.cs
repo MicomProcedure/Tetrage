@@ -187,7 +187,8 @@ namespace Tetrage.Managers
 
             // FieldSetupComponentから検証済みの設定を取得
             var settings = _fieldSetupComponent.GetValidatedFieldSetupSettings(participantCount);
-            var dependencies = _fieldSetupComponent.CreateFieldSetupDependencies();
+            // Registry注入版の依存性を使用
+            var dependencies = _fieldSetupComponent.CreateFieldSetupDependencies(_pileRegistry, _cardRegistry, _playerRegistry);
 
             return new FieldSetupManager(settings, dependencies);
         }

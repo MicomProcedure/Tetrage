@@ -15,7 +15,7 @@ namespace Tetrage.Factories
     /// <summary>プレイヤー（初期カードパイル付き）を構築するビルダーパターン実装</summary>
     public class PlayerBuilder
     {
-        private readonly PlayerModelFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
+        private readonly IPlayerFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
         private BasicPlayerView _viewPrefab;                // プレイヤー表示用ビュー
         private Transform _viewParent;                      // プレイヤー表示用ビューの親
         private Vector3 _viewSpawnPosition;                 // プレイヤー表示用ビューの生成位置
@@ -32,7 +32,7 @@ namespace Tetrage.Factories
         private PlayerType _playerType;
 
         /// <summary>基礎となる IPlayerFactory を受け取るコンストラクタ</summary>
-        public PlayerBuilder(PlayerModelFactory innerFactory)
+        public PlayerBuilder(IPlayerFactory innerFactory)
         {
             Assert.IsNotNull(innerFactory, "innerFactory(PlayerModelFactory) が null です");
 
