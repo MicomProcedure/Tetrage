@@ -30,10 +30,15 @@ namespace Tetrage.Network.Gameplay
             {
                 case ActionType.Draw:
                     {
+                        var othersInt = Photon.Pun.PhotonNetwork.PlayerList.Select(p => p.ActorNumber)
+                                                                            .Where(a => a != e.actorPlayerId)
+                                                                            .ToArray();
+
                         if (e.targetCardIds != null && e.targetCardIds.Length > 0)
                         {
+                            // [0]: Handsへ（Tmp -> Hands）
                             var selected = e.targetCardIds[0];
-                            var moved = new CardMovedEvent
+                            var movedSelected = new CardMovedEvent
                             {
                                 sequence = seq.NextSequence(),
                                 stateVersion = seq.NextStateVersion(),
@@ -41,12 +46,47 @@ namespace Tetrage.Network.Gameplay
                                 fromPileId = PileIds.PlayerTmp(e.actorPlayerId).Value,
                                 toPileId = PileIds.PlayerHands(e.actorPlayerId).Value,
                             };
-                            // Others を算出して個別送信（All送信は使わない）
-                            var othersInt = Photon.Pun.PhotonNetwork.PlayerList.Select(p => p.ActorNumber)
-                                                                                .Where(a => a != e.actorPlayerId)
-                                                                                .ToArray();
-                            _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, moved, othersInt);
+                            _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedSelected, othersInt);
 
+                            // [1..n-1]: Stackに戻したカード（Tmp -> Stack）
+                            // [n]（存在する場合）: Trashへ送ったカード（Hands -> Trash）
+                            var total = e.targetCardIds.Length;
+                            if (total >= 2)
+                            {
+                                for (int i = 1; i < total; i++)
+                                {
+                                    var cid = e.targetCardIds[i];
+                                    bool isLast = (i == total - 1);
+                                    bool hasTrash = (total >= 3); // 最後尾はTrashの規約（選択+戻し+Trashの3つ以上）
+
+                                    if (isLast && hasTrash)
+                                    {
+                                        // Hands -> Trash
+                                        var movedToTrash = new CardMovedEvent
+                                        {
+                                            sequence = seq.NextSequence(),
+                                            stateVersion = seq.NextStateVersion(),
+                                            cardId = cid.Value,
+                                            fromPileId = PileIds.PlayerHands(e.actorPlayerId).Value,
+                                            toPileId = PileIds.Trash.Value,
+                                        };
+                                        _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedToTrash, othersInt);
+                                    }
+                                    else
+                                    {
+                                        // Tmp -> Stack
+                                        var movedToStack = new CardMovedEvent
+                                        {
+                                            sequence = seq.NextSequence(),
+                                            stateVersion = seq.NextStateVersion(),
+                                            cardId = cid.Value,
+                                            fromPileId = PileIds.PlayerTmp(e.actorPlayerId).Value,
+                                            toPileId = PileIds.Stack.Value,
+                                        };
+                                        _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedToStack, othersInt);
+                                    }
+                                }
+                            }
                         }
 
                         var res = new ActionResultEvent
@@ -74,7 +114,8 @@ namespace Tetrage.Network.Gameplay
                             reason = string.Empty,
                             targetCardIds = e.targetCardIds,
                         };
-                        _netCtl.Broadcaster.RaiseToActor(EventCode.ActionResult, res, e.actorPlayerId);
+                        // デフォルトでは全プレイヤーに送信
+                        _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
                         break;
                     }
             }

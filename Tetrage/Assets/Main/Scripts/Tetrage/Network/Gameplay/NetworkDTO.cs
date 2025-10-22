@@ -112,6 +112,17 @@ namespace Tetrage.Network.Gameplay
         public string reason;      // 失敗時
         public CardId[] targetCardIds; // 影響対象（応答時に確定させたい場合）
     }
+
+    /// <summary>
+    /// ActionResult.AdditionalData に格納し、NetworkActionBase で取り出して送信するためのDTO
+    /// </summary>
+    [Serializable]
+    public struct ActionRequestDescriptor
+    {
+        public ActionType actionType;
+        public int actorPlayerId;
+        public CardId[] targetCardIds;
+    }
 }
 
 

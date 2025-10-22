@@ -41,6 +41,7 @@ namespace Tetrage.Core.Actions
         private IGameContextProvider _gameContextProvider;
         private IRoundManager _roundManager;
         private ActionAwaiter _actionAwaiter; // ActionAwaiterを追加
+        private Tetrage.Network.Gameplay.INetworkActionContext _networkCtx;
 
         /// <summary>
         /// アクション実行前イベント
@@ -101,6 +102,14 @@ namespace Tetrage.Core.Actions
         public ActionAwaiter GetActionAwaiter()
         {
             return _actionAwaiter;
+        }
+
+        /// <summary>
+        /// ネットワークアクションコンテキストを設定
+        /// </summary>
+        public void SetNetworkActionContext(Tetrage.Network.Gameplay.INetworkActionContext networkCtx)
+        {
+            _networkCtx = networkCtx;
         }
 
         /// <summary>
@@ -171,7 +180,7 @@ namespace Tetrage.Core.Actions
             try
             {
                 var action = CreateAction(actionType, requester);
-                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter);
+                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter, _networkCtx);
                 return action.CanExecute(context);
             }
             catch (Exception ex)
@@ -190,7 +199,7 @@ namespace Tetrage.Core.Actions
             try
             {
                 var action = CreateAction(actionType, requester);
-                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter);
+                var context = new ActionContext(requester, _gameContextProvider, _actionAwaiter, _networkCtx);
 
                 // イベント発火
                 OnActionStarted?.Invoke(action, context);

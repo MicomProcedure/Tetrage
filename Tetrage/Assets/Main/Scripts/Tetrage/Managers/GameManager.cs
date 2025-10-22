@@ -131,6 +131,14 @@ namespace Tetrage.Managers
                     _netCtl?.Broadcaster
                 );
 
+                // 5.5 ActionManager に NetworkActionContext を注入（ActionSystemはDealerのコンストラクタで初期化されている）
+                var actionMgr = Tetrage.Core.Actions.ActionSystemInitializer.GetActionManager();
+                if (actionMgr != null && _netCtl != null)
+                {
+                    var networkCtx = new Tetrage.Network.Gameplay.PhotonActionContext(_netCtl.Broadcaster, _netCtl.Sequence);
+                    actionMgr.SetNetworkActionContext(networkCtx);
+                }
+
                 EventSubscribe();
 
                 // 6. Dealerへ Broadcaster/Sequence/TurnGate を提供（Hostのみ）

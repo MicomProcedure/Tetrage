@@ -4,6 +4,7 @@ using System.Linq;
 using Tetrage.Models;
 using Tetrage.UI; // CardClickDispatcherを使用するために追加
 using System.Threading; // CancellationTokenを追加
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Core.Actions
 {
@@ -40,8 +41,8 @@ namespace Tetrage.Core.Actions
                 }
 
                 Debug.Log($"Draw アクション実行完了: プレイヤー {context.RequesterPlayer.UserId}");
-
-                return ActionResult.Success("Draw アクションが正常に実行されました");
+                // ProcessCardSelection 内で ActionRequestDescriptor を組み立てて返す
+                return transferResult;
             }
             catch (System.Exception ex)
             {
@@ -80,6 +81,9 @@ namespace Tetrage.Core.Actions
             var tmp = context.RequesterPlayer.Tmp;
             var hands = context.RequesterPlayer.Hands;
             var stack = context.CurrentStage.Stack;
+            // 送信用に、選択/スタック返却/トラッシュ送りカードIDを順序付きで収集
+            var movedToStack = new System.Collections.Generic.List<Tetrage.Core.Ids.CardId>();
+            var movedToTrash = new System.Collections.Generic.List<Tetrage.Core.Ids.CardId>();
 
             // 1. 選択されたカードをHandsに移動
             bool toHandsSuccess = CardPile.TransferService.Transfer(tmp, hands, selectedCard);
@@ -101,6 +105,7 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure($"選択されなかったカード {card} をStackの1番上に戻すことができませんでした");
                 }
                 Debug.Log($"選択されなかったカード {card} をStackの1番上に戻しました。");
+                movedToStack.Add(card.Id);
             }
 
             // 3.手札が保持容量を超える場合、1枚を選んでTrashへ移動する
@@ -117,10 +122,26 @@ namespace Tetrage.Core.Actions
                 // 選択されたカードをTrashへ移動
                 context.CurrentStage.Discard(hands, discard);
                 Debug.Log($"手札超過により {discard} を捨て札へ移動しました");
+                movedToTrash.Add(discard.Id);
             }
 
             await UniTask.Delay(100); // アニメーション時間の確保
-            return ActionResult.Success();
+            // targetCardIds の順序規約:
+            // [0] 選択カード（Handsへ）
+            // [1..N] Stackに戻したカード（戻した順）
+            // [N+1..] Trashに送ったカード（送った順）
+            var cardIds = new System.Collections.Generic.List<Tetrage.Core.Ids.CardId>();
+            cardIds.Add(selectedCard.Id);
+            cardIds.AddRange(movedToStack);
+            cardIds.AddRange(movedToTrash);
+
+            var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+            {
+                actionType = Tetrage.Core.Enums.ActionType.Draw,
+                actorPlayerId = context.RequesterPlayer.PlayerId,
+                targetCardIds = cardIds.ToArray()
+            };
+            return ActionResult.Success(descriptor);
         }
 
         /// <summary>
