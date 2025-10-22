@@ -457,7 +457,7 @@ MonoBehaviour:
   suitText: {fileID: 3838794523360312833}
   numberText: {fileID: 2050508706609354361}
   animator: {fileID: 3872063364497498400}
-  cardImageMapper: {fileID: 11400000, guid: c2dba1c9d552e469f9f31d4add92026e, type: 2}
+  cardImageMapper: {fileID: 11400000, guid: 20701fb78b4bb6344a17ab19d071e3af, type: 2}
   highlightColor: {r: 1, g: 1, b: 0.5, a: 1}
 --- !u!212 &2014656711774223290
 SpriteRenderer:

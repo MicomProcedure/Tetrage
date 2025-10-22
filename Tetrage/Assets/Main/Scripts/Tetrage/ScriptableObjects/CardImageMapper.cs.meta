@@ -1,2 +1,12 @@
 fileFormatVersion: 2
 guid: fbf614558e86d48f892668d8d762c726
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - cardBackSprite: {fileID: 8334738433395463955, guid: 43b8327c94d194e4c8eb4dd0233adb72, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
