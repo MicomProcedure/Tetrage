@@ -120,7 +120,9 @@ namespace Tetrage.Tests
                 players.Add(playerModelFactory.CreatePlayer(new PlayerId(i), $"TestPlayer_{i}"));
             }
 
-            _gameContext = new Tetrage.Core.GameContext(stage, players, players[fixedPlayerIndex], null);
+            // Bus を用意（オフラインでも購読可能にするが、適用発火はネット経路のみ）
+            var bus = new SimpleGameplayEventBus();
+            _gameContext = new Tetrage.Core.GameContext(stage, players, players[fixedPlayerIndex], bus);
 
             _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
             _dealerPlanner = new RealDealerPlanner();
@@ -135,7 +137,15 @@ namespace Tetrage.Tests
             _dealer.GameEnd += OnGameEnd;
             _dealer.RoundStart += OnRoundStart;
             _dealer.RoundEnd += OnRoundEnd;
-            _dealer.TurnStart += OnTurnStart;
+            // Turn系は Bus 優先。Bus が無い場合だけ Dealer イベントを使う
+            if (_gameContext?.Events != null)
+            {
+                _gameContext.Events.TurnStartedApplied += OnTurnStartedBus;
+            }
+            else
+            {
+                _dealer.TurnStart += OnTurnStart;
+            }
             _dealer.TurnEnd += OnTurnEnd;
         }
 
@@ -146,7 +156,14 @@ namespace Tetrage.Tests
             _dealer.GameEnd -= OnGameEnd;
             _dealer.RoundStart -= OnRoundStart;
             _dealer.RoundEnd -= OnRoundEnd;
-            _dealer.TurnStart -= OnTurnStart;
+            if (_gameContext?.Events != null)
+            {
+                _gameContext.Events.TurnStartedApplied -= OnTurnStartedBus;
+            }
+            else
+            {
+                _dealer.TurnStart -= OnTurnStart;
+            }
             _dealer.TurnEnd -= OnTurnEnd;
         }
         #endregion
@@ -157,6 +174,7 @@ namespace Tetrage.Tests
         private void OnRoundStart() => Log($"ラウンド開始 {_dealer?.RoundCount}/{_dealer?.MaxRounds}");
         private void OnRoundEnd() => Log($"ラウンド終了 {_dealer?.RoundCount}/{_dealer?.MaxRounds}");
         private void OnTurnStart() => Log($"ターン開始 {_dealer?.TurnCount}");
+        private void OnTurnStartedBus(TurnStartedEvent e) => Log($"ターン開始(バス) actor={e.currentPlayerActorNumber}");
         private void OnTurnEnd() => Log($"ターン終了 {_dealer?.TurnCount}");
         #endregion
 

@@ -99,6 +99,10 @@ namespace Tetrage.Managers
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
         }
 
+        #endregion
+
+        #region 設定メソッド
+
         /// <summary>
         /// 後からEmitterを差し替える（GameManagerのネットワーク初期化完了後に注入）。
         /// Hostのみ設定。Guestはnullのまま。
@@ -200,9 +204,9 @@ namespace Tetrage.Managers
             var targetPlan = _dealerPlanner.PlanTargetSetup(_gameContext.Players, _gameContext.Stage.Stack);
             _dealerPlanEmitter?.Emit(targetPlan);
 
-            // 3) ターン順序初期化（副作用なしのため内部状態のみ更新）
-            var turnOrder = _dealerPlanner.PlanResetTurnOrder(_gameContext.Players);
-            _dealerPlanEmitter?.Broadcaster.Raise(EventCode.ListOrderDeclared, turnOrder);
+            // 3) ターン順序初期化（プランにTurnOrderを含め、Emitterで送信）
+            var orderPlan = _dealerPlanner.PlanResetTurnOrder(_gameContext.Players);
+            _dealerPlanEmitter?.Emit(orderPlan);
 
             // 4) 最初のプレイヤーを決定
             var firstPlayer = _dealerPlanner.DecideFirstPlayer(_gameContext.Players);
@@ -291,6 +295,7 @@ namespace Tetrage.Managers
 
             OnTurnEnd();
 
+
             // 次のプレイヤーへ
             if (!_isGameFinished && _gameContext.CurrentPlayer != null)
             {
@@ -371,11 +376,16 @@ namespace Tetrage.Managers
         public void OnTurnStart()
         {
             _turnCount++;
+            _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = _gameContext.CurrentPlayer.PlayerId });
             Debug.Log($"Dealer: ターン {_turnCount} を開始します");
             TurnStart?.Invoke();
         }
         public void OnTurnEnd()
-        {
+        {            // 終了イベントのネットワーク送信（任意）
+            if (_lifecycleEmitter is GameLifecycleEmitter gle && PhotonNetwork.IsMasterClient && _gameContext.CurrentPlayer != null)
+            {
+                gle.EmitEnded(_gameContext.CurrentPlayer.PlayerId);
+            }
             TurnEnd?.Invoke();
         }
 

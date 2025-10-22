@@ -17,6 +17,7 @@ namespace Tetrage.Network.Gameplay
         private IGameplayEventBus _bus;
         private TurnGate _turnGate;
         private GameContext _gameContext;
+        private SequenceService _sequence;
         private bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
         private bool _started;
@@ -38,6 +39,7 @@ namespace Tetrage.Network.Gameplay
             _isHost = isHost;
             _bus = new SimpleGameplayEventBus();
             _turnGate = new TurnGate();
+            _sequence = new SequenceService();
             var applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext);
             _hostActionProcessor = new DefaultHostActionProcessor(this);
             _broadcaster = new PhotonBroadcaster(_serializer);
@@ -51,6 +53,10 @@ namespace Tetrage.Network.Gameplay
             _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e =>
             {
                 applier.Apply(e);
+            });
+            _receiver.On<TurnEndedEvent>(EventCode.TurnEnded, e =>
+            {
+                // 現状はUI用途のイベント。Applierに適用が必要なら追加
             });
             _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => applier.Apply(e));
             _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => applier.Apply(e));
@@ -73,6 +79,7 @@ namespace Tetrage.Network.Gameplay
 
         public TurnGate TurnGate => _turnGate;
         public IGameplayEventBus EventBus => _bus;
+        public SequenceService Sequence => _sequence;
 
         public void AttachGameContext(Tetrage.Core.GameContext ctx)
         {

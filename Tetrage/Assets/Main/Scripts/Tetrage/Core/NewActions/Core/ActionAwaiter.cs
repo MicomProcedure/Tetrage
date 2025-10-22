@@ -40,7 +40,7 @@ namespace Tetrage.Core.Actions
             _actionManager = actionManager ?? throw new ArgumentNullException(nameof(actionManager));
 
             // Action 完了イベントに購読
-            _actionManager.OnActionCompleted += OnActionCompleted;
+            _actionManager.ActionCompleted += OnActionCompleted;
         }
         #endregion
 
@@ -72,9 +72,9 @@ namespace Tetrage.Core.Actions
             {
                 Debug.Log($"ActionAwaiter: プレイヤー {_waitingPlayer.PlayerId} のアクションを待機中...");
 
- 
-                    // 無制限待機
-                    return await _completionSource.Task.AttachExternalCancellation(token);
+
+                // 無制限待機
+                return await _completionSource.Task.AttachExternalCancellation(token);
 
             }
             catch (OperationCanceledException)
@@ -136,7 +136,7 @@ namespace Tetrage.Core.Actions
         public void Dispose()
         {
             CancelWaiting();
-            _actionManager.OnActionCompleted -= OnActionCompleted;
+            _actionManager.ActionCompleted -= OnActionCompleted;
         }
         #endregion
     }

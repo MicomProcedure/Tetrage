@@ -64,7 +64,7 @@ namespace Tetrage.Managers.DealerStrategies
             return GetNextPlayer(currentPlayer, players);
         }
 
-        public IReadOnlyList<IPlayer> PlanResetTurnOrder(IReadOnlyList<IPlayer> players)
+        public DealerPlan PlanResetTurnOrder(IReadOnlyList<IPlayer> players)
         {
             var list = new List<IPlayer>(players);
             for (int i = 0; i < list.Count; i++)
@@ -77,7 +77,16 @@ namespace Tetrage.Managers.DealerStrategies
             _turnOrder = list;
             _currentTurnIndex = 0;
             _firstPlayer = _turnOrder[0];
-            return _turnOrder.AsReadOnly();
+            // TurnOrderEffect を構築
+            var effects = new List<TurnOrderEffect>(_turnOrder.Count);
+            for (int i = 0; i < _turnOrder.Count; i++)
+            {
+                effects.Add(new TurnOrderEffect { PlayerId = _turnOrder[i].Id, Order = i });
+            }
+            return new DealerPlan
+            {
+                TurnOrder = effects
+            };
         }
 
         public DealerPlan PlanShuffleDeck(CardPile stack)

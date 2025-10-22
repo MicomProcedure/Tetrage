@@ -15,6 +15,7 @@ namespace Tetrage.Core
         private IPlayer _userPlayer;
         private Stage _stage;
         private readonly IGameplayEventBus _events;
+        private int _turnIndex;
 
         public GameContext(Stage stage, IReadOnlyList<IPlayer> players, IPlayer userPlayer, IGameplayEventBus events)
         {
@@ -28,12 +29,15 @@ namespace Tetrage.Core
         public IReadOnlyList<IPlayer> Players => _players;
         public Stage Stage => _stage;
         public IGameplayEventBus Events => _events;
+        public int TurnIndex => _turnIndex;
 
         // 以下は Applier からのみ呼ばれる setter（公開しない）
         public void SetCurrentPlayerInternal(IPlayer player) { _currentPlayer = player; }
         public void SetPlayersInternal(IReadOnlyList<IPlayer> ordered) { _players = ordered; }
         public void SetUserPlayerInternal(IPlayer userPlayer) { _userPlayer = userPlayer; }
         public void SetStageInternal(Stage stage) { _stage = stage; }
+        public void ResetTurnIndexInternal() { _turnIndex = 0; }
+        public void IncrementTurnIndexInternal() { _turnIndex++; }
     }
 }
 

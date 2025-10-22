@@ -151,6 +151,7 @@ namespace Tetrage.Network.Gameplay
         {
             // 初期同期のため、連番はリセットして良い
             ResetSequences();
+            _context?.ResetTurnIndexInternal();
 
             if (e.playerActorNumbers == null || e.playerActorNumbers.Length == 0)
             {
@@ -214,6 +215,7 @@ namespace Tetrage.Network.Gameplay
                 if (_playerRegistry.TryGet(new PlayerId(e.currentPlayerActorNumber), out var p))
                 {
                     _context.SetCurrentPlayerInternal(p);
+                    _context.IncrementTurnIndexInternal();
                 }
             }
             _bus?.PublishTurnStarted(e);

@@ -9,9 +9,14 @@ namespace Tetrage.Network.Gameplay
         private readonly SequenceService _seq;
 
         public GameLifecycleEmitter(INetworkBroadcaster broadcaster)
+            : this(broadcaster, new SequenceService())
+        {
+        }
+
+        public GameLifecycleEmitter(INetworkBroadcaster broadcaster, SequenceService sequenceService)
         {
             _broadcaster = broadcaster;
-            _seq = new SequenceService();
+            _seq = sequenceService ?? new SequenceService();
         }
 
         public INetworkBroadcaster Broadcaster => _broadcaster;
@@ -21,6 +26,17 @@ namespace Tetrage.Network.Gameplay
             e.sequence = _seq.NextSequence();
             e.stateVersion = _seq.NextStateVersion();
             _broadcaster.Raise(EventCode.TurnStarted, e);
+        }
+
+        public void EmitEnded(int previousPlayerActorNumber)
+        {
+            var e = new TurnEndedEvent
+            {
+                sequence = _seq.NextSequence(),
+                stateVersion = _seq.NextStateVersion(),
+                previousPlayerActorNumber = previousPlayerActorNumber,
+            };
+            _broadcaster.Raise(EventCode.TurnEnded, e);
         }
     }
 }

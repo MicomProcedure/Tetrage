@@ -43,6 +43,14 @@ namespace Tetrage.Network.Gameplay
         public int currentPlayerActorNumber;
     }
 
+    [Serializable]
+    public struct TurnEndedEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public int previousPlayerActorNumber;
+    }
+
 
     [Serializable]
     public struct ListOrderDeclaredEvent

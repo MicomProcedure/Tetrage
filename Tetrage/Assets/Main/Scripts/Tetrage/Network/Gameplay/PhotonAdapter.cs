@@ -42,6 +42,19 @@ namespace Tetrage.Network.Gameplay
             var bytes = _serializer.Serialize(payload);
             PhotonNetwork.RaiseEvent((byte)code, bytes, _optionsAll, _sendOptions);
         }
+
+        public void RaiseToActors<T>(EventCode code, T payload, int[] targetActorNumbers)
+        {
+            if (targetActorNumbers == null || targetActorNumbers.Length == 0) return;
+            var bytes = _serializer.Serialize(payload);
+            var opts = new RaiseEventOptions { TargetActors = targetActorNumbers };
+            PhotonNetwork.RaiseEvent((byte)code, bytes, opts, _sendOptions);
+        }
+
+        public void RaiseToActor<T>(EventCode code, T payload, int targetActorNumber)
+        {
+            RaiseToActors(code, payload, new int[] { targetActorNumber });
+        }
     }
 
     public sealed class PhotonActionContext : INetworkActionContext

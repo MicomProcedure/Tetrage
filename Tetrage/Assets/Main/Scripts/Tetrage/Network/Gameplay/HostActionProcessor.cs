@@ -11,18 +11,20 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class DefaultHostActionProcessor : IHostActionProcessor
     {
-        private readonly INetworkBroadcaster _broadcaster;
+        private readonly IGameplayNetworkController _netCtl;
 
         public DefaultHostActionProcessor(IGameplayNetworkController netCtl)
         {
-            _broadcaster = netCtl.Broadcaster;
+            _netCtl = netCtl;
         }
 
         public void Process(ActionRequestedEvent e)
         {
+            // 最小実装: リクエスターのみに結果を返す（Othersへの効果配信はこの後の実装で追加）
+            var seq = _netCtl.Sequence;
             var result = new ActionResultEvent
             {
-                sequence = e.sequence, // TODO: ホスト連番に置換
+                sequence = seq.NextSequence(),
                 clientSequence = e.clientSequence,
                 actorPlayerId = e.actorPlayerId,
                 actionType = e.actionType,
@@ -30,7 +32,7 @@ namespace Tetrage.Network.Gameplay
                 reason = string.Empty,
                 targetCardIds = e.targetCardIds,
             };
-            _broadcaster.Raise(EventCode.ActionResult, result);
+            _netCtl.Broadcaster.RaiseToActor(EventCode.ActionResult, result, e.actorPlayerId);
         }
     }
 }
