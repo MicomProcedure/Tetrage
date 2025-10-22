@@ -492,6 +492,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3846029304924264357, guid: e8f96019a0e4f439f84f93a680e072d7, type: 3}
   m_PrefabInstance: {fileID: 580903814}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &680061887 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1967558176310552593, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+  m_PrefabInstance: {fileID: 5096832559422080447}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2f00e6f3aecc4f4f9c5b344b7b425e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &694658753
 GameObject:
   m_ObjectHideFlags: 0
@@ -551,8 +562,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Now \nConnecting"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: d696259c33ed84df69a97d35bf44ca7d, type: 2}
-  m_sharedMaterial: {fileID: -2925243465209541341, guid: d696259c33ed84df69a97d35bf44ca7d, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2310,6 +2321,18 @@ PrefabInstance:
       propertyPath: 'targetPanelS.Array.data[0]'
       value: 
       objectReference: {fileID: 5267537617116228763}
+    - target: {fileID: 3463254270755477975, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
+      value: 
+      objectReference: {fileID: 680061887}
+    - target: {fileID: 3463254270755477975, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_MethodName
+      value: GoToGame
+      objectReference: {fileID: 0}
+    - target: {fileID: 3463254270755477975, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
+      value: Tetrage.Managers.ApplicationManager, Tetrage
+      objectReference: {fileID: 0}
     - target: {fileID: 5404532566449970957, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: exitRoom
       value: 
@@ -2336,7 +2359,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7408905724936456624, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8281888217376564730, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: 'targetPanelS.Array.data[0]'
@@ -2434,6 +2457,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2904172341731087478, guid: a493c738d3a06384f815e80f2f2579b4, type: 3}
   m_PrefabInstance: {fileID: 6259073450355561423}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5096832559422080447
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.084533215
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992225592668008352, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8591674565721503531, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
+      propertyPath: m_Name
+      value: ApplicationManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
 --- !u!1 &5122477908976439183
 GameObject:
   m_ObjectHideFlags: 0
@@ -2801,7 +2881,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5865557003278753755, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6139988526478475767, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: 'targetPanelS.Array.data[0]'
@@ -3002,3 +3082,4 @@ SceneRoots:
   - {fileID: 4791834521118777757}
   - {fileID: 1841544532}
   - {fileID: 1682834042}
+  - {fileID: 5096832559422080447}
