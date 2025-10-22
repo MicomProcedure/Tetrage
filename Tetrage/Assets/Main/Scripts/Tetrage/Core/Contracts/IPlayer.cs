@@ -1,6 +1,7 @@
 // using Tetrage.Actions;
 using Tetrage.Models;
 using Cysharp.Threading.Tasks;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Core.Contracts
 {
@@ -18,6 +19,7 @@ namespace Tetrage.Core.Contracts
         /// プレイヤーの一意な識別子。
         /// </summary>
         public int PlayerId { get; }
+        public PlayerId Id { get; }
 
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)

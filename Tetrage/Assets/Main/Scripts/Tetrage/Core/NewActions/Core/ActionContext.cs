@@ -17,15 +17,18 @@ namespace Tetrage.Core.Actions
         public IPlayer CurrentTurnPlayer { get; }
         public IGameContextProvider GameContext { get; }
         public ActionAwaiter ActionAwaiter { get; }
+        public Tetrage.Network.Gameplay.INetworkActionContext Network { get; }
 
         public ActionContext(
             IPlayer requesterPlayer,
             IGameContextProvider gameContext,
-            ActionAwaiter actionAwaiter = null)
+            ActionAwaiter actionAwaiter = null,
+            Tetrage.Network.Gameplay.INetworkActionContext network = null)
         {
             RequesterPlayer = requesterPlayer;
             GameContext = gameContext;
             ActionAwaiter = actionAwaiter;
+            Network = network;
             CurrentStage = gameContext.Stage;
             AllPlayers = gameContext.Players;
             CurrentTurnPlayer = gameContext.CurrentPlayer;

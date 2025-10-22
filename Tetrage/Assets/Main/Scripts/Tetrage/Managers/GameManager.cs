@@ -11,6 +11,7 @@ using Tetrage.Core.Ids;
 using Tetrage.Models;
 using Photon.Pun;
 using Tetrage.Core.Constants;
+using Tetrage.Core;
 
 namespace Tetrage.Managers
 {
@@ -30,6 +31,15 @@ namespace Tetrage.Managers
         private FieldSetupManager _fieldSetupManager;
         private Dealer _dealer;
         private IGameplayNetworkController _netCtl;
+
+        private GameContext _gameContext;
+
+        #endregion
+
+        #region レジストリ
+        private IdRegistry<CardId, Card> _cardRegistry = new IdRegistry<CardId, Card>();
+        private IdRegistry<PileId, CardPile> _pileRegistry = new IdRegistry<PileId, CardPile>();
+        private IdRegistry<PlayerId, Player> _playerRegistry = new IdRegistry<PlayerId, Player>();
 
         #endregion
 
@@ -76,7 +86,7 @@ namespace Tetrage.Managers
         /// </summary>
         /// <param name="participantInfoList">参加者情報リスト</param>
         /// <param name="dealerStrategy">DealerStrategy</param>
-        public void Initialize(List<PlayerInfo> participantInfoList)
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo)
         {
             if (_isInitialized)
             {
@@ -90,34 +100,59 @@ namespace Tetrage.Managers
                 _fieldSetupManager = CreateFieldSetupManager(participantInfoList.Count);
 
                 // 1.5 ネットワーク接続時は PlayerId=ActorNumber へマッピング
-                var effectiveParticipants = RemapPlayerInfosToActorNumbers(participantInfoList);
+                ValidatePlayerInfos(participantInfoList);
 
                 // 2. フィールドのセットアップ
-                _fieldSetupManager.SetupField(effectiveParticipants);
+                _fieldSetupManager.SetupField(participantInfoList);
 
-                // 3. Dealerの生成と初期化（ブロードキャスタを注入）
+                // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
+                _netCtl = InitializeNetworking();
+
+                // 3.5 ユーザープレイヤーの特定
+                if (!TryGetPlayerById(userPlayerInfo.Id, out var userPlayer))
+                {
+                    Debug.LogWarning($"GameManager: ユーザープレイヤーが見つかりません。PlayerId={userPlayerInfo.Id}");
+                    return;
+                }
+
+                // 4. GameContextの生成（PUNのLocalPlayerから IPlayer を解決）
+                _gameContext = new Tetrage.Core.GameContext(
+                    _fieldSetupManager.Stage,
+                    _fieldSetupManager.Players,
+                    userPlayer,
+                    _netCtl.EventBus
+                );
+                _netCtl.AttachGameContext(_gameContext);
+
+                // 5. Dealerの生成と初期化（ブロードキャスタを注入）
                 _dealer = DealerFactory.CreateDealer(
-                    _fieldSetupManager,
                     _gameMode,
-                    broadcaster: null // InitializeNetworking 後に差し替える
+                    _gameContext,
+                    _netCtl?.Broadcaster
                 );
 
-                _isInitialized = true;
+                // 5.5 ActionManager に NetworkActionContext を注入（ActionSystemはDealerのコンストラクタで初期化されている）
+                var actionMgr = Tetrage.Core.Actions.ActionSystemInitializer.GetActionManager();
+                if (actionMgr != null && _netCtl != null)
+                {
+                    var networkCtx = new Tetrage.Network.Gameplay.PhotonActionContext(_netCtl.Broadcaster, _netCtl.Sequence);
+                    actionMgr.SetNetworkActionContext(networkCtx);
+                }
 
                 EventSubscribe();
 
-                // ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
-                InitializeNetworking();
-
-                // Dealerへ Broadcaster を提供（Hostのみ）
+                // 6. Dealerへ Broadcaster/Sequence/TurnGate を提供（Hostのみ）
                 if (PhotonNetwork.IsMasterClient)
                 {
                     var bc = _netCtl?.Broadcaster;
-                    if (bc != null)
-                    {
-                        _dealer.SetEmitter(new DealerPlanEmitter(bc));
-                    }
+                    if (bc == null) throw new System.InvalidOperationException("Broadcaster が見つかりません。");
+                    var seq = _netCtl.Sequence;
+                    _dealer.SetEmitter(new DealerPlanEmitter(bc, seq));
+                    _dealer.SetTurnGate(_netCtl.TurnGate);
+                    _dealer.SetLifecycleEmitter(new GameLifecycleEmitter(bc, seq));
                 }
+
+                _isInitialized = true;
 
                 Debug.Log("GameManager: 初期化が完了しました");
             }
@@ -147,34 +182,42 @@ namespace Tetrage.Managers
         }
 
         /// <summary>
-        /// PlayerId を ActorNumber に強制マップする（オンライン時の統一）。
-        /// オフライン/未接続時は入力をそのまま返す。
+        /// PlayerInfo の Id が PUN の ActorNumber と対応しているか検証する。
+        /// オフライン/未接続時は検証せず入力をそのまま返す。
         /// </summary>
-        private List<PlayerInfo> RemapPlayerInfosToActorNumbers(List<PlayerInfo> input)
+        private void ValidatePlayerInfos(List<PlayerInfo> input)
         {
-            if (!PhotonNetwork.IsConnectedAndReady) return input;
-            var remapped = new List<PlayerInfo>(input.Count);
-            // ここでは単純に順番どおりにActorNumberを割り当てる例。実際はルーム参加者列挙で対応。
-            // 注意: 本実装は最小例です。実運用では PhotonNetwork.PlayerList を参照してください。
-            var actors = PhotonNetwork.PlayerList; // 並び順はJoin順。必要に応じてソート。
-            for (int i = 0; i < input.Count && i < actors.Length; i++)
+
+            var actors = PhotonNetwork.PlayerList;
+
+            // ActorNumber の集合を構築
+            var actorNumbers = new System.Collections.Generic.HashSet<int>();
+            for (int i = 0; i < actors.Length; i++)
             {
-                var src = input[i];
-                src.Id = new PlayerId(actors[i].ActorNumber);
-                
-                // Photonのカスタムプロパティから取得
-                if (actors[i].CustomProperties.ContainsKey("IconIndex"))
-                {
-                    src.PlayerIconIndex = (int)actors[i].CustomProperties["IconIndex"];
-                }
-                
-                // NickNameをUserIdとして使用
-                src.UserId = actors[i].NickName;
-                remapped.Add(src);
+                actorNumbers.Add(actors[i].ActorNumber);
             }
-            // 余りはそのまま（オフライン想定）
-            for (int i = remapped.Count; i < input.Count; i++) remapped.Add(input[i]);
-            return remapped;
+
+            // 入力の重複と存在を検証
+            var seen = new System.Collections.Generic.HashSet<int>();
+            for (int i = 0; i < input.Count; i++)
+            {
+                var idValue = input[i].Id.Value;
+                if (!actorNumbers.Contains(idValue))
+                {
+                    throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が現在の ActorNumber 一覧に存在しません。");
+                }
+                if (!seen.Add(idValue))
+                {
+                    throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が重複しています。");
+                }
+            }
+
+            // 参考: 数が合わない場合は警告（観戦や未参加者の可能性）。
+            if (input.Count != actors.Length)
+            {
+                UnityEngine.Debug.LogWarning($"GameManager: 参加者数({input.Count})と PUN 参加者数({actors.Length}) に差異があります。");
+            }
+
         }
 
         private void EventSubscribe()
@@ -218,11 +261,13 @@ namespace Tetrage.Managers
                 {
                     var started = new GameStartedEvent
                     {
+                        // 一旦FieldSetupComponentの設定を使用するため実質使わない
+                        // TODO: 将来的には設定されたルールに応じて適切な値を設定する
                         deckId = InGameConsts.DEFAULT_DECK_ID,
                         suitOrder = new byte[] { 0, 1, 2, 3 },
                         minNumber = 1,
                         maxNumber = 13,
-                        playerActorNumbers = null,
+                        playerActorNumbers = BuildInitialPlayerOrder(),
                     };
                     _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
                     await _dealer.StartGameAsync(0f, _gameCts.Token);
@@ -352,21 +397,14 @@ namespace Tetrage.Managers
         #endregion
 
         #region ネットワーク初期化/受信ハンドラ
-        private IdRegistry<CardId, Card> _cardRegistry;
-        private IdRegistry<PileId, CardPile> _pileRegistry;
-        private IdRegistry<PlayerId, Player> _playerRegistry;
 
-        private void InitializeNetworking()
+
+        private IGameplayNetworkController InitializeNetworking()
         {
-            if (_networkInitialized) return;
+            if (_networkInitialized) return _netCtl ?? new GameplayNetworkController();
 
-            // レジストリの生成（登録はフィールド構築側で行う想定）
-            _cardRegistry = new IdRegistry<CardId, Card>();
-            _pileRegistry = new IdRegistry<PileId, CardPile>();
-            _playerRegistry = new IdRegistry<PlayerId, Player>();
-
-            _netCtl = new GameplayNetworkController();
-            _netCtl.Initialize(
+            var netCtl = new GameplayNetworkController();
+            netCtl.Initialize(
                 PhotonNetwork.IsMasterClient,
                 _pileRegistry,
                 _cardRegistry,
@@ -374,13 +412,35 @@ namespace Tetrage.Managers
                 onActionRequestedHost: OnActionRequestedReceived,
                 onGameStartedOptional: OnGameStartedReceived
             );
-            _netCtl.Start();
+            netCtl.Start();
             _networkInitialized = true;
+            return netCtl;
+        }
+
+        private int[] BuildInitialPlayerOrder()
+        {
+            if (_playerRegistry == null) return null;
+            var list = new List<int>();
+            // 現状は登録順序を採用。必要なら座席順や任意の順序に変更可。
+            foreach (var kv in _playerRegistry.Entries)
+            {
+                list.Add(kv.Key.Value);
+            }
+            return list.ToArray();
         }
 
         private void OnGameStartedReceived(GameStartedEvent e) { Debug.Log($"GameManager: GameStarted {e.deckId}"); }
         private void OnTurnStartedReceived(TurnStartedEvent e) { Debug.Log($"TurnStarted seq={e.sequence} player={e.currentPlayerActorNumber}"); }
         private void OnActionRequestedReceived(ActionRequestedEvent e) { /* 旧ハンドラは廃止。Controller/Handlerに委譲 */ }
+        #endregion
+
+        #region プレイヤーヘルパーメソッド
+
+        public bool TryGetPlayerById(PlayerId id, out Player player)
+        {
+            return _playerRegistry.TryGet(id, out player);
+        }
+
         #endregion
     }
 }

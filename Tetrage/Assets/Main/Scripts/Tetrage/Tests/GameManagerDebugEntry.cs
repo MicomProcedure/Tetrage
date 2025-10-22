@@ -19,7 +19,7 @@ public class GameManagerDebugEntry : MonoBehaviour
         // GameManagerの初期化
         if (!_isInitialized)
         {
-            _gameManager.Initialize(CreateDebugPlayerInfo());
+            _gameManager.Initialize(CreateDebugPlayerInfo(), CreateDebugPlayerInfo()[0]);
             _isInitialized = true;
         }
 

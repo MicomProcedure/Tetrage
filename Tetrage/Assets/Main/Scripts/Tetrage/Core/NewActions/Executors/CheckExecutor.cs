@@ -34,14 +34,15 @@ namespace Tetrage.Core.Actions
                 // 4. 結果の返答（はい/いいえ）
                 var resultMessage = isMatch ? "はい" : "いいえ";
 
-                Debug.Log($"Check アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} が {targetPlayer.UserId} をチェック - 結果: {resultMessage}");
-                
-                return ActionResult.Success(new { 
-                    TargetPlayer = targetPlayer.UserId,
-                    TargetCard = new { targetCard.Suit, targetCard.Number },
-                    IsMatch = isMatch, 
-                    Message = resultMessage 
-                });
+                Debug.Log($"Check アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が {targetPlayer.UserId} をチェック");
+
+                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+                {
+                    actionType = Tetrage.Core.Enums.ActionType.Check,
+                    actorPlayerId = context.RequesterPlayer.PlayerId,
+                    targetCardIds = new[] { targetCard.Id }
+                };
+                return ActionResult.Success(descriptor);
             }
             catch (System.Exception ex)
             {
@@ -57,17 +58,17 @@ namespace Tetrage.Core.Actions
         {
             // TODO: 実際のUI選択処理を実装
             // プレイヤーが相手を選択するUI
-            
+
             await UniTask.Delay(100); // UI表示の仮の時間
 
             // 仮実装：最初の他プレイヤーを選択
             var targetPlayer = context.OtherPlayers.FirstOrDefault();
-            
+
             if (targetPlayer != null)
             {
                 Debug.Log($"仮実装：対象プレイヤー選択 - {targetPlayer.UserId}");
             }
-            
+
             return targetPlayer;
         }
 
@@ -85,7 +86,7 @@ namespace Tetrage.Core.Actions
         private bool CheckSuitMatch(IActionContext context, Models.Card targetCard)
         {
             var myHands = context.RequesterPlayer.Hands;
-            
+
             if (!myHands.Any())
             {
                 Debug.LogWarning("自分の手札が空です");
@@ -94,8 +95,8 @@ namespace Tetrage.Core.Actions
 
             // 手札の最初のカードのスートを取得（Reach状態では全て同じスートのはず）
             var mySuit = myHands.First().Suit;
-            
+
             return mySuit == targetCard.Suit;
         }
     }
-} 
+}

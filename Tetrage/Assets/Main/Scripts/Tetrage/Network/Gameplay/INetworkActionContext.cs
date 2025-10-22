@@ -9,6 +9,7 @@ namespace Tetrage.Network.Gameplay
     public interface INetworkActionContext
     {
         void Request(ActionRequestedEvent request);
+        int NextClientSequence();
     }
 }
 

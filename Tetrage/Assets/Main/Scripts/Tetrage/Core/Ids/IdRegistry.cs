@@ -32,5 +32,9 @@ namespace Tetrage.Core.Ids
         /// <exception cref="KeyNotFoundException">識別子が見つからない場合</exception>
         public TEntity GetOrThrow(TId id) => _map.TryGetValue(id, out var e) ? e : throw new KeyNotFoundException($"Id not found: {id}");
 
+        /// <summary>
+        /// 現在登録されている全エントリを列挙します。
+        /// </summary>
+        public IEnumerable<KeyValuePair<TId, TEntity>> Entries => _map;
     }
 }

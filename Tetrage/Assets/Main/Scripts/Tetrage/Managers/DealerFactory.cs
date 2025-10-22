@@ -9,7 +9,7 @@ namespace Tetrage.Managers
 {
     public static class DealerFactory
     {
-        public static Dealer CreateDealer(FieldSetupManager fieldSetupManager, GameMode gameMode, INetworkBroadcaster broadcaster = null)
+        public static Dealer CreateDealer(GameMode gameMode, IGameContextProvider gameContext, INetworkBroadcaster broadcaster = null)
         {
 
             try
@@ -19,11 +19,11 @@ namespace Tetrage.Managers
                 var emitter = broadcaster != null ? new DealerPlanEmitter(broadcaster) : null;
                 if (gameMode == GameMode.Debug)
                 {
-                    return new Dealer(fieldSetupManager.Stage, fieldSetupManager.Players, new RealDealerPlanner(), emitter);
+                    return new Dealer(gameContext, new RealDealerPlanner(), emitter);
                 }
                 else if (gameMode == GameMode.Release)
                 {
-                    return new Dealer(fieldSetupManager.Stage, fieldSetupManager.Players, new RealDealerPlanner(), emitter);
+                    return new Dealer(gameContext, new RealDealerPlanner(), emitter);
                 }
                 else
                 {

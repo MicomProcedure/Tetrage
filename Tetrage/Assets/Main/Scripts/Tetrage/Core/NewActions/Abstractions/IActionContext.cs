@@ -44,5 +44,10 @@ namespace Tetrage.Core.Actions
         /// ExecutorがCancellationTokenにアクセスするために使用
         /// </summary>
         ActionAwaiter ActionAwaiter { get; }
+
+        /// <summary>
+        /// ネットワーク送信コンテキスト
+        /// </summary>
+        Tetrage.Network.Gameplay.INetworkActionContext Network { get; }
     }
 }

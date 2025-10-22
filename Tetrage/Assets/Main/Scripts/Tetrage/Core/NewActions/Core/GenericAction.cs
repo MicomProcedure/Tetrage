@@ -2,7 +2,6 @@ using System;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
-using UnityEngine;
 
 namespace Tetrage.Core.Actions
 {
@@ -10,7 +9,7 @@ namespace Tetrage.Core.Actions
     /// 汎用的なActionクラス
     /// Validator/Executorを外部から注入することで任意のActionを表現
     /// </summary>
-    public class GenericAction : ActionBase
+    public class GenericAction : NetworkActionBase
     {
         public override ActionType ActionType { get; }
 

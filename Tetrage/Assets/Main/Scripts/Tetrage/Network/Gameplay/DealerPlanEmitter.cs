@@ -1,4 +1,5 @@
 using Tetrage.Core.DTO;
+using System.Collections.Generic;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -12,11 +13,19 @@ namespace Tetrage.Network.Gameplay
         private int _sequence;
         private int _stateVersion;
 
-        public DealerPlanEmitter(INetworkBroadcaster broadcaster)
+        private readonly SequenceService _seq;
+
+        public DealerPlanEmitter(INetworkBroadcaster broadcaster, SequenceService sequenceService = null)
         {
             _broadcaster = broadcaster;
-            _sequence = 0;
-            _stateVersion = 0;
+            if (sequenceService != null)
+            {
+                _seq = sequenceService;
+            }
+            else
+            {
+                _seq = new SequenceService();
+            }
         }
 
         public void Emit(DealerPlan plan)
@@ -30,6 +39,10 @@ namespace Tetrage.Network.Gameplay
                     EmitPileShuffleSeed(s.PileId.Value, s.Seed);
                 }
             }
+            if (plan.TurnOrder != null)
+            {
+                EmitTurnOrder(plan);
+            }
 
 
 
@@ -41,8 +54,8 @@ namespace Tetrage.Network.Gameplay
                     var m = plan.Moves[i];
                     var dto = new CardMovedEvent
                     {
-                        sequence = ++_sequence,
-                        stateVersion = ++_stateVersion,
+                        sequence = _seq.NextSequence(),
+                        stateVersion = _seq.NextStateVersion(),
                         cardId = m.CardId.Value,
                         fromPileId = m.FromPileId.Value,
                         toPileId = m.ToPileId.Value,
@@ -58,8 +71,8 @@ namespace Tetrage.Network.Gameplay
                     var v = plan.Visibility[i];
                     var dto = new CardVisibilityChangedEvent
                     {
-                        sequence = ++_sequence,
-                        stateVersion = ++_stateVersion,
+                        sequence = _seq.NextSequence(),
+                        stateVersion = _seq.NextStateVersion(),
                         cardId = v.CardId.Value,
                         isVisible = v.IsVisible,
                     };
@@ -72,12 +85,34 @@ namespace Tetrage.Network.Gameplay
         {
             var dto = new PileShuffledWithSeedEvent
             {
-                sequence = ++_sequence,
-                stateVersion = ++_stateVersion,
+                sequence = _seq.NextSequence(),
+                stateVersion = _seq.NextStateVersion(),
                 pileId = pileId,
                 seed = seed,
             };
             _broadcaster.Raise(EventCode.PileShuffledWithSeed, dto);
+        }
+
+        public void EmitTurnOrder(DealerPlan plan)
+        {
+            if (plan.TurnOrder == null || plan.TurnOrder.Count == 0) return;
+
+            // orderで昇順にソートしてからActorNumber配列に変換
+            var temp = new List<TurnOrderEffect>(plan.TurnOrder);
+            temp.Sort((a, b) => a.Order.CompareTo(b.Order));
+
+            var ids = new int[temp.Count];
+            for (int i = 0; i < temp.Count; i++) ids[i] = temp[i].PlayerId.Value;
+
+            var dto = new ListOrderDeclaredEvent
+            {
+                sequence = _seq.NextSequence(),
+                stateVersion = _seq.NextStateVersion(),
+                idKind = ListOrderIdKind.PlayerId,
+                listKey = ListOrderKey.TurnOrder,
+                orderedIds = ids,
+            };
+            _broadcaster.Raise(EventCode.ListOrderDeclared, dto);
         }
     }
 }

@@ -19,9 +19,9 @@ namespace Tetrage.Core.Contracts
         IPlayer GetNextPlayerWithConditions(IPlayer currentPlayer, IReadOnlyList<IPlayer> players, TurnSkipConditions skipConditions = null);
 
         /// <summary>
-        /// ターン順リセット時の並びを返す（副作用なし）
+        /// ターン順リセットを効果（TurnOrder）として返す（副作用なし）
         /// </summary>
-        IReadOnlyList<IPlayer> PlanResetTurnOrder(IReadOnlyList<IPlayer> players);
+        DealerPlan PlanResetTurnOrder(IReadOnlyList<IPlayer> players);
 
         /// <summary>
         /// 山札の並び替えを効果として返す（副作用なし）

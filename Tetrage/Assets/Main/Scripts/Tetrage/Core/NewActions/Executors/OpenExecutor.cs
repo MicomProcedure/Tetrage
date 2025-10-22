@@ -31,15 +31,16 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure("表向きにするカードの選択に失敗しました");
                 }
 
-                // 3. 選択されたカードを表向きにする
-                selectedCard.Flip();
+                // 3. 現段階ではローカルのFlipは実行せず（Host権威適用を待つ）
+                Debug.Log($"Open アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が表向き対象を選択");
 
-                Debug.Log($"Open アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} が {selectedCard.Suit} {selectedCard.Number} を表向きにしました");
-                
-                return ActionResult.Success(new { 
-                    OpenedCard = new { selectedCard.Suit, selectedCard.Number },
-                    Message = "Open アクションが正常に実行されました" 
-                });
+                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+                {
+                    actionType = Tetrage.Core.Enums.ActionType.Open,
+                    actorPlayerId = context.RequesterPlayer.PlayerId,
+                    targetCardIds = new[] { selectedCard.Id }
+                };
+                return ActionResult.Success(descriptor);
             }
             catch (System.Exception ex)
             {
@@ -109,4 +110,4 @@ namespace Tetrage.Core.Actions
             }
         }
     }
-} 
+}

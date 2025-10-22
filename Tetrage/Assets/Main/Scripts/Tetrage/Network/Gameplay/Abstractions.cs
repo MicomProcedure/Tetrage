@@ -13,6 +13,14 @@ namespace Tetrage.Network.Gameplay
     public interface INetworkBroadcaster
     {
         void Raise<T>(EventCode code, T payload);
+        /// <summary>
+        /// 指定したActorNumberのクライアントにのみ送信します。
+        /// </summary>
+        void RaiseToActors<T>(EventCode code, T payload, int[] targetActorNumbers);
+        /// <summary>
+        /// 指定したActorNumberの単一クライアントにのみ送信します。
+        /// </summary>
+        void RaiseToActor<T>(EventCode code, T payload, int targetActorNumber);
     }
 
     public interface INetworkReceiver
@@ -26,6 +34,10 @@ namespace Tetrage.Network.Gameplay
     public interface IGameplayNetworkController
     {
         INetworkBroadcaster Broadcaster { get; }
+        IGameplayEventBus EventBus { get; }
+        TurnGate TurnGate { get; }
+        SequenceService Sequence { get; }
+        void AttachGameContext(Tetrage.Core.GameContext ctx);
         void Initialize(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,

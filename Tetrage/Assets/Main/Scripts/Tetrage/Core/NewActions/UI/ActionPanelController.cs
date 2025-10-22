@@ -3,9 +3,11 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using Tetrage.Core;
 
 namespace Tetrage.Core.Actions
 {
@@ -27,7 +29,6 @@ namespace Tetrage.Core.Actions
 
         private ActionManager _actionManager;
         private IGameContextProvider _gameContextProvider;
-        private IRoundManager _roundManager;
         private Dictionary<ActionType, Button> _actionButtons;
         private IPlayer _currentPlayer;
         private bool _isInitialized = false;
@@ -81,15 +82,7 @@ namespace Tetrage.Core.Actions
             }
 
             // RoundManager（Dealer）をActionManagerから取得
-            _roundManager = _actionManager.GetRoundManager();
-            if (_roundManager == null)
-            {
-                Debug.LogWarning("ActionPanelController: RoundManagerが未設定です（リトライします）");
-                return false;
-            }
-
-            // イベント購読。DealerのTurnStartイベントに、UIボタン更新メソッドを登録
-            _roundManager.TurnStart += UpdateButtonStates;
+            _gameContextProvider.Events.TurnStartedApplied += OnTurnStartedEvent;
 
             // 初回ボタン状態更新。UIボタン更新メソッドを実行
             UpdateButtonStates();
@@ -159,6 +152,10 @@ namespace Tetrage.Core.Actions
             }
         }
 
+        public void OnTurnStartedEvent(TurnStartedEvent e)
+        {
+            UpdateButtonStates();
+        }
 
         /// <summary>
         /// ボタンの状態（有効/無効）を更新
@@ -267,10 +264,7 @@ namespace Tetrage.Core.Actions
 
         private void OnDestroy()
         {
-            if (_isInitialized && _roundManager != null)
-            {
-                _roundManager.TurnStart -= UpdateButtonStates;
-            }
+            _gameContextProvider.Events.TurnStartedApplied -= OnTurnStartedEvent;
         }
 
         #region テスト用メソッド
