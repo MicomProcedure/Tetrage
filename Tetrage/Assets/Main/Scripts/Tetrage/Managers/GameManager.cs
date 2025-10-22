@@ -31,8 +31,10 @@ namespace Tetrage.Managers
         private FieldSetupManager _fieldSetupManager;
         private Dealer _dealer;
         private IGameplayNetworkController _netCtl;
+        [SerializeField] private InGameUIManager _inGameUIManager;
 
         private GameContext _gameContext;
+		private List<PlayerInfo> _participantInfos;
 
         #endregion
 
@@ -102,8 +104,11 @@ namespace Tetrage.Managers
                 // 1.5 ネットワーク接続時は PlayerId=ActorNumber へマッピング
                 ValidatePlayerInfos(participantInfoList);
 
-                // 2. フィールドのセットアップ
-                _fieldSetupManager.SetupField(participantInfoList);
+				// 2. フィールドのセットアップ
+				_fieldSetupManager.SetupField(participantInfoList);
+
+                // 2.5 参加者情報の保持（UIへローカルで提供）
+                _participantInfos = new List<PlayerInfo>(participantInfoList);
 
                 // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 _netCtl = InitializeNetworking();
@@ -140,6 +145,12 @@ namespace Tetrage.Managers
                 }
 
                 EventSubscribe();
+
+                // 5.6 InGameUIManager 初期化（Bus購読開始）
+                if (_inGameUIManager != null)
+                {
+                    _inGameUIManager.Initialize(_gameContext);
+                }
 
                 // 6. Dealerへ Broadcaster/Sequence/TurnGate を提供（Hostのみ）
                 if (PhotonNetwork.IsMasterClient)
@@ -191,14 +202,14 @@ namespace Tetrage.Managers
             var actors = PhotonNetwork.PlayerList;
 
             // ActorNumber の集合を構築
-            var actorNumbers = new System.Collections.Generic.HashSet<int>();
+            var actorNumbers = new HashSet<int>();
             for (int i = 0; i < actors.Length; i++)
             {
                 actorNumbers.Add(actors[i].ActorNumber);
             }
 
             // 入力の重複と存在を検証
-            var seen = new System.Collections.Generic.HashSet<int>();
+            var seen = new HashSet<int>();
             for (int i = 0; i < input.Count; i++)
             {
                 var idValue = input[i].Id.Value;
@@ -345,6 +356,12 @@ namespace Tetrage.Managers
             // イベント購読解除
             EventUnsubscribe();
 
+            // UI購読解除
+            if (_inGameUIManager != null)
+            {
+                _inGameUIManager.Teardown();
+            }
+
             // ネットワーク停止
             if (_networkInitialized)
             {
@@ -428,6 +445,8 @@ namespace Tetrage.Managers
             }
             return list.ToArray();
         }
+
+        // NetPlayerInfo の送受信は撤廃
 
         private void OnGameStartedReceived(GameStartedEvent e) { Debug.Log($"GameManager: GameStarted {e.deckId}"); }
         private void OnTurnStartedReceived(TurnStartedEvent e) { Debug.Log($"TurnStarted seq={e.sequence} player={e.currentPlayerActorNumber}"); }
