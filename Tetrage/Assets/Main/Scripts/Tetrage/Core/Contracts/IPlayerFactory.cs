@@ -4,7 +4,7 @@ namespace Tetrage.Core.Contracts
 {
     public interface IPlayerFactory
     {
-        public IPlayer CreatePlayer(PlayerId id, string userId);
+        public IPlayer CreatePlayer(PlayerId id, string userId, int iconIndex);
 
     }
 }

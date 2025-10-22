@@ -148,6 +148,7 @@ namespace Tetrage.Managers
             {
                 var player = playerBuilder
                     .WithUserId(participantInfo.UserId)
+                    .WithIconIndex(participantInfo.PlayerIconIndex)
                     .WithPlayerId(participantInfo.Id)
                     .WithPlayerType(participantInfo.PlayerType)
                     .UseView(

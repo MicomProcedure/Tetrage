@@ -21,6 +21,8 @@ namespace Tetrage.Core.Contracts
         public int PlayerId { get; }
         public PlayerId Id { get; }
 
+        public int IconIndex { get; }
+
         /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>

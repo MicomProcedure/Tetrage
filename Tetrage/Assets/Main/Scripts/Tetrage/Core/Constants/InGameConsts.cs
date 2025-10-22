@@ -18,6 +18,7 @@ namespace Tetrage.Core.Constants
         public const int DEFAULT_PLAYER_TMP_CAPACITY = 2; // デフォルトのプレイヤーの一時的に保持しているカードの容量
         public const int DEFAULT_PLAYER_TARGET_CAPACITY = 1; // デフォルトのプレイヤーのターゲットの容量
         public const string DEFAULT_PLAYER_ID = "DefaultPlayerName"; // デフォルトのプレイヤーのID
+        public const int DEFAULT_PLAYER_ICON_INDEX = 0; // デフォルトのプレイヤーのアイコンインデックス
 
         public const int DEFAULT_DECK_ID = 1; // デフォルトのデッキのID
     }

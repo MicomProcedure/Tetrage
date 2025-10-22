@@ -30,6 +30,11 @@ namespace Tetrage.Models
         public PlayerId Id { get; }
 
         /// <summary>
+        /// プレイヤーのアイコンインデックス
+        /// </summary>
+        public int IconIndex { get; }
+
+        /// <summary>
         /// プレイヤーの最初の一枚(本来のカード)
         /// </summary>
         public CardPile Target { get; private set; }
@@ -50,7 +55,7 @@ namespace Tetrage.Models
         /// <summary>
         /// プレイヤーIDを指定して初期化するコンストラクタ（推奨）。
         /// </summary>
-        public Player(PlayerId id, string userId, CardPile target, CardPile hands, CardPile tmp)
+        public Player(PlayerId id, string userId, int iconIndex, CardPile target, CardPile hands, CardPile tmp)
         {
             Id = id;
 

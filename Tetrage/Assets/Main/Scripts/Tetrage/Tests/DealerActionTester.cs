@@ -9,6 +9,7 @@ using Tetrage.Core.Contracts;
 using Tetrage.Factories;
 using Tetrage.Core.Ids;
 using Tetrage.Network.Gameplay;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Tests
 {
@@ -117,7 +118,7 @@ namespace Tetrage.Tests
             var players = new List<IPlayer>();
             for (int i = 0; i < playerCount; i++)
             {
-                players.Add(playerModelFactory.CreatePlayer(new PlayerId(i), $"TestPlayer_{i}"));
+                players.Add(playerModelFactory.CreatePlayer(new PlayerId(i), $"TestPlayer_{i}", i));
             }
 
             // Bus を用意（オフラインでも購読可能にするが、適用発火はネット経路のみ）
