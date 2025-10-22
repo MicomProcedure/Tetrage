@@ -222,6 +222,13 @@ namespace Tetrage.Network.Gameplay
             _turnGate?.Release(e.currentPlayerActorNumber);
         }
 
+        public void Apply(TurnEndedEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            // 現状モデルの直接更新は不要。必要に応じてターン履歴などを更新する。
+            _bus?.PublishTurnEnded(e);
+        }
+
         public bool TryGetListOrder(ListOrderKey listKey, out int[] orderedIds)
         {
             if (_listOrderRegistry.TryGetValue(listKey, out var data))

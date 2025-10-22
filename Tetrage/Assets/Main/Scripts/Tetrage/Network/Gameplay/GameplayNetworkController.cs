@@ -20,6 +20,7 @@ namespace Tetrage.Network.Gameplay
         private SequenceService _sequence;
         private bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
+        private NetworkEventApplier _applier;
         private bool _started;
         private bool _disposed;
 
@@ -40,7 +41,7 @@ namespace Tetrage.Network.Gameplay
             _bus = new SimpleGameplayEventBus();
             _turnGate = new TurnGate();
             _sequence = new SequenceService();
-            var applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext);
+            _applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext);
             _hostActionProcessor = new DefaultHostActionProcessor(this);
             _broadcaster = new PhotonBroadcaster(_serializer);
             _receiver = new PhotonReceiver(_serializer);
@@ -48,25 +49,26 @@ namespace Tetrage.Network.Gameplay
             _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
             {
                 onGameStartedOptional?.Invoke(e);
-                applier.Apply(e);
+                _applier.Apply(e);
             });
             _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e =>
             {
-                applier.Apply(e);
+                _applier.Apply(e);
             });
             _receiver.On<TurnEndedEvent>(EventCode.TurnEnded, e =>
             {
-                // 現状はUI用途のイベント。Applierに適用が必要なら追加
+                _applier.Apply(e);
             });
-            _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => applier.Apply(e));
-            _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => applier.Apply(e));
-            _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => applier.Apply(e));
-            _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => applier.Apply(e));
-            _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => applier.Apply(e));
+            _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => _applier.Apply(e));
+            _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => _applier.Apply(e));
+            _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
+            _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => _applier.Apply(e));
+            _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => _applier.Apply(e));
             _receiver.On<ActionRequestedEvent>(EventCode.ActionRequested, e =>
             {
                 if (_isHost)
                 {
+                    onActionRequestedHost?.Invoke(e);
                     // まずは既定プロセッサで即時処理（後でDealer検証に差し替え可）
                     _hostActionProcessor.Process(e);
                 }
@@ -84,7 +86,7 @@ namespace Tetrage.Network.Gameplay
         public void AttachGameContext(Tetrage.Core.GameContext ctx)
         {
             _gameContext = ctx;
-            // Applierはコンストラクタ注入済みだが、必要ならContext連携を追加
+            _applier?.AttachContext(ctx);
         }
 
         public void Start()

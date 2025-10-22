@@ -10,6 +10,7 @@ namespace Tetrage.Network.Gameplay
     {
         event Action<GameStartedEvent> GameStartedApplied;
         event Action<TurnStartedEvent> TurnStartedApplied;
+        event Action<TurnEndedEvent> TurnEndedApplied;
         event Action<ListOrderDeclaredEvent> ListOrderDeclaredApplied;
         event Action<CardMovedEvent> CardMovedApplied;
         event Action<CardVisibilityChangedEvent> CardVisibilityChangedApplied;
@@ -18,6 +19,7 @@ namespace Tetrage.Network.Gameplay
 
         void PublishGameStarted(GameStartedEvent e);
         void PublishTurnStarted(TurnStartedEvent e);
+        void PublishTurnEnded(TurnEndedEvent e);
         void PublishListOrderDeclared(ListOrderDeclaredEvent e);
         void PublishCardMoved(CardMovedEvent e);
         void PublishCardVisibilityChanged(CardVisibilityChangedEvent e);
@@ -32,6 +34,7 @@ namespace Tetrage.Network.Gameplay
     {
         public event Action<GameStartedEvent> GameStartedApplied;
         public event Action<TurnStartedEvent> TurnStartedApplied;
+        public event Action<TurnEndedEvent> TurnEndedApplied;
         public event Action<ListOrderDeclaredEvent> ListOrderDeclaredApplied;
         public event Action<CardMovedEvent> CardMovedApplied;
         public event Action<CardVisibilityChangedEvent> CardVisibilityChangedApplied;
@@ -40,6 +43,7 @@ namespace Tetrage.Network.Gameplay
 
         public void PublishGameStarted(GameStartedEvent e) => GameStartedApplied?.Invoke(e);
         public void PublishTurnStarted(TurnStartedEvent e) => TurnStartedApplied?.Invoke(e);
+        public void PublishTurnEnded(TurnEndedEvent e) => TurnEndedApplied?.Invoke(e);
         public void PublishListOrderDeclared(ListOrderDeclaredEvent e) => ListOrderDeclaredApplied?.Invoke(e);
         public void PublishCardMoved(CardMovedEvent e) => CardMovedApplied?.Invoke(e);
         public void PublishCardVisibilityChanged(CardVisibilityChangedEvent e) => CardVisibilityChangedApplied?.Invoke(e);
