@@ -29,10 +29,18 @@ namespace Tetrage.Managers
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            // PUN2: ホストのレベルロードで他クライアントも同期させる
+            PhotonNetwork.AutomaticallySyncScene = true;
+
             SceneManager.sceneLoaded += OnSceneLoaded;
             _lifecycleCts = new System.Threading.CancellationTokenSource();
             Debug.Log("ApplicationManager: 初期化");
         }
+        #endregion
+
+        #region PUN制御
+        /// <summary>現在のクライアントがシーン遷移を制御できるか（オフライン or ホスト）</summary>
+        public static bool CanControlScene => !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
         #endregion
 
         #region Fields
@@ -67,6 +75,11 @@ namespace Tetrage.Managers
         {
             if (_isLoading) return;
             if (_sceneHistory.Count == 0) return;
+            if (!CanControlScene)
+            {
+                Debug.LogWarning("ApplicationManager: ホストのみシーン遷移が可能です");
+                return;
+            }
             string previous = _sceneHistory[_sceneHistory.Count - 1];
             _sceneHistory.RemoveAt(_sceneHistory.Count - 1);
             await LoadSceneDirectAsync(previous);
@@ -91,11 +104,30 @@ namespace Tetrage.Managers
 
         private async UniTask LoadSceneDirectAsync(string sceneName)
         {
+            if (_isLoading) return;
             _isLoading = true;
             try
             {
-                var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
-                await op.ToUniTask(cancellationToken: _lifecycleCts.Token);
+                if (PhotonNetwork.InRoom)
+                {
+                    if (!PhotonNetwork.IsMasterClient)
+                    {
+                        Debug.LogWarning("ApplicationManager: ホストのみシーン遷移が可能です");
+                        return;
+                    }
+                    // MasterClient が Photon 経由で同期遷移
+                    PhotonNetwork.LoadLevel(sceneName);
+                    await Cysharp.Threading.Tasks.UniTask.WaitUntil(
+                        () => SceneManager.GetActiveScene().name == sceneName,
+                        cancellationToken: _lifecycleCts.Token
+                    );
+                }
+                else
+                {
+                    // オフライン時は通常ロード
+                    var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+                    await op.ToUniTask(cancellationToken: _lifecycleCts.Token);
+                }
             }
             finally
             {
