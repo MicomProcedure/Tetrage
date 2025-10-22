@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Player
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: c5e2db2b1ff7a1349a9b870f26088d41, type: 2}
-  m_sharedMaterial: {fileID: 7579567994608388481, guid: c5e2db2b1ff7a1349a9b870f26088d41, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
+  m_sharedMaterial: {fileID: -2925243465209541341, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -311,7 +311,6 @@ MonoBehaviour:
   - {fileID: 8241042064671765187, guid: 760cfe1165755844180420e60cbb02c0, type: 3}
   - {fileID: -6704369765690059819, guid: 445bc0c73fa8a92489f807ef0f33f9c9, type: 3}
   displayMode: 2
-  useLocalProfile: 0
   profileManager: {fileID: 5405792255804346879}
   enableDebugLog: 1
 --- !u!1 &4605323992271691942
