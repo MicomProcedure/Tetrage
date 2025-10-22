@@ -106,25 +106,25 @@ namespace Tetrage.Tests
             {
                 new PlayerInfo { 
                     Id = new PlayerId(0),
-                    UserId = "1 Mira.", 
+                    UserId = "Mira.", 
                     PlayerType = PlayerType.Local,
                     PlayerIconIndex = 0
                 },
                 new PlayerInfo { 
                     Id = new PlayerId(1),
-                    UserId = "2 Takakusaki", 
+                    UserId = "Takakusaki", 
                     PlayerType = PlayerType.Local,
                     PlayerIconIndex = 1 
                 },
                 new PlayerInfo { 
                     Id = new PlayerId(2),
-                    UserId = "3 Yuto77", 
+                    UserId = "Yuto77", 
                     PlayerType = PlayerType.Local,
                     PlayerIconIndex = 2
                 },
                 new PlayerInfo { 
                     Id = new PlayerId(3),
-                    UserId = "4 283", 
+                    UserId = "283", 
                     PlayerType = PlayerType.Local,
                     PlayerIconIndex = 3
                 }
