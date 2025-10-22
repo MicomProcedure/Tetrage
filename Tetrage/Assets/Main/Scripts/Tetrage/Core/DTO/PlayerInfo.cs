@@ -14,5 +14,6 @@ namespace Tetrage.Core.DTO
         public string UserId;   // プレイヤーのユーザーID
         public PlayerType PlayerType; // プレイヤーの種類
 
+        public int PlayerIconIndex; // プレイヤーのアイコンのインデックス
     }
 }
