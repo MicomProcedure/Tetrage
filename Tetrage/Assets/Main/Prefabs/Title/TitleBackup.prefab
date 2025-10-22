@@ -95,6 +95,9 @@ MonoBehaviour:
   - {fileID: -4178046375966092550, guid: 563b7db67e467c142abba53a9c537f71, type: 3}
   slideImage: {fileID: 127923659089932566}
   panel: {fileID: 170683544165822701}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &245135009031801344
 GameObject:
   m_ObjectHideFlags: 0
@@ -140,6 +143,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6b8496bf329c4092b37e361de69861c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  networkErrorUI: {fileID: 0}
 --- !u!1 &381728396100240374
 GameObject:
   m_ObjectHideFlags: 0
@@ -2968,6 +2972,9 @@ MonoBehaviour:
   - {fileID: -8233656917550800873, guid: f6880b107c83a674bbec667eba240db2, type: 3}
   slideImage: {fileID: 1812302901599797112}
   panel: {fileID: 2487580655066780767}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &2579583614041046980
 GameObject:
   m_ObjectHideFlags: 0
@@ -3062,6 +3069,9 @@ MonoBehaviour:
   - {fileID: -6470460504253458178, guid: 7328c911ff012f34da8f79513fbbadde, type: 3}
   slideImage: {fileID: 4631425156309784379}
   panel: {fileID: 2579583614041046980}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &2832725894865060560
 GameObject:
   m_ObjectHideFlags: 0
@@ -4333,6 +4343,9 @@ MonoBehaviour:
   - {fileID: -4178046375966092550, guid: 563b7db67e467c142abba53a9c537f71, type: 3}
   slideImage: {fileID: 2194189507389412757}
   panel: {fileID: 4042374001701287416}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &4104768243193278326
 GameObject:
   m_ObjectHideFlags: 0
@@ -6039,6 +6052,9 @@ MonoBehaviour:
   - {fileID: 7680820834086852892, guid: c6d13b3629a425d43897e08ff6d56ed7, type: 3}
   slideImage: {fileID: 6547810049989501440}
   panel: {fileID: 5743124907743012270}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &5776463358578440502
 GameObject:
   m_ObjectHideFlags: 0
@@ -6691,6 +6707,9 @@ MonoBehaviour:
   - {fileID: -6270953770400647376, guid: c120486d2d55ead4881905c2f2d0bcf0, type: 3}
   slideImage: {fileID: 7451181978902527201}
   panel: {fileID: 6097142392326601416}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &6180481225188243986
 GameObject:
   m_ObjectHideFlags: 0
@@ -7041,6 +7060,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a295078e8e724e0f9ae15d80c146364, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  networkErrorUI: {fileID: 0}
+  panelButton: {fileID: 0}
 --- !u!1 &6251441212550413878
 GameObject:
   m_ObjectHideFlags: 0
@@ -7270,6 +7291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ab05a819496541dfa9473cbbcc44b64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  networkErrorUI: {fileID: 0}
 --- !u!1 &6405856808800216956
 GameObject:
   m_ObjectHideFlags: 0
@@ -7504,6 +7526,9 @@ MonoBehaviour:
   - {fileID: -6270953770400647376, guid: c120486d2d55ead4881905c2f2d0bcf0, type: 3}
   slideImage: {fileID: 7054399819532520367}
   panel: {fileID: 6521298687406872155}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &6523619299369789732
 GameObject:
   m_ObjectHideFlags: 0
@@ -7910,7 +7935,7 @@ SpriteRenderer:
   m_Size: {x: 12.8, y: 7.2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &6664413728349259592
@@ -7959,6 +7984,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   numberInputController: {fileID: 6973160441416731964}
+  networkErrorUI: {fileID: 0}
+  panelButton: {fileID: 0}
 --- !u!1 &6678020509563378474
 GameObject:
   m_ObjectHideFlags: 0
@@ -8253,6 +8280,9 @@ MonoBehaviour:
   - {fileID: -6470460504253458178, guid: 7328c911ff012f34da8f79513fbbadde, type: 3}
   slideImage: {fileID: 8115247636490087154}
   panel: {fileID: 6825600379922557347}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &6877220964381144293
 GameObject:
   m_ObjectHideFlags: 0
@@ -8740,6 +8770,9 @@ MonoBehaviour:
   - {fileID: -8233656917550800873, guid: f6880b107c83a674bbec667eba240db2, type: 3}
   slideImage: {fileID: 2340330589919217183}
   panel: {fileID: 7050059604536065266}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1 &7085174245855987400
 GameObject:
   m_ObjectHideFlags: 0
@@ -10735,6 +10768,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioMixer: {fileID: 24100000, guid: 6766f40c453efc3488004760eb6732df, type: 2}
   BGMSlider: {fileID: 6109956627321475753}
+  SESlider: {fileID: 0}
 --- !u!1 &8320484217373111061
 GameObject:
   m_ObjectHideFlags: 0
@@ -12163,6 +12197,9 @@ MonoBehaviour:
   - {fileID: 7680820834086852892, guid: c6d13b3629a425d43897e08ff6d56ed7, type: 3}
   slideImage: {fileID: 3347178215200526005}
   panel: {fileID: 9151187841893269388}
+  nextButton: {fileID: 0}
+  backButton: {fileID: 0}
+  closeButton: {fileID: 0}
 --- !u!1001 &6681221114683997502
 PrefabInstance:
   m_ObjectHideFlags: 0

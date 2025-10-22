@@ -36,8 +36,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 635.7, y: -403.3}
-  m_SizeDelta: {x: 62.5, y: 30.3}
+  m_AnchoredPosition: {x: 637.3, y: -404.4}
+  m_SizeDelta: {x: 63, y: 31.3}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4549173472670223492
 CanvasRenderer:
@@ -171,7 +171,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5894723098636260261}
   - component: {fileID: 492139939146331913}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Credit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -186,7 +186,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5557335703885756023}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1.39, y: 1.39, z: 1}
   m_ConstrainProportionsScale: 0
@@ -262,7 +262,7 @@ GameObject:
   - component: {fileID: 4253300414641496230}
   - component: {fileID: 8023123762014526275}
   - component: {fileID: 1316552766110873725}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -362,7 +362,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8487085393650266045}
   - component: {fileID: 7031429966163635971}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: BackGround
   m_TagString: Untagged
   m_Icon: {fileID: 0}
