@@ -983,12 +983,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -1105,12 +1105,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -1292,6 +1292,10 @@ PrefabInstance:
       propertyPath: m_AnchorMin.x
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 6953898056947882617, guid: fd13a95a9815c6e44a72b5c4b9dba859, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 7294122118717450454, guid: fd13a95a9815c6e44a72b5c4b9dba859, type: 3}
       propertyPath: m_Name
       value: Option
@@ -1386,6 +1390,10 @@ PrefabInstance:
     - target: {fileID: 3374934033194365451, guid: 3264803986f5659478e2384201456538, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4947192155510496118, guid: 3264803986f5659478e2384201456538, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6398436790692510147, guid: 3264803986f5659478e2384201456538, type: 3}
       propertyPath: m_Layer
@@ -1772,6 +1780,10 @@ PrefabInstance:
       propertyPath: m_sharedMaterial
       value: 
       objectReference: {fileID: -2925243465209541341, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
+    - target: {fileID: 3873418344930664577, guid: 2762b4953cf245a49b86961c07c670f6, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 4381705448689138483, guid: 2762b4953cf245a49b86961c07c670f6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1944,6 +1956,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3081049763668570704, guid: 18584bc5b2645924ab4bc3cb2a0c055e, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 3167979987922039778, guid: 18584bc5b2645924ab4bc3cb2a0c055e, type: 3}
       propertyPath: m_Color.a
       value: 0
@@ -2081,6 +2097,10 @@ PrefabInstance:
       propertyPath: 'targetPanelS.Array.data[0]'
       value: 
       objectReference: {fileID: 6601901437464595469}
+    - target: {fileID: 8023123762014526275, guid: 23f046122f38b5d4c91fd63772abc170, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2206,6 +2226,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6232636211093964716, guid: 63ed063db915bad41b1f8b83e8c33a4f, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 7072187804183189660, guid: 63ed063db915bad41b1f8b83e8c33a4f, type: 3}
       propertyPath: m_Name
       value: RuleDescriptionTitle
@@ -2321,6 +2345,22 @@ PrefabInstance:
       propertyPath: 'targetPanelS.Array.data[0]'
       value: 
       objectReference: {fileID: 5267537617116228763}
+    - target: {fileID: 3022013374485336023, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_UiScaleMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3022013374485336023, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3022013374485336023, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_ReferenceResolution.x
+      value: 1920
+      objectReference: {fileID: 0}
+    - target: {fileID: 3022013374485336023, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_ReferenceResolution.y
+      value: 1080
+      objectReference: {fileID: 0}
     - target: {fileID: 3463254270755477975, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
@@ -2681,6 +2721,10 @@ PrefabInstance:
       propertyPath: 'targetPanelS.Array.data[2]'
       value: 
       objectReference: {fileID: 621921729553266333}
+    - target: {fileID: 6293446056787111888, guid: a493c738d3a06384f815e80f2f2579b4, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 8789630075565042794, guid: a493c738d3a06384f815e80f2f2579b4, type: 3}
       propertyPath: m_SortingOrder
       value: 3
@@ -2811,6 +2855,22 @@ PrefabInstance:
       propertyPath: 'targetPanelS.Array.data[0]'
       value: 
       objectReference: {fileID: 1607288394800125507}
+    - target: {fileID: 490337319841500777, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
+      propertyPath: m_UiScaleMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 490337319841500777, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 490337319841500777, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
+      propertyPath: m_ReferenceResolution.x
+      value: 1920
+      objectReference: {fileID: 0}
+    - target: {fileID: 490337319841500777, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
+      propertyPath: m_ReferenceResolution.y
+      value: 1080
+      objectReference: {fileID: 0}
     - target: {fileID: 1034685838587213630, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_Layer
       value: 5
