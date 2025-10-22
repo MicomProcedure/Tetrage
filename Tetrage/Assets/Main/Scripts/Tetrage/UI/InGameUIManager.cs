@@ -2,9 +2,10 @@ using UnityEngine;
 using Tetrage.Core;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Enums;
 using Tetrage.UI;
 using Tetrage.Core.DTO;
-
+using System.Collections.Generic;
 namespace Tetrage.Managers
 {
 	/// <summary>
@@ -75,6 +76,7 @@ namespace Tetrage.Managers
 			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
 			{
 				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
+				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
 			}
 		}
 
@@ -84,6 +86,19 @@ namespace Tetrage.Managers
 			// e.currentPlayerActorNumber を使ってハイライト
 			_playerUIPanelManager.SetCurrentPlayer(e.currentPlayerActorNumber);
 		}
+		#endregion
+
+		#region ヘルパー
+		private List<PlayerInfo> CreatePlayerInfoList(IReadOnlyList<IPlayer> players)
+		{
+			var playerInfoList = new List<PlayerInfo>();
+			foreach (var player in players)
+			{
+				playerInfoList.Add(new PlayerInfo { Id = player.Id, UserId = player.UserId, PlayerType = PlayerType.Local, PlayerIconIndex = player.IconIndex });
+			}
+			return playerInfoList;
+		}
+
 		#endregion
 	}
 }

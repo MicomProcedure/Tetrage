@@ -43,7 +43,7 @@ namespace Tetrage.Tests
                 return;
             }
 
-            _playerUIPanelManager.SetupPanels(CreateDebugPlayerInfo());
+            _playerUIPanelManager.SetupPanels(CreateDebugPlayerInfoList());
             _isInitialized = true;
             Debug.Log("PlayerUIPanelManagerDebugEntry: 4人分のパネルをセットアップしました");
         }
@@ -100,7 +100,7 @@ namespace Tetrage.Tests
         /// <summary>
         /// テスト用のプレイヤー情報を生成（4人固定）
         /// </summary>
-        List<PlayerInfo> CreateDebugPlayerInfo()
+        List<PlayerInfo> CreateDebugPlayerInfoList()
         {
             return new List<PlayerInfo>
             {
