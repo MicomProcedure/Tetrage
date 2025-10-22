@@ -36,6 +36,22 @@ namespace Tetrage.Title
             UpdateRoomCode();
             UpdatePlayerList();
         }
+
+        /// <summary>
+        /// パネルがアクティブになった時にUIを更新
+        /// 部屋に入り直した時にもUIが正しく表示されるようにする
+        /// </summary>
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            
+            // Start()が既に呼ばれている場合のみ更新（初回はStart()で処理）
+            if (Time.frameCount > 0)
+            {
+                UpdateRoomCode();
+                UpdatePlayerList();
+            }
+        }
         
         #endregion
 

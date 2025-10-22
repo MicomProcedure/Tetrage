@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -150}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 360, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2193811523317296
 CanvasRenderer:
@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Player
+  m_text: "\u3042\u3044\u3046\u3048\u304A\u3042\u3044\u3046\u3048\u304A"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
   m_sharedMaterial: {fileID: -2925243465209541341, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}

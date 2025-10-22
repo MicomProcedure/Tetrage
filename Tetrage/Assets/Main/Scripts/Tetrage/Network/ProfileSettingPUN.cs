@@ -16,6 +16,13 @@ namespace Tetrage.Network
         
         #endregion
 
+        #region Private Fields
+        
+        // プロパティ設定済みフラグ
+        private bool isPropertiesSet = false;
+        
+        #endregion
+
         #region Custom Properties Management
         
         /// <summary>
@@ -23,6 +30,13 @@ namespace Tetrage.Network
         /// </summary>
         public void SetPlayerProperties()
         {
+            // 既に設定済みの場合はスキップ
+            if (isPropertiesSet && PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey("PlayerName"))
+            {
+                Debug.Log("プレイヤープロパティは既に設定済みです。スキップします。");
+                return;
+            }
+
             profileManager.LoadProfile();
 
             var data = profileManager.Data;
@@ -43,6 +57,7 @@ namespace Tetrage.Network
             };
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(properties);
+            isPropertiesSet = true;
             Debug.Log($"プレイヤープロパティを設定: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
         }
         
@@ -56,6 +71,15 @@ namespace Tetrage.Network
         public override void OnJoinedRoom()
         {
             SetPlayerProperties();
+        }
+
+        /// <summary>
+        /// 部屋を退出したときにフラグをリセット
+        /// </summary>
+        public override void OnLeftRoom()
+        {
+            isPropertiesSet = false;
+            Debug.Log("部屋を退出したため、プロパティ設定フラグをリセットしました");
         }
         
         #endregion
