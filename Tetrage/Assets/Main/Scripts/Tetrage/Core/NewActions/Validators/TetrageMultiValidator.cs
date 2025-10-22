@@ -9,6 +9,11 @@ namespace Tetrage.Core.Actions
     {
         public ValidationResult Validate(IActionContext context)
         {
+            // ネットワーク前提: ローカルユーザーのみが自身のアクションをリクエスト可能
+            if (!ReferenceEquals(context.RequesterPlayer, context.GameContext?.UserPlayer))
+            {
+                return ValidationResult.Invalid("ローカルプレイヤー以外は操作できません");
+            }
             
             // 基本チェック: リクエスターがターン中のプレイヤーか
             if (!ReferenceEquals(context.RequesterPlayer, context.CurrentTurnPlayer))
