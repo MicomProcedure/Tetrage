@@ -18,12 +18,13 @@ namespace Tetrage.UI
         [SerializeField] private GameObject targetPanel;
         [SerializeField] private TextMeshProUGUI playerNumberText;
         [SerializeField] private TextMeshProUGUI statusText;
+        [SerializeField] private TextMeshProUGUI playerNameText;
 
         [Header("Button")]
-        [SerializeField] private Button scanButton;
+        [SerializeField] private Button NextButton;
 
         [Header("State Objects")]
-        [SerializeField] private GameObject activeStateObject;
+        [SerializeField] private Image trumpBackImage;
         [SerializeField] private GameObject inactiveStateObject;
 
         #endregion
@@ -37,27 +38,6 @@ namespace Tetrage.UI
 
         #endregion
 
-        #region Unity Lifecycle
-
-        private void Awake()
-        {
-            // ボタンのクリックイベントを設定
-            if (scanButton != null)
-            {
-                scanButton.onClick.AddListener(OnScanButtonClicked);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            // イベントリスナーのクリーンアップ
-            if (scanButton != null)
-            {
-                scanButton.onClick.RemoveListener(OnScanButtonClicked);
-            }
-        }
-
-        #endregion
 
         #region Public Methods
 
@@ -95,7 +75,7 @@ namespace Tetrage.UI
         /// <summary>
         /// スキャンボタンが押された時の処理
         /// </summary>
-        private void OnScanButtonClicked()
+        private void OnNextButtonClicked()
         {
             _isScanned = !_isScanned;
             UpdatePanelState();
@@ -121,9 +101,9 @@ namespace Tetrage.UI
             }
 
             // 状態オブジェクトの表示切り替え
-            if (activeStateObject != null)
+            if (trumpBackImage != null)
             {
-                activeStateObject.SetActive(_isScanned);
+                trumpBackImage.gameObject.SetActive(_isScanned);
             }
 
             if (inactiveStateObject != null)
