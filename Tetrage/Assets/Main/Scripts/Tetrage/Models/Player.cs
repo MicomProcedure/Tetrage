@@ -58,7 +58,7 @@ namespace Tetrage.Models
         public Player(PlayerId id, string userId, int iconIndex, CardPile target, CardPile hands, CardPile tmp)
         {
             Id = id;
-
+            IconIndex = iconIndex;
             Target = target;
             Hands = hands;
             Tmp = tmp;

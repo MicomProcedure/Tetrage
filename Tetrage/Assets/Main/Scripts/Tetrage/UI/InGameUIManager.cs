@@ -54,6 +54,12 @@ namespace Tetrage.Managers
 				_actionPanelController.Initialize(_gameContext);
 			}
 
+			if (_playerUIPanelManager != null && _gameContext?.Players != null)
+			{
+				Debug.Log($"InGameUIManager: Initialize時にPlayerUIパネルをセットアップします（プレイヤー数: {_gameContext.Players.Count}）");
+				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
+			}
+
 			Subscribe();
 
 			// 初期パネル構築はGameManager等から明示的に渡す想定
@@ -92,8 +98,8 @@ namespace Tetrage.Managers
 			Debug.Log($"InGameUIManager: OnGameStarted");
 			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
 			{
-				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
 				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
+				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
 			}
 			if (_gameStartAnimation != null)
 			{
