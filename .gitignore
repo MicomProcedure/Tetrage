@@ -84,7 +84,7 @@ crashlytics-build.properties
 Tetrage/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 
 #CardImageMapperは追跡
-!Tetrage/Assets/Main/Prefabs/CardImageMapper.asset
+!Tetrage/Assets/Main/Prefabs/Card/CardImageMapper.asset
 
 
 # Temporary auto-generated Android Assets
