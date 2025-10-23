@@ -15,16 +15,18 @@ namespace Tetrage.UI
         
         [Header("Panel Settings")]
         [SerializeField] private PlayerUI panelPrefab;
-        [SerializeField] private Transform panelContainer;
+        [SerializeField] private Transform panelParent; // パネルを生成する親Transform（通常はCanvas）
         
         [Header("Position Settings")]
         [SerializeField] private bool useFixedPositions = true;
-        [SerializeField] private System.Collections.Generic.List<Vector2> fixedPositions = new System.Collections.Generic.List<Vector2>
+        
+        // プレイヤーIDと位置のマッピング
+        [SerializeField] private List<PlayerPositionMapping> playerPositionMappings = new List<PlayerPositionMapping>
         {
-            new Vector2(-400, 250),
-            new Vector2( 400, 250),
-            new Vector2(-400,-250),
-            new Vector2( 400,-250),
+            new PlayerPositionMapping { playerId = 1, position = new Vector2(-400, 250) },
+            new PlayerPositionMapping { playerId = 2, position = new Vector2( 400, 250) },
+            new PlayerPositionMapping { playerId = 3, position = new Vector2(-400,-250) },
+            new PlayerPositionMapping { playerId = 4, position = new Vector2( 400,-250) },
         };
 
         [Header("Debug Draw")]
@@ -65,13 +67,11 @@ namespace Tetrage.UI
                 return;
             }
             
-            DisableLayoutGroups();
-            
             _playerInfoList = new List<PlayerInfo>(playerInfoList);
             
             foreach (var playerInfo in playerInfoList)
             {
-                var panel = CreatePanel();
+                var panel = CreatePanel(playerInfo.Id.Value);
                 if (panel == null)
                 {
                     Debug.LogError($"PlayerUIPanelManager: パネル生成に失敗しました (PlayerId={playerInfo.Id.Value})");
@@ -136,41 +136,36 @@ namespace Tetrage.UI
         #region Private Methods
         
         /// <summary>
-        /// panelContainerのLayoutGroupを無効化
-        /// </summary>
-        private void DisableLayoutGroups()
-        {
-            if (panelContainer == null) return;
-            
-            var horizontalLayout = panelContainer.GetComponent<HorizontalLayoutGroup>();
-            if (horizontalLayout != null) horizontalLayout.enabled = false;
-            
-            var verticalLayout = panelContainer.GetComponent<VerticalLayoutGroup>();
-            if (verticalLayout != null) verticalLayout.enabled = false;
-            
-            var gridLayout = panelContainer.GetComponent<GridLayoutGroup>();
-            if (gridLayout != null) gridLayout.enabled = false;
-        }
-        
-        /// <summary>
-        /// パネルを固定位置に配置
+        /// パネルを固定位置に配置（プレイヤーIDベースのマッピング使用）
         /// </summary>
         private void ApplyFixedPositions()
         {
-            var positions = fixedPositions;
-            for (int i = 0; i < _activePanels.Count && i < positions.Count; i++)
+            foreach (var kvp in _playerIdToPanel)
             {
-                if (_activePanels[i] == null) continue;
+                int playerId = kvp.Key;
+                PlayerUI panel = kvp.Value;
                 
-                RectTransform panelRect = _activePanels[i].GetComponent<RectTransform>();
+                if (panel == null) continue;
+                
+                // プレイヤーIDに対応する位置を検索
+                var mapping = playerPositionMappings.Find(m => m.playerId == playerId);
+                if (mapping == null)
+                {
+                    Debug.LogWarning($"PlayerUIPanelManager: PlayerId={playerId} の位置マッピングが見つかりません");
+                    continue;
+                }
+                
+                RectTransform panelRect = panel.GetComponent<RectTransform>();
                 if (panelRect == null) continue;
                 
                 panelRect.anchorMin = new Vector2(0.5f, 0.5f);
                 panelRect.anchorMax = new Vector2(0.5f, 0.5f);
                 panelRect.pivot = new Vector2(0.5f, 0.5f);
-                panelRect.anchoredPosition = positions[i];
+                panelRect.anchoredPosition = mapping.position;
                 panelRect.localScale = Vector3.one;
                 panelRect.localRotation = Quaternion.identity;
+                
+                Debug.Log($"PlayerUIPanelManager: PlayerId={playerId} を位置 {mapping.position} に配置しました");
             }
         }
         
@@ -186,15 +181,16 @@ namespace Tetrage.UI
         /// <summary>
         /// パネルを生成
         /// </summary>
-        private PlayerUI CreatePanel()
+        private PlayerUI CreatePanel(int playerId)
         {
-            if (panelPrefab == null || panelContainer == null)
+            if (panelPrefab == null || panelParent == null)
             {
-                Debug.LogError("PlayerUIPanelManager: panelPrefabまたはpanelContainerが設定されていません");
+                Debug.LogError("PlayerUIPanelManager: panelPrefabまたはpanelParentが設定されていません");
                 return null;
             }
             
-            var panelInstance = Instantiate(panelPrefab, panelContainer);
+            var panelInstance = Instantiate(panelPrefab, panelParent);
+            panelInstance.name = $"PlayerUI_P{playerId}";
             _activePanels.Add(panelInstance);
             
             return panelInstance;
@@ -203,23 +199,36 @@ namespace Tetrage.UI
         private void OnDrawGizmos()
         {
             if (!drawDebugPositions || !useFixedPositions) return;
-            if (panelContainer == null) return;
+            if (panelParent == null) return;
 
             // UIローカル空間で描画
-            Gizmos.matrix = panelContainer.localToWorldMatrix;
-            for (int i = 0; i < fixedPositions.Count; i++)
+            Gizmos.matrix = panelParent.localToWorldMatrix;
+            for (int i = 0; i < playerPositionMappings.Count; i++)
             {
-                var pos = fixedPositions[i];
+                var mapping = playerPositionMappings[i];
                 var col = debugColors != null && debugColors.Count > 0 ? debugColors[i % debugColors.Count] : Color.yellow;
                 Gizmos.color = col;
-                Gizmos.DrawWireCube(new Vector3(pos.x, pos.y, 0f), new Vector3(debugGizmoSize, debugGizmoSize * 0.6f, 1f));
+                Gizmos.DrawWireCube(new Vector3(mapping.position.x, mapping.position.y, 0f), new Vector3(debugGizmoSize, debugGizmoSize * 0.6f, 1f));
 #if UNITY_EDITOR
                 UnityEditor.Handles.color = col;
-                UnityEditor.Handles.Label(new Vector3(pos.x, pos.y, 0f), $"Pos{i}");
+                UnityEditor.Handles.Label(new Vector3(mapping.position.x, mapping.position.y, 0f), $"P{mapping.playerId}");
 #endif
             }
         }
         
         #endregion
+    }
+    
+    /// <summary>
+    /// プレイヤーIDと位置のマッピング（インスペクター編集用）
+    /// </summary>
+    [System.Serializable]
+    public class PlayerPositionMapping
+    {
+        [Tooltip("プレイヤーID (ActorNumber)")]
+        public int playerId = 1;
+        
+        [Tooltip("配置位置")]
+        public Vector2 position = Vector2.zero;
     }
 }
