@@ -7,6 +7,7 @@ using Tetrage.UI;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
 using Tetrage.Core.Actions;
+using Tetrage.Animations;
 
 namespace Tetrage.Managers
 {
@@ -18,8 +19,10 @@ namespace Tetrage.Managers
 		#region Serialized Fields
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
+		[SerializeField] private GameStartAnimation _gameStartAnimation;
+		[SerializeField] private ScanUIController _ScanUIController;
+		
 		#endregion
-
 		#region Private Fields
 		private IGameContextProvider _gameContext;
 		private IGameplayEventBus _events;
@@ -39,6 +42,11 @@ namespace Tetrage.Managers
 			{
 				Debug.LogWarning("InGameUIManager: Eventsが見つかりません");
 				return;
+			}
+
+			if (_ScanUIController != null)
+			{
+				_ScanUIController.Initialize(_gameContext);
 			}
 
 			if (_actionPanelController != null)
@@ -87,10 +95,15 @@ namespace Tetrage.Managers
 		#region Event Handlers
 		private void OnGameStarted(GameStartedEvent e)
 		{
+			Debug.Log($"InGameUIManager: OnGameStarted");
 			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
 			{
 				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
 				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
+			}
+			if (_gameStartAnimation != null)
+			{
+				_gameStartAnimation.PlayGameStartAnimation();
 			}
 		}
 
@@ -116,4 +129,5 @@ namespace Tetrage.Managers
 
 		#endregion
 	}
+
 }

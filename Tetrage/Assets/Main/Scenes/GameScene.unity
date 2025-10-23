@@ -795,6 +795,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 735c7727f4e304e4e93a5e6179d7a703, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &2026072511 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3386294199709744888, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
+  m_PrefabInstance: {fileID: 1624701597}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44ce19292b9909f47894be86d7b08af1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2030499215 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5639719842499428790, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
+  m_PrefabInstance: {fileID: 1624701597}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5bcb69effe2848018f33aff48c4ecda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2074764622
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -903,7 +925,7 @@ MonoBehaviour:
     IconIndex: 0
     SetInitialCards: 1
     TargetCard:
-      Suit: 0
+      Suit: 1
       Number: 1
     HandCards: []
   - PlayerName: Mira
@@ -1031,6 +1053,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: InGameUIManager
       objectReference: {fileID: 0}
+    - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
+      propertyPath: _ScanUIController
+      value: 
+      objectReference: {fileID: 2030499215}
+    - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
+      propertyPath: _gameStartAnimation
+      value: 
+      objectReference: {fileID: 2026072511}
     - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
       propertyPath: _playerUIPanelManager
       value: 

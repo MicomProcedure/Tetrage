@@ -19,7 +19,8 @@ namespace Tetrage.Title
         public enum DisplayMode
         {
             LocalProfile,   // ローカルプロファイルを表示
-            PhotonPlayer    // Photonプレイヤーを表示
+            PhotonPlayer, // Photonプレイヤーを表示
+            ManualInput,    // 手動入力で表示
         }
         
         #endregion
@@ -73,6 +74,9 @@ namespace Tetrage.Title
                 case DisplayMode.PhotonPlayer:
                     // Photonプレイヤーが設定されるまで待機
                     break;
+                case DisplayMode.ManualInput:
+                    UpdateFromManualInput();
+                    break;
             }
             
             isInitialized = true;
@@ -96,6 +100,9 @@ namespace Tetrage.Title
                     {
                         UpdateFromPhotonPlayer(currentPhotonPlayer);
                     }
+                    break;
+                case DisplayMode.ManualInput:
+                    UpdateFromManualInput();
                     break;
             }
         }
@@ -183,6 +190,19 @@ namespace Tetrage.Title
             UpdateFromPhotonPlayer(player);
         }
         
+        #endregion
+        #region Manual Input Methods
+
+        public void UpdateFromManualInput()
+        {
+            Debug.Log("ProfileDisplayUI: ManualInputModeで表示しています。");
+            UpdateDisplay(0, "");
+        }
+
+        public void SetManualInputData(int iconIndex, string playerName)
+        {
+            UpdateDisplay(iconIndex, playerName);
+        }
         #endregion
 
         #region Private Methods
