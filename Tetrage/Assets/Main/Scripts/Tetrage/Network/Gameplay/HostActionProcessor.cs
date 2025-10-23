@@ -106,6 +106,7 @@ namespace Tetrage.Network.Gameplay
                             accepted = true,
                             reason = string.Empty,
                             targetCardIds = e.targetCardIds,
+                            actionStatusInt = 0,
                         };
                         // アクション結果は全プレイヤーに送信
                         _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
