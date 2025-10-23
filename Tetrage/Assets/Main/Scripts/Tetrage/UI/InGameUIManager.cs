@@ -20,7 +20,7 @@ namespace Tetrage.Managers
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
 		[SerializeField] private GameStartAnimation _gameStartAnimation;
-		[SerializeField] private TargetCheckText _targetCheckText;
+		[SerializeField] private ScanUIController _ScanUIController;
 		
 		#endregion
 		#region Private Fields
@@ -42,6 +42,11 @@ namespace Tetrage.Managers
 			{
 				Debug.LogWarning("InGameUIManager: Eventsが見つかりません");
 				return;
+			}
+
+			if (_ScanUIController != null)
+			{
+				_ScanUIController.Initialize(_gameContext);
 			}
 
 			if (_actionPanelController != null)
