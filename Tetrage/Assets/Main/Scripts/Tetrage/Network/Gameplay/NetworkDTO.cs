@@ -87,6 +87,8 @@ namespace Tetrage.Network.Gameplay
     {
         public int sequence;
         public int stateVersion;
+        public int userPlayerActorNumber;
+        public int[] playerActorNumbers;
     }
 
     [Serializable]

@@ -39,12 +39,14 @@ namespace Tetrage.Network.Gameplay
             _broadcaster.Raise(EventCode.TurnEnded, e);
         }
 
-        public void EmitScanStart()
+        public void EmitScanStart(int userPlayerActorNumber, int[] playerActorNumbers)
         {
             var e = new StartScanPhaseEvent
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
+                userPlayerActorNumber = userPlayerActorNumber,
+                playerActorNumbers = playerActorNumbers,
             };
             _broadcaster.Raise(EventCode.StartScanPhase, e);
         }
