@@ -29,6 +29,11 @@ namespace Tetrage.UI
             new PlayerPositionMapping { playerId = 4, position = new Vector2( 400,-250) },
         };
 
+        [Header("Persistence Settings")]
+        [SerializeField] private bool useSavedPositions = true; // 保存された位置を使用するか
+        [SerializeField] private bool autoSaveOnDrag = true; // ドラッグ時に自動保存するか
+        [SerializeField] private SaveMethod saveMethod = SaveMethod.PlayerPrefs; // 保存方法
+        
         [Header("Debug Draw")]
         [SerializeField] private bool drawDebugPositions = true;
         [SerializeField] private System.Collections.Generic.List<Color> debugColors = new System.Collections.Generic.List<Color>
@@ -49,8 +54,24 @@ namespace Tetrage.UI
         private List<PlayerInfo> _playerInfoList = new List<PlayerInfo>();
         private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();
         
+        private const string SAVE_KEY = "PlayerUI_Positions";
+        private const string SAVE_FILE_NAME = "PlayerUIPositions.json";
+        
         #endregion
 
+        #region Unity Lifecycle
+        
+        private void Awake()
+        {
+            // 保存された位置を読み込み
+            if (useSavedPositions)
+            {
+                LoadPositions();
+            }
+        }
+        
+        #endregion
+        
         #region Public Methods
         
         /// <summary>
@@ -131,6 +152,146 @@ namespace Tetrage.UI
             }
         }
         
+        /// <summary>
+        /// プレイヤーパネルの位置を更新（ドラッグ後に呼ばれる）
+        /// </summary>
+        public void UpdatePlayerPosition(int playerId, Vector2 newPosition)
+        {
+            // マッピングを検索
+            var mapping = playerPositionMappings.Find(m => m.playerId == playerId);
+            
+            if (mapping != null)
+            {
+                // 既存のマッピングを更新
+                mapping.position = newPosition;
+                Debug.Log($"PlayerUIPanelManager: PlayerId={playerId} の位置を更新しました: {newPosition}");
+            }
+            else
+            {
+                // 新しいマッピングを追加
+                playerPositionMappings.Add(new PlayerPositionMapping 
+                { 
+                    playerId = playerId, 
+                    position = newPosition 
+                });
+                Debug.Log($"PlayerUIPanelManager: PlayerId={playerId} の新しい位置マッピングを追加しました: {newPosition}");
+            }
+            
+            // 自動保存
+            if (autoSaveOnDrag)
+            {
+                SavePositions();
+            }
+            
+            // エディタで変更をマーク（シーン保存時に反映される）
+            #if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+            #endif
+        }
+        
+        /// <summary>
+        /// すべてのパネルのドラッグ機能を有効/無効にする
+        /// </summary>
+        public void SetAllDraggable(bool draggable)
+        {
+            foreach (var panel in _activePanels)
+            {
+                if (panel != null)
+                {
+                    panel.SetDraggable(draggable);
+                }
+            }
+            Debug.Log($"PlayerUIPanelManager: すべてのパネルのドラッグ機能を{(draggable ? "有効" : "無効")}にしました");
+        }
+        
+        /// <summary>
+        /// 現在の位置マッピングをログ出力（デバッグ用）
+        /// </summary>
+        [ContextMenu("Log Current Positions")]
+        public void LogCurrentPositions()
+        {
+            Debug.Log("=== Current Player Positions ===");
+            foreach (var mapping in playerPositionMappings)
+            {
+                Debug.Log($"PlayerId={mapping.playerId}: Position={mapping.position}");
+            }
+        }
+        
+        /// <summary>
+        /// 位置を保存
+        /// </summary>
+        [ContextMenu("Save Positions")]
+        public void SavePositions()
+        {
+            switch (saveMethod)
+            {
+                case SaveMethod.PlayerPrefs:
+                    SaveToPlayerPrefs();
+                    break;
+                case SaveMethod.JsonFile:
+                    SaveToJsonFile();
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// 位置を読み込み
+        /// </summary>
+        [ContextMenu("Load Positions")]
+        public void LoadPositions()
+        {
+            switch (saveMethod)
+            {
+                case SaveMethod.PlayerPrefs:
+                    LoadFromPlayerPrefs();
+                    break;
+                case SaveMethod.JsonFile:
+                    LoadFromJsonFile();
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// 保存された位置をクリア
+        /// </summary>
+        [ContextMenu("Clear Saved Positions")]
+        public void ClearSavedPositions()
+        {
+            switch (saveMethod)
+            {
+                case SaveMethod.PlayerPrefs:
+                    PlayerPrefs.DeleteKey(SAVE_KEY);
+                    PlayerPrefs.Save();
+                    Debug.Log("PlayerUIPanelManager: 保存された位置をクリアしました（PlayerPrefs）");
+                    break;
+                case SaveMethod.JsonFile:
+                    string path = GetJsonFilePath();
+                    if (System.IO.File.Exists(path))
+                    {
+                        System.IO.File.Delete(path);
+                        Debug.Log($"PlayerUIPanelManager: 保存された位置をクリアしました（{path}）");
+                    }
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// デフォルト位置に戻す
+        /// </summary>
+        [ContextMenu("Reset to Default Positions")]
+        public void ResetToDefaultPositions()
+        {
+            ClearSavedPositions();
+            
+            // デフォルト位置を再適用
+            if (useFixedPositions)
+            {
+                ApplyFixedPositions();
+            }
+            
+            Debug.Log("PlayerUIPanelManager: デフォルト位置に戻しました");
+        }
+        
         #endregion
 
         #region Private Methods
@@ -191,6 +352,7 @@ namespace Tetrage.UI
             
             var panelInstance = Instantiate(panelPrefab, panelParent);
             panelInstance.name = $"PlayerUI_P{playerId}";
+            panelInstance.SetManager(this); // Managerへの参照を設定
             _activePanels.Add(panelInstance);
             
             return panelInstance;
@@ -216,7 +378,87 @@ namespace Tetrage.UI
             }
         }
         
+        #region Persistence Methods
+        
+        private void SaveToPlayerPrefs()
+        {
+            var data = new PlayerPositionData { mappings = playerPositionMappings };
+            string json = JsonUtility.ToJson(data, true);
+            PlayerPrefs.SetString(SAVE_KEY, json);
+            PlayerPrefs.Save();
+            Debug.Log("PlayerUIPanelManager: 位置をPlayerPrefsに保存しました");
+        }
+        
+        private void LoadFromPlayerPrefs()
+        {
+            if (PlayerPrefs.HasKey(SAVE_KEY))
+            {
+                string json = PlayerPrefs.GetString(SAVE_KEY);
+                var data = JsonUtility.FromJson<PlayerPositionData>(json);
+                if (data != null && data.mappings != null && data.mappings.Count > 0)
+                {
+                    playerPositionMappings = data.mappings;
+                    Debug.Log($"PlayerUIPanelManager: {data.mappings.Count}個の位置をPlayerPrefsから読み込みました");
+                }
+            }
+        }
+        
+        private void SaveToJsonFile()
+        {
+            var data = new PlayerPositionData { mappings = playerPositionMappings };
+            string json = JsonUtility.ToJson(data, true);
+            string path = GetJsonFilePath();
+            
+            try
+            {
+                System.IO.File.WriteAllText(path, json);
+                Debug.Log($"PlayerUIPanelManager: 位置をJSONファイルに保存しました: {path}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"PlayerUIPanelManager: JSONファイルの保存に失敗しました: {e.Message}");
+            }
+        }
+        
+        private void LoadFromJsonFile()
+        {
+            string path = GetJsonFilePath();
+            if (System.IO.File.Exists(path))
+            {
+                try
+                {
+                    string json = System.IO.File.ReadAllText(path);
+                    var data = JsonUtility.FromJson<PlayerPositionData>(json);
+                    if (data != null && data.mappings != null && data.mappings.Count > 0)
+                    {
+                        playerPositionMappings = data.mappings;
+                        Debug.Log($"PlayerUIPanelManager: {data.mappings.Count}個の位置をJSONファイルから読み込みました: {path}");
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"PlayerUIPanelManager: JSONファイルの読み込みに失敗しました: {e.Message}");
+                }
+            }
+        }
+        
+        private string GetJsonFilePath()
+        {
+            return System.IO.Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+        }
+        
         #endregion
+        
+        #endregion
+    }
+    
+    /// <summary>
+    /// 保存方法
+    /// </summary>
+    public enum SaveMethod
+    {
+        PlayerPrefs,  // PlayerPrefsに保存
+        JsonFile      // JSONファイルに保存
     }
     
     /// <summary>
@@ -230,5 +472,14 @@ namespace Tetrage.UI
         
         [Tooltip("配置位置")]
         public Vector2 position = Vector2.zero;
+    }
+    
+    /// <summary>
+    /// 位置データの保存用クラス
+    /// </summary>
+    [System.Serializable]
+    internal class PlayerPositionData
+    {
+        public List<PlayerPositionMapping> mappings = new List<PlayerPositionMapping>();
     }
 }

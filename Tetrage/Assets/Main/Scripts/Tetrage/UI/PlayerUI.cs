@@ -32,6 +32,8 @@ namespace Tetrage.UI
         private Canvas _canvas;
         private Vector2 _originalPosition;
         private Vector2 _dragOffset;
+        private int _playerId;
+        private PlayerUIPanelManager _manager;
         
         #endregion
         
@@ -47,6 +49,7 @@ namespace Tetrage.UI
         #endregion
         public void SetPlayerInfo(PlayerInfo playerInfo)
         {
+            _playerId = playerInfo.Id.Value;
             //playerNumberText.text = playerInfo.Id.ToString();
             playerNameText.text = playerInfo.UserId;
             iconImage.sprite = availableIcons[playerInfo.PlayerIconIndex];
@@ -109,8 +112,18 @@ namespace Tetrage.UI
             
             if (savePositionOnDrag)
             {
-                Debug.Log($"PlayerUI: 新しい位置 = {_rectTransform.anchoredPosition}");
-                // 必要に応じて位置をPlayerPrefsなどに保存
+                Vector2 newPosition = _rectTransform.anchoredPosition;
+                Debug.Log($"PlayerUI: PlayerId={_playerId} の新しい位置 = {newPosition}");
+                
+                // PlayerUIPanelManagerに位置を通知
+                if (_manager != null)
+                {
+                    _manager.UpdatePlayerPosition(_playerId, newPosition);
+                }
+                else
+                {
+                    Debug.LogWarning("PlayerUI: PlayerUIPanelManagerへの参照が設定されていません");
+                }
             }
         }
         
@@ -148,6 +161,22 @@ namespace Tetrage.UI
         public void SetPosition(Vector2 position)
         {
             _rectTransform.anchoredPosition = position;
+        }
+        
+        /// <summary>
+        /// PlayerUIPanelManagerへの参照を設定
+        /// </summary>
+        public void SetManager(PlayerUIPanelManager manager)
+        {
+            _manager = manager;
+        }
+        
+        /// <summary>
+        /// PlayerIdを取得
+        /// </summary>
+        public int GetPlayerId()
+        {
+            return _playerId;
         }
         
         #endregion

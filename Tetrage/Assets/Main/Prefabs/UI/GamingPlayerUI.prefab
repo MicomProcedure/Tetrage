@@ -333,6 +333,8 @@ MonoBehaviour:
   - {fileID: -6704369765690059819, guid: 445bc0c73fa8a92489f807ef0f33f9c9, type: 3}
   playerNumberText: {fileID: 5657750864924934507}
   currentplayerText: {fileID: 2514012928600894517}
+  isDraggable: 1
+  savePositionOnDrag: 1
 --- !u!1001 &1420111572110709091
 PrefabInstance:
   m_ObjectHideFlags: 0

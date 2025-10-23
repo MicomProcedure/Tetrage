@@ -312,7 +312,7 @@ MonoBehaviour:
   - {fileID: -6704369765690059819, guid: 445bc0c73fa8a92489f807ef0f33f9c9, type: 3}
   displayMode: 2
   profileManager: {fileID: 5405792255804346879}
-  enableDebugLog: 1
+  enableDebugLog: 0
 --- !u!1 &4605323992271691942
 GameObject:
   m_ObjectHideFlags: 0
