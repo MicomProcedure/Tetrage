@@ -3,6 +3,7 @@ using System;
 using Tetrage.Factories;
 using Tetrage.Models;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Tests.Editor
 {
@@ -22,7 +23,7 @@ namespace Tetrage.Tests.Editor
         [Test]
         public void CreatePile_ReturnsEmptyCardPile()
         {
-            var pile = _factory.CreatePile("test", 10);
+            var pile = _factory.CreatePile(new PileId(1), "test", 10);
             Assert.NotNull(pile);
             Assert.AreEqual(0, pile.Count, "新規生成時のCountは0であるべき");
         }
@@ -30,8 +31,8 @@ namespace Tetrage.Tests.Editor
         [Test]
         public void CreatePile_MultipleCalls_ReturnsDistinctInstances()
         {
-            var pile1 = _factory.CreatePile("test1", 10);
-            var pile2 = _factory.CreatePile("test2", 10);
+            var pile1 = _factory.CreatePile(new PileId(1), "test1", 10);
+            var pile2 = _factory.CreatePile(new PileId(2), "test2", 10);
             Assert.AreNotSame(pile1, pile2, "複数呼び出しで異なるインスタンスを返すべき");
         }
 

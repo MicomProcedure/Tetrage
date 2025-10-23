@@ -42,9 +42,9 @@ namespace Tetrage.Factories
             Assert.IsFalse(string.IsNullOrEmpty(userId), "userId が null または空です");
 
             // デフォルトのCardPileを作成
-            var hands = CreateDefaultHands();
-            var tmp = CreateDefaultTmp();
-            var target = CreateDefaultTarget();
+            var hands = CreateDefaultHands(id);
+            var tmp = CreateDefaultTmp(id);
+            var target = CreateDefaultTarget(id);
 
             // プレイヤーモデルを生成
             IPlayer player = new Player(id, userId, iconIndex, target, hands, tmp);
@@ -74,27 +74,28 @@ namespace Tetrage.Factories
         /// デフォルトの手札カードパイルを作成
         /// </summary>
         /// <returns>生成されたCardPile</returns>
-        private CardPile CreateDefaultHands()
+        private CardPile CreateDefaultHands(PlayerId id)
         {
-            return _cardPileFactory.CreatePile("Hands", InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY);
+            // IDは呼び出し側で確定できないため、暫定0（未割当）で生成
+            return _cardPileFactory.CreatePile(PileIds.PlayerHands(id.Value), "Hands", InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY);
         }
 
         /// <summary>
         /// デフォルトの一時保管カードパイルを作成
         /// </summary>
         /// <returns>生成されたCardPile</returns>
-        private CardPile CreateDefaultTmp()
+        private CardPile CreateDefaultTmp(PlayerId id)
         {
-            return _cardPileFactory.CreatePile("Tmp", InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY);
+            return _cardPileFactory.CreatePile(PileIds.PlayerTmp(id.Value), "Tmp", InGameConsts.DEFAULT_PLAYER_TMP_CAPACITY);
         }
 
         /// <summary>
         /// デフォルトのターゲットカードパイルを作成
         /// </summary>
         /// <returns>生成されたCardPile</returns>
-        private CardPile CreateDefaultTarget()
+        private CardPile CreateDefaultTarget(PlayerId id)
         {
-            return _cardPileFactory.CreatePile("Target", InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY);
+            return _cardPileFactory.CreatePile(PileIds.PlayerTarget(id.Value), "Target", InGameConsts.DEFAULT_PLAYER_TARGET_CAPACITY);
         }
     }
 }

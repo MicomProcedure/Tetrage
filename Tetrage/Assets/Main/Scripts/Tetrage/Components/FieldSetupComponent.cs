@@ -161,6 +161,35 @@ namespace Tetrage.Components
         }
 
         /// <summary>
+        /// FieldSetupDependenciesを生成する（Registry注入版）
+        /// </summary>
+        public FieldSetupDependencies CreateFieldSetupDependencies(
+            Tetrage.Core.Ids.IdRegistry<Tetrage.Core.Ids.PileId, Tetrage.Models.CardPile> pileRegistry,
+            Tetrage.Core.Ids.IdRegistry<Tetrage.Core.Ids.CardId, Tetrage.Models.Card> cardRegistry,
+            Tetrage.Core.Ids.IdRegistry<Tetrage.Core.Ids.PlayerId, Tetrage.Models.Player> playerRegistry)
+        {
+            // カードは RegisteringCardFactory で必ずレジストリ登録する
+            var baseCardFactory = new CardModelFactory();
+            var registeringCardFactory = new Tetrage.Factories.RegisteringCardFactory(baseCardFactory, cardRegistry);
+
+            // パイルは RegisteringCardPileFactory で必ずレジストリ登録する
+            var baseCardPileFactory = new CardPileFactory();
+            var registeringPileFactory = new Tetrage.Factories.RegisteringCardPileFactory(baseCardPileFactory, pileRegistry);
+
+            // 各Factoryへ登録版を注入
+            var stageFactory = new StageModelFactory(registeringPileFactory, registeringCardFactory);
+            var basePlayerFactory = new PlayerModelFactory(registeringPileFactory, registeringCardFactory);
+            var registeringPlayerFactory = new Tetrage.Factories.RegisteringPlayerFactory(basePlayerFactory, playerRegistry);
+
+            return new FieldSetupDependencies(
+                registeringCardFactory,
+                stageFactory,
+                registeringPlayerFactory,
+                registeringPileFactory
+            );
+        }
+
+        /// <summary>
         /// 設定をリセット（キャッシュクリア）
         /// Inspector設定変更時などに呼び出し
         /// </summary>

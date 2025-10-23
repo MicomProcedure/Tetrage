@@ -14,6 +14,8 @@ namespace Tetrage.Network
         private RoomOptions pendingRoomOptions;
         [SerializeField] private NetworkErrorUI networkErrorUI;
         [SerializeField] private PanelButton panelButton;
+        [SerializeField] public bool IsRandomRoomNumber = false;
+        [SerializeField] public string FixedRoomCode = "00000";
 
         #region Public Methods
         /// <summary>
@@ -21,7 +23,7 @@ namespace Tetrage.Network
         /// </summary>
         public void CreateNewRoom()
         {
-            string roomCode = Random.Range(10000, 99999).ToString(); // 5桁のルームコードを生成
+            string roomCode = IsRandomRoomNumber ? Random.Range(10000, 99999).ToString() : FixedRoomCode; // 5桁のルームコードを生成
             RoomOptions options = new RoomOptions { MaxPlayers = 6, IsVisible = true, IsOpen = true };
 
             if (PhotonNetwork.InRoom)

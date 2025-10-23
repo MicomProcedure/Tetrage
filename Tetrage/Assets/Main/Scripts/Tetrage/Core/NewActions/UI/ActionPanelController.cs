@@ -39,7 +39,7 @@ namespace Tetrage.Core.Actions
             SetupButtonClickHandlers();
         }
 
-        private void Start()
+        public void Initialize(IGameContextProvider gameContextProvider)
         {
             // ActionManagerの取得と初期化
             _actionManager = ActionManager.Instance;

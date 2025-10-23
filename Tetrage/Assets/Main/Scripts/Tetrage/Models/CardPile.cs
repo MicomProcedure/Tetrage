@@ -97,13 +97,14 @@ namespace Tetrage.Models
          */
 
         /// <summary>
-        /// 初期カードを含む CardPile を生成します。
+        /// 初期カードを含む CardPile を生成します（ID必須）。
         /// </summary>
+        /// <param name="id">束のID（未設定相当は PileId(0) を使用可）</param>
         /// <param name="name">束の名前（デバッグ用）</param>
         /// <param name="initialCards">初期に含めるカードのコレクション</param>
         /// <param name="maxCount">この束の最大枚数</param>
-        public CardPile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
-            : this(new PileId(0), name, maxCount)
+        public CardPile(PileId id, string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
+            : this(id, name, maxCount)
         {
             if (initialCards == null) return;
 
@@ -121,15 +122,7 @@ namespace Tetrage.Models
         }
 
 
-        /// <summary>
-        /// コンストラクタで maxCount を指定
-        /// </summary>
-        /// <param name="name">束の名前（デバッグ用）</param>
-        /// <param name="maxCount">この束の最大枚数（上限なしなら int.MaxValue）</param>
-        public CardPile(string name, int maxCount = int.MaxValue)
-            : this(new PileId(0), name, maxCount)
-        {
-        }
+        // 旧: ID省略コンストラクタは廃止（ID必須化）
 
         /// <summary>
         /// ID付きコンストラクタ（推奨）

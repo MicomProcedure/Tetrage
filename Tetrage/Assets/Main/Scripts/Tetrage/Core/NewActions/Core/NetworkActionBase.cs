@@ -1,6 +1,7 @@
 using Cysharp.Threading.Tasks;
 using Tetrage.Network.Gameplay;
-
+using UnityEngine;
+using System.Linq;
 namespace Tetrage.Core.Actions
 {
     /// <summary>
@@ -29,9 +30,10 @@ namespace Tetrage.Core.Actions
                     clientSequence = context.Network.NextClientSequence(),
                     actorPlayerId = desc.actorPlayerId,
                     actionType = desc.actionType,
-                    targetCardIds = desc.targetCardIds,
+                    targetCardIds = desc.targetCardIds?.Select(id => id.Value).ToArray(),
                 };
                 context.Network.Request(request);
+                Debug.Log($"NetworkActionBase: OnAfterExecute: Request {desc.actionType}, ActorPlayerId: {desc.actorPlayerId}, TargetCardIds: {string.Join(", ", desc.targetCardIds.Select(id => id.Value))}");
             }
 
             await UniTask.Yield();

@@ -6,6 +6,8 @@ using Tetrage.Core.Enums;
 using Tetrage.UI;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
+using Tetrage.Core.Actions;
+
 namespace Tetrage.Managers
 {
 	/// <summary>
@@ -15,6 +17,7 @@ namespace Tetrage.Managers
 	{
 		#region Serialized Fields
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
+		[SerializeField] private ActionPanelController _actionPanelController;
 		#endregion
 
 		#region Private Fields
@@ -36,6 +39,11 @@ namespace Tetrage.Managers
 			{
 				Debug.LogWarning("InGameUIManager: Eventsが見つかりません");
 				return;
+			}
+
+			if (_actionPanelController != null)
+			{
+				_actionPanelController.Initialize(_gameContext);
 			}
 
 			Subscribe();

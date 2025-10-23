@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -49,6 +51,7 @@ namespace Tetrage.Network.Gameplay
             var bytes = _serializer.Serialize(payload);
             var opts = new RaiseEventOptions { TargetActors = targetActorNumbers };
             PhotonNetwork.RaiseEvent((byte)code, bytes, opts, _sendOptions);
+            Debug.Log($"PhotonBroadcaster: RaiseToActors, Code: {code}, TargetActorNumbers: {string.Join(", ", targetActorNumbers)}");
         }
 
         public void RaiseToActor<T>(EventCode code, T payload, int targetActorNumber)
@@ -102,6 +105,7 @@ namespace Tetrage.Network.Gameplay
             {
                 var dto = _serializer.Deserialize<T>(bytes);
                 handler?.Invoke(dto);
+                UnityEngine.Debug.Log($"PhotonReceiver: On, Code: {code}, Handler: {handler.Method.Name}");
             };
         }
 
@@ -133,12 +137,21 @@ namespace Tetrage.Network.Gameplay
         /// </summary>
         public void OnEvent(EventData photonEvent)
         {
+            UnityEngine.Debug.Log($"PhotonReceiver: OnEvent code={photonEvent.Code} dataType={(photonEvent?.CustomData != null ? photonEvent.CustomData.GetType().Name : "null")}");
             if (_handlers.TryGetValue(photonEvent.Code, out var h))
             {
                 if (photonEvent.CustomData is byte[] bytes)
                 {
                     h(bytes);
                 }
+                else
+                {
+                    UnityEngine.Debug.LogWarning($"PhotonReceiver: Unsupported CustomData type for code={photonEvent.Code}");
+                }
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning($"PhotonReceiver: No handler for code={photonEvent.Code}");
             }
         }
 

@@ -4,6 +4,7 @@ using Tetrage.Models;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Constants;
 using UnityEngine.Assertions;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Factories
 {
@@ -91,7 +92,7 @@ namespace Tetrage.Factories
             var initialCards = _cardModelFactory.CreateCards(suits, countPerSuit);
 
             // スタック用カードパイルを生成
-            return _pileFactory.CreatePile("Stack", initialCards, maxCount);
+            return _pileFactory.CreatePile(PileIds.Stack, "Stack", initialCards, maxCount);
         }
 
         /// <summary>
@@ -101,7 +102,7 @@ namespace Tetrage.Factories
         private CardPile CreateDefaultTrash()
         {
             // トラッシュは初期カードなしで生成
-            return _pileFactory.CreatePile("Trash", InGameConsts.DEFAULT_CARD_PILE_CAPACITY);
+            return _pileFactory.CreatePile(PileIds.Trash, "Trash", InGameConsts.DEFAULT_CARD_PILE_CAPACITY);
         }
     }
 } 

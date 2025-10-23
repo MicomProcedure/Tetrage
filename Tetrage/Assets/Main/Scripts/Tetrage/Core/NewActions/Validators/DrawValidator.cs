@@ -9,6 +9,11 @@ namespace Tetrage.Core.Actions
     {
         public ValidationResult Validate(IActionContext context)
         {
+            // ネットワーク前提: ローカルユーザーのみが自身のアクションをリクエスト可能
+            if (!ReferenceEquals(context.RequesterPlayer, context.GameContext?.UserPlayer))
+            {
+                return ValidationResult.Invalid("ローカルプレイヤー以外は操作できません");
+            }
             // TODO: 具体的な条件判定ロジックを実装
             // 例: Stackに十分なカードがあるか、プレイヤーのTmpが空かなど
             

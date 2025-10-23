@@ -8,6 +8,7 @@ using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Factories
 {
@@ -211,6 +212,7 @@ namespace Tetrage.Factories
                 .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Stack])
                 .UseCardFactory(cardWithViewFactory)
                 .WithInitialCards(cardWithViewFactory, suits, _countPerSuit)
+                .WithPileId(PileIds.Stack)
                 .Build();
         }
 
@@ -228,6 +230,7 @@ namespace Tetrage.Factories
                 .UseView(_cardPileViewsDict[CardPileType.Trash], _stageParent)
                 .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Trash])
                 .UseCardFactory(cardWithViewFactory)
+                .WithPileId(PileIds.Trash)
                 .Build(); // 空のカードパイル
         }
 
@@ -247,6 +250,7 @@ namespace Tetrage.Factories
                 .WithoutView()
                 .UseCardFactory(_cardModelFactory)
                 .WithInitialCards(_cardModelFactory, suits, _countPerSuit)
+                .WithPileId(PileIds.Stack)
                 .Build();
         }
 
@@ -262,6 +266,7 @@ namespace Tetrage.Factories
                 .WithMaxCount(InGameConsts.DEFAULT_CARD_PILE_CAPACITY)
                 .WithoutView()
                 .UseCardFactory(_cardModelFactory)
+                .WithPileId(PileIds.Trash)
                 .Build(); // 空のカードパイル
         }
 

@@ -2492,6 +2492,7 @@ MonoBehaviour:
   numberInputController: {fileID: 1197567342828041971}
   networkErrorUI: {fileID: 238399070}
   panelButton: {fileID: 103689754}
+  createRoom: {fileID: 8450150823562373159}
 --- !u!4 &4865573642166001012 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2904172341731087478, guid: a493c738d3a06384f815e80f2f2579b4, type: 3}
@@ -3124,6 +3125,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkErrorUI: {fileID: 238399070}
   panelButton: {fileID: 103689754}
+  IsRandomRoomNumber: 0
+  FixedRoomCode: 00000
 --- !u!1 &8953493718046070236 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1418117471242780043, guid: a493c738d3a06384f815e80f2f2579b4, type: 3}

@@ -272,7 +272,17 @@ namespace Tetrage.Managers
                 if (!ValidateCurrentPlayer()) return;
 
                 // プレイヤーのアクションを待つ（現在手番のプレイヤー）
-                var actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
+                // Hostの自手番は ActionAwaiter、Guest手番はネットのActionResultを待機
+                var isLocalTurn = _gameContext.UserPlayer != null && ReferenceEquals(_gameContext.CurrentPlayer, _gameContext.UserPlayer);
+                ActionResult actionResult;
+                if (isLocalTurn)
+                {
+                    actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
+                }
+                else
+                {
+                    actionResult = await WaitActionResultFromNetworkAsync(_gameContext.CurrentPlayer, gameCts);
+                }
 
                 if (!actionResult.IsSuccess)
                 {
@@ -312,6 +322,46 @@ namespace Tetrage.Managers
                 }
             }
         }
+
+        #region ネット待機ヘルパー
+        /// <summary>
+        /// ネットからの ActionResult を待機する（Guest手番向け）。
+        /// </summary>
+        private async UniTask<ActionResult> WaitActionResultFromNetworkAsync(IPlayer waitingPlayer, CancellationToken token)
+        {
+            if (waitingPlayer == null || _gameContext?.Events == null)
+            {
+                return ActionResult.Failure("待機対象またはイベントバスが無効です");
+            }
+
+            var tcs = new UniTaskCompletionSource<ActionResult>();
+            System.Action<Tetrage.Network.Gameplay.ActionResultEvent> handler = null;
+
+            handler = (e) =>
+            {
+                if (e.actorPlayerId == waitingPlayer.PlayerId)
+                {
+                    // 成否はネット結果に合わせる
+                    var res = e.accepted ? ActionResult.Success() : ActionResult.Failure(e.reason);
+                    tcs.TrySetResult(res);
+                }
+            };
+
+            try
+            {
+                _gameContext.Events.ActionResultApplied += handler;
+
+                using (token.Register(() => tcs.TrySetCanceled()))
+                {
+                    return await tcs.Task;
+                }
+            }
+            finally
+            {
+                _gameContext.Events.ActionResultApplied -= handler;
+            }
+        }
+        #endregion
 
         public void EndGame()
         {
