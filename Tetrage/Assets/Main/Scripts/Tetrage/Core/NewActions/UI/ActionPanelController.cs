@@ -22,6 +22,8 @@ namespace Tetrage.Core.Actions
         [SerializeField] private Button reachButton;
         [SerializeField] private Button checkButton;
         [SerializeField] private Button passButton;
+        [SerializeField] private Button tSoloButton;
+        [SerializeField] private Button tMultiButton;
 
         [Header("Settings")]
         [SerializeField] private float _retryInterval = 0.5f;
@@ -131,7 +133,9 @@ namespace Tetrage.Core.Actions
                 { ActionType.Open, openButton },
                 { ActionType.Reach, reachButton },
                 { ActionType.Check, checkButton },
-                { ActionType.Pass, passButton }
+                { ActionType.Pass, passButton },
+                { ActionType.TetrageSolo, tSoloButton },
+                { ActionType.TetrageMulti, tMultiButton }
             };
         }
 
@@ -173,7 +177,7 @@ namespace Tetrage.Core.Actions
                 return;
             }
 
-            // 各ボタンの状態を更新（ActionType版）
+            // 各ボタンの状態（有効/無効、表示/非表示）を更新（ActionType版）
             foreach (var pair in _actionButtons)
             {
                 var actionType = pair.Key;
@@ -183,8 +187,33 @@ namespace Tetrage.Core.Actions
                 {
                     bool canExecute = _currentPlayer.CanExecuteNewAction(actionType);
                     button.interactable = canExecute;
+
+                    bool shouldShow = ShouldShowButton(actionType, _currentPlayer);
+                    button.gameObject.SetActive(shouldShow);
                 }
             }
+        }
+
+        /// <summary>
+        /// プレイヤーの状態に応じてボタンを表示すべきか判定
+        /// </summary>
+        /// <param name="actionType">判定対象のアクション</param>
+        /// <param name="player">現在のプレイヤー</param>
+        /// <returns>表示すべき場合true</returns>
+        private bool ShouldShowButton(ActionType actionType, IPlayer player)
+        {
+            // リーチ状態の場合：Check, Pass, TetrageSoloのみ表示
+            if (player.IsReach)
+            {
+                return actionType == ActionType.Check || actionType == ActionType.Pass || actionType == ActionType.TetrageSolo;
+            }
+
+            // 非リーチ状態：Draw, Open, Reach, TetrageSolo, TetrageMultiを表示
+            return actionType == ActionType.Draw || 
+                actionType == ActionType.Open || 
+                actionType == ActionType.Reach || 
+                actionType == ActionType.TetrageSolo ||
+                actionType == ActionType.TetrageMulti;
         }
 
         /// <summary>
@@ -197,6 +226,7 @@ namespace Tetrage.Core.Actions
                 if (button != null)
                 {
                     button.interactable = false;
+                    button.gameObject.SetActive(false);
                 }
             }
         }
@@ -338,6 +368,25 @@ namespace Tetrage.Core.Actions
                 Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
+        [ContextMenu("Test Tetrage Solo Action")]
+        private async void TestTetrageSoloAction()
+        {
+            if (_currentPlayer != null)
+            {
+                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.TetrageSolo);
+                Debug.Log($"Test Tetrage Solo Result: {result.IsSuccess} - {result.ErrorMessage}");
+            }
+        }
+        [ContextMenu("Test Tetrage Multi Action")]
+        private async void TestTetrageMultiAction()
+        {
+            if (_currentPlayer != null)
+            {
+                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.TetrageMulti);
+                Debug.Log($"Test Tetrage Multi Result: {result.IsSuccess} - {result.ErrorMessage}");
+            }
+        }
         #endregion
+        
     }
 }
