@@ -177,7 +177,7 @@ namespace Tetrage.Core.Actions
                 return;
             }
 
-            // 各ボタンの状態を更新（ActionType版）
+            // 各ボタンの状態（有効/無効、表示/非表示）を更新（ActionType版）
             foreach (var pair in _actionButtons)
             {
                 var actionType = pair.Key;
@@ -187,8 +187,33 @@ namespace Tetrage.Core.Actions
                 {
                     bool canExecute = _currentPlayer.CanExecuteNewAction(actionType);
                     button.interactable = canExecute;
+
+                    bool shouldShow = ShouldShowButton(actionType, _currentPlayer);
+                    button.gameObject.SetActive(shouldShow);
                 }
             }
+        }
+
+        /// <summary>
+        /// プレイヤーの状態に応じてボタンを表示すべきか判定
+        /// </summary>
+        /// <param name="actionType">判定対象のアクション</param>
+        /// <param name="player">現在のプレイヤー</param>
+        /// <returns>表示すべき場合true</returns>
+        private bool ShouldShowButton(ActionType actionType, IPlayer player)
+        {
+            // リーチ状態の場合：Check, Pass, TetrageSoloのみ表示
+            if (player.IsReach)
+            {
+                return actionType == ActionType.Check || actionType == ActionType.Pass || actionType == ActionType.TetrageSolo;
+            }
+
+            // 非リーチ状態：Draw, Open, Reach, TetrageSolo, TetrageMultiを表示
+            return actionType == ActionType.Draw || 
+                actionType == ActionType.Open || 
+                actionType == ActionType.Reach || 
+                actionType == ActionType.TetrageSolo ||
+                actionType == ActionType.TetrageMulti;
         }
 
         /// <summary>
@@ -201,6 +226,7 @@ namespace Tetrage.Core.Actions
                 if (button != null)
                 {
                     button.interactable = false;
+                    button.gameObject.SetActive(false);
                 }
             }
         }
@@ -361,5 +387,6 @@ namespace Tetrage.Core.Actions
             }
         }
         #endregion
+        
     }
 }
