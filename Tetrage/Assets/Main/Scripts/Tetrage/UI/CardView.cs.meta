@@ -1,2 +1,20 @@
 fileFormatVersion: 2
 guid: ff9444f32d0366b40b5d8b440be6063b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - spriteRenderer: {instanceID: 0}
+  - suitText: {instanceID: 0}
+  - numberText: {instanceID: 0}
+  - animator: {instanceID: 0}
+  - cardImageMapper: {instanceID: 0}
+  - spadeBackSprite: {fileID: 8985232411807945140, guid: 3b0b02c7b17174d35b2b3d99340c3bd3, type: 3}
+  - heartBackSprite: {fileID: -4839530053354484446, guid: 3b81cce0890684e338cc6718d1e75c6f, type: 3}
+  - diamondBackSprite: {fileID: -8300591218124764116, guid: 9d23e76b6ef984e15bd7e435f96b5781, type: 3}
+  - clubBackSprite: {fileID: -3345306800391234530, guid: 32c2136994da343789c8613dda526aea, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
