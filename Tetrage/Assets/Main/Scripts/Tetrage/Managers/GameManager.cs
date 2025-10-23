@@ -273,17 +273,8 @@ namespace Tetrage.Managers
                 // ホスト: 初期宣言を送信してDealerを実行／ゲスト: 終了まで待機
                 if (PhotonNetwork.IsMasterClient && _networkInitialized)
                 {
-                    var started = new GameStartedEvent
-                    {
-                        // 一旦FieldSetupComponentの設定を使用するため実質使わない
-                        // TODO: 将来的には設定されたルールに応じて適切な値を設定する
-                        deckId = InGameConsts.DEFAULT_DECK_ID,
-                        suitOrder = new byte[] { 0, 1, 2, 3 },
-                        minNumber = 1,
-                        maxNumber = 13,
-                        playerActorNumbers = BuildInitialPlayerOrder(),
-                    };
-                    _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
+                    PublishGameStarted();  // ゲーム開始イベントを送信
+
                     await _dealer.StartGameAsync(0f, _gameCts.Token);
                 }
                 else
@@ -316,6 +307,19 @@ namespace Tetrage.Managers
             await UniTask.WaitUntil(() => _remoteGameEnded || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InRoom);
         }
 
+        private void PublishGameStarted(){
+                    var started = new GameStartedEvent
+                    {
+                        // 一旦FieldSetupComponentの設定を使用するため実質使わない
+                        // TODO: 将来的には設定されたルールに応じて適切な値を設定する
+                        deckId = InGameConsts.DEFAULT_DECK_ID,
+                        suitOrder = new byte[] { 0, 1, 2, 3 },
+                        minNumber = 1,
+                        maxNumber = 13,
+                        playerActorNumbers = BuildInitialPlayerOrder(),
+                    };
+                    _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
+        }
         #endregion
 
         #region イベントハンドラ

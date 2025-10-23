@@ -17,6 +17,8 @@ namespace Tetrage.Network.Gameplay
         event Action<CardVisibilityChangedEvent> CardVisibilityChangedApplied;
         event Action<PileShuffledWithSeedEvent> PileShuffledApplied;
         event Action<ActionResultEvent> ActionResultApplied;
+        event Action<StartScanPhaseEvent> StartScanPhaseApplied;
+        event Action<EndScanPhaseEvent> EndScanPhaseApplied;
 
         void PublishGameStarted(GameStartedEvent e);
         void PublishTurnStarted(TurnStartedEvent e);
@@ -26,6 +28,8 @@ namespace Tetrage.Network.Gameplay
         void PublishCardVisibilityChanged(CardVisibilityChangedEvent e);
         void PublishPileShuffled(PileShuffledWithSeedEvent e);
         void PublishActionResult(ActionResultEvent e);
+        void PublishStartScanPhase(StartScanPhaseEvent e);
+        void PublishEndScanPhase(EndScanPhaseEvent e);
     }
 
     /// <summary>
@@ -41,6 +45,8 @@ namespace Tetrage.Network.Gameplay
         public event Action<CardVisibilityChangedEvent> CardVisibilityChangedApplied;
         public event Action<PileShuffledWithSeedEvent> PileShuffledApplied;
         public event Action<ActionResultEvent> ActionResultApplied;
+        public event Action<StartScanPhaseEvent> StartScanPhaseApplied;
+        public event Action<EndScanPhaseEvent> EndScanPhaseApplied;
 
         public void PublishGameStarted(GameStartedEvent e) { 
             GameStartedApplied?.Invoke(e); 
@@ -74,6 +80,14 @@ namespace Tetrage.Network.Gameplay
             }
         public void PublishActionResult(ActionResultEvent e) { ActionResultApplied?.Invoke(e); 
             Debug.Log($"SimpleGameplayEventBus: PublishActionResult, Sequence: {e.sequence}, Accepted: {e.accepted}, Reason: {e.reason}");
+        }
+
+        public void PublishStartScanPhase(StartScanPhaseEvent e) { StartScanPhaseApplied?.Invoke(e);
+            Debug.Log($"SimpleGameplayEventBus: PublishStartScanPhase, Sequence: {e.sequence}, StateVersion: {e.stateVersion}");
+        }
+
+        public void PublishEndScanPhase(EndScanPhaseEvent e) { EndScanPhaseApplied?.Invoke(e);
+            Debug.Log($"SimpleGameplayEventBus: PublishEndScanPhase, Sequence: {e.sequence}, StateVersion: {e.stateVersion}");
         }
     }
 }

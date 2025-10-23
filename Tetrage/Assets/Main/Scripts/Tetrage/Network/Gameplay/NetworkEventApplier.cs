@@ -106,6 +106,20 @@ namespace Tetrage.Network.Gameplay
             _bus?.PublishCardVisibilityChanged(e);
         }
 
+        public void Apply(StartScanPhaseEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            // 空実装: フェーズ開始のUI反映などは将来追加
+            _bus?.PublishStartScanPhase(e);
+        }
+
+        public void Apply(EndScanPhaseEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            // 空実装: フェーズ終了のUI反映などは将来追加
+            _bus?.PublishEndScanPhase(e);
+        }
+
         public void Apply(ActionResultEvent e)
         {
             if (!ShouldApply(e.sequence)) return;
