@@ -60,6 +60,28 @@ namespace Tetrage.Network.Gameplay
             };
             _broadcaster.Raise(EventCode.EndScanPhase, e);
         }
+
+        public void EmitFinishingGame(int[] winnerActorNumbers)
+        {
+            var e = new FinishingGameEvent
+            {
+                sequence = _seq.NextSequence(),
+                stateVersion = _seq.NextStateVersion(),
+                winnerActorNumbers = winnerActorNumbers,
+            };
+            _broadcaster.Raise(EventCode.FinishingGame, e);
+        }
+
+        public void EmitGameEnded(int[] winnerActorNumbers)
+        {
+            var e = new GameEndedEvent
+            {
+                sequence = _seq.NextSequence(),
+                stateVersion = _seq.NextStateVersion(),
+                winnerActorNumbers = winnerActorNumbers,
+            };
+            _broadcaster.Raise(EventCode.GameEnded, e);
+        }
     }
 }
 

@@ -99,6 +99,22 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
+    public struct FinishingGameEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public int[] winnerActorNumbers; // -1 なら未定/引き分け等
+    }
+
+    [Serializable]
+    public struct GameEndedEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public int[] winnerActorNumbers; // -1 なら未定/引き分け等
+    }
+
+    [Serializable]
     public struct PileShuffledWithSeedEvent
     {
         public int sequence;

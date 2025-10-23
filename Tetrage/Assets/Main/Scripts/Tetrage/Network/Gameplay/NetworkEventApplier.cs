@@ -120,6 +120,18 @@ namespace Tetrage.Network.Gameplay
             _bus?.PublishEndScanPhase(e);
         }
 
+        public void Apply(FinishingGameEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            _bus?.PublishFinishingGame(e);
+        }
+
+        public void Apply(GameEndedEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+            _bus?.PublishGameEnded(e);
+        }
+
         public void Apply(ActionResultEvent e)
         {
             if (!ShouldApply(e.sequence)) return;
@@ -151,6 +163,16 @@ namespace Tetrage.Network.Gameplay
                     break;
 
                 case ActionType.TetrageSolo:
+                    if (e.actionStatusInt == 1)
+                    {
+                        // 勝利
+                        
+                    }
+                    else
+                    {
+                        // 敗北
+                    }
+                    break;
                 case ActionType.TetrageMulti:
                     // 勝利判定の結果は別イベント（GameEnded 等）で反映する想定。
                     break;

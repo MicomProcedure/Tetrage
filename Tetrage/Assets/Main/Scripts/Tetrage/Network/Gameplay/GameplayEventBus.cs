@@ -19,6 +19,8 @@ namespace Tetrage.Network.Gameplay
         event Action<ActionResultEvent> ActionResultApplied;
         event Action<StartScanPhaseEvent> StartScanPhaseApplied;
         event Action<EndScanPhaseEvent> EndScanPhaseApplied;
+        event Action<FinishingGameEvent> FinishingGameApplied;
+        event Action<GameEndedEvent> GameEndedApplied;
 
         void PublishGameStarted(GameStartedEvent e);
         void PublishTurnStarted(TurnStartedEvent e);
@@ -30,6 +32,8 @@ namespace Tetrage.Network.Gameplay
         void PublishActionResult(ActionResultEvent e);
         void PublishStartScanPhase(StartScanPhaseEvent e);
         void PublishEndScanPhase(EndScanPhaseEvent e);
+        void PublishFinishingGame(FinishingGameEvent e);
+        void PublishGameEnded(GameEndedEvent e);
     }
 
     /// <summary>
@@ -47,6 +51,8 @@ namespace Tetrage.Network.Gameplay
         public event Action<ActionResultEvent> ActionResultApplied;
         public event Action<StartScanPhaseEvent> StartScanPhaseApplied;
         public event Action<EndScanPhaseEvent> EndScanPhaseApplied;
+        public event Action<FinishingGameEvent> FinishingGameApplied;
+        public event Action<GameEndedEvent> GameEndedApplied;
 
         public void PublishGameStarted(GameStartedEvent e) { 
             GameStartedApplied?.Invoke(e); 
@@ -88,6 +94,14 @@ namespace Tetrage.Network.Gameplay
 
         public void PublishEndScanPhase(EndScanPhaseEvent e) { EndScanPhaseApplied?.Invoke(e);
             Debug.Log($"SimpleGameplayEventBus: PublishEndScanPhase, Sequence: {e.sequence}, StateVersion: {e.stateVersion}");
+        }
+
+        public void PublishFinishingGame(FinishingGameEvent e) { FinishingGameApplied?.Invoke(e);
+            Debug.Log($"SimpleGameplayEventBus: PublishFinishingGame, Sequence: {e.sequence}, WinnerActor={e.winnerActorNumber}");
+        }
+
+        public void PublishGameEnded(GameEndedEvent e) { GameEndedApplied?.Invoke(e);
+            Debug.Log($"SimpleGameplayEventBus: PublishGameEnded, Sequence: {e.sequence}, WinnerActor={e.winnerActorNumber}");
         }
     }
 }
