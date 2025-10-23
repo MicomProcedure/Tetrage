@@ -7,6 +7,7 @@ using Tetrage.UI;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
 using Tetrage.Core.Actions;
+using Tetrage.Animations;
 
 namespace Tetrage.Managers
 {
@@ -18,8 +19,9 @@ namespace Tetrage.Managers
 		#region Serialized Fields
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
+		[SerializeField] private GameStartAnimation _gameStartAnimation;
+		
 		#endregion
-
 		#region Private Fields
 		private IGameContextProvider _gameContext;
 		private IGameplayEventBus _events;
@@ -81,10 +83,15 @@ namespace Tetrage.Managers
 		#region Event Handlers
 		private void OnGameStarted(GameStartedEvent e)
 		{
+			Debug.Log($"InGameUIManager: OnGameStarted");
 			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
 			{
 				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
 				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
+			}
+			if (_gameStartAnimation != null)
+			{
+				_gameStartAnimation.PlayGameStartAnimation();
 			}
 		}
 
@@ -110,4 +117,5 @@ namespace Tetrage.Managers
 
 		#endregion
 	}
+
 }
