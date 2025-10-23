@@ -97,11 +97,11 @@ namespace Tetrage.Network.Gameplay
         }
 
         public void PublishFinishingGame(FinishingGameEvent e) { FinishingGameApplied?.Invoke(e);
-            Debug.Log($"SimpleGameplayEventBus: PublishFinishingGame, Sequence: {e.sequence}, WinnerActor={e.winnerActorNumber}");
+            Debug.Log($"SimpleGameplayEventBus: PublishFinishingGame, Sequence: {e.sequence}, WinnerActor={string.Join(", ", e.winnerActorNumbers)}");
         }
 
         public void PublishGameEnded(GameEndedEvent e) { GameEndedApplied?.Invoke(e);
-            Debug.Log($"SimpleGameplayEventBus: PublishGameEnded, Sequence: {e.sequence}, WinnerActor={e.winnerActorNumber}");
+            Debug.Log($"SimpleGameplayEventBus: PublishGameEnded, Sequence: {e.sequence}, WinnerActor={string.Join(", ", e.winnerActorNumbers)}");
         }
     }
 }

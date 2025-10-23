@@ -21,7 +21,8 @@ namespace Tetrage.Managers
 		[SerializeField] private ActionPanelController _actionPanelController;
 		[SerializeField] private GameStartAnimation _gameStartAnimation;
 		[SerializeField] private ScanUIController _ScanUIController;
-		
+		[SerializeField] private ResultUI _resultUI;
+
 		#endregion
 		#region Private Fields
 		private IGameContextProvider _gameContext;
@@ -74,6 +75,7 @@ namespace Tetrage.Managers
 			if (_subscribed || _events == null) return;
 			_events.TurnStartedApplied += OnTurnStarted;
 			_events.GameStartedApplied += OnGameStarted;
+			_events.FinishingGameApplied += OnFinishingGame;
 			_subscribed = true;
 		}
 
@@ -82,6 +84,7 @@ namespace Tetrage.Managers
 			if (!_subscribed || _events == null) return;
 			_events.TurnStartedApplied -= OnTurnStarted;
 			_events.GameStartedApplied -= OnGameStarted;
+			_events.FinishingGameApplied -= OnFinishingGame;
 			_subscribed = false;
 		}
 		#endregion
@@ -107,6 +110,12 @@ namespace Tetrage.Managers
 			if (_playerUIPanelManager == null) return;
 			// e.currentPlayerActorNumber を使ってハイライト
 			_playerUIPanelManager.SetCurrentPlayer(e.currentPlayerActorNumber);
+		}
+
+		private void OnFinishingGame(FinishingGameEvent e)
+		{
+			Debug.Log($"InGameUIManager: OnFinishingGame");
+			_resultUI.DisplayResult(e.winnerActorNumbers, _gameContext.Players);
 		}
 		#endregion
 
