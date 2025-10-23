@@ -83,6 +83,20 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
+    public struct StartScanPhaseEvent
+    {
+        public int sequence;
+        public int stateVersion;
+    }
+
+    [Serializable]
+    public struct EndScanPhaseEvent
+    {
+        public int sequence;
+        public int stateVersion;
+    }
+
+    [Serializable]
     public struct PileShuffledWithSeedEvent
     {
         public int sequence;

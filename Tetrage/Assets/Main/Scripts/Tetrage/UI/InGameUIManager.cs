@@ -20,6 +20,7 @@ namespace Tetrage.Managers
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
 		[SerializeField] private GameStartAnimation _gameStartAnimation;
+		[SerializeField] private TargetCheckText _targetCheckText;
 		
 		#endregion
 		#region Private Fields

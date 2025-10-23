@@ -13,6 +13,8 @@ namespace Tetrage.Network.Gameplay
         Snapshot = 6,
         CardVisibilityChanged = 7,
         ReachDeclared = 8,
+        StartScanPhase = 9,
+        EndScanPhase = 10,
         ActionRequested = 20,
         ActionResult = 21,
         PileShuffledWithSeed = 22,
