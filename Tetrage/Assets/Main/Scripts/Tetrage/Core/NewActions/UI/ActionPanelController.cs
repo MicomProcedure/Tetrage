@@ -22,6 +22,8 @@ namespace Tetrage.Core.Actions
         [SerializeField] private Button reachButton;
         [SerializeField] private Button checkButton;
         [SerializeField] private Button passButton;
+        [SerializeField] private Button tSoloButton;
+        [SerializeField] private Button tMultiButton;
 
         [Header("Settings")]
         [SerializeField] private float _retryInterval = 0.5f;
@@ -131,7 +133,9 @@ namespace Tetrage.Core.Actions
                 { ActionType.Open, openButton },
                 { ActionType.Reach, reachButton },
                 { ActionType.Check, checkButton },
-                { ActionType.Pass, passButton }
+                { ActionType.Pass, passButton },
+                { ActionType.TetrageSolo, tSoloButton },
+                { ActionType.TetrageMulti, tMultiButton }
             };
         }
 
@@ -336,6 +340,24 @@ namespace Tetrage.Core.Actions
             {
                 var result = await _currentPlayer.PassAsync();
                 Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
+            }
+        }
+        [ContextMenu("Test Tetrage Solo Action")]
+        private async void TestTetrageSoloAction()
+        {
+            if (_currentPlayer != null)
+            {
+                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.TetrageSolo);
+                Debug.Log($"Test Tetrage Solo Result: {result.IsSuccess} - {result.ErrorMessage}");
+            }
+        }
+        [ContextMenu("Test Tetrage Multi Action")]
+        private async void TestTetrageMultiAction()
+        {
+            if (_currentPlayer != null)
+            {
+                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.TetrageMulti);
+                Debug.Log($"Test Tetrage Multi Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
         #endregion

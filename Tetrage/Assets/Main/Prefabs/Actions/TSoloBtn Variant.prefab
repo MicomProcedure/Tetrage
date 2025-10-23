@@ -90,11 +90,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3542035315044076511, guid: 19579818a8776454fb54580f3ebd7d6e, type: 3}
       propertyPath: m_text
-      value: "\u30C6\u30C8\u30E9\u30FC\u30B8\u30E5"
+      value: "T.\u30BD\u30ED"
       objectReference: {fileID: 0}
     - target: {fileID: 8328852189532307594, guid: 19579818a8776454fb54580f3ebd7d6e, type: 3}
       propertyPath: m_Name
-      value: TetrageBtn Variant
+      value: TSoloBtn Variant
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
