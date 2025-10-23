@@ -17,11 +17,15 @@ namespace Tetrage.Managers
 	public class InGameUIManager : MonoBehaviour
 	{
 		#region Serialized Fields
+		[Header("UI Controllers")]
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
 		[SerializeField] private GameStartAnimation _gameStartAnimation;
 		[SerializeField] private ScanUIController _ScanUIController;
 		[SerializeField] private ResultUI _resultUI;
+
+		[Header("Animations")]
+		[SerializeField] private CutInAnimationController _TetrageSoloCutInAnimCtl;
 
 		#endregion
 		#region Private Fields
@@ -110,6 +114,16 @@ namespace Tetrage.Managers
 			if (_playerUIPanelManager == null) return;
 			// e.currentPlayerActorNumber を使ってハイライト
 			_playerUIPanelManager.SetCurrentPlayer(e.currentPlayerActorNumber);
+			// _actionPanelController.OnTurnStartedEvent(e);
+		}
+
+		private void OnActionResult(ActionResultEvent e)
+		{
+			Debug.Log($"InGameUIManager: OnActionResult");
+			if (_TetrageSoloCutInAnimCtl != null && e.actionType == ActionType.TetrageSolo)
+			{
+				_TetrageSoloCutInAnimCtl.PlayCutIn();
+			}
 		}
 
 		private void OnFinishingGame(FinishingGameEvent e)

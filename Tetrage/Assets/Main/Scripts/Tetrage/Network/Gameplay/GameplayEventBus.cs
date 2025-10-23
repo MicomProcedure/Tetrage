@@ -85,7 +85,7 @@ namespace Tetrage.Network.Gameplay
             Debug.Log($"SimpleGameplayEventBus: PublishPileShuffled, PileId: {e.pileId}, Seed: {e.seed}");
             }
         public void PublishActionResult(ActionResultEvent e) { ActionResultApplied?.Invoke(e); 
-            Debug.Log($"SimpleGameplayEventBus: PublishActionResult, Sequence: {e.sequence}, Accepted: {e.accepted}, Reason: {e.reason}");
+            Debug.Log($"SimpleGameplayEventBus: PublishActionResult, Sequence: {e.sequence}, Accepted: {e.accepted}, ActionType: {e.actionType}, Reason: {e.reason}");
         }
 
         public void PublishStartScanPhase(StartScanPhaseEvent e) { StartScanPhaseApplied?.Invoke(e);

@@ -531,6 +531,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ResultPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 6143618372950021474, guid: 621aad7c07e494a388e619da85fc327d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -981,7 +985,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _photonView: {fileID: 2127726748}
   _gameManager: {fileID: 1474775980}
-  _debugRoomCode: 00000
+  _debugRoomCode: DEBUGtaka
   _maxPlayers: 4
   _autoStartGame: 1
   _waitForPlayersTimeout: 10
@@ -1015,6 +1019,8 @@ MonoBehaviour:
       Number: 2
     - Suit: 2
       Number: 3
+    - Suit: 2
+      Number: 4
   - PlayerName: Plalyer4
     IconIndex: 3
     SetInitialCards: 1
@@ -1073,6 +1079,63 @@ MonoBehaviour:
   sceneViewId: 1
   InstantiationId: 0
   isRuntimeInstantiated: 0
+--- !u!1001 &374002386285634143
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5984270174941352160, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8219838152709618787, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
+      propertyPath: m_Name
+      value: CutInAnimations
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ed6a00db68286fe4ba71e68e64d4b51e, type: 3}
 --- !u!1001 &2481798701942548761
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1161,3 +1224,4 @@ SceneRoots:
   - {fileID: 1624701597}
   - {fileID: 2481798701942548761}
   - {fileID: 2127726747}
+  - {fileID: 374002386285634143}
