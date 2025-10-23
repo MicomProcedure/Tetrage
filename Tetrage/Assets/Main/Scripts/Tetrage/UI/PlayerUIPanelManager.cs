@@ -19,10 +19,25 @@ namespace Tetrage.UI
         
         [Header("Position Settings")]
         [SerializeField] private bool useFixedPositions = true;
-        [SerializeField] private Vector2 position0 = new Vector2(-400, 250);
-        [SerializeField] private Vector2 position1 = new Vector2(400, 250);
-        [SerializeField] private Vector2 position2 = new Vector2(-400, -250);
-        [SerializeField] private Vector2 position3 = new Vector2(400, -250);
+        [SerializeField] private System.Collections.Generic.List<Vector2> fixedPositions = new System.Collections.Generic.List<Vector2>
+        {
+            new Vector2(-400, 250),
+            new Vector2( 400, 250),
+            new Vector2(-400,-250),
+            new Vector2( 400,-250),
+        };
+
+        [Header("Debug Draw")]
+        [SerializeField] private bool drawDebugPositions = true;
+        [SerializeField] private System.Collections.Generic.List<Color> debugColors = new System.Collections.Generic.List<Color>
+        {
+            new Color(0.2f, 0.8f, 1f, 1f),
+            new Color(1f, 0.6f, 0.2f, 1f),
+            new Color(0.6f, 1f, 0.2f, 1f),
+            new Color(1f, 0.2f, 0.6f, 1f),
+            new Color(0.9f, 0.9f, 0.2f, 1f),
+        };
+        [SerializeField] private float debugGizmoSize = 60f;
         
         #endregion
 
@@ -30,6 +45,7 @@ namespace Tetrage.UI
         
         private List<PlayerUI> _activePanels = new List<PlayerUI>();
         private List<PlayerInfo> _playerInfoList = new List<PlayerInfo>();
+        private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();
         
         #endregion
 
@@ -40,6 +56,7 @@ namespace Tetrage.UI
         /// </summary>
         public void SetupPanels(List<PlayerInfo> playerInfoList)
         {
+            Debug.Log($"PlayerUIPanelManager: SetupPanels, playerInfoList: {playerInfoList.Count}");
             ClearPanels();
             
             if (playerInfoList == null || playerInfoList.Count == 0)
@@ -55,7 +72,13 @@ namespace Tetrage.UI
             foreach (var playerInfo in playerInfoList)
             {
                 var panel = CreatePanel();
+                if (panel == null)
+                {
+                    Debug.LogError($"PlayerUIPanelManager: パネル生成に失敗しました (PlayerId={playerInfo.Id.Value})");
+                    continue;
+                }
                 panel.SetPlayerInfo(playerInfo);
+                _playerIdToPanel[playerInfo.Id.Value] = panel;
             }
             
             if (useFixedPositions)
@@ -79,6 +102,7 @@ namespace Tetrage.UI
             }
             _activePanels.Clear();
             _playerInfoList.Clear();
+            _playerIdToPanel.Clear();
         }
         
         /// <summary>
@@ -86,10 +110,24 @@ namespace Tetrage.UI
         /// </summary>
         public void SetCurrentPlayer(int playerId)
         {
-            for (int i = 0; i < _activePanels.Count && i < _playerInfoList.Count; i++)
+            // まず全パネルのハイライトをオフ
+            for (int i = 0; i < _activePanels.Count; i++)
             {
-                bool isCurrentPlayer = _playerInfoList[i].Id.Value == playerId;
-                _activePanels[i].SetCurrentPlayer(isCurrentPlayer);
+                var panel = _activePanels[i];
+                if (panel != null)
+                {
+                    panel.SetCurrentPlayer(false);
+                }
+            }
+
+            // 対象プレイヤーのパネルのみオン
+            if (_playerIdToPanel.TryGetValue(playerId, out var currentPanel) && currentPanel != null)
+            {
+                currentPanel.SetCurrentPlayer(true);
+            }
+            else
+            {
+                Debug.LogWarning($"PlayerUIPanelManager: 指定のPlayerIdに対応するパネルが見つかりませんでした (PlayerId={playerId})");
             }
         }
         
@@ -119,9 +157,8 @@ namespace Tetrage.UI
         /// </summary>
         private void ApplyFixedPositions()
         {
-            Vector2[] positions = { position0, position1, position2, position3 };
-            
-            for (int i = 0; i < _activePanels.Count && i < positions.Length; i++)
+            var positions = fixedPositions;
+            for (int i = 0; i < _activePanels.Count && i < positions.Count; i++)
             {
                 if (_activePanels[i] == null) continue;
                 
@@ -161,6 +198,26 @@ namespace Tetrage.UI
             _activePanels.Add(panelInstance);
             
             return panelInstance;
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (!drawDebugPositions || !useFixedPositions) return;
+            if (panelContainer == null) return;
+
+            // UIローカル空間で描画
+            Gizmos.matrix = panelContainer.localToWorldMatrix;
+            for (int i = 0; i < fixedPositions.Count; i++)
+            {
+                var pos = fixedPositions[i];
+                var col = debugColors != null && debugColors.Count > 0 ? debugColors[i % debugColors.Count] : Color.yellow;
+                Gizmos.color = col;
+                Gizmos.DrawWireCube(new Vector3(pos.x, pos.y, 0f), new Vector3(debugGizmoSize, debugGizmoSize * 0.6f, 1f));
+#if UNITY_EDITOR
+                UnityEditor.Handles.color = col;
+                UnityEditor.Handles.Label(new Vector3(pos.x, pos.y, 0f), $"Pos{i}");
+#endif
+            }
         }
         
         #endregion

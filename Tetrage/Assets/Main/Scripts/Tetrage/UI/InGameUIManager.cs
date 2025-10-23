@@ -90,6 +90,7 @@ namespace Tetrage.Managers
 
 		private void OnTurnStarted(TurnStartedEvent e)
 		{
+			Debug.Log($"InGameUIManager: OnTurnStarted, currentPlayerActorNumber: {e.currentPlayerActorNumber}");
 			if (_playerUIPanelManager == null) return;
 			// e.currentPlayerActorNumber を使ってハイライト
 			_playerUIPanelManager.SetCurrentPlayer(e.currentPlayerActorNumber);

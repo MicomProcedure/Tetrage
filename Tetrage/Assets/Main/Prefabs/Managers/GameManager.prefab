@@ -45,4 +45,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _fieldSetupComponent: {fileID: 0}
-  _gameMode: 0
+  _gameMode: 1
+  _inGameUIManager: {fileID: 0}
+  _networkInitialized: 0
