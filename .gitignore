@@ -83,6 +83,10 @@ crashlytics-build.properties
 # Packed Addressables
 Tetrage/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 
+#CardImageMapperは追跡
+!Tetrage/Assets/Main/Prefabs/CardImageMapper.asset
+
+
 # Temporary auto-generated Android Assets
 Tetrage/[Aa]ssets/[Ss]treamingAssets/aa.meta
 Tetrage/[Aa]ssets/[Ss]treamingAssets/aa/*
