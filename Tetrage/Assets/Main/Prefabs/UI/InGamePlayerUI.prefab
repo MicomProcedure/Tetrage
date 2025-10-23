@@ -114,12 +114,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panelPrefab: {fileID: 1184368625016443824}
-  panelContainer: {fileID: 1404748317632008617}
+  panelParent: {fileID: 0}
   useFixedPositions: 1
-  position0: {x: 0, y: -200}
-  position1: {x: -800, y: 100}
-  position2: {x: 0, y: 400}
-  position3: {x: 800, y: 100}
+  playerPositionMappings:
+  - playerId: 1
+    position: {x: 300, y: 400}
+  - playerId: 2
+    position: {x: 800, y: 0}
+  - playerId: 3
+    position: {x: -200, y: -300}
+  - playerId: 4
+    position: {x: -800, y: 100}
+  drawDebugPositions: 1
+  debugColors:
+  - {r: 0.2, g: 0.8, b: 1, a: 1}
+  - {r: 1, g: 0.6, b: 0.2, a: 1}
+  - {r: 0.6, g: 1, b: 0.2, a: 1}
+  - {r: 1, g: 0.2, b: 0.6, a: 1}
+  - {r: 0.9, g: 0.9, b: 0.2, a: 1}
+  debugGizmoSize: 60
 --- !u!1001 &4667902254173773129
 PrefabInstance:
   m_ObjectHideFlags: 0
