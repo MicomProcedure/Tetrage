@@ -19,19 +19,19 @@ namespace Tetrage.Factories
 			_pileRegistry = pileRegistry;
 		}
 
-		public CardPile CreatePile(string name, int maxCount)
+		public CardPile CreatePile(PileId id, string name, int maxCount)
 		{
-			var pile = _inner.CreatePile(name, maxCount);
+			var pile = _inner.CreatePile(id, name, maxCount);
 			_pileRegistry.Register(pile);
 			return pile;
 		}
 
-	public CardPile CreatePile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
-	{
-		var pile = _inner.CreatePile(name, initialCards, maxCount);
-		_pileRegistry.Register(pile);
-		return pile;
-	}
+		public CardPile CreatePile(PileId id, string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
+		{
+			var pile = _inner.CreatePile(id, name, initialCards, maxCount);
+			_pileRegistry.Register(pile);
+			return pile;
+		}
 	}
 }
 

@@ -1,4 +1,5 @@
 using Tetrage.Core.Ids;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Core.Ids
 {
@@ -16,11 +17,11 @@ namespace Tetrage.Core.Ids
 
         #region プレイヤー固有パイル（ActorNumber 由来）
         /// <summary>各プレイヤーの手札</summary>
-        public static PileId PlayerHands(int PlayerId) => new PileId(1000 + PlayerId);
+        public static PileId PlayerHands(int PlayerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + PlayerId);
         /// <summary>各プレイヤーのターゲット</summary>
-        public static PileId PlayerTarget(int PlayerId) => new PileId(2000 + PlayerId);
+        public static PileId PlayerTarget(int PlayerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 1000 + PlayerId);
         /// <summary>各プレイヤーの一時置き場</summary>
-        public static PileId PlayerTmp(int PlayerId) => new PileId(3000 + PlayerId);
+        public static PileId PlayerTmp(int PlayerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 2000 + PlayerId);
         #endregion
     }
 }

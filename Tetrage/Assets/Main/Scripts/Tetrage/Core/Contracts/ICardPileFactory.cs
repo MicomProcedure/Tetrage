@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Tetrage.Core.Ids;
 using Tetrage.Models;
 
 namespace Tetrage.Core.Contracts
@@ -11,16 +12,18 @@ namespace Tetrage.Core.Contracts
         /// <summary>
         /// 新しいカード山(Pile)を生成します。
         /// </summary>
+        /// <param name="id">カード山のID</param>
         /// <param name="name">カード山の名前</param>
         /// <param name="maxCount">カード山の最大枚数</param>
-        CardPile CreatePile(string name, int maxCount);
+        CardPile CreatePile(PileId id, string name, int maxCount);
 
         /// <summary>
         /// 新しいカード山(Pile)を生成します（初期カード指定付き）。
         /// </summary>
+        /// <param name="id">カード山のID</param>
         /// <param name="name">カード山の名前</param>
         /// <param name="initialCards">生成時に含めるカードのコレクション</param>
         /// <param name="maxCount">カード山の最大枚数</param>
-        CardPile CreatePile(string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue);
+        CardPile CreatePile(PileId id, string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue);
     }
 } 

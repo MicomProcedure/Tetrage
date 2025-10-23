@@ -69,11 +69,11 @@ namespace Tetrage.Tests
 
                 // Target カードパイルを作成（1枚のカードを持つ）
                 var card = new Card(new CardId(playerId * 100), targetSuit, 1, true); // スートのみ重要、数字は仮で1
-                Target = new CardPile($"Target_{userId}", new[] { card }, 1);
+                Target = new CardPile(Tetrage.Core.Ids.PileIds.PlayerTarget(playerId), $"Target_{userId}", new[] { card }, 1);
 
                 // Hands と Tmp は空で初期化（ResultUI では使用しない）
-                Hands = new CardPile($"Hands_{userId}", 0);
-                Tmp = new CardPile($"Tmp_{userId}", 0);
+                Hands = new CardPile(Tetrage.Core.Ids.PileIds.PlayerHands(playerId), $"Hands_{userId}", 0);
+                Tmp = new CardPile(Tetrage.Core.Ids.PileIds.PlayerTmp(playerId), $"Tmp_{userId}", 0);
             }
         }
 

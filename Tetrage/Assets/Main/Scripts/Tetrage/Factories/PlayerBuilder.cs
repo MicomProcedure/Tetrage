@@ -153,6 +153,7 @@ namespace Tetrage.Factories
                     .WithMaxCount(_targetCapacity)
                     .UseView(_cardPileViewsDict[CardPileType.Target], playerView.TargetRoot)
                     .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Target])
+                    .WithPileId(PileIds.PlayerTarget(_id.Value))
                     .Build();
 
                 hands = cardPileBuilder
@@ -160,6 +161,7 @@ namespace Tetrage.Factories
                     .WithMaxCount(_handsCapacity)
                     .UseView(_cardPileViewsDict[CardPileType.Hands], playerView.HandsRoot)
                     .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Hands])
+                    .WithPileId(PileIds.PlayerHands(_id.Value))
                     .Build();
 
                 tmp = cardPileBuilder
@@ -167,6 +169,7 @@ namespace Tetrage.Factories
                     .WithMaxCount(_tmpCapacity)
                     .UseView(_cardPileViewsDict[CardPileType.Tmp], playerView.TmpRoot)
                     .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Tmp])
+                    .WithPileId(PileIds.PlayerTmp(_id.Value))
                     .Build();
             }
             else
@@ -176,18 +179,21 @@ namespace Tetrage.Factories
                     .WithName(CardPileType.Target.ToString())
                     .WithMaxCount(_targetCapacity)
                     .WithoutView()
+                    .WithPileId(PileIds.PlayerTarget(_id.Value))
                     .Build();
 
                 hands = cardPileBuilder
                     .WithName(CardPileType.Hands.ToString())
                     .WithMaxCount(_handsCapacity)
                     .WithoutView()
+                    .WithPileId(PileIds.PlayerHands(_id.Value))
                     .Build();
 
                 tmp = cardPileBuilder
                     .WithName(CardPileType.Tmp.ToString())
                     .WithMaxCount(_tmpCapacity)
                     .WithoutView()
+                    .WithPileId(PileIds.PlayerTmp(_id.Value))
                     .Build();
             }
 

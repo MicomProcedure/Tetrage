@@ -8,6 +8,7 @@ using Tetrage.Presenters;
 using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Factories
 {
@@ -21,6 +22,7 @@ namespace Tetrage.Factories
         private bool _useView;                             // 山札表示用ビューの使用フラグ
         private string _name;                              // 山札の名前
         private int _maxCount;                             // 山札の最大枚数
+        private PileId _pileId;                             // 山札のID
         private CardPileLayoutSettings _layoutSettings;     // 山札表示用ビューのレイアウト設定
         private ICardFactory _cardFactory;                 // カード生成用ファクトリ (初期カード生成に使用)
         private bool _useInitialCards;                     // 初期カード生成フラグ
@@ -163,6 +165,13 @@ namespace Tetrage.Factories
             return this;
         }
 
+        public CardPileBuilder WithPileId(PileId id)
+        {
+            _pileId = id;
+            _hasParametersChanged = true; // パラメータ変更フラグを立てる
+            return this;
+        }
+
 
         /// <summary>山札を生成する（初期カード指定なし）</summary>
         /// <returns>生成された CardPile のインスタンス</returns>
@@ -190,9 +199,10 @@ namespace Tetrage.Factories
             }
 
             // モデル生成
+            // IDはビルダー段階では未確定のため暫定0で生成（後段でレジストリ付与/再割当を許容）
             CardPile pile = initialCards == null
-                ? _innerFactory.CreatePile(_name, _maxCount)
-                : _innerFactory.CreatePile(_name, initialCards, _maxCount);
+                ? _innerFactory.CreatePile(_pileId, _name, _maxCount)
+                : _innerFactory.CreatePile(_pileId, _name, initialCards, _maxCount);
 
             if (_useView)
             {
