@@ -310,7 +310,7 @@ MonoBehaviour:
   - {fileID: -645595715152406368, guid: ead5d136fd069c24b843f5475aafcde4, type: 3}
   - {fileID: 8241042064671765187, guid: 760cfe1165755844180420e60cbb02c0, type: 3}
   - {fileID: -6704369765690059819, guid: 445bc0c73fa8a92489f807ef0f33f9c9, type: 3}
-  displayMode: 2
+  displayMode: 1
   profileManager: {fileID: 5405792255804346879}
   enableDebugLog: 0
 --- !u!1 &4605323992271691942

@@ -806,17 +806,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44ce19292b9909f47894be86d7b08af1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2030499215 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5639719842499428790, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
-  m_PrefabInstance: {fileID: 1624701597}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5bcb69effe2848018f33aff48c4ecda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &2074764622
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -899,7 +888,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2127726746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1056,7 +1045,7 @@ PrefabInstance:
     - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
       propertyPath: _ScanUIController
       value: 
-      objectReference: {fileID: 2030499215}
+      objectReference: {fileID: 0}
     - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
       propertyPath: _gameStartAnimation
       value: 

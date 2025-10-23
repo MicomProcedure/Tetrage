@@ -79,7 +79,16 @@ namespace Tetrage.UI
         /// </summary>
         public void SetupPanels(List<PlayerInfo> playerInfoList)
         {
+            Debug.Log($"[PlayerUIPanelManager] SetupPanels 呼び出し回数: {System.Environment.StackTrace}");
             Debug.Log($"PlayerUIPanelManager: SetupPanels, playerInfoList: {playerInfoList.Count}");
+            
+            // 渡されたPlayerInfoの内容をログ出力
+            for (int i = 0; i < playerInfoList.Count; i++)
+            {
+                var info = playerInfoList[i];
+                Debug.Log($"[PlayerUIPanelManager] PlayerInfo[{i}]: Id={info.Id.Value}, UserId={info.UserId}, IconIndex={info.PlayerIconIndex}");
+            }
+            
             ClearPanels();
             
             if (playerInfoList == null || playerInfoList.Count == 0)

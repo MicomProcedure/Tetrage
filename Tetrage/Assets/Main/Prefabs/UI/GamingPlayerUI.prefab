@@ -351,6 +351,10 @@ PrefabInstance:
       propertyPath: m_LocalScale.y
       value: 1.5
       objectReference: {fileID: 0}
+    - target: {fileID: 3907189869417946445, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
+      propertyPath: displayMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4128447928149338138, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
       propertyPath: m_Name
       value: ProfileDisplayPanel
