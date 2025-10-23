@@ -145,6 +145,10 @@ PrefabInstance:
       propertyPath: panelContainer
       value: 
       objectReference: {fileID: 1404748317632008617}
+    - target: {fileID: 5811896019528240889, guid: 927c28e47088a5a4189f6c2025e0260c, type: 3}
+      propertyPath: isDraggable
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6455434440684635426, guid: 927c28e47088a5a4189f6c2025e0260c, type: 3}
       propertyPath: m_Name
       value: GamingPlayerUI
