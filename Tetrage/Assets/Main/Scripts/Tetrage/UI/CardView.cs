@@ -31,6 +31,12 @@ namespace Tetrage.UI
         [Header("Card Data")]
         [SerializeField] private CardImageMapper cardImageMapper;
 
+        [Header("Suit Back Sprites (Player Only)")]
+        [SerializeField] private Sprite spadeBackSprite;
+        [SerializeField] private Sprite heartBackSprite;
+        [SerializeField] private Sprite diamondBackSprite;
+        [SerializeField] private Sprite clubBackSprite;
+
         [Header("Highlight Settings")]
         [SerializeField] private Color highlightColor = new Color(1f, 1f, 0.5f, 1f); // 黄色っぽい色
         //[SerializeField] private float highlightIntensity = 1.2f; // ハイライト時の明るさ倍率(まだ使ってない)
@@ -44,6 +50,7 @@ namespace Tetrage.UI
         private Suit _currentSuit;
         private int _currentNumber;
         private bool _isFaceUp = false;
+        private bool _showSuitOnBack = false;
 
         #endregion
 
@@ -156,6 +163,17 @@ namespace Tetrage.UI
             UpdateCardDisplay();
         }
 
+        /// <summary>
+        /// スート情報を含む裏面でカードを表示する（プレイヤーカード用）
+        /// </summary>
+        public void ShowBackWithSuit(Suit suit)
+        {
+            _isFaceUp = false;
+            _currentSuit = suit;
+            _showSuitOnBack = true; // スート付き裏面モード
+            UpdateCardDisplay();
+        }
+
         #endregion
 
         #region Highlight
@@ -200,7 +218,24 @@ namespace Tetrage.UI
                 // 裏向き：裏面画像を表示
                 if (cardImageMapper != null)
                 {
-                    var backSprite = cardImageMapper.GetCardBackSprite();
+                    Sprite backSprite;
+                    
+                    // ▼ 追加: スート付き裏面モードの場合はスート別画像を使用
+                    if (_showSuitOnBack)
+                    {
+                        backSprite = GetSuitBackSpriteLocal(_currentSuit);
+                        // スート別画像が未設定の場合は通常の裏面にフォールバック
+                        if (backSprite == null)
+                        {
+                            backSprite = cardImageMapper.GetCardBackSprite();
+                        }
+                    }
+                    else
+                    {
+                        // 通常モード：Mapperからデフォルトの裏面を取得
+                        backSprite = cardImageMapper.GetCardBackSprite();
+                    }
+                    
                     if (backSprite != null)
                     {
                         spriteRenderer.sprite = backSprite;
@@ -234,6 +269,20 @@ namespace Tetrage.UI
             {
                 Debug.LogWarning($"Card sprite not found for {_currentSuit} {_currentNumber}");
             }
+        }
+        /// <summary>
+        /// CardViewに直接設定されたスート別裏面スプライトを取得
+        /// </summary>
+        private Sprite GetSuitBackSpriteLocal(Suit suit)
+        {
+            return suit switch
+            {
+                Suit.Spade => spadeBackSprite,
+                Suit.Heart => heartBackSprite,
+                Suit.Diamond => diamondBackSprite,
+                Suit.Club => clubBackSprite,
+                _ => null
+            };
         }
 
         /// <summary>

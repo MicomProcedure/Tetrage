@@ -666,7 +666,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _photonView: {fileID: 2127726748}
   _gameManager: {fileID: 1474775980}
-  _debugRoomCode: DEBUG
+  _debugRoomCode: 00000
   _maxPlayers: 4
   _autoStartGame: 1
   _waitForPlayersTimeout: 10

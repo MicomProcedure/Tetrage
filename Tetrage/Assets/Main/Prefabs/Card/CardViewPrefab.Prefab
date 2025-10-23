@@ -458,6 +458,10 @@ MonoBehaviour:
   numberText: {fileID: 2050508706609354361}
   animator: {fileID: 3872063364497498400}
   cardImageMapper: {fileID: 11400000, guid: 20701fb78b4bb6344a17ab19d071e3af, type: 2}
+  spadeBackSprite: {fileID: 8985232411807945140, guid: 3b0b02c7b17174d35b2b3d99340c3bd3, type: 3}
+  heartBackSprite: {fileID: -4839530053354484446, guid: 3b81cce0890684e338cc6718d1e75c6f, type: 3}
+  diamondBackSprite: {fileID: -8300591218124764116, guid: 9d23e76b6ef984e15bd7e435f96b5781, type: 3}
+  clubBackSprite: {fileID: -3345306800391234530, guid: 32c2136994da343789c8613dda526aea, type: 3}
   highlightColor: {r: 1, g: 1, b: 0.5, a: 1}
 --- !u!212 &2014656711774223290
 SpriteRenderer:
