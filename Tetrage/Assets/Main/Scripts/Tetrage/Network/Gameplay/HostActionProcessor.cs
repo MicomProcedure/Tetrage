@@ -1,7 +1,7 @@
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
 using System.Linq;
-
+using UnityEngine;
 namespace Tetrage.Network.Gameplay
 {
     public interface IHostActionProcessor
@@ -25,19 +25,27 @@ namespace Tetrage.Network.Gameplay
         public void Process(ActionRequestedEvent e)
         {
             var seq = _netCtl.Sequence;
-
+            Debug.Log($"HostActionProcessor: Process {e.actionType}, ActorPlayerId: {e.actorPlayerId}, TargetCardIds: {string.Join(", ", e.targetCardIds ?? System.Array.Empty<int>())}");
             switch (e.actionType)
             {
                 case ActionType.Draw:
                     {
+                        // targetCardIdsの順序:
+                        // [0]: Handsへ（Stack -> Hands）
+                        // [1]: Stackに戻したカード（戻した順）
+                        // [2]: Trashに送ったカード（送った順）
+
+                        Debug.Log($"HostActionProcessor: Process Draw, ActorPlayerId: {e.actorPlayerId}, TargetCardIds: {string.Join(", ", e.targetCardIds ?? System.Array.Empty<int>())}");
                         var othersInt = Photon.Pun.PhotonNetwork.PlayerList.Select(p => p.ActorNumber)
                                                                             .Where(a => a != e.actorPlayerId)
                                                                             .ToArray();
+                        Debug.Log($"HostActionProcessor: OthersInt: {string.Join(", ", othersInt)}");
 
-                        if (e.targetCardIds != null && e.targetCardIds.Length > 0)
+                        var validIds = e.targetCardIds?.Where(id => id != 0).ToArray();
+                        if (validIds != null && validIds.Length > 0)
                         {
                             // [0]: Handsへ（Stack -> Hands）
-                            var selected = e.targetCardIds[0];
+                            var selected = new CardId(validIds[0]);
                             var movedSelected = new CardMovedEvent
                             {
                                 sequence = seq.NextSequence(),
@@ -48,14 +56,14 @@ namespace Tetrage.Network.Gameplay
                             };
                             _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedSelected, othersInt);
 
-                            // [1..n-1]: Stackに戻したカード（Tmp -> Stack）
-                            // [n]（存在する場合）: Trashへ送ったカード（Hands -> Trash）
-                            var total = e.targetCardIds.Length;
+                            // [1]: Stackへ戻したカード（Stack -> Stack）
+                            // [2]: Trashへ送ったカード（Hands -> Trash）
+                            var total = validIds.Length;
                             if (total >= 2)
                             {
                                 for (int i = 1; i < total; i++)
                                 {
-                                    var cid = e.targetCardIds[i];
+                                    var cid = new CardId(validIds[i]);
                                     bool isLast = (i == total - 1);
                                     bool hasTrash = (total >= 3); // 最後尾はTrashの規約（選択+戻し+Trashの3つ以上）
 

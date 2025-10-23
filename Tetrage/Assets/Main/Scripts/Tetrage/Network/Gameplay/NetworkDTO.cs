@@ -98,7 +98,7 @@ namespace Tetrage.Network.Gameplay
         public int clientSequence; // クライアント側の識別用
         public int actorPlayerId;
         public ActionType actionType;
-        public CardId[] targetCardIds; // 単数 or 複数対象
+        public int[] targetCardIds; // 単数 or 複数対象（CardId.Valueの配列）
     }
 
     [Serializable]
@@ -110,7 +110,7 @@ namespace Tetrage.Network.Gameplay
         public ActionType actionType;
         public bool accepted;      // 成否
         public string reason;      // 失敗時
-        public CardId[] targetCardIds; // 影響対象（応答時に確定させたい場合）
+        public int[] targetCardIds; // 影響対象（応答時に確定させたい場合）
     }
 
     /// <summary>

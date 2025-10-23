@@ -216,6 +216,8 @@ namespace Tetrage.Factories
 
             ResetParameters();
 
+            Debug.Log($"CardPileBuilder: Build, PileId: {pile.Id}, Name: {pile.Name}, MaxCount: {pile.MaxCount}, Count: {pile.Count}");
+
             return pile;
         }
 

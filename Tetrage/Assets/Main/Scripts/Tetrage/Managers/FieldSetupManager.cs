@@ -134,7 +134,7 @@ namespace Tetrage.Managers
             var players = new List<IPlayer>();
 
             // 依存性注入されたIPlayerFactoryを使用（RegisteringPlayerFactory対応）
-            var playerBuilder = new PlayerBuilder(_dependencies.PlayerModelFactory);
+            var playerBuilder = new PlayerBuilder(_dependencies.PlayerModelFactory, _dependencies.CardPileFactory);
 
             // 位置数の検証
             if (_settings.PlayerLocations.Count < participantInfoList.Count)

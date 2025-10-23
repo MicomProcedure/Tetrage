@@ -127,6 +127,7 @@ namespace Tetrage.Managers
                     userPlayer,
                     _netCtl.EventBus
                 );
+                Debug.Log($"GameManager: GameContext created, userPlayerId: {userPlayer.PlayerId}, PhotonActorId: {PhotonNetwork.LocalPlayer.ActorNumber}");
                 _netCtl.AttachGameContext(_gameContext);
 
                 // 5. Dealerの生成と初期化（ブロードキャスタを注入）

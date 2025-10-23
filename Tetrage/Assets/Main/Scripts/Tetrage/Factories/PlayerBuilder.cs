@@ -16,6 +16,7 @@ namespace Tetrage.Factories
     public class PlayerBuilder
     {
         private readonly IPlayerFactory _innerFactory;      // プレイヤーモデル生成用基本ファクトリ
+        private readonly ICardPileFactory _cardPileFactoryRef; // レジストリ登録対応のCardPileFactory参照
         private BasicPlayerView _viewPrefab;                // プレイヤー表示用ビュー
         private Transform _viewParent;                      // プレイヤー表示用ビューの親
         private Vector3 _viewSpawnPosition;                 // プレイヤー表示用ビューの生成位置
@@ -37,6 +38,7 @@ namespace Tetrage.Factories
             Assert.IsNotNull(innerFactory, "innerFactory(PlayerModelFactory) が null です");
 
             _innerFactory = innerFactory;
+            _cardPileFactoryRef = null; // 後方互換: 未指定の場合はビルド時にフォールバック
 
             // デフォルト設定
             _userId = InGameConsts.DEFAULT_PLAYER_ID + _playerBuildingCount;
@@ -49,6 +51,25 @@ namespace Tetrage.Factories
             };
 
 
+        }
+
+        /// <summary>CardPileFactoryも受け取るコンストラクタ（レジストリ登録のため推奨）</summary>
+        public PlayerBuilder(IPlayerFactory innerFactory, ICardPileFactory cardPileFactory)
+        {
+            Assert.IsNotNull(innerFactory, "innerFactory(PlayerModelFactory) が null です");
+            Assert.IsNotNull(cardPileFactory, "cardPileFactory が null です");
+
+            _innerFactory = innerFactory;
+            _cardPileFactoryRef = cardPileFactory;
+            // デフォルト設定
+            _userId = InGameConsts.DEFAULT_PLAYER_ID + _playerBuildingCount;
+
+            _cardPileLayoutSettingsDict = new Dictionary<CardPileType, CardPileLayoutSettings>
+            {
+                { CardPileType.Target, CardPileLayoutSettings.Default },
+                { CardPileType.Hands, CardPileLayoutSettings.Default },
+                { CardPileType.Tmp, CardPileLayoutSettings.Default }
+            };
         }
 
         /// <summary>View と Presenter を生成するよう設定する</summary>
@@ -132,7 +153,7 @@ namespace Tetrage.Factories
             }
 
             // カードパイル生成用ビルダーを作成
-            var cardPileBuilder = new CardPileBuilder(new CardPileFactory());
+            var cardPileBuilder = new CardPileBuilder(_cardPileFactoryRef ?? new CardPileFactory());
 
             // プレイヤー View を格納する変数の用意（if構文をまたぐためにif文の外に出しておく）
             BasicPlayerView playerView = null;

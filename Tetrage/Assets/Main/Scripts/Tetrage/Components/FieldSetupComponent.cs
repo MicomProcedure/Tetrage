@@ -168,17 +168,21 @@ namespace Tetrage.Components
             Tetrage.Core.Ids.IdRegistry<Tetrage.Core.Ids.CardId, Tetrage.Models.Card> cardRegistry,
             Tetrage.Core.Ids.IdRegistry<Tetrage.Core.Ids.PlayerId, Tetrage.Models.Player> playerRegistry)
         {
-            // カードは既に RegisteringCardFactory が存在するため、必要なら差し替え可能
+            // カードは RegisteringCardFactory で必ずレジストリ登録する
             var baseCardFactory = new CardModelFactory();
+            var registeringCardFactory = new Tetrage.Factories.RegisteringCardFactory(baseCardFactory, cardRegistry);
+
+            // パイルは RegisteringCardPileFactory で必ずレジストリ登録する
             var baseCardPileFactory = new CardPileFactory();
             var registeringPileFactory = new Tetrage.Factories.RegisteringCardPileFactory(baseCardPileFactory, pileRegistry);
-            var stageFactory = new StageModelFactory(registeringPileFactory, baseCardFactory);
 
-            var basePlayerFactory = new PlayerModelFactory(registeringPileFactory, baseCardFactory);
+            // 各Factoryへ登録版を注入
+            var stageFactory = new StageModelFactory(registeringPileFactory, registeringCardFactory);
+            var basePlayerFactory = new PlayerModelFactory(registeringPileFactory, registeringCardFactory);
             var registeringPlayerFactory = new Tetrage.Factories.RegisteringPlayerFactory(basePlayerFactory, playerRegistry);
 
             return new FieldSetupDependencies(
-                baseCardFactory,
+                registeringCardFactory,
                 stageFactory,
                 registeringPlayerFactory,
                 registeringPileFactory

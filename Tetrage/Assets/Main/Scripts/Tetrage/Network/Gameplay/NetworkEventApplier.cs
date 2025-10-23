@@ -4,7 +4,7 @@ using Tetrage.Models;
 using Tetrage.Core;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-
+using UnityEngine;
 namespace Tetrage.Network.Gameplay
 {
 
@@ -74,10 +74,23 @@ namespace Tetrage.Network.Gameplay
 
         public void Apply(CardMovedEvent e)
         {
-            if (!ShouldApply(e.sequence)) return;
-            if (!_pileRegistry.TryGet(new PileId(e.fromPileId), out var from)) return;
-            if (!_pileRegistry.TryGet(new PileId(e.toPileId), out var to)) return;
-            if (!_cardRegistry.TryGet(new CardId(e.cardId), out var card)) return;
+            Debug.Log($"NetworkEventApplier: Apply CardMoved, Sequence: {e.sequence}, FromPileId: {e.fromPileId}, ToPileId: {e.toPileId}, CardId: {e.cardId}");
+            if (!ShouldApply(e.sequence)) {
+                Debug.LogWarning($"NetworkEventApplier: Deny CardMoved, Sequence: {e.sequence}, FromPileId: {e.fromPileId}, ToPileId: {e.toPileId}, CardId: {e.cardId}, Not Applying");
+                return;
+            }
+            if (!_pileRegistry.TryGet(new PileId(e.fromPileId), out var from)) {
+                Debug.LogWarning($"NetworkEventApplier: Deny CardMoved, Sequence: {e.sequence}, FromPileId: {e.fromPileId}, ToPileId: {e.toPileId}, CardId: {e.cardId}, FromPile not found");
+                return;
+            }
+            if (!_pileRegistry.TryGet(new PileId(e.toPileId), out var to)) {
+                Debug.LogWarning($"NetworkEventApplier: Deny CardMoved, Sequence: {e.sequence}, FromPileId: {e.fromPileId}, ToPileId: {e.toPileId}, CardId: {e.cardId}, ToPile not found");
+                return;
+            }
+            if (!_cardRegistry.TryGet(new CardId(e.cardId), out var card)) {
+                Debug.LogWarning($"NetworkEventApplier: Deny CardMoved, Sequence: {e.sequence}, FromPileId: {e.fromPileId}, ToPileId: {e.toPileId}, CardId: {e.cardId}, Card not found");
+                return;
+            }
             CardPile.TransferService.Transfer(from, to, card);
             _bus?.PublishCardMoved(e);
         }
@@ -104,7 +117,7 @@ namespace Tetrage.Network.Gameplay
                     {
                         for (int i = 0; i < e.targetCardIds.Length; i++)
                         {
-                            if (_cardRegistry.TryGet(e.targetCardIds[i], out var card))
+                            if (_cardRegistry.TryGet(new CardId(e.targetCardIds[i]), out var card))
                             {
                                 if (!card.IsVisible) card.Flip();
                             }

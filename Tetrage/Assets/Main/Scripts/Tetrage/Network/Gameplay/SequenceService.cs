@@ -6,7 +6,9 @@ namespace Tetrage.Network.Gameplay
     public sealed class SequenceService
     {
         private int _sequence;
+        public int Sequence { get { return _sequence; } }
         private int _stateVersion;
+        public int StateVersion { get { return _stateVersion; } }
 
         public SequenceService()
         {
