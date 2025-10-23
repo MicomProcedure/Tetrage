@@ -44,15 +44,91 @@ namespace Tetrage.UI
             _rectTransform = GetComponent<RectTransform>();
             _canvas = GetComponentInParent<Canvas>();
             _originalPosition = _rectTransform.anchoredPosition;
+            
+            // UI参照の検証
+            if (playerNameText == null)
+            {
+                Debug.LogError("[PlayerUI] playerNameTextが設定されていません！Inspectorで設定してください。", this);
+            }
+            
+            if (iconImage == null)
+            {
+                Debug.LogError("[PlayerUI] iconImageが設定されていません！Inspectorで設定してください。", this);
+            }
+            
+            if (availableIcons == null || availableIcons.Length == 0)
+            {
+                Debug.LogError("[PlayerUI] availableIconsが設定されていません！Inspectorで設定してください。", this);
+            }
+            else
+            {
+                Debug.Log($"[PlayerUI] 利用可能なアイコン数: {availableIcons.Length}");
+            }
         }
         
         #endregion
         public void SetPlayerInfo(PlayerInfo playerInfo)
         {
+            Debug.Log($"[PlayerUI] ===== SetPlayerInfo開始 ===== GameObject={gameObject.name}");
+            Debug.Log($"[PlayerUI] SetPlayerInfo呼び出し: PlayerId={playerInfo.Id.Value}, UserId={playerInfo.UserId}, IconIndex={playerInfo.PlayerIconIndex}");
+            
             _playerId = playerInfo.Id.Value;
-            //playerNumberText.text = playerInfo.Id.ToString();
-            playerNameText.text = playerInfo.UserId;
-            iconImage.sprite = availableIcons[playerInfo.PlayerIconIndex];
+            
+            // playerNameTextの確認
+            if (playerNameText == null)
+            {
+                Debug.LogError($"[PlayerUI] playerNameTextがnullです (PlayerId={_playerId})");
+            }
+            else
+            {
+                Debug.Log($"[PlayerUI] 変更前: playerNameText.text = '{playerNameText.text}'");
+                playerNameText.text = playerInfo.UserId;
+                Debug.Log($"[PlayerUI] 変更後: playerNameText.text = '{playerNameText.text}'");
+                
+                // 本当に変更されたか確認
+                if (playerNameText.text == playerInfo.UserId)
+                {
+                    Debug.Log($"[PlayerUI] ✅ テキスト変更成功");
+                }
+                else
+                {
+                    Debug.LogError($"[PlayerUI] ❌ テキスト変更失敗！期待値='{playerInfo.UserId}', 実際='{playerNameText.text}'");
+                }
+            }
+            
+            // iconImageとavailableIconsの確認
+            if (iconImage == null)
+            {
+                Debug.LogError($"[PlayerUI] iconImageがnullです (PlayerId={_playerId})");
+            }
+            else if (availableIcons == null || availableIcons.Length == 0)
+            {
+                Debug.LogError($"[PlayerUI] availableIconsが設定されていません (PlayerId={_playerId})");
+            }
+            else if (playerInfo.PlayerIconIndex < 0 || playerInfo.PlayerIconIndex >= availableIcons.Length)
+            {
+                Debug.LogError($"[PlayerUI] IconIndex={playerInfo.PlayerIconIndex}が範囲外です。利用可能: 0-{availableIcons.Length - 1} (PlayerId={_playerId})");
+            }
+            else
+            {
+                var oldSprite = iconImage.sprite;
+                Debug.Log($"[PlayerUI] 変更前: iconImage.sprite = {oldSprite?.name}");
+                
+                iconImage.sprite = availableIcons[playerInfo.PlayerIconIndex];
+                
+                Debug.Log($"[PlayerUI] 変更後: iconImage.sprite = {iconImage.sprite?.name}");
+                
+                if (iconImage.sprite == availableIcons[playerInfo.PlayerIconIndex])
+                {
+                    Debug.Log($"[PlayerUI] ✅ アイコン変更成功");
+                }
+                else
+                {
+                    Debug.LogError($"[PlayerUI] ❌ アイコン変更失敗！");
+                }
+            }
+            
+            Debug.Log($"[PlayerUI] ===== SetPlayerInfo完了 =====");
         }
         public void SetCurrentPlayer(bool isCurrentPlayer)
         {
