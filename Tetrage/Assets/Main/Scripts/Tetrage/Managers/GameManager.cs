@@ -34,6 +34,7 @@ namespace Tetrage.Managers
         [SerializeField] private InGameUIManager _inGameUIManager;
 
         private GameContext _gameContext;
+        public GameContext GameContext => _gameContext;
 		private List<PlayerInfo> _participantInfos;
 
         #endregion
