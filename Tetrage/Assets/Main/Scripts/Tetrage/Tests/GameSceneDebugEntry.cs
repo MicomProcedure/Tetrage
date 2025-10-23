@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Models;
+using Tetrage.Network.Gameplay;
+using ExitGames.Client.Photon;
 
 namespace Tetrage.Tests
 {
@@ -45,11 +47,19 @@ namespace Tetrage.Tests
         
         #endregion
         
+        [Header("Debug Network Event (Inspector)")]
+        [SerializeField] private bool _enableDebugEvents = false;
+        [SerializeField] private Tetrage.Network.Gameplay.EventCode _debugEventCode = Tetrage.Network.Gameplay.EventCode.ActionResult;
+        [SerializeField, TextArea(3, 10)] private string _debugJsonPayload = "{}";
+        [SerializeField] private bool _sendToAll = true;
+        [SerializeField] private int[] _targetActorNumbers;
+        
         #region Private Fields
         
         private bool _isInitialized = false;
         private bool _isConnecting = false;
         private bool _roomCreatedOrJoined = false;
+        private ISerializer _debugSerializer;
         
         #endregion
         
@@ -85,6 +95,7 @@ namespace Tetrage.Tests
             Debug.Log("[GameSceneDebugEntry] MultiPlayMode設定完了");
             Debug.Log($"[GameSceneDebugEntry] runInBackground: {Application.runInBackground}");
             Debug.Log($"[GameSceneDebugEntry] KeepAliveInBackground: {PhotonNetwork.KeepAliveInBackground}s");
+            _debugSerializer = new PhotonJsonSerializer();
         }
         
         private async void Start()
@@ -94,7 +105,54 @@ namespace Tetrage.Tests
         }
         
         #endregion
-        
+
+        #region Debug Network Event Sender
+        [ContextMenu("Debug/Send Network Event")] 
+        public void DebugSendNetworkEvent()
+        {
+            if (!_enableDebugEvents)
+            {
+                Debug.LogWarning("[GameSceneDebugEntry] Debug events are disabled.");
+                return;
+            }
+            if (!Photon.Pun.PhotonNetwork.IsConnectedAndReady)
+            {
+                Debug.LogWarning("[GameSceneDebugEntry] Not connected to Photon.");
+                return;
+            }
+
+            byte[] bytes;
+            try
+            {
+                bytes = System.Text.Encoding.UTF8.GetBytes(_debugJsonPayload ?? "{}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[GameSceneDebugEntry] Payload encode failed: {ex.Message}");
+                return;
+            }
+
+            var opts = new RaiseEventOptions();
+            if (_sendToAll)
+            {
+                opts.Receivers = ReceiverGroup.All;
+            }
+            else
+            {
+                if (_targetActorNumbers == null || _targetActorNumbers.Length == 0)
+                {
+                    Debug.LogWarning("[GameSceneDebugEntry] TargetActors is empty; nothing to send.");
+                    return;
+                }
+                opts.TargetActors = _targetActorNumbers;
+            }
+            var sendOpts = new SendOptions { Reliability = true };
+
+            Photon.Pun.PhotonNetwork.RaiseEvent((byte)_debugEventCode, bytes, opts, sendOpts);
+            Debug.Log($"[GameSceneDebugEntry] Raised event: {_debugEventCode} to {(_sendToAll ? "All" : string.Join(",", _targetActorNumbers ?? System.Array.Empty<int>()))}\nPayload: {_debugJsonPayload}");
+        }
+        #endregion
+
         #region Network Setup
         
         /// <summary>
