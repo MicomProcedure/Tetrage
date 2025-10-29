@@ -236,7 +236,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: "\u7D9A\u304D\u306F\u5BFE\u9762\u3067\uFF01"
+          m_StringArgument: "\u73FE\u5728\u958B\u767A\u4E2D\u3067\u3059"
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &448854489
@@ -1606,6 +1606,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 490337319841500777, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
+      propertyPath: m_ScreenMatchMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 490337319841500777, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_MatchWidthOrHeight
       value: 0.5
       objectReference: {fileID: 0}
@@ -1695,7 +1699,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2224868003985437808, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
-      value: "\u7D9A\u304D\u306F\u5BFE\u9762\u3067\uFF01"
+      value: "\u73FE\u5728\u958B\u767A\u4E2D\u3067\u3059"
       objectReference: {fileID: 0}
     - target: {fileID: 2224868003985437808, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
