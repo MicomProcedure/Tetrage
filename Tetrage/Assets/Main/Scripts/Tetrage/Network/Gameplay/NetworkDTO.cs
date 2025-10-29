@@ -99,6 +99,22 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
+    public struct FinishingGameEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public int[] winnerActorNumbers; // -1 なら未定/引き分け等
+    }
+
+    [Serializable]
+    public struct GameEndedEvent
+    {
+        public int sequence;
+        public int stateVersion;
+        public int[] winnerActorNumbers; // -1 なら未定/引き分け等
+    }
+
+    [Serializable]
     public struct PileShuffledWithSeedEvent
     {
         public int sequence;
@@ -115,6 +131,7 @@ namespace Tetrage.Network.Gameplay
         public int actorPlayerId;
         public ActionType actionType;
         public int[] targetCardIds; // 単数 or 複数対象（CardId.Valueの配列）
+        public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }
 
     [Serializable]
@@ -127,6 +144,7 @@ namespace Tetrage.Network.Gameplay
         public bool accepted;      // 成否
         public string reason;      // 失敗時
         public int[] targetCardIds; // 影響対象（応答時に確定させたい場合）
+        public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }
 
     /// <summary>
@@ -138,6 +156,7 @@ namespace Tetrage.Network.Gameplay
         public ActionType actionType;
         public int actorPlayerId;
         public CardId[] targetCardIds;
+        public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }
 }
 

@@ -31,6 +31,7 @@ namespace Tetrage.Core.Actions
                     actorPlayerId = desc.actorPlayerId,
                     actionType = desc.actionType,
                     targetCardIds = desc.targetCardIds?.Select(id => id.Value).ToArray(),
+                    actionStatusInt = desc.actionStatusInt
                 };
                 context.Network.Request(request);
                 Debug.Log($"NetworkActionBase: OnAfterExecute: Request {desc.actionType}, ActorPlayerId: {desc.actorPlayerId}, TargetCardIds: {string.Join(", ", desc.targetCardIds.Select(id => id.Value))}");

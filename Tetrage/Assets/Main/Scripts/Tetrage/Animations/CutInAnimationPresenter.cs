@@ -9,6 +9,7 @@ public class CutInAnimationController : MonoBehaviour
     private CancellationTokenSource cts;
 
     // 外部から呼び出してカットインを再生
+    [ContextMenu("Play CutIn")]
     public void PlayCutIn()
     {
         // 前回の再生中ならキャンセル

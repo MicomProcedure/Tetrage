@@ -64,6 +64,8 @@ namespace Tetrage.Network.Gameplay
             _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
             _receiver.On<StartScanPhaseEvent>(EventCode.StartScanPhase, e => _applier.Apply(e));
             _receiver.On<EndScanPhaseEvent>(EventCode.EndScanPhase, e => _applier.Apply(e));
+            _receiver.On<FinishingGameEvent>(EventCode.FinishingGame, e => _applier.Apply(e));
+            _receiver.On<GameEndedEvent>(EventCode.GameEnded, e => _applier.Apply(e));
             _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => _applier.Apply(e));
             _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => _applier.Apply(e));
             _receiver.On<ActionRequestedEvent>(EventCode.ActionRequested, e =>

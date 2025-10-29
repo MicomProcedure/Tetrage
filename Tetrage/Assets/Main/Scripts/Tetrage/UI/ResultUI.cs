@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Contracts;
+using Tetrage.Managers;
 
 namespace Tetrage.UI
 {
@@ -13,22 +14,20 @@ namespace Tetrage.UI
         #region Serialized Fields
 
         [Header("Containers")]
-        [SerializeField] private Transform winnerContainer;
-        [SerializeField] private Transform loserContainer;
+        [SerializeField] private Transform _winnerContainer;
+        [SerializeField] private Transform _loserContainer;
 
         [Header("Prefab")]
-        [SerializeField] private GameObject playerItemPrefab;
+        [SerializeField] private GameObject _playerUIPrefab;
 
         [Header("Optional")]
-        [SerializeField] private GameObject resultPanel;
+        [SerializeField] private GameObject _resultPanel;
 
         #endregion
 
         #region Private Fields
-
-        private Dictionary<string, ResultPlayerUI> winnerItems = new Dictionary<string, ResultPlayerUI>();
-        private Dictionary<string, ResultPlayerUI> loserItems = new Dictionary<string, ResultPlayerUI>();
-
+        private readonly Dictionary<int, ResultPlayerUI> winnerItems = new Dictionary<int, ResultPlayerUI>();
+        private readonly Dictionary<int, ResultPlayerUI> loserItems = new Dictionary<int, ResultPlayerUI>();
         #endregion
 
         #region Public Methods
@@ -38,13 +37,11 @@ namespace Tetrage.UI
         /// </summary>
         /// <param name="winnerUserIds">勝者のUserIdリスト</param>
         /// <param name="allPlayers">全プレイヤーのリスト</param>
-        /// <param name="playerIconMap">UserId -> IconIndex のマッピング</param>
         public void DisplayResult(
-            string[] winnerUserIds, 
-            IReadOnlyList<IPlayer> allPlayers,
-            Dictionary<string, int> playerIconMap)
+            int[] winnerActorNumbers, 
+            IReadOnlyList<IPlayer> allPlayers)
         {
-            if (winnerUserIds == null || allPlayers == null)
+            if (winnerActorNumbers == null || allPlayers == null)
             {
                 Debug.LogError("ResultUI: 引数がnullです");
                 return;
@@ -54,7 +51,7 @@ namespace Tetrage.UI
 
             foreach (var player in allPlayers)
             {
-                if (winnerUserIds.Contains(player.UserId))
+                if (winnerActorNumbers.Contains(player.Id.Value))
                 {
                     AddWinnerItem(player);
                 }
@@ -64,22 +61,21 @@ namespace Tetrage.UI
                 }
                 
                 // アイコンを設定
-                if (playerIconMap != null && playerIconMap.TryGetValue(player.UserId, out int iconIndex))
                 {
-                    var playerUI = winnerUserIds.Contains(player.UserId) 
-                        ? winnerItems.GetValueOrDefault(player.UserId)
-                        : loserItems.GetValueOrDefault(player.UserId);
-                    
-                    if (playerUI != null)
+                    if (winnerActorNumbers.Contains(player.Id.Value))
                     {
-                        playerUI.SetIcon(iconIndex);
+                        if (winnerItems.TryGetValue(player.Id.Value, out var ui)) ui.SetIcon(player.IconIndex);
+                    }
+                    else
+                    {
+                        if (loserItems.TryGetValue(player.Id.Value, out var ui)) ui.SetIcon(player.IconIndex);
                     }
                 }
             }
 
-            if (resultPanel != null)
+            if (_resultPanel != null)
             {
-                resultPanel.SetActive(true);
+                _resultPanel.SetActive(true);
             }
 
             Debug.Log($"ResultUI: 勝者 {winnerItems.Count}人, 敗者 {loserItems.Count}人を表示");
@@ -90,9 +86,9 @@ namespace Tetrage.UI
         /// </summary>
         public void HideResult()
         {
-            if (resultPanel != null)
+            if (_resultPanel != null)
             {
-                resultPanel.SetActive(false);
+                _resultPanel.SetActive(false);
             }
         }
 
@@ -105,34 +101,54 @@ namespace Tetrage.UI
             ClearList(loserItems, "Loser");
         }
 
+        #region Button Events
+        /// <summary>
+        /// タイトルシーンへ戻る（ボタン用）
+        /// </summary>
+        public void OnClickReturnToTitle()
+        {
+            var app = ApplicationManager.Instance;
+            if (app == null)
+            {
+                app = FindFirstObjectByType<ApplicationManager>(FindObjectsInactive.Exclude);
+            }
+            if (app == null)
+            {
+                Debug.LogError("ResultUI: ApplicationManager が見つかりません");
+                return;
+            }
+            app.GoToTitle();
+        }
+        #endregion
+
         #endregion
 
         #region Private Methods
 
         private void AddWinnerItem(IPlayer player)
         {
-            AddPlayerItem(player, winnerContainer, winnerItems, "Winner");
+            AddPlayerItem(player, _winnerContainer, winnerItems, "Winner");
         }
 
         private void AddLoserItem(IPlayer player)
         {
-            AddPlayerItem(player, loserContainer, loserItems, "Loser");
+            AddPlayerItem(player, _loserContainer, loserItems, "Loser");
         }
 
-        private void AddPlayerItem(IPlayer player, Transform container, Dictionary<string, ResultPlayerUI> dict, string listName)
+        private void AddPlayerItem(IPlayer player, Transform container, Dictionary<int, ResultPlayerUI> dict, string listName)
         {
-            if (playerItemPrefab == null || container == null)
+            if (_playerUIPrefab == null || container == null)
             {
                 Debug.LogError($"ResultUI: PlayerItemPrefab または {listName}Container が未設定");
                 return;
             }
 
-            if (dict.ContainsKey(player.UserId))
+            if (dict.ContainsKey(player.Id.Value))
             {
                 return;
             }
 
-            GameObject itemObj = Instantiate(playerItemPrefab, container);
+            GameObject itemObj = Instantiate(_playerUIPrefab, container);
             ResultPlayerUI playerUI = itemObj.GetComponent<ResultPlayerUI>();
 
             if (playerUI == null)
@@ -143,10 +159,10 @@ namespace Tetrage.UI
             }
 
             playerUI.SetPlayerData(player);
-            dict[player.UserId] = playerUI;
+            dict[player.Id.Value] = playerUI;
         }
 
-        private void ClearList(Dictionary<string, ResultPlayerUI> dict, string listName)
+        private void ClearList(Dictionary<int, ResultPlayerUI> dict, string listName)
         {
             foreach (var item in dict.Values)
             {

@@ -15,6 +15,7 @@ namespace Tetrage.Network.Gameplay
         ReachDeclared = 8,
         StartScanPhase = 9,
         EndScanPhase = 10,
+        FinishingGame = 11,
         ActionRequested = 20,
         ActionResult = 21,
         PileShuffledWithSeed = 22,

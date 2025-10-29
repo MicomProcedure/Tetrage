@@ -106,8 +106,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: c5e2db2b1ff7a1349a9b870f26088d41, type: 2}
-  m_sharedMaterial: {fileID: 7579567994608388481, guid: c5e2db2b1ff7a1349a9b870f26088d41, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
+  m_sharedMaterial: {fileID: -2925243465209541341, guid: 91812e2c2513c0b4f85d4e87fe058d91, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -321,8 +321,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Tetrage.Title.TitleSceneManager, Tetrage
-        m_MethodName: OnClickExitRoom
+        m_TargetAssemblyTypeName: Tetrage.Managers.ApplicationManager, Tetrage
+        m_MethodName: GoToGame
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -522,7 +522,6 @@ GameObject:
   - component: {fileID: 5631583081362614307}
   - component: {fileID: 3212956384476435410}
   - component: {fileID: 8281888217376564730}
-  - component: {fileID: 5404532566449970957}
   m_Layer: 5
   m_Name: LeaveRoom
   m_TagString: Untagged
@@ -655,7 +654,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 5404532566449970957}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Tetrage.Title.TitleSceneManager, Tetrage
         m_MethodName: OnClickExitRoom
         m_Mode: 1
@@ -685,22 +684,6 @@ MonoBehaviour:
   - {fileID: 0}
   targetPanelH:
   - {fileID: 7408905724936456624}
---- !u!114 &5404532566449970957
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3339122297119251556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1c94837d133ec40a9ae64c7d436a9376, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  enterMasterServer: {fileID: 0}
-  createRoom: {fileID: 0}
-  enterRoom: {fileID: 0}
-  exitRoom: {fileID: 0}
 --- !u!1 &3705399724085213088
 GameObject:
   m_ObjectHideFlags: 0
@@ -1049,12 +1032,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -1093,7 +1076,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &865764582581364402
 Transform:
   m_ObjectHideFlags: 0

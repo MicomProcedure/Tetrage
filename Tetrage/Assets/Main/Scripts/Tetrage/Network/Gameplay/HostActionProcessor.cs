@@ -106,9 +106,24 @@ namespace Tetrage.Network.Gameplay
                             accepted = true,
                             reason = string.Empty,
                             targetCardIds = e.targetCardIds,
+                            actionStatusInt = 0,
                         };
                         // アクション結果は全プレイヤーに送信
                         _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
+                        break;
+                    }
+                case ActionType.TetrageSolo:
+                    {
+                        var res = new ActionResultEvent
+                        {
+                            sequence = seq.NextSequence(),
+                            clientSequence = e.clientSequence,
+                            actorPlayerId = e.actorPlayerId,
+                            actionType = e.actionType,
+                            accepted = true,
+                            reason = e.actionStatusInt == 1 ? $"{e.actorPlayerId} 勝利" : "敗北",
+                            targetCardIds = e.targetCardIds,
+                        };
                         break;
                     }
                 default:

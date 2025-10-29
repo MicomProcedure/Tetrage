@@ -96,19 +96,17 @@ namespace Tetrage.Tests
             }
 
             var players = CreateMockPlayers();
-            var iconMap = CreateIconMap();
-
-            string[] winners = new string[]
+            int[] winners = new int[]
             {
-                testPlayers[0].UserId,
-                testPlayers[1].UserId
+                players[0].Id.Value,
+                players[1].Id.Value
             };
 
             Debug.Log("=== Test: 2 Winners, 2 Losers ===");
             Debug.Log($"勝者: {string.Join(", ", winners)}");
             LogPlayerInfo();
 
-            resultUI.DisplayResult(winners, players, iconMap);
+            resultUI.DisplayResult(winners, players);
 
             Debug.Log("=== Test Complete ===");
         }
@@ -122,13 +120,11 @@ namespace Tetrage.Tests
             if (!ValidateReferences()) return;
 
             var players = CreateMockPlayers();
-            var iconMap = CreateIconMap();
-
-            string[] winners = testPlayers.Select(p => p.UserId).ToArray();
+            int[] winners = players.Select(p => p.Id.Value).ToArray();
 
             Debug.Log("=== Test: All Winners ===");
             LogPlayerInfo();
-            resultUI.DisplayResult(winners, players, iconMap);
+            resultUI.DisplayResult(winners, players);
             Debug.Log("=== Test Complete ===");
         }
 
@@ -141,11 +137,10 @@ namespace Tetrage.Tests
             if (!ValidateReferences()) return;
 
             var players = CreateMockPlayers();
-            var iconMap = CreateIconMap();
 
             Debug.Log("=== Test: All Losers ===");
             LogPlayerInfo();
-            resultUI.DisplayResult(new string[0], players, iconMap);
+            resultUI.DisplayResult(System.Array.Empty<int>(), players);
             Debug.Log("=== Test Complete ===");
         }
 
@@ -216,30 +211,15 @@ namespace Tetrage.Tests
             for (int i = 0; i < testPlayers.Count; i++)
             {
                 var testData = testPlayers[i];
-                var mockPlayer = new MockPlayer(testData.UserId, i, testData.TargetSuit);
+                var mockPlayer = new MockPlayer(testData.UserId, i + 1, testData.TargetSuit);
+                mockPlayer.IconIndex = testData.IconIndex;
                 players.Add(mockPlayer);
             }
 
             return players;
         }
 
-        /// <summary>
-        /// テストデータからアイコンマップを作成
-        /// </summary>
-        private Dictionary<string, int> CreateIconMap()
-        {
-            var iconMap = new Dictionary<string, int>();
-
-            foreach (var testData in testPlayers)
-            {
-                if (!string.IsNullOrEmpty(testData.UserId))
-                {
-                    iconMap[testData.UserId] = testData.IconIndex;
-                }
-            }
-
-            return iconMap;
-        }
+        // アイコンマップは不要（ResultUIがIPlayer.IconIndexを参照）
 
         /// <summary>
         /// 現在のテストプレイヤー情報をログ出力（デバッグ用）

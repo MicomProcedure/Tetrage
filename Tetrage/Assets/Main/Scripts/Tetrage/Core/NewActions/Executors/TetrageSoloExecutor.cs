@@ -3,6 +3,8 @@ using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 using Tetrage.Core.Contracts;
+using Tetrage.Network.Gameplay;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Core.Actions
 {
@@ -45,14 +47,15 @@ namespace Tetrage.Core.Actions
 
                 Debug.Log($"TetrageSolo アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} のスート {myTargetCard.Suit} - 結果: {resultMessage}");
 
-                return ActionResult.Success(new
+                var descriptor = new ActionRequestDescriptor
                 {
-                    MyTargetCard = new { myTargetCard.Suit, myTargetCard.Number },
-                    OtherTargetCards = otherTargetCards.Select(card => new { card.Suit, card.Number }).ToArray(),
-                    Winners = winners.Select(p => p.UserId).ToArray(),
-                    IsWin = isWin,
-                    Message = resultMessage
-                });
+                    actionType = ActionType.TetrageSolo,
+                    actorPlayerId = context.RequesterPlayer.PlayerId,
+                    targetCardIds = new[] { myTargetCard.Id },
+                    actionStatusInt = isWin ? 1 : 0
+                };
+
+                return ActionResult.Success(descriptor);
             }
             catch (System.Exception ex)
             {
