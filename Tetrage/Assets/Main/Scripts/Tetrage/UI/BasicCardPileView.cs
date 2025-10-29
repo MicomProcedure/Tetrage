@@ -4,6 +4,8 @@ using Tetrage.Core.Contracts;
 using System.Collections.Generic;
 using Tetrage.Core.Constants;
 using Tetrage.Core.DTO;
+using Cysharp.Threading.Tasks;
+using Tetrage.Animations;
 
 namespace Tetrage.UI
 {
@@ -44,12 +46,31 @@ namespace Tetrage.UI
 
         #region Public API（非override）
         /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
-        public void AddCardView(CardView cardView)
+        public async void AddCardView(CardView cardView)
         {
-            // Debug.Log($"{this.GetType().Name}: AddCardView {cardView.name}");
-            cardView.transform.SetParent(transform, worldPositionStays: false);
-            // 子オブジェクトが増えたのでレイアウト更新
+            // 移動元の位置を保存
+            Vector3 startPosition = cardView.transform.position;
+            
+            // 親を変更（worldPositionStaysをtrueにして位置を保持）
+            cardView.transform.SetParent(transform, worldPositionStays: true);
+            
+            // レイアウト更新（最終位置を計算）
             RefreshView();
+            
+            // 1フレーム待機してレイアウトが確定するのを待つ
+            await UniTask.Yield();
+            Vector3 endPosition = cardView.transform.localPosition;
+            
+            // 元の位置に戻す
+            cardView.transform.position = startPosition;
+            
+            // アニメーション実行
+            await AnimationHelper.MoveToWithEasing(
+                cardView.gameObject,
+                startPosition,
+                cardView.transform.parent.TransformPoint(endPosition), // ローカル→ワールド座標変換
+                0.5f
+            );
         }
 
         /// <summary>カード表示用ViewをこのPileViewから外します。</summary>
