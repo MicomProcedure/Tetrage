@@ -351,9 +351,11 @@ namespace Tetrage.Managers
                     }
                     if (_turnGate != null)
                     {
-                        await _turnGate.WaitNextAsync();
+                        // TurnGate は PlayerId を返す
+                        var receivedPlayerId = await _turnGate.WaitNextAsync();
+                        Debug.Log($"Dealer: TurnGate解放 - 受信PlayerId={receivedPlayerId}, 期待値={next.Id}");
                     }
-                    Debug.Log($"Dealer: 次のターンは Player {next.PlayerId}");
+                    Debug.Log($"Dealer: 次のターンは Player {next.Id}");
                 }
             }
         }

@@ -300,8 +300,8 @@ namespace Tetrage.Network.Gameplay
             // TurnStartedの通知
             _bus?.PublishTurnStarted(e);
 
-            // TurnGate.Releaseは現状ActorNumberで呼び出す
-            _turnGate?.Release(e.currentPlayerActorNumber);
+            // TurnGate.Release に PlayerId を渡す（ActorNumber 依存を排除）
+            _turnGate?.Release(playerId);
         }
 
         #endregion
