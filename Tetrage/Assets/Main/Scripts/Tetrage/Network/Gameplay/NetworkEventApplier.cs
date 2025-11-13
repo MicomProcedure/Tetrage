@@ -5,6 +5,7 @@ using Tetrage.Core;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using Tetrage.Network.Contracts;
 namespace Tetrage.Network.Gameplay
 {
 
@@ -19,7 +20,8 @@ namespace Tetrage.Network.Gameplay
         private readonly IdRegistry<PlayerId, Player> _playerRegistry;
         private readonly IGameplayEventBus _bus;
         private readonly TurnGate _turnGate;
-        private GameContext _context;
+        private readonly IPlayerIdMapper _playerIdMapper;
+        private GameContext _gameCtx;
 
         private int _lastSequence;
 
@@ -49,20 +51,22 @@ namespace Tetrage.Network.Gameplay
             IdRegistry<PlayerId, Player> playerRegistry = null,
             IGameplayEventBus bus = null,
             TurnGate turnGate = null,
-            GameContext context = null)
+            GameContext context = null,
+            IPlayerIdMapper playerIdMapper = null)
         {
             _pileRegistry = pileRegistry;
             _cardRegistry = cardRegistry;
             _playerRegistry = playerRegistry;
             _bus = bus;
             _turnGate = turnGate;
+            _playerIdMapper = playerIdMapper;
             _lastSequence = 0;
-            _context = context;
+            _gameCtx = context;
         }
 
         public void AttachContext(GameContext context)
         {
-            _context = context;
+            _gameCtx = context;
         }
 
         private bool ShouldApply(int sequence)
@@ -152,9 +156,13 @@ namespace Tetrage.Network.Gameplay
                     break;
 
                 case ActionType.Reach:
-                    if (_playerRegistry != null && _playerRegistry.TryGet(new PlayerId(e.actorPlayerId), out var player))
+                    // ActorNumber → PlayerId変換
+                    if (_playerIdMapper?.TryGetPlayerId(e.actorPlayerId, out var playerId) ?? false)
                     {
-                        if (!player.IsReach) player.Reach();
+                        if (_playerRegistry != null && _playerRegistry.TryGet(playerId, out var player))
+                        {
+                            if (!player.IsReach) player.Reach();
+                        }
                     }
                     break;
 
@@ -200,7 +208,7 @@ namespace Tetrage.Network.Gameplay
         {
             // 初期同期のため、連番はリセットして良い
             ResetSequences();
-            _context?.ResetTurnIndexInternal();
+            _gameCtx?.ResetTurnIndexInternal();
 
             if (e.playerActorNumbers == null || e.playerActorNumbers.Length == 0)
             {
@@ -210,14 +218,22 @@ namespace Tetrage.Network.Gameplay
             var ordered = new List<Player>(e.playerActorNumbers.Length);
             for (int i = 0; i < e.playerActorNumbers.Length; i++)
             {
-                var actor = e.playerActorNumbers[i];
-                if (_playerRegistry.TryGet(new PlayerId(actor), out var p))
+                var actorNumber = e.playerActorNumbers[i];
+                // ActorNumber → PlayerId変換
+                if (_playerIdMapper?.TryGetPlayerId(actorNumber, out var playerId) ?? false)
                 {
-                    ordered.Add(p);
+                    if (_playerRegistry.TryGet(playerId, out var p))
+                    {
+                        ordered.Add(p);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"NetworkEventApplier: ActorNumber {actorNumber} のマッピングが見つかりません");
                 }
             }
             OrderedPlayers = ordered;
-            _context?.SetPlayersInternal(ordered);
+            _gameCtx?.SetPlayersInternal(ordered);
             _bus?.PublishGameStarted(e);
         }
 
@@ -243,33 +259,52 @@ namespace Tetrage.Network.Gameplay
                 if (ordered.Count > 0)
                 {
                     OrderedPlayers = ordered;
-                    _context?.SetPlayersInternal(ordered);
+                    _gameCtx?.SetPlayersInternal(ordered);
                 }
             }
             _bus?.PublishListOrderDeclared(e);
         }
 
+        #region TurnStartedEvent適用
+
+        /// <summary>
+        /// ターン開始イベントをモデルに適用
+        /// </summary>
         public void Apply(TurnStartedEvent e)
         {
             if (!ShouldApply(e.sequence)) return;
+
+            // playerIdのスコープを事前に宣言してエラー回避
+            PlayerId playerId = default;
+
+            if (_playerIdMapper == null || !_playerIdMapper.TryGetPlayerId(e.currentPlayerActorNumber, out playerId))
+            {
+                Debug.LogWarning($"NetworkEventApplier: ActorNumber {e.currentPlayerActorNumber} のマッピングが見つかりません");
+                return;
+            }
+            
+            // 対応するPlayerが得られるかを確認しつつ反映
+            Player player = null;
             if (_playerRegistry != null)
             {
-                if (_playerRegistry.TryGet(new PlayerId(e.currentPlayerActorNumber), out var p))
-                {
-                    // GameContextがあれば反映するが、本実装ではEventBus購読でUIへ伝播する想定
-                }
+                _playerRegistry.TryGet(playerId, out player);
             }
-            if (_playerRegistry != null && _context != null)
+
+            // GameContextとPlayerが取得できた場合のみUI・内部状態に伝播
+            if (_playerRegistry != null && _gameCtx != null && player != null)
             {
-                if (_playerRegistry.TryGet(new PlayerId(e.currentPlayerActorNumber), out var p))
-                {
-                    _context.SetCurrentPlayerInternal(p);
-                    _context.IncrementTurnIndexInternal();
-                }
+                _gameCtx.SetCurrentPlayerInternal(player);
+                _gameCtx.IncrementTurnIndexInternal();
             }
+
+            // TurnStartedの通知
             _bus?.PublishTurnStarted(e);
+
+            // TurnGate.Releaseは現状ActorNumberで呼び出す
             _turnGate?.Release(e.currentPlayerActorNumber);
         }
+
+        #endregion
 
         public void Apply(TurnEndedEvent e)
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Photon.Pun;
 using UnityEngine;
@@ -51,6 +52,7 @@ namespace Tetrage.Managers
         private const string GameSceneName = "GameScene";
         private const string ResultSceneName = "ResultScene";
         private INetworkContext _networkContext; // NetworkModeに応じたNetworkContext（現時点はPhoton実装）
+        private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumberマッピング
         private readonly List<string> _sceneHistory = new List<string>();
         private bool _isLoading = false;
         #endregion
@@ -167,8 +169,8 @@ namespace Tetrage.Managers
                 return gameManager != null;
             }, cancellationToken: ct);
 
-            // PlayerInfo リストを構築
-            var players = BuildPlayerInfosFromPhoton();
+            // PlayerInfo リストを構築（IPlayerIdMapperも同時に生成）
+            var players = BuildPlayerInfosFromPhoton(out _playerIdMapper);
             if (players == null || players.Count == 0)
             {
                 Debug.LogError("ApplicationManager: PlayerInfo の構築に失敗");
@@ -195,7 +197,7 @@ namespace Tetrage.Managers
             // GameManager を初期化
             try
             {
-                gameManager.Initialize(players, userInfo, _networkContext);
+                gameManager.Initialize(players, userInfo, _networkContext, _playerIdMapper);
                 Debug.Log("ApplicationManager: GameManager.Initialize を呼び出しました");
             }
             catch (System.SystemException ex)
@@ -210,16 +212,30 @@ namespace Tetrage.Managers
         #endregion
 
         #region PlayerInfo Builder
-        private List<PlayerInfo> BuildPlayerInfosFromPhoton()
+        /// <summary>
+        /// PhotonのPlayerListからPlayerInfoリストを構築し、IPlayerIdMapperを生成する。
+        /// PlayerIdはシーケンシャル（1,2,3...）に割り当て、ActorNumberとのマッピングを登録する。
+        /// </summary>
+        /// <param name="playerIdMapper">生成されたIPlayerIdMapper（出力）</param>
+        /// <returns>PlayerInfoリスト</returns>
+        private List<PlayerInfo> BuildPlayerInfosFromPhoton(out IPlayerIdMapper playerIdMapper)
         {
             var list = new List<PlayerInfo>();
+            var mapper = new PlayerIdMapper();
 
             var actors = PhotonNetwork.PlayerList;
-            if (actors == null || actors.Length == 0) return list;
-
-            for (int i = 0; i < actors.Length; i++)
+            if (actors == null || actors.Length == 0)
             {
-                var actor = actors[i];
+                playerIdMapper = mapper;
+                return list;
+            }
+
+            // ActorNumberでソートしてから、シーケンシャルなPlayerIdを割り当て
+            var sortedActors = actors.OrderBy(a => a.ActorNumber).ToArray();
+            
+            for (int i = 0; i < sortedActors.Length; i++)
+            {
+                var actor = sortedActors[i];
                 int iconIndex = 0;
                 if (actor.CustomProperties != null && actor.CustomProperties.ContainsKey("IconIndex"))
                 {
@@ -233,9 +249,15 @@ namespace Tetrage.Managers
                     }
                 }
 
+                // シーケンシャルなPlayerIdを割り当て（1,2,3...）
+                var playerId = new PlayerId(i + 1);
+                
+                // マッピングを登録
+                mapper.Register(playerId, actor.ActorNumber);
+
                 var info = new PlayerInfo
                 {
-                    Id = new PlayerId(actor.ActorNumber),
+                    Id = playerId,
                     UserId = string.IsNullOrEmpty(actor.NickName) ? $"Player_{actor.ActorNumber}" : actor.NickName,
                     PlayerType = actor.IsLocal ? PlayerType.Local : PlayerType.Remote,
                     PlayerIconIndex = iconIndex,
@@ -243,6 +265,8 @@ namespace Tetrage.Managers
                 list.Add(info);
             }
 
+            playerIdMapper = mapper;
+            Debug.Log($"ApplicationManager: PlayerIdMapper生成完了 (Player数: {list.Count})");
             return list;
         }
         #endregion

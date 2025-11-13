@@ -19,37 +19,43 @@ namespace Tetrage.Network.Gameplay
         private TurnGate _turnGate;
         private GameContext _gameContext;
         private SequenceService _sequence;
-        private bool _isHost;
+        private readonly bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
         private NetworkEventApplier _applier;
+        private readonly IPlayerIdMapper _playerIdMapper;
         private bool _started;
         private bool _disposed;
 
-        public GameplayNetworkController()
-        {
-            _serializer = new PhotonJsonSerializer();
-        }
-
-        public void Initialize(
+        /// <summary>
+        /// GameplayNetworkControllerのコンストラクタ
+        /// </summary>
+        /// <param name="isHost">ホストかどうか</param>
+        /// <param name="pileRegistry">カードパイルレジストリ</param>
+        /// <param name="cardRegistry">カードレジストリ</param>
+        /// <param name="playerRegistry">プレイヤーレジストリ</param>
+        /// <param name="onActionRequestedHost">ホスト側のアクション要求ハンドラ</param>
+        /// <param name="onGameStartedOptional">ゲーム開始時のオプショナルハンドラ</param>
+        /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング</param>
+        public GameplayNetworkController(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<CardId, Card> cardRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
-            Action<ActionRequestedEvent> onActionRequestedHost,
-            Action<GameStartedEvent> onGameStartedOptional = null)
+            IPlayerIdMapper playerIdMapper = null)
         {
+            _serializer = new PhotonJsonSerializer();
             _isHost = isHost;
+            _playerIdMapper = playerIdMapper;
             _bus = new SimpleGameplayEventBus();
             _turnGate = new TurnGate();
             _sequence = new SequenceService();
-            _applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext);
+            _applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext, _playerIdMapper);
             _hostActionProcessor = new DefaultHostActionProcessor(this);
             _broadcaster = new PhotonBroadcaster(_serializer);
             _receiver = new PhotonReceiver(_serializer);
 
             _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
             {
-                onGameStartedOptional?.Invoke(e);
                 _applier.Apply(e);
             });
             _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e =>
@@ -73,7 +79,6 @@ namespace Tetrage.Network.Gameplay
             {
                 if (_isHost)
                 {
-                    onActionRequestedHost?.Invoke(e);
                     // まずは既定プロセッサで即時処理（後でDealer検証に差し替え可）
                     _hostActionProcessor.Process(e);
                 }

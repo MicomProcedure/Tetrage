@@ -9,6 +9,7 @@ using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
 using Tetrage.Network.Contracts;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Ids;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -46,6 +47,7 @@ namespace Tetrage.Managers
         private IEventEmitter<TurnStartedEvent> _lifecycleEmitter; // Hostのみ使用
         private IGameContextProvider _gameContext; // 読み取り専用のコンテキスト
         private INetworkContext _networkContext; // ネットワーク状態の抽象化
+        private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumber変換用
 
         /// <summary>
         /// ラウンド数
@@ -137,6 +139,14 @@ namespace Tetrage.Managers
             _networkContext = networkContext;
         }
 
+        /// <summary>
+        /// PlayerIdMapperを注入。PlayerId→ActorNumber変換に使用する。
+        /// </summary>
+        public void SetPlayerIdMapper(IPlayerIdMapper playerIdMapper)
+        {
+            _playerIdMapper = playerIdMapper;
+        }
+
 
 
         /// <summary>
@@ -219,9 +229,17 @@ namespace Tetrage.Managers
 
             // 4) 最初のプレイヤーを決定
             var firstPlayer = _dealerPlanner.DecideFirstPlayer(_gameContext.Players);
-            Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.PlayerId}");
+            Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.Id}");
             // 最初の手番を宣言（適用はApplierが行い、CurrentPlayerを設定）
-            _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = firstPlayer.PlayerId });
+            // PlayerId→ActorNumber変換を実行してから送信
+            if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(firstPlayer.Id, out var actorNumber))
+            {
+                _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = actorNumber });
+            }
+            else
+            {
+                Debug.LogWarning($"Dealer: PlayerId {firstPlayer.Id} のマッピングが見つかりません");
+            }
 
 
         }
@@ -322,7 +340,15 @@ namespace Tetrage.Managers
                 var next = _dealerPlanner.GetNextPlayer(_gameContext.CurrentPlayer, _gameContext.Players);
                 if (next != null && IsHost())
                 {
-                    _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = next.PlayerId });
+                    // PlayerId→ActorNumber変換を実行してから送信
+                    if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(next.Id, out var actorNumber))
+                    {
+                        _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = actorNumber });
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Dealer: PlayerId {next.Id} のマッピングが見つかりません");
+                    }
                     if (_turnGate != null)
                     {
                         await _turnGate.WaitNextAsync();
@@ -435,7 +461,15 @@ namespace Tetrage.Managers
         public void OnTurnStart()
         {
             _turnCount++;
-            _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = _gameContext.CurrentPlayer.PlayerId });
+            // PlayerId→ActorNumber変換を実行してから送信
+            if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(_gameContext.CurrentPlayer.Id, out var actorNumber))
+            {
+                _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = actorNumber });
+            }
+            else
+            {
+                Debug.LogWarning($"Dealer: PlayerId {_gameContext.CurrentPlayer.Id} のマッピングが見つかりません");
+            }
             Debug.Log($"Dealer: ターン {_turnCount} を開始します");
             TurnStart?.Invoke();
         }
@@ -443,7 +477,15 @@ namespace Tetrage.Managers
         {            // 終了イベントのネットワーク送信（任意）
             if (_lifecycleEmitter is GameLifecycleEmitter gle && IsHost() && _gameContext.CurrentPlayer != null)
             {
-                gle.EmitEnded(_gameContext.CurrentPlayer.PlayerId);
+                // PlayerId→ActorNumber変換を実行してから送信
+                if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(_gameContext.CurrentPlayer.Id, out var actorNumber))
+                {
+                    gle.EmitEnded(actorNumber);
+                }
+                else
+                {
+                    Debug.LogWarning($"Dealer: PlayerId {_gameContext.CurrentPlayer.Id} のマッピングが見つかりません");
+                }
             }
             TurnEnd?.Invoke();
         }

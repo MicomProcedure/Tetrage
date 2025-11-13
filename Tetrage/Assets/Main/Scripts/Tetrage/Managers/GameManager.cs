@@ -38,6 +38,7 @@ namespace Tetrage.Managers
         public GameContext GameContext => _gameContext;
 		private List<PlayerInfo> _participantInfos;
         private INetworkContext _networkContext;
+        private IPlayerIdMapper _playerIdMapper;
 
         #endregion
 
@@ -92,7 +93,8 @@ namespace Tetrage.Managers
         /// <param name="participantInfoList">参加者情報リスト</param>
         /// <param name="userPlayerInfo">ユーザープレイヤー情報</param>
         /// <param name="networkContext">ネットワーク状態の抽象化（ApplicationManagerから提供）</param>
-        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext = null)
+        /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング（ApplicationManagerから提供）</param>
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext = null, IPlayerIdMapper playerIdMapper = null)
         {
             if (_isInitialized)
             {
@@ -119,6 +121,9 @@ namespace Tetrage.Managers
                 
                 // 3.5 NetworkContextの設定（ApplicationManagerから提供、未提供の場合はPhoton実装を生成）
                 _networkContext = networkContext ?? new PhotonNetworkContext();
+                
+                // 3.6 PlayerIdMapperの設定（ApplicationManagerから提供）
+                _playerIdMapper = playerIdMapper;
 
                 // 3.5 ユーザープレイヤーの特定
                 if (!TryGetPlayerById(userPlayerInfo.Id, out var userPlayer))
@@ -170,6 +175,8 @@ namespace Tetrage.Managers
                     _dealer.SetEmitter(new DealerPlanEmitter(bc, seq));
                     _dealer.SetTurnGate(_netCtl.TurnGate);
                     _dealer.SetLifecycleEmitter(new GameLifecycleEmitter(bc, seq));
+                    // DealerにPlayerIdMapperを注入（PlayerId→ActorNumber変換用）
+                    _dealer.SetPlayerIdMapper(_playerIdMapper);
                 }
 
                 _isInitialized = true;
@@ -432,16 +439,17 @@ namespace Tetrage.Managers
 
         private IGameplayNetworkController InitializeNetworking()
         {
-            if (_networkInitialized) return _netCtl ?? new GameplayNetworkController();
+            if (_networkInitialized)
+            {
+                return _netCtl;
+            }
 
-            var netCtl = new GameplayNetworkController();
-            netCtl.Initialize(
-                PhotonNetwork.IsMasterClient,
+            var netCtl = new GameplayNetworkController(
+                _networkContext?.IsHost ?? PhotonNetwork.IsMasterClient,
                 _pileRegistry,
                 _cardRegistry,
                 _playerRegistry,
-                onActionRequestedHost: OnActionRequestedReceived,
-                onGameStartedOptional: OnGameStartedReceived
+                _playerIdMapper
             );
             netCtl.Start();
             _networkInitialized = true;
@@ -462,8 +470,6 @@ namespace Tetrage.Managers
 
         // NetPlayerInfo の送受信は撤廃
 
-        private void OnGameStartedReceived(GameStartedEvent e) { Debug.Log($"GameManager: GameStarted {e.deckId}"); }
-        private void OnTurnStartedReceived(TurnStartedEvent e) { Debug.Log($"TurnStarted seq={e.sequence} player={e.currentPlayerActorNumber}"); }
         private void OnActionRequestedReceived(ActionRequestedEvent e) { /* 旧ハンドラは廃止。Controller/Handlerに委譲 */ }
         #endregion
 
