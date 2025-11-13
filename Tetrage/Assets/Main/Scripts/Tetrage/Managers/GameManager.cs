@@ -12,6 +12,7 @@ using Tetrage.Models;
 using Photon.Pun;
 using Tetrage.Core.Constants;
 using Tetrage.Core;
+using Tetrage.Network.Contracts;
 
 namespace Tetrage.Managers
 {
