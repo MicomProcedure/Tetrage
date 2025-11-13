@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
+using Tetrage.Network.Contracts;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Managers
 {
@@ -48,6 +50,7 @@ namespace Tetrage.Managers
         private const string TitleSceneName = "TitleScene";
         private const string GameSceneName = "GameScene";
         private const string ResultSceneName = "ResultScene";
+        private INetworkContext _networkContext; // NetworkModeに応じたNetworkContext（現時点はPhoton実装）
         private readonly List<string> _sceneHistory = new List<string>();
         private bool _isLoading = false;
         #endregion
@@ -151,6 +154,10 @@ namespace Tetrage.Managers
             // Photonの接続・InRoomを待機
             await UniTask.WaitUntil(() => PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InRoom, cancellationToken: ct);
 
+            // NetworkContextの生成（現時点はPhoton実装、将来はNetworkModeに応じて切替）
+            _networkContext = new PhotonNetworkContext();
+            Debug.Log($"ApplicationManager: NetworkContext生成完了 (IsHost: {_networkContext.IsHost}, ActorNumber: {_networkContext.LocalActorNumber})");
+
             // GameManager の出現を待機
             GameManager gameManager = null;
             await UniTask.WaitUntil(() =>
@@ -188,7 +195,7 @@ namespace Tetrage.Managers
             // GameManager を初期化
             try
             {
-                gameManager.Initialize(players, userInfo);
+                gameManager.Initialize(players, userInfo, _networkContext);
                 Debug.Log("ApplicationManager: GameManager.Initialize を呼び出しました");
             }
             catch (System.SystemException ex)

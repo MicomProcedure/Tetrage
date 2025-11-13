@@ -37,6 +37,7 @@ namespace Tetrage.Managers
         private GameContext _gameContext;
         public GameContext GameContext => _gameContext;
 		private List<PlayerInfo> _participantInfos;
+        private INetworkContext _networkContext;
 
         #endregion
 
@@ -89,8 +90,9 @@ namespace Tetrage.Managers
         /// GameManagerの初期化
         /// </summary>
         /// <param name="participantInfoList">参加者情報リスト</param>
-        /// <param name="dealerStrategy">DealerStrategy</param>
-        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo)
+        /// <param name="userPlayerInfo">ユーザープレイヤー情報</param>
+        /// <param name="networkContext">ネットワーク状態の抽象化（ApplicationManagerから提供）</param>
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext = null)
         {
             if (_isInitialized)
             {
@@ -114,6 +116,9 @@ namespace Tetrage.Managers
 
                 // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 _netCtl = InitializeNetworking();
+                
+                // 3.5 NetworkContextの設定（ApplicationManagerから提供、未提供の場合はPhoton実装を生成）
+                _networkContext = networkContext ?? new PhotonNetworkContext();
 
                 // 3.5 ユーザープレイヤーの特定
                 if (!TryGetPlayerById(userPlayerInfo.Id, out var userPlayer))
@@ -155,8 +160,9 @@ namespace Tetrage.Managers
                     _inGameUIManager.Initialize(_gameContext);
                 }
 
-                // 6. Dealerへ Broadcaster/Sequence/TurnGate を提供（Hostのみ）
-                if (PhotonNetwork.IsMasterClient)
+                // 6. Dealerへ NetworkContext/Broadcaster/Sequence/TurnGate を提供（Hostのみ）
+                _dealer.SetNetworkContext(_networkContext);
+                if (_networkContext.IsHost)
                 {
                     var bc = _netCtl?.Broadcaster;
                     if (bc == null) throw new System.InvalidOperationException("Broadcaster が見つかりません。");

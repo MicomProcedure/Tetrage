@@ -7,7 +7,7 @@ using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
-using Photon.Pun;
+using Tetrage.Network.Contracts;
 using Tetrage.Core.DTO;
 
 /// <summary>
@@ -45,6 +45,7 @@ namespace Tetrage.Managers
         private TurnGate _turnGate; // Hostのみ使用
         private IEventEmitter<TurnStartedEvent> _lifecycleEmitter; // Hostのみ使用
         private IGameContextProvider _gameContext; // 読み取り専用のコンテキスト
+        private INetworkContext _networkContext; // ネットワーク状態の抽象化
 
         /// <summary>
         /// ラウンド数
@@ -126,6 +127,14 @@ namespace Tetrage.Managers
         public void SetLifecycleEmitter(IEventEmitter<TurnStartedEvent> emitter)
         {
             _lifecycleEmitter = emitter;
+        }
+
+        /// <summary>
+        /// NetworkContextを注入。ホスト判定等に使用する。
+        /// </summary>
+        public void SetNetworkContext(INetworkContext networkContext)
+        {
+            _networkContext = networkContext;
         }
 
 
@@ -311,7 +320,7 @@ namespace Tetrage.Managers
             {
                 // 次手番を決定し、TurnStarted を発行（Emitter経由）し、適用完了を待つ
                 var next = _dealerPlanner.GetNextPlayer(_gameContext.CurrentPlayer, _gameContext.Players);
-                if (next != null && PhotonNetwork.IsMasterClient)
+                if (next != null && IsHost())
                 {
                     _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = next.PlayerId });
                     if (_turnGate != null)
@@ -432,7 +441,7 @@ namespace Tetrage.Managers
         }
         public void OnTurnEnd()
         {            // 終了イベントのネットワーク送信（任意）
-            if (_lifecycleEmitter is GameLifecycleEmitter gle && PhotonNetwork.IsMasterClient && _gameContext.CurrentPlayer != null)
+            if (_lifecycleEmitter is GameLifecycleEmitter gle && IsHost() && _gameContext.CurrentPlayer != null)
             {
                 gle.EmitEnded(_gameContext.CurrentPlayer.PlayerId);
             }
@@ -539,9 +548,14 @@ namespace Tetrage.Managers
             return true;
         }
 
-        private static bool IsHost()
+        private bool IsHost()
         {
-            return PhotonNetwork.IsConnectedAndReady && PhotonNetwork.IsMasterClient;
+            if (_networkContext == null)
+            {
+                Debug.LogWarning("Dealer: NetworkContextが設定されていません。falseを返します。");
+                return false;
+            }
+            return _networkContext.IsHost;
         }
 
         #endregion
