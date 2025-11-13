@@ -268,7 +268,7 @@ Test/TutorialScript
 
 ### 4.3 実装手順（段階導入）
 
-#### Phase 1: INetworkContext導入（1-2日）
+#### Phase 1: INetworkContext導入（1-2日）【完了済・未レビュー】
 **目的:** Photon直接依存の抽象化
 
 - `INetworkContext`インターフェース定義
@@ -279,7 +279,7 @@ Test/TutorialScript
 **影響範囲:** Dealer, GameManager, ApplicationManager  
 **リスク:** 低
 
-#### Phase 2: IPlayerIdMapper導入（2-3日）
+#### Phase 2: IPlayerIdMapper導入（2-3日）【完了済・未レビュー】
 **目的:** PlayerId/ActorNumber分離
 
 - `IPlayerIdMapper`インターフェース定義
