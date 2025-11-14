@@ -21,7 +21,7 @@ Tetrageのネットワーク層を拡張し、以下を実現する：
 - アダプタ工場パターン導入（Photon/Virtual切替）
 - INetworkContext（Photon依存の抽象化）
 - IPlayerIdMapper（PlayerId/ActorNumber分離）
-- DomainEvent + UniRx統合
+- DomainEvent + R3統合
 - VirtualTransport（同一プロセス内仮想通信）
 - NetworkMode管理機構
 - PlayModeテストハーネス
@@ -52,7 +52,7 @@ Tetrageのネットワーク層を拡張し、以下を実現する：
 - NetworkDTOは転送層として維持
 - DomainEventを別途定義し、ドメイン層で使用
 - Boundary層（NetworkEventApplier/Emitter）で双方向変換
-- UniRxによる型安全なイベント購読
+- R3による型安全なイベント購読
 
 **不採用:**
 - アプローチ2（EventEnvelope）: 根本的な問題が解決しない
@@ -121,13 +121,14 @@ public interface IPlayerIdMapper {
 #### 3.1.5 DomainEventConverter
 NetworkDTOとDomainEventを相互変換（Boundary層でのみ使用）。
 
-#### 3.1.6 UniRxEventBus
-`IGameplayEventBus`をUniRxで実装。
+#### 3.1.6 R3EventBus
+`IGameplayEventBus`をR3で実装。
 
 **利点:**
 - `AddTo()`による自動購読解除
 - Rx演算子で宣言的処理
 - 型安全なイベント購読
+- UniRxより高速で軽量
 
 #### 3.1.7 INetworkAdapterFactory
 `INetworkBroadcaster`と`INetworkReceiver`のペアを生成。NetworkModeに応じた実装を返す。
@@ -175,7 +176,7 @@ NetworkDTOとDomainEventを相互変換（Boundary層でのみ使用）。
 │         ↓                        ↕                   │
 │  INetworkBroadcaster      DomainEvent                │
 │         ↓                        ↓                   │
-│  (Photon/Virtual)        IGameplayEventBus (UniRx)   │
+│  (Photon/Virtual)        IGameplayEventBus (R3)      │
 └──────────────────────────────┬───────────────────────┘
                                │
                    ┌───────────┼───────────┐
@@ -291,19 +292,20 @@ Test/TutorialScript
 **影響範囲:** ApplicationManager, NetworkEventApplier, GameLifecycleEmitter, TurnGate  
 **リスク:** 中（TurnGate変換漏れに注意）
 
-#### Phase 2.5: DomainEvent + UniRxEventBus導入（5-7日）
-**目的:** ドメイン層とネットワーク層の分離、UniRx統合
+#### Phase 2.5: DomainEvent + R3EventBus導入（5-7日）
+**目的:** ドメイン層とネットワーク層の分離、R3統合
 
 **Sub-Phase 1:** DomainEvent定義（1-2日）
 - `Tetrage.Core.Events`名前空間作成
 - 13種類のDomainEvent定義（強い型使用）
+- 基底クラス`DomainEventBase`の検討・実装
 
 **Sub-Phase 2:** DomainEventConverter実装（1-2日）
 - 全13種類のイベント変換メソッド実装
 - `IPlayerIdMapper`を使用してID変換
 
-**Sub-Phase 3:** UniRxEventBus実装（1日）
-- `IGameplayEventBus`をUniRx版に書き換え
+**Sub-Phase 3:** R3EventBus実装（1日）
+- `IGameplayEventBus`をR3版に書き換え
 - `Subject<T>`で実装
 
 **Sub-Phase 4:** NetworkEventApplier改修（1-2日）
@@ -311,7 +313,7 @@ Test/TutorialScript
 - DomainEventを`IGameplayEventBus.Publish()`
 
 **Sub-Phase 5:** UI層移行（2-3日）
-- 全UI系クラスを`IObservable.Subscribe().AddTo()`へ変更
+- 全UI系クラスを`Observable.Subscribe().AddTo()`へ変更
 - `CompositeDisposable`でライフサイクル管理
 
 **影響範囲:** NetworkEventApplier, GameLifecycleEmitter, IGameplayEventBus, 全UI層  
@@ -403,12 +405,12 @@ public interface INetworkAdapterFactory {
 }
 ```
 
-#### IGameplayEventBus（UniRx版）
+#### IGameplayEventBus（R3版）
 ```csharp
 public interface IGameplayEventBus {
-    IObservable<TurnStartedEvent> TurnStarted { get; }
-    IObservable<CardMovedEvent> CardMoved { get; }
-    IObservable<GameEndedEvent> GameEnded { get; }
+    Observable<TurnStartedEvent> TurnStarted { get; }
+    Observable<CardMovedEvent> CardMoved { get; }
+    Observable<GameEndedEvent> GameEnded { get; }
     // ... 他のイベント
     
     void Publish(TurnStartedEvent e);
@@ -453,9 +455,11 @@ namespace Tetrage.Core.Events
 }
 ```
 
-### 5.3 UI層でのUniRx使用パターン
+### 5.3 UI層でのR3使用パターン
 
 ```csharp
+using R3;
+
 public class InGameUIManager : MonoBehaviour
 {
     private IGameplayEventBus _eventBus;
@@ -468,24 +472,24 @@ public class InGameUIManager : MonoBehaviour
         // 基本的な購読
         _eventBus.TurnStarted
             .Subscribe(OnTurnStarted)
-            .AddTo(_disposables);
+            .AddTo(ref _disposables);
         
         // フィルタリング: 特定プレイヤーのターンのみ
         _eventBus.TurnStarted
             .Where(e => e.CurrentPlayerId == _myPlayerId)
             .Subscribe(_ => ShowMyTurnUI())
-            .AddTo(_disposables);
+            .AddTo(ref _disposables);
         
         // 複数イベントのマージ
         Observable.Merge(
             _eventBus.TurnStarted.AsUnitObservable(),
             _eventBus.CardMoved.AsUnitObservable()
-        ).Subscribe(_ => UpdateUI()).AddTo(_disposables);
+        ).Subscribe(_ => UpdateUI()).AddTo(ref _disposables);
     }
     
     private void OnDestroy()
     {
-        _disposables?.Dispose();
+        _disposables.Dispose();
     }
 }
 ```
@@ -512,8 +516,9 @@ public class InGameUIManager : MonoBehaviour
   - ロック: `GameManager.Initialize()`後は変更不可
 - **リスク評価:** 5/10（設計明確化で対応可能）
 
-**3. UniRx購読のライフサイクル管理**
+**3. R3購読のライフサイクル管理**
 - **推奨パターン:** `CompositeDisposable`使用、`OnDestroy()`で確実にDispose
+- **注意:** R3では`AddTo(ref disposables)`と`ref`キーワードが必要
 - **リスク評価:** 6/10（購読解除漏れに注意）
 
 #### 🟡 中優先度（Phase 5-6で対応）
@@ -601,7 +606,7 @@ PlayModeでの回帰テストと速度の両立に有効で、将来の拡張性
 ### 7.3 参考資料
 
 - **Photon Unity Networking (PUN2)**: https://doc.photonengine.com/pun/current/getting-started/pun-intro
-- **UniRx**: https://github.com/neuecc/UniRx
+- **R3**: https://github.com/Cysharp/R3
 - **UniTask**: https://github.com/Cysharp/UniTask
 - **Adapter Factory Pattern**: Gang of Four デザインパターン
 - **Domain Events**: Domain-Driven Design (Eric Evans)
