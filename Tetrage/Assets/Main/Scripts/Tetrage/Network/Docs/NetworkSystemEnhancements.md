@@ -37,13 +37,13 @@ Tetrageのネットワーク層を拡張し、以下を実現する：
 
 ### 2.1 課題分析
 
-| 課題 | 影響 | 優先度 |
-|------|------|--------|
-| **Photon直接依存** | `PhotonNetwork.IsMasterClient`等の直接参照が散在 | 高 |
-| **PlayerId/ActorNumber混在** | ドメイン層がネットワーク固有IDに依存 | 高 |
-| **PlayModeテスト不可** | E2E検証にPhoton接続が必須 | 高 |
-| **イベント型の制約** | NetworkDTOがプリミティブ型のみ（強い型不可） | 中 |
-| **購読管理の煩雑さ** | 手動購読解除によるメモリリーク懸念 | 中 |
+| 課題                         | 影響                                             | 優先度 |
+| ---------------------------- | ------------------------------------------------ | ------ |
+| **Photon直接依存**           | `PhotonNetwork.IsMasterClient`等の直接参照が散在 | 高     |
+| **PlayerId/ActorNumber混在** | ドメイン層がネットワーク固有IDに依存             | 高     |
+| **PlayModeテスト不可**       | E2E検証にPhoton接続が必須                        | 高     |
+| **イベント型の制約**         | NetworkDTOがプリミティブ型のみ（強い型不可）     | 中     |
+| **購読管理の煩雑さ**         | 手動購読解除によるメモリリーク懸念               | 中     |
 
 ### 2.2 採用アプローチ
 
@@ -73,12 +73,12 @@ Tetrageのネットワーク層を拡張し、以下を実現する：
 #### 3.1.1 NetworkMode（動作モード）
 ゲームの起動モードを定義する列挙型。
 
-| モード | 説明 | 用途 |
-|--------|------|------|
-| `RealPhoton` | Photonネットワーク経由 | 本番プレイ |
-| `VirtualTransport` | 同一プロセス内仮想通信 | PlayMode E2Eテスト |
-| `LogicInjection` | DomainEvent直接注入 | 部分再現、チュートリアル |
-| `LocalVsBot` | ローカル vs ボット | オフライン練習（計画） |
+| モード             | 説明                   | 用途                     |
+| ------------------ | ---------------------- | ------------------------ |
+| `RealPhoton`       | Photonネットワーク経由 | 本番プレイ               |
+| `VirtualTransport` | 同一プロセス内仮想通信 | PlayMode E2Eテスト       |
+| `LogicInjection`   | DomainEvent直接注入    | 部分再現、チュートリアル |
+| `LocalVsBot`       | ローカル vs ボット     | オフライン練習（計画）   |
 
 #### 3.1.2 INetworkContext
 Photon固有の状態情報を抽象化。
@@ -229,43 +229,45 @@ Test/TutorialScript
 
 ### 4.1 新規コンポーネント一覧
 
-| コンポーネント | 種類 | 責務 |
-|--------------|------|------|
-| `INetworkContext` | Interface | ネットワーク状態の抽象化 |
-| `PhotonNetworkContext` | Class | Photon版NetworkContext |
-| `VirtualNetworkContext` | Class | Virtual版NetworkContext |
-| `IPlayerIdMapper` | Interface | PlayerId/ActorNumber変換 |
-| `PlayerIdMapper` | Class | マッピング実装 |
-| `DomainEvent`系 | Class | ドメイン層イベント（13種類） |
-| `DomainEventConverter` | Class | DTO⇔DomainEvent変換 |
-| `UniRxEventBus` | Class | UniRx版EventBus |
-| `INetworkAdapterFactory` | Interface | Broadcaster/Receiver生成 |
-| `PhotonNetworkAdapterFactory` | Class | Photon版Factory |
-| `VirtualNetworkAdapterFactory` | Class | Virtual版Factory |
-| `VirtualBroadcaster` | Class | 仮想送信 |
-| `VirtualReceiver` | Class | 仮想受信 |
-| `VirtualTransportHub` | Class | Peer管理・ルーティング |
-| `VirtualNetworkSettings` | Class | 遅延/欠損設定（将来） |
-| `IVirtualLogicFeeder` | Interface | ロジック注入 |
-| `VirtualLogicFeeder` | Class | ロジック注入実装 |
-| `VirtualNetworkTestHarness` | Class | PlayModeテストユーティリティ |
-| `NetworkMode` | Enum | 動作モード定義 |
+| コンポーネント                 | 種類      | 責務                                   |
+| ------------------------------ | --------- | -------------------------------------- |
+| `INetworkContext`              | Interface | ネットワーク状態の抽象化               |
+| `PhotonNetworkContext`         | Class     | Photon版NetworkContext                 |
+| `VirtualNetworkContext`        | Class     | Virtual版NetworkContext                |
+| `IPlayerIdMapper`              | Interface | PlayerId/ActorNumber変換               |
+| `PlayerIdMapper`               | Class     | マッピング実装                         |
+| `DomainEvent`系                | Class     | ドメイン層イベント（13種類）           |
+| `DomainEventConverter`         | Class     | DTO⇔DomainEvent変換                    |
+| `R3EventBus`                   | Class     | R3版EventBus（Observable/Subject使用） |
+| `GameplayDomainEventHandler`   | Class     | DomainEvent購読・ドメインロジック実行  |
+| `INetworkAdapterFactory`       | Interface | Broadcaster/Receiver生成               |
+| `PhotonNetworkAdapterFactory`  | Class     | Photon版Factory                        |
+| `VirtualNetworkAdapterFactory` | Class     | Virtual版Factory                       |
+| `VirtualBroadcaster`           | Class     | 仮想送信                               |
+| `VirtualReceiver`              | Class     | 仮想受信                               |
+| `VirtualTransportHub`          | Class     | Peer管理・ルーティング                 |
+| `VirtualNetworkSettings`       | Class     | 遅延/欠損設定（将来）                  |
+| `IVirtualLogicFeeder`          | Interface | ロジック注入                           |
+| `VirtualLogicFeeder`           | Class     | ロジック注入実装                       |
+| `VirtualNetworkTestHarness`    | Class     | PlayModeテストユーティリティ           |
+| `NetworkMode`                  | Enum      | 動作モード定義                         |
 
 ### 4.2 変更が必要なクラス
 
-| クラス | 変更種別 | 主な変更内容 |
-|--------|----------|-------------|
-| `GameplayNetworkController` | 大幅 | INetworkAdapterFactory受取、Broadcaster/Receiver生成を工場に委譲 |
-| `NetworkEventApplier` | 大幅 | Apply()内でDomainEventConverter呼び出し、IGameplayEventBus.Publish()追加 |
-| `InGameUIManager` | 大幅 | イベント購読を+=からIObservable.Subscribe().AddTo()へ変更 |
-| `GameManager` | 中 | InitializeNetworking()でINetworkContext/IPlayerIdMapper注入 |
-| `ApplicationManager` | 中 | NetworkMode管理追加、PlayerInfo生成時にIPlayerIdMapper構築 |
-| `GameLifecycleEmitter` | 中 | Emit()前にDomainEvent→DTO変換追加 |
-| `DealerPlanEmitter` | 中 | Emit()前にDomainEvent→DTO変換追加 |
-| `Dealer` | 小 | PhotonNetwork.IsMasterClient → INetworkContext.IsHost置換 |
-| `TurnGate` | 小 | Release(actorNumber)をRelease(playerId)へ変更 |
-| `IGameplayEventBus` | 置換 | UniRx版に置換（IObservable<T>返却） |
-| `SimpleGameplayEventBus` | 削除 | UniRxEventBusに置換 |
+| クラス                       | 変更種別 | 主な変更内容                                                                  |
+| ---------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `GameplayNetworkController`  | 大幅     | INetworkAdapterFactory受取、Broadcaster/Receiver生成を工場に委譲              |
+| `NetworkEventApplier`        | 大幅     | DTO→DomainEvent変換専用に改修、ドメインロジック削除、DomainEventConverter使用 |
+| `GameplayDomainEventHandler` | 新規     | DomainEvent購読、現在のNetworkEventApplier内のドメインロジックを移植          |
+| `InGameUIManager`            | 大幅     | イベント購読を+=からObservable.Subscribe().AddTo()へ変更                      |
+| `GameManager`                | 中       | InitializeNetworking()でINetworkContext/IPlayerIdMapper注入                   |
+| `ApplicationManager`         | 中       | NetworkMode管理追加、PlayerInfo生成時にIPlayerIdMapper構築                    |
+| `GameLifecycleEmitter`       | 中       | Emit()前にDomainEvent→DTO変換追加                                             |
+| `DealerPlanEmitter`          | 中       | Emit()前にDomainEvent→DTO変換追加                                             |
+| `Dealer`                     | 小       | PhotonNetwork.IsMasterClient → INetworkContext.IsHost置換                     |
+| `TurnGate`                   | 小       | Release(actorNumber)をRelease(playerId)へ変更                                 |
+| `IGameplayEventBus`          | 置換     | R3版に置換（Observable<T>返却）【完了】                                       |
+| `SimpleGameplayEventBus`     | 削除     | R3EventBusに置換【完了】                                                      |
 
 ### 4.3 実装手順（段階導入）
 
@@ -304,20 +306,47 @@ Test/TutorialScript
 - 全13種類のイベント変換メソッド実装
 - `IPlayerIdMapper`を使用してID変換
 
-**Sub-Phase 3:** R3EventBus実装（1日）
+**Sub-Phase 3:** R3EventBus実装（1日）【完了】
 - `IGameplayEventBus`をR3版に書き換え
 - `Subject<T>`で実装
+- NetworkDTOとDomainEventの名前衝突を回避（using aliasで対応）
 
-**Sub-Phase 4:** NetworkEventApplier改修（1-2日）
-- `Apply()`メソッド内でDTO→DomainEvent変換
-- DomainEventを`IGameplayEventBus.Publish()`
+**【設計変更】Sub-Phase 4の責務分離**
+
+**変更理由:**
+現在の`NetworkEventApplier`は2つの責務を持っており、SRP違反となっている：
+1. DTO→DomainEvent変換 + EventBus.Publish（Boundary層）
+2. ドメインロジック実行（CardPile.Transfer、GameContext更新等）
+
+この設計では以下の問題が発生：
+- テストでDomainEventを直接流せない（NetworkDTOが必須）
+- LogicInjectionモードでもApplier経由が必要
+- ドメインロジックがBoundary層に混入
+
+**修正後の設計:**
+- `NetworkEventApplier`: DTO→DomainEvent変換 + Publishのみ（Boundary層）
+- `GameplayDomainEventHandler`: DomainEvent購読 + ドメインロジック実行（Domain層）
+
+この分離により、テストやLogicInjectionで`IGameplayEventBus.Publish(domainEvent)`を直接呼べば、
+NetworkEventApplierをバイパスしてドメインロジックを実行可能になる。
+
+**Sub-Phase 4-1:** NetworkEventApplier改修（1日）
+- DTO→DomainEvent変換専用に改修
+- `DomainEventConverter`を使用してDomainEventに変換
+- `IGameplayEventBus.Publish()`でイベント発行
+- ドメインロジック（モデル更新）は**削除**
+
+**Sub-Phase 4-2:** GameplayDomainEventHandler新規作成（1-2日）
+- DomainEventを購読してドメインロジックを実行
+- 現在のNetworkEventApplier内のドメインロジックを移植
+- R3の`Subscribe().AddTo()`で購読管理
 
 **Sub-Phase 5:** UI層移行（2-3日）
 - 全UI系クラスを`Observable.Subscribe().AddTo()`へ変更
 - `CompositeDisposable`でライフサイクル管理
 
-**影響範囲:** NetworkEventApplier, GameLifecycleEmitter, IGameplayEventBus, 全UI層  
-**リスク:** 中高（UI層の全面改修、購読解除漏れに注意）
+**影響範囲:** NetworkEventApplier（大幅改修）, GameplayDomainEventHandler（新規）, IGameplayEventBus, 全UI層  
+**リスク:** 中高（責務分離による大幅改修、購読解除漏れに注意）
 
 #### Phase 3: INetworkAdapterFactory導入（2-3日）
 **目的:** Photon/Virtual切替機構
@@ -554,13 +583,13 @@ public class InGameUIManager : MonoBehaviour
 
 ### 6.2 リスク評価サマリー
 
-| リスク項目 | 評価(10点満点) | 対策 |
-|-----------|---------------|------|
-| 依存面の波及 | 3/10 | 変更は`GameplayNetworkController`中心に限定 |
-| 初期化順序の複雑化 | 5/10 | ハーネスで統制、ドキュメント化 |
-| TurnGate変換漏れ | 7/10 | **Phase 2で確実に対応、単体テスト作成** |
-| DomainEvent + UniRx導入の波及 | 7/10 | UI層の全面改修、段階的移行 |
-| 購読解除漏れ | 6/10 | `CompositeDisposable`パターン徹底 |
+| リスク項目                    | 評価(10点満点) | 対策                                        |
+| ----------------------------- | -------------- | ------------------------------------------- |
+| 依存面の波及                  | 3/10           | 変更は`GameplayNetworkController`中心に限定 |
+| 初期化順序の複雑化            | 5/10           | ハーネスで統制、ドキュメント化              |
+| TurnGate変換漏れ              | 7/10           | **Phase 2で確実に対応、単体テスト作成**     |
+| DomainEvent + UniRx導入の波及 | 7/10           | UI層の全面改修、段階的移行                  |
+| 購読解除漏れ                  | 6/10           | `CompositeDisposable`パターン徹底           |
 
 **総合推奨度: 9/10**
 
@@ -572,36 +601,36 @@ PlayModeでの回帰テストと速度の両立に有効で、将来の拡張性
 
 ### 7.1 NetworkDTO ⇔ DomainEvent 対応表
 
-| NetworkDTO名 | EventCode | DomainEvent名 | ActorNumber含有 | 変換の注意点 |
-|-------------|-----------|--------------|----------------|-------------|
-| GameStartedEvent | 1 | GameStartedEvent | ✓ | playerActorNumbers配列変換 |
-| TurnStartedEvent | 2 | TurnStartedEvent | ✓ | currentPlayerActorNumber変換 |
-| CardMovedEvent | 3 | CardMovedEvent | - | 変換不要（そのまま） |
-| TurnEndedEvent | 4 | TurnEndedEvent | ✓ | previousPlayerActorNumber変換 |
-| GameEndedEvent | 5 | GameEndedEvent | ✓ | winnerActorNumbers配列変換 |
-| CardVisibilityChangedEvent | 7 | CardVisibilityChangedEvent | - | 変換不要 |
-| StartScanPhaseEvent | 9 | ScanPhaseStartedEvent | ✓ | playerActorNumbers配列変換 |
-| EndScanPhaseEvent | 10 | ScanPhaseEndedEvent | - | 変換不要 |
-| FinishingGameEvent | 11 | FinishingGameEvent | ✓ | winnerActorNumbers配列変換 |
-| ActionRequestedEvent | 20 | ActionRequestedEvent | ✓ | actorPlayerId変換 |
-| ActionResultEvent | 21 | ActionResultEvent | ✓ | actorPlayerId変換 |
-| PileShuffledWithSeedEvent | 22 | PileShuffledEvent | - | 変換不要 |
-| ListOrderDeclaredEvent | 23 | ListOrderDeclaredEvent | - | 汎用リスト（種別に応じて変換） |
+| NetworkDTO名               | EventCode | DomainEvent名              | ActorNumber含有 | 変換の注意点                   |
+| -------------------------- | --------- | -------------------------- | --------------- | ------------------------------ |
+| GameStartedEvent           | 1         | GameStartedEvent           | ✓               | playerActorNumbers配列変換     |
+| TurnStartedEvent           | 2         | TurnStartedEvent           | ✓               | currentPlayerActorNumber変換   |
+| CardMovedEvent             | 3         | CardMovedEvent             | -               | 変換不要（そのまま）           |
+| TurnEndedEvent             | 4         | TurnEndedEvent             | ✓               | previousPlayerActorNumber変換  |
+| GameEndedEvent             | 5         | GameEndedEvent             | ✓               | winnerActorNumbers配列変換     |
+| CardVisibilityChangedEvent | 7         | CardVisibilityChangedEvent | -               | 変換不要                       |
+| StartScanPhaseEvent        | 9         | ScanPhaseStartedEvent      | ✓               | playerActorNumbers配列変換     |
+| EndScanPhaseEvent          | 10        | ScanPhaseEndedEvent        | -               | 変換不要                       |
+| FinishingGameEvent         | 11        | FinishingGameEvent         | ✓               | winnerActorNumbers配列変換     |
+| ActionRequestedEvent       | 20        | ActionRequestedEvent       | ✓               | actorPlayerId変換              |
+| ActionResultEvent          | 21        | ActionResultEvent          | ✓               | actorPlayerId変換              |
+| PileShuffledWithSeedEvent  | 22        | PileShuffledEvent          | -               | 変換不要                       |
+| ListOrderDeclaredEvent     | 23        | ListOrderDeclaredEvent     | -               | 汎用リスト（種別に応じて変換） |
 
 ### 7.2 用語集
 
-| 用語 | 説明 |
-|------|------|
-| **NetworkMode** | ゲームの動作モード（RealPhoton/VirtualTransport/LogicInjection/LocalVsBot） |
-| **PlayerId** | ドメイン層で使用する内部プレイヤーID（1,2,3,4...とシーケンシャル） |
-| **ActorNumber** | Photonが割り当てるネットワークID（任意の整数） |
-| **NetworkDTO** | ネットワーク転送用のデータ構造（プリミティブ型のみ） |
-| **DomainEvent** | ドメイン層で使用するイベント（強い型使用可能） |
-| **Boundary** | ネットワーク層とドメイン層の境界（変換が行われる場所） |
-| **VirtualTransport** | 同一プロセス内でネットワーク通信を模倣する機構 |
-| **LogicInjection** | DomainEventを直接注入する機構 |
-| **UniRx** | Reactive Extensions for Unity（リアクティブプログラミングライブラリ） |
-| **CompositeDisposable** | 複数のDisposableを一括管理するUniRxのクラス |
+| 用語                    | 説明                                                                        |
+| ----------------------- | --------------------------------------------------------------------------- |
+| **NetworkMode**         | ゲームの動作モード（RealPhoton/VirtualTransport/LogicInjection/LocalVsBot） |
+| **PlayerId**            | ドメイン層で使用する内部プレイヤーID（1,2,3,4...とシーケンシャル）          |
+| **ActorNumber**         | Photonが割り当てるネットワークID（任意の整数）                              |
+| **NetworkDTO**          | ネットワーク転送用のデータ構造（プリミティブ型のみ）                        |
+| **DomainEvent**         | ドメイン層で使用するイベント（強い型使用可能）                              |
+| **Boundary**            | ネットワーク層とドメイン層の境界（変換が行われる場所）                      |
+| **VirtualTransport**    | 同一プロセス内でネットワーク通信を模倣する機構                              |
+| **LogicInjection**      | DomainEventを直接注入する機構                                               |
+| **UniRx**               | Reactive Extensions for Unity（リアクティブプログラミングライブラリ）       |
+| **CompositeDisposable** | 複数のDisposableを一括管理するUniRxのクラス                                 |
 
 ### 7.3 参考資料
 
