@@ -35,14 +35,14 @@ namespace Tetrage.Network.Gameplay
         /// <param name="pileRegistry">カードパイルレジストリ</param>
         /// <param name="cardRegistry">カードレジストリ</param>
         /// <param name="playerRegistry">プレイヤーレジストリ</param>
-        /// <param name="onActionRequestedHost">ホスト側のアクション要求ハンドラ</param>
-        /// <param name="onGameStartedOptional">ゲーム開始時のオプショナルハンドラ</param>
+        /// <param name="adapterFactory">ネットワークアダプタファクトリ（Photon/Virtual切替用）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング</param>
         public GameplayNetworkController(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<CardId, Card> cardRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
+            INetworkAdapterFactory adapterFactory,
             IPlayerIdMapper playerIdMapper = null)
         {
             _serializer = new PhotonJsonSerializer();
@@ -70,8 +70,10 @@ namespace Tetrage.Network.Gameplay
                 _bus);
 
             _hostActionProcessor = new DefaultHostActionProcessor(this);
-            _broadcaster = new PhotonBroadcaster(_serializer);
-            _receiver = new PhotonReceiver(_serializer);
+            
+            // ファクトリからBroadcaster/Receiverを生成
+            _broadcaster = adapterFactory.CreateBroadcaster(_serializer);
+            _receiver = adapterFactory.CreateReceiver(_serializer);
 
             _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
             {

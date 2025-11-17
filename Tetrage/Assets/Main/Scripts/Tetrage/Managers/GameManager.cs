@@ -444,11 +444,17 @@ namespace Tetrage.Managers
                 return _netCtl;
             }
 
+            // Phase 3: ネットワークアダプタファクトリを選択
+            // 現時点ではPhotonNetworkAdapterFactoryを使用
+            // Phase 4でNetworkModeによる切り替えを実装予定
+            INetworkAdapterFactory adapterFactory = new PhotonNetworkAdapterFactory();
+
             var netCtl = new GameplayNetworkController(
                 _networkContext?.IsHost ?? PhotonNetwork.IsMasterClient,
                 _pileRegistry,
                 _cardRegistry,
                 _playerRegistry,
+                adapterFactory,
                 _playerIdMapper
             );
             netCtl.Start();
