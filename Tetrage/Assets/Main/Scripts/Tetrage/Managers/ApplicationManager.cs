@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
+using Tetrage.Network;
 using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Managers
@@ -45,6 +46,45 @@ namespace Tetrage.Managers
         public static bool CanControlScene => !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
         #endregion
 
+        #region NetworkMode管理
+        /// <summary>
+        /// 現在のNetworkModeを取得する
+        /// </summary>
+        public NetworkMode CurrentNetworkMode => _networkMode;
+
+        /// <summary>
+        /// NetworkModeを設定する。
+        /// GameManager.Initialize()後は変更不可（ロック機構）。
+        /// </summary>
+        /// <param name="mode">設定するNetworkMode</param>
+        /// <returns>設定に成功した場合true、ロック後の場合false</returns>
+        public bool SetNetworkMode(NetworkMode mode)
+        {
+            if (_networkModeLocked)
+            {
+                Debug.LogWarning($"ApplicationManager: NetworkModeはロック済みです。変更できません。(現在: {_networkMode})");
+                return false;
+            }
+
+            _networkMode = mode;
+            Debug.Log($"ApplicationManager: NetworkModeを {mode} に設定しました");
+            return true;
+        }
+
+        /// <summary>
+        /// NetworkModeをロックする。
+        /// GameManager.Initialize()呼び出し時に自動的にロックされる。
+        /// </summary>
+        internal void LockNetworkMode()
+        {
+            if (!_networkModeLocked)
+            {
+                _networkModeLocked = true;
+                Debug.Log($"ApplicationManager: NetworkModeをロックしました (モード: {_networkMode})");
+            }
+        }
+        #endregion
+
         #region Fields
         private System.Threading.CancellationTokenSource _lifecycleCts;
         private const string TitleSceneName = "TitleScene";
@@ -54,6 +94,10 @@ namespace Tetrage.Managers
         private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumberマッピング
         private readonly List<string> _sceneHistory = new List<string>();
         private bool _isLoading = false;
+        
+        // Phase 4: NetworkMode管理
+        private NetworkMode _networkMode = NetworkMode.RealPhoton; // デフォルトはRealPhoton
+        private bool _networkModeLocked = false; // GameManager.Initialize()後はロック
         #endregion
 
         #region Unity Events
@@ -197,6 +241,10 @@ namespace Tetrage.Managers
             try
             {
                 gameManager.Initialize(players, userInfo, _networkContext, _playerIdMapper);
+                
+                // Phase 4: NetworkModeをロック（以後変更不可）
+                LockNetworkMode();
+                
                 Debug.Log("ApplicationManager: GameManager.Initialize を呼び出しました");
             }
             catch (System.SystemException ex)

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using Tetrage.Core.Contracts;
+using Tetrage.Network;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Ids;
 using Tetrage.Models;
@@ -93,7 +94,7 @@ namespace Tetrage.Managers
         /// <param name="userPlayerInfo">ユーザープレイヤー情報</param>
         /// <param name="networkContext">ネットワーク状態の抽象化（ApplicationManagerから提供）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング（ApplicationManagerから提供）</param>
-        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext = null, IPlayerIdMapper playerIdMapper = null)
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, IPlayerIdMapper playerIdMapper = null)
         {
             if (_isInitialized)
             {
@@ -119,7 +120,7 @@ namespace Tetrage.Managers
                 _netCtl = InitializeNetworking();
                 
                 // 3.5 NetworkContextの設定（ApplicationManagerから提供、未提供の場合はPhoton実装を生成）
-                _networkContext = networkContext ?? new PhotonNetworkContext();
+                _networkContext = networkContext;
                 
                 // 3.6 PlayerIdMapperの設定（ApplicationManagerから提供）
                 _playerIdMapper = playerIdMapper;
@@ -443,10 +444,9 @@ namespace Tetrage.Managers
                 return _netCtl;
             }
 
-            // Phase 3: ネットワークアダプタファクトリを選択
-            // 現時点ではPhotonNetworkAdapterFactoryを使用
-            // Phase 4でNetworkModeによる切り替えを実装予定
-            INetworkAdapterFactory adapterFactory = new PhotonNetworkAdapterFactory();
+            // Phase 4: NetworkModeに応じたファクトリを選択
+            NetworkMode networkMode = ApplicationManager.Instance?.CurrentNetworkMode ?? NetworkMode.RealPhoton;
+            INetworkAdapterFactory adapterFactory = CreateNetworkAdapterFactory(networkMode);
 
             var netCtl = new GameplayNetworkController(
                 _networkContext?.IsHost ?? PhotonNetwork.IsMasterClient,
@@ -459,6 +459,35 @@ namespace Tetrage.Managers
             netCtl.Start();
             _networkInitialized = true;
             return netCtl;
+        }
+
+        /// <summary>
+        /// NetworkModeに応じたINetworkAdapterFactoryを生成する
+        /// </summary>
+        private INetworkAdapterFactory CreateNetworkAdapterFactory(NetworkMode mode)
+        {
+            switch (mode)
+            {
+                case NetworkMode.RealPhoton:
+                    Debug.Log("GameManager: PhotonNetworkAdapterFactoryを使用します");
+                    return new PhotonNetworkAdapterFactory();
+
+                case NetworkMode.VirtualTransport:
+                    Debug.Log("GameManager: VirtualNetworkAdapterFactoryを使用します（Phase 5で完全実装予定）");
+                    return new VirtualNetworkAdapterFactory();
+
+                case NetworkMode.LogicInjection:
+                    Debug.LogWarning("GameManager: LogicInjectionモードではNetworkAdapterは使用されません。PhotonAdapterをフォールバックとして使用します");
+                    return new PhotonNetworkAdapterFactory();
+
+                case NetworkMode.LocalVsBot:
+                    Debug.LogWarning("GameManager: LocalVsBotモードは未実装です。PhotonAdapterをフォールバックとして使用します");
+                    return new PhotonNetworkAdapterFactory();
+
+                default:
+                    Debug.LogWarning($"GameManager: 未知のNetworkMode({mode})です。PhotonAdapterをデフォルトとして使用します");
+                    return new PhotonNetworkAdapterFactory();
+            }
         }
 
         private int[] BuildInitialPlayerOrder()
@@ -475,7 +504,6 @@ namespace Tetrage.Managers
 
         // NetPlayerInfo の送受信は撤廃
 
-        private void OnActionRequestedReceived(ActionRequestedEvent e) { /* 旧ハンドラは廃止。Controller/Handlerに委譲 */ }
         #endregion
 
         #region プレイヤーヘルパーメソッド
