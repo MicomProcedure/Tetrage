@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Ids;
-using Tetrage.Network.Contracts;
+using Tetrage.Network.Gameplay;
 using UnityEngine;
 
 namespace Tetrage.Core.Events

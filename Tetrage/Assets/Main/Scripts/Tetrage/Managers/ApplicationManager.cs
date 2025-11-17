@@ -7,7 +7,6 @@ using UnityEngine.SceneManagement;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
-using Tetrage.Network.Contracts;
 using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Managers

@@ -1,4 +1,4 @@
-namespace Tetrage.Network.Contracts{
+namespace Tetrage.Network.Gameplay{
 
     /// <summary>
     /// ネットワーク状態の抽象化インターフェース。

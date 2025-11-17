@@ -4,7 +4,7 @@ using Tetrage.Core;
 using Tetrage.Network.Gameplay;
 using System;
 
-namespace Tetrage.Network.Contracts
+namespace Tetrage.Network.Gameplay
 {
     // ゲームプレイ用のネットワーク制御インターフェース（GameManagerから参照）
     public interface IGameplayNetworkController

@@ -7,7 +7,7 @@ namespace Tetrage.Network.Gameplay
     /// <summary>
     /// PlayerIdとActorNumberの双方向マッピングを管理する実装。
     /// </summary>
-    public sealed class PlayerIdMapper : Tetrage.Network.Contracts.IPlayerIdMapper
+    public sealed class PlayerIdMapper : IPlayerIdMapper
     {
         private readonly Dictionary<int, PlayerId> _actorToPlayerId = new Dictionary<int, PlayerId>();
         private readonly Dictionary<PlayerId, int> _playerIdToActor = new Dictionary<PlayerId, int>();

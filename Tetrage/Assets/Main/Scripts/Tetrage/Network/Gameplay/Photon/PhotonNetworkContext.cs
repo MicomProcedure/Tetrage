@@ -1,5 +1,4 @@
 using Photon.Pun;
-using Tetrage.Network.Contracts;
 
 namespace Tetrage.Network.Gameplay
 {

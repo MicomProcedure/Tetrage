@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Tetrage.Core.Ids;
 
-namespace Tetrage.Network.Contracts
+namespace Tetrage.Network.Gameplay
 {
     /// <summary>
     /// PlayerId（ドメイン内部ID）とActorNumber（ネットワークID）の双方向変換を管理するインターフェース。
