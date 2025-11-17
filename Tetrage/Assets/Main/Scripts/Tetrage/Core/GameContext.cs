@@ -6,7 +6,7 @@ using Tetrage.Network.Gameplay;
 namespace Tetrage.Core
 {
     /// <summary>
-    /// ゲーム全体の読み取り専用コンテキスト。状態の書き込みは NetworkEventApplier だけが行う想定。
+    /// ゲーム全体の読み取り専用コンテキスト。状態の書き込みは GameplayDomainEventHandler だけが行う想定。
     /// </summary>
     public sealed class GameContext : IGameContextProvider
     {

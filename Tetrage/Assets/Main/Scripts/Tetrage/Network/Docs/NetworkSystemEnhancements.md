@@ -306,10 +306,11 @@ Test/TutorialScript
 - 全13種類のイベント変換メソッド実装
 - `IPlayerIdMapper`を使用してID変換
 
-**Sub-Phase 3:** R3EventBus実装（1日）【完了】
+**Sub-Phase 3:** R3EventBus実装（1日）【✅完了】
 - `IGameplayEventBus`をR3版に書き換え
 - `Subject<T>`で実装
 - NetworkDTOとDomainEventの名前衝突を回避（using aliasで対応）
+- SimpleGameplayEventBusを非推奨化
 
 **【設計変更】Sub-Phase 4の責務分離**
 
@@ -330,20 +331,32 @@ Test/TutorialScript
 この分離により、テストやLogicInjectionで`IGameplayEventBus.Publish(domainEvent)`を直接呼べば、
 NetworkEventApplierをバイパスしてドメインロジックを実行可能になる。
 
-**Sub-Phase 4-1:** NetworkEventApplier改修（1日）
+**Sub-Phase 4-1:** NetworkEventApplier改修（1日）【✅完了】
 - DTO→DomainEvent変換専用に改修
 - `DomainEventConverter`を使用してDomainEventに変換
 - `IGameplayEventBus.Publish()`でイベント発行
 - ドメインロジック（モデル更新）は**削除**
+- 340行 → 140行に削減
+- 依存関係を2つに削減（IGameplayEventBus, DomainEventConverter）
 
-**Sub-Phase 4-2:** GameplayDomainEventHandler新規作成（1-2日）
+**Sub-Phase 4-2:** GameplayDomainEventHandler新規作成（1-2日）【✅完了】
 - DomainEventを購読してドメインロジックを実行
 - 現在のNetworkEventApplier内のドメインロジックを移植
 - R3の`Subscribe().AddTo()`で購読管理
+- 名前空間: `Tetrage.Core`（ドメイン層として配置）
+- 306行、13種類のDomainEvent購読
 
-**Sub-Phase 5:** UI層移行（2-3日）
+**Sub-Phase 4-3:** 初期化処理の追加（0.5日）【✅完了】
+- GameplayNetworkControllerでの初期化
+- R3EventBus、DomainEventConverter、GameplayDomainEventHandlerの生成
+- Dispose()での適切なリソース解放
+
+**Sub-Phase 5:** UI層移行（2-3日）【✅完了】
 - 全UI系クラスを`Observable.Subscribe().AddTo()`へ変更
 - `CompositeDisposable`でライフサイクル管理
+- 移行完了: InGameUIManager, ActionPanelController, Dealer, DealerActionTester
+- DomainEventプロパティ名の変更に対応（CurrentPlayerId, WinnerPlayerIds等）
+- R3の`FirstAsync()`でActionResult待機を実装
 
 **影響範囲:** NetworkEventApplier（大幅改修）, GameplayDomainEventHandler（新規）, IGameplayEventBus, 全UI層  
 **リスク:** 中高（責務分離による大幅改修、購読解除漏れに注意）

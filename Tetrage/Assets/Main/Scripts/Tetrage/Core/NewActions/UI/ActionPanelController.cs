@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
-using Tetrage.Network.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
-using Tetrage.Core;
+using R3;
+using DomainEvents = Tetrage.Core.Events;
 
 namespace Tetrage.Core.Actions
 {
@@ -34,6 +33,7 @@ namespace Tetrage.Core.Actions
         private Dictionary<ActionType, Button> _actionButtons;
         private IPlayer _currentPlayer;
         private bool _isInitialized = false;
+        private CompositeDisposable _disposables = new();   // disposableをまとめて管理するためのコンテナ
 
         private void Awake()
         {
@@ -83,8 +83,10 @@ namespace Tetrage.Core.Actions
                 return false;
             }
 
-            // RoundManager（Dealer）をActionManagerから取得
-            _gameContextProvider.Events.TurnStartedApplied += OnTurnStartedEvent;
+            // R3のObservableでTurnStartedイベントを購読
+            _gameContextProvider.Events.TurnStarted
+                .Subscribe(OnTurnStartedEvent)
+                .AddTo(_disposables);
 
             // 初回ボタン状態更新。UIボタン更新メソッドを実行
             UpdateButtonStates();
@@ -156,7 +158,7 @@ namespace Tetrage.Core.Actions
             }
         }
 
-        public void OnTurnStartedEvent(TurnStartedEvent e)
+        private void OnTurnStartedEvent(DomainEvents.TurnStartedEvent e)
         {
             UpdateButtonStates();
         }
@@ -209,9 +211,9 @@ namespace Tetrage.Core.Actions
             }
 
             // 非リーチ状態：Draw, Open, Reach, TetrageSolo, TetrageMultiを表示
-            return actionType == ActionType.Draw || 
-                actionType == ActionType.Open || 
-                actionType == ActionType.Reach || 
+            return actionType == ActionType.Draw ||
+                actionType == ActionType.Open ||
+                actionType == ActionType.Reach ||
                 actionType == ActionType.TetrageSolo ||
                 actionType == ActionType.TetrageMulti;
         }
@@ -294,7 +296,7 @@ namespace Tetrage.Core.Actions
 
         private void OnDestroy()
         {
-            _gameContextProvider.Events.TurnStartedApplied -= OnTurnStartedEvent;
+            _disposables.Dispose();
         }
 
         #region テスト用メソッド
@@ -387,6 +389,6 @@ namespace Tetrage.Core.Actions
             }
         }
         #endregion
-        
+
     }
 }

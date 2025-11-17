@@ -2,6 +2,7 @@ using System;
 using Tetrage.Core.Ids;
 using Tetrage.Models;
 using Tetrage.Core;
+using Tetrage.Core.Events;
 using Tetrage.Network.Contracts;
 
 namespace Tetrage.Network.Gameplay
@@ -22,6 +23,7 @@ namespace Tetrage.Network.Gameplay
         private readonly bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
         private NetworkEventApplier _applier;
+        private GameplayDomainEventHandler _domainEventHandler;
         private readonly IPlayerIdMapper _playerIdMapper;
         private bool _started;
         private bool _disposed;
@@ -46,10 +48,27 @@ namespace Tetrage.Network.Gameplay
             _serializer = new PhotonJsonSerializer();
             _isHost = isHost;
             _playerIdMapper = playerIdMapper;
-            _bus = new SimpleGameplayEventBus();
+
+            // R3EventBusを使用
+            _bus = new R3EventBus();
             _turnGate = new TurnGate();
             _sequence = new SequenceService();
-            _applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext, _playerIdMapper);
+
+            // DomainEventConverter作成
+            var converter = new DomainEventConverter(_playerIdMapper);
+
+            // NetworkEventApplier作成（変換専用）
+            _applier = new NetworkEventApplier(_bus, converter);
+
+            // GameplayDomainEventHandler作成（ドメインロジック実行）
+            _domainEventHandler = new GameplayDomainEventHandler(
+                cardRegistry,
+                pileRegistry,
+                playerRegistry,
+                _turnGate,
+                _gameContext,
+                _bus);
+
             _hostActionProcessor = new DefaultHostActionProcessor(this);
             _broadcaster = new PhotonBroadcaster(_serializer);
             _receiver = new PhotonReceiver(_serializer);
@@ -96,7 +115,7 @@ namespace Tetrage.Network.Gameplay
         public void AttachGameContext(Tetrage.Core.GameContext ctx)
         {
             _gameContext = ctx;
-            _applier?.AttachContext(ctx);
+            // GameContextはコンストラクタで既にGameplayDomainEventHandlerに渡されている
         }
 
         public void Start()
@@ -124,13 +143,16 @@ namespace Tetrage.Network.Gameplay
             try
             {
                 Stop();
+                _domainEventHandler?.Dispose();
             }
             finally
             {
                 if (_receiver is IDisposable d) d.Dispose();
+                if (_bus is R3EventBus r3Bus) r3Bus.Dispose();
                 _receiver = null;
                 _broadcaster = null;
                 _hostActionProcessor = null;
+                _domainEventHandler = null;
                 _disposed = true;
                 GC.SuppressFinalize(this);
             }

@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
-using Tetrage.Models;
 using Tetrage.Managers;
 using Tetrage.Managers.DealerStrategies;
 using Tetrage.Core.Contracts;
 using Tetrage.Factories;
 using Tetrage.Core.Ids;
 using Tetrage.Network.Gameplay;
-using Tetrage.Core.Enums;
+using R3;
+using DomainEvents = Tetrage.Core.Events;
 
 namespace Tetrage.Tests
 {
@@ -33,6 +33,7 @@ namespace Tetrage.Tests
         private DealerPlanEmitter _dealerPlanEmitter;
         private RealDealerPlanner _dealerPlanner;
         private bool _testStarted = false;
+        private CompositeDisposable _disposables = new();
         #endregion
 
         #region Unityイベント
@@ -122,7 +123,7 @@ namespace Tetrage.Tests
             }
 
             // Bus を用意（オフラインでも購読可能にするが、適用発火はネット経路のみ）
-            var bus = new SimpleGameplayEventBus();
+            var bus = new R3EventBus();
             _gameContext = new Tetrage.Core.GameContext(stage, players, players[fixedPlayerIndex], bus);
 
             _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
@@ -141,7 +142,9 @@ namespace Tetrage.Tests
             // Turn系は Bus 優先。Bus が無い場合だけ Dealer イベントを使う
             if (_gameContext?.Events != null)
             {
-                _gameContext.Events.TurnStartedApplied += OnTurnStartedBus;
+                _gameContext.Events.TurnStarted
+                    .Subscribe(OnTurnStartedBus)
+                    .AddTo(_disposables);
             }
             else
             {
@@ -157,11 +160,12 @@ namespace Tetrage.Tests
             _dealer.GameEnd -= OnGameEnd;
             _dealer.RoundStart -= OnRoundStart;
             _dealer.RoundEnd -= OnRoundEnd;
-            if (_gameContext?.Events != null)
-            {
-                _gameContext.Events.TurnStartedApplied -= OnTurnStartedBus;
-            }
-            else
+
+            // R3購読解除
+            _disposables.Dispose();
+            _disposables = new();
+
+            if (_gameContext?.Events == null)
             {
                 _dealer.TurnStart -= OnTurnStart;
             }
@@ -175,7 +179,7 @@ namespace Tetrage.Tests
         private void OnRoundStart() => Log($"ラウンド開始 {_dealer?.RoundCount}/{_dealer?.MaxRounds}");
         private void OnRoundEnd() => Log($"ラウンド終了 {_dealer?.RoundCount}/{_dealer?.MaxRounds}");
         private void OnTurnStart() => Log($"ターン開始 {_dealer?.TurnCount}");
-        private void OnTurnStartedBus(TurnStartedEvent e) => Log($"ターン開始(バス) actor={e.currentPlayerActorNumber}");
+        private void OnTurnStartedBus(DomainEvents.TurnStartedEvent e) => Log($"ターン開始(バス) playerId={e.CurrentPlayerId}");
         private void OnTurnEnd() => Log($"ターン終了 {_dealer?.TurnCount}");
         #endregion
 

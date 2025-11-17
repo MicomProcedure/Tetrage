@@ -1,15 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
-using Tetrage.Models;
 using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
 using Tetrage.Network.Contracts;
 using Tetrage.Core.DTO;
-using Tetrage.Core.Ids;
+using R3;
+using DomainEvents = Tetrage.Core.Events;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -371,31 +370,19 @@ namespace Tetrage.Managers
                 return ActionResult.Failure("待機対象またはイベントバスが無効です");
             }
 
-            var tcs = new UniTaskCompletionSource<ActionResult>();
-            System.Action<Tetrage.Network.Gameplay.ActionResultEvent> handler = null;
-
-            handler = (e) =>
-            {
-                if (e.actorPlayerId == waitingPlayer.PlayerId)
-                {
-                    // 成否はネット結果に合わせる
-                    var res = e.accepted ? ActionResult.Success() : ActionResult.Failure(e.reason);
-                    tcs.TrySetResult(res);
-                }
-            };
-
             try
             {
-                _gameContext.Events.ActionResultApplied += handler;
+                // R3のObservableで該当プレイヤーのActionResultを待機
+                // FirstAsync()はTask<T>を返すので、直接awaitする
+                var result = await _gameContext.Events.ActionResult
+                    .FirstAsync(e => e.ActorPlayerId == waitingPlayer.PlayerId, token);
 
-                using (token.Register(() => tcs.TrySetCanceled()))
-                {
-                    return await tcs.Task;
-                }
+                // 成否はネット結果に合わせる
+                return result.Accepted ? ActionResult.Success() : ActionResult.Failure(result.Reason);
             }
-            finally
+            catch (OperationCanceledException)
             {
-                _gameContext.Events.ActionResultApplied -= handler;
+                return ActionResult.Failure("ActionResult待機がキャンセルされました");
             }
         }
         #endregion

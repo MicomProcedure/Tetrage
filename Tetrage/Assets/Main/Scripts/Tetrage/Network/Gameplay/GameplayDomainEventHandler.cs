@@ -30,19 +30,22 @@ namespace Tetrage.Core
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
             TurnGate turnGate,
-            GameContext gameContext)
+            GameContext gameContext,
+            IGameplayEventBus eventBus)
         {
             _cardRegistry = cardRegistry;
             _pileRegistry = pileRegistry;
             _playerRegistry = playerRegistry;
             _turnGate = turnGate;
             _gameContext = gameContext;
+
+            Initialize(eventBus);
         }
 
         /// <summary>
         /// IGameplayEventBusからDomainEventを購読開始
         /// </summary>
-        public void Initialize(IGameplayEventBus eventBus)
+        private void Initialize(IGameplayEventBus eventBus)
         {
             eventBus.GameStarted
                 .Subscribe(OnGameStarted)
