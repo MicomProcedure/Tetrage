@@ -449,7 +449,7 @@ namespace Tetrage.Managers
             INetworkAdapterFactory adapterFactory = CreateNetworkAdapterFactory(networkMode);
 
             var netCtl = new GameplayNetworkController(
-                _networkContext?.IsHost ?? PhotonNetwork.IsMasterClient,
+                _networkContext.IsHost,
                 _pileRegistry,
                 _cardRegistry,
                 _playerRegistry,

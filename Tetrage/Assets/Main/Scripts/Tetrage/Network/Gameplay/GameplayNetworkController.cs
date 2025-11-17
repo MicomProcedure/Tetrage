@@ -36,22 +36,31 @@ namespace Tetrage.Network.Gameplay
         /// <param name="playerRegistry">プレイヤーレジストリ</param>
         /// <param name="adapterFactory">ネットワークアダプタファクトリ（Photon/Virtual切替用）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング</param>
+        /// <param name="serializer">シリアライザ（nullの場合はPhotoンJsonSerializerを使用）</param>
+        /// <param name="eventBus">イベントバス（nullの場合はR3EventBusを使用）</param>
+        /// <param name="turnGate">ターンゲート（nullの場合は新規作成）</param>
+        /// <param name="sequence">シーケンスサービス（nullの場合は新規作成）</param>
         public GameplayNetworkController(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<CardId, Card> cardRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
             INetworkAdapterFactory adapterFactory,
-            IPlayerIdMapper playerIdMapper = null)
+            IPlayerIdMapper playerIdMapper = null,
+            ISerializer serializer = null,
+            IGameplayEventBus eventBus = null,
+            TurnGate turnGate = null,
+            SequenceService sequence = null)
         {
-            _serializer = new PhotonJsonSerializer();
+            // 依存性注入: nullの場合はデフォルト実装を使用（後方互換性を保つ）
+            _serializer = serializer ?? new PhotonJsonSerializer();
             _isHost = isHost;
             _playerIdMapper = playerIdMapper;
 
-            // R3EventBusを使用
-            _bus = new R3EventBus();
-            _turnGate = new TurnGate();
-            _sequence = new SequenceService();
+            // R3EventBusを使用（注入可能）
+            _bus = eventBus ?? new R3EventBus();
+            _turnGate = turnGate ?? new TurnGate();
+            _sequence = sequence ?? new SequenceService();
 
             // DomainEventConverter作成
             var converter = new DomainEventConverter(_playerIdMapper);
