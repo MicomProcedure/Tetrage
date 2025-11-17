@@ -3,6 +3,7 @@ using Tetrage.Managers;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
 using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 public class GameManagerDebugEntry : MonoBehaviour
 {
     [SerializeField] private GameManager _gameManager;
@@ -19,7 +20,7 @@ public class GameManagerDebugEntry : MonoBehaviour
         // GameManagerの初期化
         if (!_isInitialized)
         {
-            _gameManager.Initialize(CreateDebugPlayerInfo(), CreateDebugPlayerInfo()[0]);
+            _gameManager.Initialize(CreateDebugPlayerInfo(), CreateDebugPlayerInfo()[0], new PhotonNetworkContext());
             _isInitialized = true;
         }
 

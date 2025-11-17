@@ -4,7 +4,6 @@ using Tetrage.Models;
 using Tetrage.Core;
 using Tetrage.Core.Events;
 
-
 namespace Tetrage.Network.Gameplay
 {
     /// <summary>

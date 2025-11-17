@@ -30,6 +30,7 @@ namespace Tetrage.Tests
         
         [Header("Debug Settings")]
         [SerializeField] private string _debugRoomCode = "DEBUG";
+        [SerializeField] private int _defaultActorNumber = 1;
         [SerializeField] private int _maxPlayers = 4;
         [SerializeField] private bool _autoStartGame = true;
         [SerializeField] private float _waitForPlayersTimeout = 10f;
@@ -332,7 +333,7 @@ namespace Tetrage.Tests
             PlayerInfo localPlayerInfo = participantInfos.FirstOrDefault(p => p.Id.Value == PhotonNetwork.LocalPlayer.ActorNumber);
             
             // GameManagerを初期化
-            _gameManager.Initialize(participantInfos, localPlayerInfo);
+            _gameManager.Initialize(participantInfos, localPlayerInfo, new VirtualNetworkContext(_defaultActorNumber, true ));
             _isInitialized = true;
             
             Debug.Log("[GameSceneDebugEntry] GameManager初期化完了");
