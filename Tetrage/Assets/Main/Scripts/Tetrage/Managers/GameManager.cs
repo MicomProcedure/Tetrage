@@ -36,7 +36,7 @@ namespace Tetrage.Managers
 
         private GameContext _gameContext;
         public GameContext GameContext => _gameContext;
-		private List<PlayerInfo> _participantInfos;
+        private List<PlayerInfo> _participantInfos;
         private INetworkContext _networkContext;
         private IPlayerIdMapper _playerIdMapper;
 
@@ -108,20 +108,20 @@ namespace Tetrage.Managers
                 _fieldSetupManager = CreateFieldSetupManager(participantInfoList.Count);
 
                 // 1.5 ネットワーク接続時は PlayerId=ActorNumber へマッピング
-                ValidatePlayerInfos(participantInfoList);
+                ValidatePlayerInfos(participantInfoList, networkContext);
 
-				// 2. フィールドのセットアップ
-				_fieldSetupManager.SetupField(participantInfoList);
+                // 2. フィールドのセットアップ
+                _fieldSetupManager.SetupField(participantInfoList);
 
                 // 2.5 参加者情報の保持（UIへローカルで提供）
                 _participantInfos = new List<PlayerInfo>(participantInfoList);
 
                 // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 _netCtl = InitializeNetworking();
-                
+
                 // 3.5 NetworkContextの設定（ApplicationManagerから提供、未提供の場合はPhoton実装を生成）
                 _networkContext = networkContext;
-                
+
                 // 3.6 PlayerIdMapperの設定（ApplicationManagerから提供）
                 _playerIdMapper = playerIdMapper;
 
@@ -210,27 +210,28 @@ namespace Tetrage.Managers
         }
 
         /// <summary>
-        /// PlayerInfo の Id が PUN の ActorNumber と対応しているか検証する。
-        /// オフライン/未接続時は検証せず入力をそのまま返す。
+        /// PlayerInfo の Id がルーム内の ActorNumber と対応しているか検証する。
+        /// オフライン/未接続時は検証をスキップする。
         /// </summary>
-        private void ValidatePlayerInfos(List<PlayerInfo> input)
+        private void ValidatePlayerInfos(List<PlayerInfo> input, INetworkContext networkContext)
         {
+            // オフラインまたは未接続時は検証をスキップ
+            if (networkContext == null || !networkContext.IsInRoom)
+            {
+                return;
+            }
 
-            var actors = PhotonNetwork.PlayerList;
+            var actorNumbers = networkContext.GetActorNumbers();
 
             // ActorNumber の集合を構築
-            var actorNumbers = new HashSet<int>();
-            for (int i = 0; i < actors.Length; i++)
-            {
-                actorNumbers.Add(actors[i].ActorNumber);
-            }
+            var actorNumberSet = new HashSet<int>(actorNumbers);
 
             // 入力の重複と存在を検証
             var seen = new HashSet<int>();
             for (int i = 0; i < input.Count; i++)
             {
                 var idValue = input[i].Id.Value;
-                if (!actorNumbers.Contains(idValue))
+                if (!actorNumberSet.Contains(idValue))
                 {
                     throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が現在の ActorNumber 一覧に存在しません。");
                 }
@@ -241,9 +242,9 @@ namespace Tetrage.Managers
             }
 
             // 参考: 数が合わない場合は警告（観戦や未参加者の可能性）。
-            if (input.Count != actors.Length)
+            if (input.Count != networkContext.PlayerCount)
             {
-                UnityEngine.Debug.LogWarning($"GameManager: 参加者数({input.Count})と PUN 参加者数({actors.Length}) に差異があります。");
+                UnityEngine.Debug.LogWarning($"GameManager: 参加者数({input.Count})と ルーム参加者数({networkContext.PlayerCount}) に差異があります。");
             }
 
         }
@@ -321,18 +322,19 @@ namespace Tetrage.Managers
             await UniTask.WaitUntil(() => _remoteGameEnded || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InRoom);
         }
 
-        private void PublishGameStarted(){
-                    var started = new GameStartedEvent
-                    {
-                        // 一旦FieldSetupComponentの設定を使用するため実質使わない
-                        // TODO: 将来的には設定されたルールに応じて適切な値を設定する
-                        deckId = InGameConsts.DEFAULT_DECK_ID,
-                        suitOrder = new byte[] { 0, 1, 2, 3 },
-                        minNumber = 1,
-                        maxNumber = 13,
-                        playerActorNumbers = BuildInitialPlayerOrder(),
-                    };
-                    _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
+        private void PublishGameStarted()
+        {
+            var started = new GameStartedEvent
+            {
+                // 一旦FieldSetupComponentの設定を使用するため実質使わない
+                // TODO: 将来的には設定されたルールに応じて適切な値を設定する
+                deckId = InGameConsts.DEFAULT_DECK_ID,
+                suitOrder = new byte[] { 0, 1, 2, 3 },
+                minNumber = 1,
+                maxNumber = 13,
+                playerActorNumbers = BuildInitialPlayerOrder(),
+            };
+            _netCtl.Broadcaster.Raise(EventCode.GameStarted, started);
         }
         #endregion
 

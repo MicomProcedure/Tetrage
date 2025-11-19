@@ -7,6 +7,8 @@ using Tetrage.Network.Gameplay;
 public class GameManagerDebugEntry : MonoBehaviour
 {
     [SerializeField] private GameManager _gameManager;
+    [SerializeField] private int _defaultLocalActorNumber = 1;
+    [SerializeField] private int _defaultPlayerCount = 4;
     private bool _isInitialized = false;
 
     void Awake()
@@ -18,9 +20,11 @@ public class GameManagerDebugEntry : MonoBehaviour
     {
 
         // GameManagerの初期化
+        // VirtualNetworkContextを使用（オフライン環境でのテスト用）
         if (!_isInitialized)
         {
-            _gameManager.Initialize(CreateDebugPlayerInfo(), CreateDebugPlayerInfo()[0], new PhotonNetworkContext());
+            var virtualNetworkContext = new VirtualNetworkContext(actorNumber: _defaultLocalActorNumber, isHost: true, playerCount: _defaultPlayerCount);
+            _gameManager.Initialize(CreateDebugPlayerInfo(), CreateDebugPlayerInfo()[0], virtualNetworkContext, playerIdMapper: null);
             _isInitialized = true;
         }
 
