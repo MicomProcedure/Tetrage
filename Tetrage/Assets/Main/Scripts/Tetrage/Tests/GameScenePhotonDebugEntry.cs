@@ -11,6 +11,7 @@ using Cysharp.Threading.Tasks;
 using Tetrage.Models;
 using Tetrage.Network.Gameplay;
 using ExitGames.Client.Photon;
+using Tetrage.Network;
 
 namespace Tetrage.Tests
 {
@@ -18,16 +19,16 @@ namespace Tetrage.Tests
     /// GameSceneのデバッグ用エントリーポイント
     /// MultiPlayModeで4人プレイをテストできるようにする
     /// </summary>
-    public class GameSceneDebugEntry : MonoBehaviourPunCallbacks
+    public class GameScenPhotonDebugEntry : MonoBehaviourPunCallbacks
     {
         #region Serialized Fields
-        
+
         [Header("Photon View")]
         [SerializeField] private PhotonView _photonView;
-        
+
         [Header("Game Manager")]
         [SerializeField] private GameManager _gameManager;
-        
+
         [Header("Debug Settings")]
         [SerializeField] private string _debugRoomCode = "DEBUG";
         [SerializeField] private int _defaultActorNumber = 1;
@@ -36,42 +37,42 @@ namespace Tetrage.Tests
         [SerializeField] private float _waitForPlayersTimeout = 10f;
         [SerializeField] private string _fixedRegion = "jp"; // 固定リージョン（リージョンPingをスキップ）
         [SerializeField] private float _connectionTimeout = 15f; // 接続タイムアウト（秒）
-        
+
         [Header("Player Debug Settings")]
         [Tooltip("Inspector上でプレイヤー情報をカスタマイズする（空の場合は自動設定）")]
         [SerializeField] private List<DebugPlayerInfo> _debugPlayerInfos = new List<DebugPlayerInfo>();
         [SerializeField] private bool _useDebugPlayerInfo = false; // デバッグプレイヤー情報を使用するかどうか
-        
+
         [Header("Initial Cards Debug")]
         [SerializeField] private float _firstDealWaitTime = 2f; // FirstDeal完了待機時間（秒）
         [SerializeField] private bool _clearCardsBeforeSetup = true; // カード設定前に既存カードをクリア
-        
+
         #endregion
-        
+
         [Header("Debug Network Event (Inspector)")]
         [SerializeField] private bool _enableDebugEvents = false;
         [SerializeField] private Tetrage.Network.Gameplay.EventCode _debugEventCode = Tetrage.Network.Gameplay.EventCode.ActionResult;
         [SerializeField, TextArea(3, 10)] private string _debugJsonPayload = "{}";
         [SerializeField] private bool _sendToAll = true;
         [SerializeField] private int[] _targetActorNumbers;
-        
+
         #region Private Fields
-        
+
         private bool _isInitialized = false;
         private bool _isConnecting = false;
         private bool _roomCreatedOrJoined = false;
         private ISerializer _debugSerializer;
-        
+
         #endregion
-        
+
         #region Unity Lifecycle
-        
+
         private void Awake()
         {
             _isInitialized = false;
             _isConnecting = false;
             _roomCreatedOrJoined = false;
-            
+
             // PhotonViewの自動取得
             if (_photonView == null)
             {
@@ -81,34 +82,34 @@ namespace Tetrage.Tests
                     Debug.LogWarning("[GameSceneDebugEntry] PhotonViewコンポーネントが見つかりません。RPCによるネットワーク同期が無効です。");
                 }
             }
-            
+
             // ===== MultiPlayMode対応設定 =====
             // バックグラウンドでも実行を継続（MultiPlayModeで必須）
             Application.runInBackground = true;
-            
+
             // Photonのキープアライブ設定
             PhotonNetwork.KeepAliveInBackground = 60f; // 60秒間接続を維持
-            
+
             // SendRateとSerializationRateも調整（オプション）
             PhotonNetwork.SendRate = 20; // 1秒あたりの送信回数
             PhotonNetwork.SerializationRate = 10; // 1秒あたりのシリアライゼーション回数
-            
+
             Debug.Log("[GameSceneDebugEntry] MultiPlayMode設定完了");
             Debug.Log($"[GameSceneDebugEntry] runInBackground: {Application.runInBackground}");
             Debug.Log($"[GameSceneDebugEntry] KeepAliveInBackground: {PhotonNetwork.KeepAliveInBackground}s");
             _debugSerializer = new PhotonJsonSerializer();
         }
-        
+
         private async void Start()
         {
             Debug.Log("[GameSceneDebugEntry] デバッグモード開始");
             await ConnectAndSetupRoom();
         }
-        
+
         #endregion
 
         #region Debug Network Event Sender
-        [ContextMenu("Debug/Send Network Event")] 
+        [ContextMenu("Debug/Send Network Event")]
         public void DebugSendNetworkEvent()
         {
             if (!_enableDebugEvents)
@@ -155,7 +156,7 @@ namespace Tetrage.Tests
         #endregion
 
         #region Network Setup
-        
+
         /// <summary>
         /// PUN2に接続してルームをセットアップ
         /// </summary>
@@ -166,9 +167,9 @@ namespace Tetrage.Tests
                 Debug.LogWarning("[GameSceneDebugEntry] 既に接続処理中です");
                 return;
             }
-            
+
             _isConnecting = true;
-            
+
             // PUN2に接続
             if (!PhotonNetwork.IsConnected)
             {
@@ -178,10 +179,10 @@ namespace Tetrage.Tests
                     Debug.Log($"[GameSceneDebugEntry] 固定リージョンを設定: {_fixedRegion}");
                     PhotonNetwork.PhotonServerSettings.AppSettings.FixedRegion = _fixedRegion;
                 }
-                
+
                 Debug.Log("[GameSceneDebugEntry] Photonサーバーに接続中...");
                 PhotonNetwork.ConnectUsingSettings();
-                
+
                 // 接続完了を待機（タイムアウト付き）
                 float elapsed = 0f;
                 while (!PhotonNetwork.IsConnectedAndReady && elapsed < _connectionTimeout)
@@ -189,23 +190,23 @@ namespace Tetrage.Tests
                     await UniTask.Delay(100);
                     elapsed += 0.1f;
                 }
-                
+
                 if (!PhotonNetwork.IsConnectedAndReady)
                 {
                     Debug.LogError("[GameSceneDebugEntry] Photonサーバーへの接続がタイムアウトしました");
                     _isConnecting = false;
                     return;
                 }
-                
+
                 Debug.Log("[GameSceneDebugEntry] Photonサーバーに接続完了");
             }
-            
+
             // ロビーに参加
             if (!PhotonNetwork.InLobby)
             {
                 Debug.Log("[GameSceneDebugEntry] ロビーに参加中...");
                 PhotonNetwork.JoinLobby();
-                
+
                 // ロビー参加を待機（タイムアウト付き）
                 float elapsed = 0f;
                 while (!PhotonNetwork.InLobby && elapsed < _connectionTimeout)
@@ -213,21 +214,21 @@ namespace Tetrage.Tests
                     await UniTask.Delay(100);
                     elapsed += 0.1f;
                 }
-                
+
                 if (!PhotonNetwork.InLobby)
                 {
                     Debug.LogError("[GameSceneDebugEntry] ロビーへの参加がタイムアウトしました");
                     _isConnecting = false;
                     return;
                 }
-                
+
                 Debug.Log("[GameSceneDebugEntry] ロビーに参加完了");
             }
-            
+
             // ルームに参加または作成
             await JoinOrCreateRoom();
         }
-        
+
         /// <summary>
         /// デバッグルームに参加または作成
         /// </summary>
@@ -240,27 +241,27 @@ namespace Tetrage.Tests
                 await WaitForPlayersAndStartGame();
                 return;
             }
-            
+
             // まず参加を試みる
             Debug.Log($"[GameSceneDebugEntry] ルーム '{_debugRoomCode}' への参加を試行中...");
             PhotonNetwork.JoinRoom(_debugRoomCode);
-            
+
             // ルーム参加の結果を待機
             await UniTask.WaitUntil(() => _roomCreatedOrJoined || PhotonNetwork.InRoom, cancellationToken: this.GetCancellationTokenOnDestroy());
-            
+
             if (PhotonNetwork.InRoom)
             {
                 await WaitForPlayersAndStartGame();
             }
         }
-        
+
         /// <summary>
         /// プレイヤーが揃うのを待ってゲーム開始
         /// </summary>
         private async UniTask WaitForPlayersAndStartGame()
         {
             Debug.Log($"[GameSceneDebugEntry] プレイヤー待機中... (現在: {PhotonNetwork.CurrentRoom.PlayerCount}/{_maxPlayers})");
-            
+
             // タイムアウト付きで全プレイヤーが揃うまで待機
             float elapsed = 0f;
             while (PhotonNetwork.CurrentRoom.PlayerCount < _maxPlayers && elapsed < _waitForPlayersTimeout)
@@ -268,7 +269,7 @@ namespace Tetrage.Tests
                 await UniTask.Delay(100);
                 elapsed += 0.1f;
             }
-            
+
             if (PhotonNetwork.CurrentRoom.PlayerCount < _maxPlayers)
             {
                 Debug.LogWarning($"[GameSceneDebugEntry] タイムアウト。現在のプレイヤー数でゲーム開始: {PhotonNetwork.CurrentRoom.PlayerCount}");
@@ -277,27 +278,27 @@ namespace Tetrage.Tests
             {
                 Debug.Log($"[GameSceneDebugEntry] 全プレイヤーが揃いました: {PhotonNetwork.CurrentRoom.PlayerCount}");
             }
-            
+
             // 全てのクライアントがゲームを初期化
             if (!_isInitialized)
             {
                 InitializeGame();
             }
-            
+
             // ホストがゲームを開始
             if (PhotonNetwork.IsMasterClient)
             {
                 await UniTask.Delay(500); // 初期化完了を待つ
-                
+
                 if (_autoStartGame)
                 {
                     StartGame();
-                    
+
                     // ゲーム開始後、FirstDealの完了を待ってからデバッグカード設定を適用
                     // 少なくとも1人がSetInitialCards=trueなら実行
-                    bool hasCardSetup = _useDebugPlayerInfo && _debugPlayerInfos != null && 
+                    bool hasCardSetup = _useDebugPlayerInfo && _debugPlayerInfos != null &&
                                        _debugPlayerInfos.Any(p => p.SetInitialCards);
-                    
+
                     if (hasCardSetup)
                     {
                         Debug.Log($"[GameSceneDebugEntry] FirstDealの完了を待機中... ({_firstDealWaitTime}秒)");
@@ -308,11 +309,11 @@ namespace Tetrage.Tests
                 }
             }
         }
-        
+
         #endregion
-        
+
         #region Game Initialization
-        
+
         /// <summary>
         /// ゲームを初期化
         /// </summary>
@@ -323,36 +324,36 @@ namespace Tetrage.Tests
                 Debug.LogWarning("[GameSceneDebugEntry] 既に初期化済みです");
                 return;
             }
-            
+
             Debug.Log("[GameSceneDebugEntry] GameManager初期化開始");
-            
+
             // 参加者情報を作成
             List<PlayerInfo> participantInfos = CreateParticipantInfos();
-            
+
             // ローカルプレイヤーの情報を取得
             PlayerInfo localPlayerInfo = participantInfos.FirstOrDefault(p => p.Id.Value == PhotonNetwork.LocalPlayer.ActorNumber);
-            
+
             // GameManagerを初期化
-            _gameManager.Initialize(participantInfos, localPlayerInfo, new VirtualNetworkContext(_defaultActorNumber, true ));
+            _gameManager.Initialize(participantInfos, localPlayerInfo, new VirtualNetworkContext(_defaultActorNumber, true), NetworkMode.RealPhoton);
             _isInitialized = true;
-            
+
             Debug.Log("[GameSceneDebugEntry] GameManager初期化完了");
         }
-        
+
         /// <summary>
         /// ルーム内のプレイヤーから参加者情報を作成
         /// </summary>
         private List<PlayerInfo> CreateParticipantInfos()
         {
             var participantInfos = new List<PlayerInfo>();
-            
+
             // PhotonNetwork.PlayerListは入室順（ActorNumber順）にソート済み
             var sortedPhotonPlayers = PhotonNetwork.PlayerList.OrderBy(p => p.ActorNumber).ToArray();
-            
+
             for (int i = 0; i < sortedPhotonPlayers.Length; i++)
             {
                 var photonPlayer = sortedPhotonPlayers[i];
-                
+
                 // 入室順インデックスiに対応するデバッグ設定を取得
                 DebugPlayerInfo debugInfo = null;
                 if (_useDebugPlayerInfo && _debugPlayerInfos != null && i < _debugPlayerInfos.Count)
@@ -360,7 +361,7 @@ namespace Tetrage.Tests
                     debugInfo = _debugPlayerInfos[i];
                     Debug.Log($"[GameSceneDebugEntry] 入室順 {i} (ActorNumber {photonPlayer.ActorNumber}): Element {i} のデバッグ設定を使用 - Name={debugInfo.PlayerName}, Icon={debugInfo.IconIndex}");
                 }
-                
+
                 var playerInfo = new PlayerInfo
                 {
                     Id = new PlayerId(photonPlayer.ActorNumber),
@@ -370,24 +371,24 @@ namespace Tetrage.Tests
                     // デバッグ設定があればそれを使用、なければActorNumberベース
                     PlayerIconIndex = debugInfo?.IconIndex ?? ((photonPlayer.ActorNumber - 1) % 4)
                 };
-                
+
                 participantInfos.Add(playerInfo);
             }
-            
+
             // プレイヤー情報ログ出力
             Debug.Log("[GameSceneDebugEntry] 最終的なプレイヤーリスト（入室順）:");
             for (int i = 0; i < participantInfos.Count; i++)
             {
                 Debug.Log($"[GameSceneDebugEntry] 入室順 {i} (ActorNumber {participantInfos[i].Id.Value}): {participantInfos[i].UserId} (Type: {participantInfos[i].PlayerType}, Icon: {participantInfos[i].PlayerIconIndex})");
             }
-            
+
             return participantInfos;
         }
-        
+
         #endregion
-        
+
         #region Debug Card Setup
-        
+
         /// <summary>
         /// デバッグ用の初期カードを設定（FirstDeal後に実行）
         /// </summary>
@@ -397,15 +398,15 @@ namespace Tetrage.Tests
             {
                 return;
             }
-            
+
             if (!PhotonNetwork.IsMasterClient)
             {
                 Debug.LogWarning("[GameSceneDebugEntry] 初期カード設定はホストのみ実行できます");
                 return;
             }
-            
+
             Debug.Log("[GameSceneDebugEntry] デバッグ用初期カード設定開始（ホスト）");
-            
+
             // カード配置情報をJSON文字列にシリアライズして全クライアントに送信
             var cardPlacementJson = SerializeCardPlacementsToJson();
             if (!string.IsNullOrEmpty(cardPlacementJson))
@@ -424,7 +425,7 @@ namespace Tetrage.Tests
                 }
             }
         }
-        
+
         /// <summary>
         /// カード配置情報をJSON文字列にシリアライズ
         /// </summary>
@@ -436,41 +437,41 @@ namespace Tetrage.Tests
                 Debug.LogError("[GameSceneDebugEntry] GameContextが見つかりません");
                 return null;
             }
-            
+
             var players = gameContext.Players.ToList();
-            
+
             // ActorNumber順にソート（入室順と一致）
             var sortedPlayers = players.OrderBy(p => p.PlayerId).ToArray();
-            
+
             var data = new CardPlacementData();
             data.Players = new List<PlayerCardData>();
-            
+
             // 全プレイヤー分のカード設定を作成
             for (int i = 0; i < _debugPlayerInfos.Count; i++)
             {
                 var debugInfo = _debugPlayerInfos[i];
-                
+
                 // SetInitialCardsがfalseの場合はスキップ
                 if (!debugInfo.SetInitialCards)
                 {
                     Debug.Log($"[GameSceneDebugEntry] Element {i}: SetInitialCards=falseのためスキップ");
                     continue;
                 }
-                
+
                 // 入室順インデックスiに対応するプレイヤーを取得
                 if (i >= sortedPlayers.Length)
                 {
                     Debug.LogWarning($"[GameSceneDebugEntry] Element {i} に対応するプレイヤーが見つかりません");
                     continue;
                 }
-                
+
                 var targetPlayer = sortedPlayers[i];
-                
+
                 var playerData = new PlayerCardData();
                 playerData.PlayerId = targetPlayer.PlayerId;
-                
+
                 Debug.Log($"[GameSceneDebugEntry] Element {i} → ActorNumber {targetPlayer.PlayerId}");
-                
+
                 // Target カード
                 if (debugInfo.TargetCard != null && debugInfo.TargetCard.IsValid)
                 {
@@ -484,7 +485,7 @@ namespace Tetrage.Tests
                     playerData.HasTarget = false;
                     Debug.Log($"[GameSceneDebugEntry] Element {i} Target無効またはnull");
                 }
-                
+
                 // Hands カード
                 playerData.HandSuits = new List<int>();
                 playerData.HandNumbers = new List<int>();
@@ -496,16 +497,16 @@ namespace Tetrage.Tests
                     playerData.HandNumbers.Add(cardSpec.Number);
                     Debug.Log($"[GameSceneDebugEntry] Element {i} Hand追加: {cardSpec.Suit} {cardSpec.Number} → シリアライズ: Suit={(int)cardSpec.Suit}, Number={cardSpec.Number}");
                 }
-                
+
                 data.Players.Add(playerData);
             }
-            
+
             var json = JsonUtility.ToJson(data, true); // prettifyを有効化
             Debug.Log($"[GameSceneDebugEntry] シリアライズ完了: {data.Players.Count}人分");
             Debug.Log($"[GameSceneDebugEntry] JSON内容:\n{json}");
             return json;
         }
-        
+
         /// <summary>
         /// RPC: 全クライアントでカード配置を適用
         /// </summary>
@@ -515,40 +516,40 @@ namespace Tetrage.Tests
             Debug.Log($"[GameSceneDebugEntry] カード配置情報を受信しました (クライアント: {PhotonNetwork.LocalPlayer.ActorNumber})");
             ApplyCardPlacementsFromJson(cardPlacementJson);
         }
-        
+
         /// <summary>
         /// JSON文字列からカード配置を適用
         /// </summary>
         private void ApplyCardPlacementsFromJson(string cardPlacementJson)
         {
             Debug.Log($"[GameSceneDebugEntry] 受信したJSON:\n{cardPlacementJson}");
-            
+
             var gameContext = _gameManager.GameContext;
             if (gameContext == null)
             {
                 Debug.LogError("[GameSceneDebugEntry] GameContextが見つかりません");
                 return;
             }
-            
+
             var data = JsonUtility.FromJson<CardPlacementData>(cardPlacementJson);
             if (data == null || data.Players == null)
             {
                 Debug.LogError("[GameSceneDebugEntry] カード配置データの解析に失敗しました");
                 return;
             }
-            
+
             Debug.Log($"[GameSceneDebugEntry] デシリアライズ完了: {data.Players.Count}人分のデータ");
-            
+
             // デシリアライズ結果を詳細表示
             for (int i = 0; i < data.Players.Count; i++)
             {
                 var pd = data.Players[i];
                 Debug.Log($"[GameSceneDebugEntry] Players[{i}]: PlayerId={pd.PlayerId}, HasTarget={pd.HasTarget}, TargetSuit={pd.TargetSuit}, TargetNumber={pd.TargetNumber}, HandSuits=[{string.Join(",", pd.HandSuits ?? new List<int>())}], HandNumbers=[{string.Join(",", pd.HandNumbers ?? new List<int>())}]");
             }
-            
+
             var stack = gameContext.Stage.Stack;
             var players = gameContext.Players;
-            
+
             // カード設定前にクリアする場合
             if (_clearCardsBeforeSetup)
             {
@@ -561,7 +562,7 @@ namespace Tetrage.Tests
                         var card = player.Target.Cards[0];
                         CardPile.TransferService.Transfer(player.Target, stack, card);
                     }
-                    
+
                     // Hands のカードを山札に戻す
                     while (player.Hands.Count > 0)
                     {
@@ -571,14 +572,14 @@ namespace Tetrage.Tests
                 }
                 Debug.Log("[GameSceneDebugEntry] カードクリア完了");
             }
-            
+
             // 各プレイヤーのカードを設定
             foreach (var playerData in data.Players)
             {
                 Debug.Log($"[GameSceneDebugEntry] PlayerData処理開始: ActorNumber={playerData.PlayerId}, HasTarget={playerData.HasTarget}");
                 Debug.Log($"[GameSceneDebugEntry]   TargetSuit={playerData.TargetSuit}, TargetNumber={playerData.TargetNumber}");
                 Debug.Log($"[GameSceneDebugEntry]   HandSuitsCount={playerData.HandSuits?.Count ?? 0}, HandNumbersCount={playerData.HandNumbers?.Count ?? 0}");
-                
+
                 // PlayerIdはActorNumberと同じ値
                 var player = players.FirstOrDefault(p => p.PlayerId == playerData.PlayerId);
                 if (player == null)
@@ -586,13 +587,13 @@ namespace Tetrage.Tests
                     Debug.LogWarning($"[GameSceneDebugEntry] ActorNumber {playerData.PlayerId} のプレイヤーが見つかりません");
                     continue;
                 }
-                
+
                 // Target カード
                 if (playerData.HasTarget)
                 {
                     Suit targetSuit = (Suit)playerData.TargetSuit;
                     Debug.Log($"[GameSceneDebugEntry] Target検索: Suit={(int)targetSuit}({targetSuit}), Number={playerData.TargetNumber}");
-                    
+
                     var targetCard = FindCardInStackBySuitNumber(stack, targetSuit, playerData.TargetNumber);
                     if (targetCard != null)
                     {
@@ -604,7 +605,7 @@ namespace Tetrage.Tests
                         Debug.LogWarning($"[GameSceneDebugEntry] ❌ Target カード {targetSuit} {playerData.TargetNumber} が山札に見つかりません");
                     }
                 }
-                
+
                 // Hands カード
                 if (playerData.HandSuits != null && playerData.HandNumbers != null)
                 {
@@ -613,9 +614,9 @@ namespace Tetrage.Tests
                     {
                         Suit handSuit = (Suit)playerData.HandSuits[i];
                         int handNumber = playerData.HandNumbers[i];
-                        
+
                         Debug.Log($"[GameSceneDebugEntry] Hand検索 [{i}]: Suit={playerData.HandSuits[i]}({handSuit}), Number={handNumber}");
-                        
+
                         var handCard = FindCardInStackBySuitNumber(stack, handSuit, handNumber);
                         if (handCard != null)
                         {
@@ -629,7 +630,7 @@ namespace Tetrage.Tests
                     }
                 }
             }
-            
+
             Debug.Log("[GameSceneDebugEntry] デバッグ用初期カード設定完了");
         }
 
@@ -640,7 +641,7 @@ namespace Tetrage.Tests
         {
             return FindCardInStackBySuitNumber(stack, spec.Suit, spec.Number);
         }
-        
+
         /// <summary>
         /// 山札から指定されたカードを検索（Suit/Number版）
         /// </summary>
@@ -653,15 +654,15 @@ namespace Tetrage.Tests
                     return card;
                 }
             }
-            
+
             Debug.LogWarning($"[GameSceneDebugEntry] 山札に {suit} {number} が見つかりません");
             return null;
         }
-        
+
         #endregion
-        
+
         #region Game Control
-        
+
         /// <summary>
         /// ゲームを開始
         /// </summary>
@@ -673,17 +674,17 @@ namespace Tetrage.Tests
                 Debug.LogError("[GameSceneDebugEntry] ゲームが初期化されていません");
                 return;
             }
-            
+
             if (!PhotonNetwork.IsMasterClient)
             {
                 Debug.LogWarning("[GameSceneDebugEntry] ゲーム開始はホストのみ実行できます");
                 return;
             }
-            
+
             Debug.Log("[GameSceneDebugEntry] ゲーム開始");
             await _gameManager.StartGame();
         }
-        
+
         /// <summary>
         /// ゲームを停止
         /// </summary>
@@ -693,7 +694,7 @@ namespace Tetrage.Tests
             Debug.Log("[GameSceneDebugEntry] ゲーム停止");
             _gameManager.StopGame();
         }
-        
+
         /// <summary>
         /// ゲームをリセット
         /// </summary>
@@ -704,22 +705,22 @@ namespace Tetrage.Tests
             _gameManager.Reset();
             _isInitialized = false;
         }
-        
+
         #endregion
-        
+
         #region Photon Callbacks
-        
+
         public override void OnJoinedRoom()
         {
             Debug.Log($"[GameSceneDebugEntry] ルーム参加成功: {PhotonNetwork.CurrentRoom.Name}");
             Debug.Log($"[GameSceneDebugEntry] ActorNumber: {PhotonNetwork.LocalPlayer.ActorNumber}");
             _roomCreatedOrJoined = true;
         }
-        
+
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
             Debug.LogWarning($"[GameSceneDebugEntry] ルーム参加失敗。ルームを作成します: {message}");
-            
+
             // ルームが存在しない場合は作成
             RoomOptions options = new RoomOptions
             {
@@ -727,31 +728,31 @@ namespace Tetrage.Tests
                 IsVisible = false,  // デバッグルームなので非表示
                 IsOpen = true
             };
-            
+
             PhotonNetwork.CreateRoom(_debugRoomCode, options);
         }
-        
+
         public override void OnCreatedRoom()
         {
             Debug.Log($"[GameSceneDebugEntry] ルーム作成成功: {PhotonNetwork.CurrentRoom.Name}");
             _roomCreatedOrJoined = true;
         }
-        
+
         public override void OnCreateRoomFailed(short returnCode, string message)
         {
             Debug.LogError($"[GameSceneDebugEntry] ルーム作成失敗: {message} (Code: {returnCode})");
             _isConnecting = false;
         }
-        
+
         public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
         {
             Debug.Log($"[GameSceneDebugEntry] プレイヤー参加: {newPlayer.NickName} (ActorNumber: {newPlayer.ActorNumber})");
             Debug.Log($"[GameSceneDebugEntry] 現在のプレイヤー数: {PhotonNetwork.CurrentRoom.PlayerCount}/{_maxPlayers}");
         }
-        
+
         #endregion
     }
-    
+
     /// <summary>
     /// デバッグ用のプレイヤー情報設定
     /// リストのインデックスが入室順を表す（Element 0 = 1番目に入室、Element 1 = 2番目に入室...）
@@ -762,22 +763,22 @@ namespace Tetrage.Tests
         [Header("Player Settings")]
         [Tooltip("プレイヤー名")]
         public string PlayerName = "Player 1";
-        
+
         [Tooltip("アイコンインデックス（0-3）")]
         [Range(0, 3)]
         public int IconIndex = 0;
-        
+
         [Header("Initial Cards")]
         [Tooltip("初期カードを設定するか")]
         public bool SetInitialCards = false;
-        
+
         [Tooltip("Target Card (1枚)")]
         public CardSpec TargetCard = new CardSpec { Suit = Suit.Spade, Number = 1 };
-        
+
         [Tooltip("Hand Cards (0-3枚)")]
         public List<CardSpec> HandCards = new List<CardSpec>();
     }
-    
+
     /// <summary>
     /// カード指定用の構造体
     /// </summary>
@@ -785,10 +786,10 @@ namespace Tetrage.Tests
     public class CardSpec
     {
         public Suit Suit = Suit.Spade;
-        
+
         [Range(1, 13)]
         public int Number = 1;
-        
+
         /// <summary>
         /// カードが有効かどうか（Number が1-13の範囲内）
         /// </summary>
@@ -805,7 +806,7 @@ namespace Tetrage.Tests
                 return Number >= 1 && Number <= 13;
             }
         }
-        
+
         /// <summary>
         /// コンストラクタ（デフォルト値を確実に設定）
         /// </summary>
@@ -815,7 +816,7 @@ namespace Tetrage.Tests
             Number = 1;
         }
     }
-    
+
     /// <summary>
     /// ネットワーク送信用のカード配置データ
     /// </summary>
@@ -824,7 +825,7 @@ namespace Tetrage.Tests
     {
         public List<PlayerCardData> Players;
     }
-    
+
     /// <summary>
     /// プレイヤー単位のカードデータ（ネットワーク送信用）
     /// </summary>

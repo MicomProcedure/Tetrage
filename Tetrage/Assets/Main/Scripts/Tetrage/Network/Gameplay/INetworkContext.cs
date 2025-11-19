@@ -12,8 +12,8 @@ namespace Tetrage.Network.Gameplay
         /// <summary>ホスト判定</summary>
         bool IsHost { get; }
 
-        /// <summary>自ActorNumber</summary>
-        int LocalActorNumber { get; }
+        /// <summary>ユーザーのActorNumber</summary>
+        int UserActorNumber { get; }
 
         /// <summary>接続状態</summary>
         bool IsReady { get; }

@@ -201,7 +201,7 @@ namespace Tetrage.Managers
 
             // NetworkContextの生成（現時点はPhoton実装、将来はNetworkModeに応じて切替）
             _networkContext = new PhotonNetworkContext();
-            Debug.Log($"ApplicationManager: NetworkContext生成完了 (IsHost: {_networkContext.IsHost}, ActorNumber: {_networkContext.LocalActorNumber})");
+            Debug.Log($"ApplicationManager: NetworkContext生成完了 (IsHost: {_networkContext.IsHost}, ActorNumber: {_networkContext.UserActorNumber})");
 
             // GameManager の出現を待機
             GameManager gameManager = null;

@@ -18,17 +18,17 @@ namespace Tetrage.Tests
         [Header("Debug Mode Settings")]
         [Tooltip("Debugモードを有効にする（ApplicationManager不在時のみ動作）")]
         [SerializeField] private bool _enableDebugMode = true;
-        
+
         [Header("Game Settings")]
         [Tooltip("プレイヤー数")]
-        [SerializeField, Range(2, 4)] private int _playerCount = 2;
-        
+        [SerializeField, Range(3, 6)] private int _playerCount = 4;
+
         [Tooltip("ネットワークモード")]
         [SerializeField] private NetworkMode _networkMode = NetworkMode.VirtualTransport;
-        
+
         [Tooltip("初期化後に自動的にゲームを開始する")]
-        [SerializeField] private bool _autoStartGame = true;
-        
+        [SerializeField] private bool _autoStartGame = false;
+
         [Tooltip("乱数シード（-1で無効、0以上で固定）")]
         [SerializeField] private int _randomSeed = -1;
 
@@ -48,7 +48,7 @@ namespace Tetrage.Tests
         private async void Start()
         {
             // Awakeで無効化されている場合はここには到達しない
-            
+
             if (!_enableDebugMode)
             {
                 Debug.Log("GameSceneDebugEntrySimple: Debugモードが無効です");
@@ -57,7 +57,7 @@ namespace Tetrage.Tests
             }
 
             Debug.Log($"<color=cyan>GameSceneDebugEntrySimple: Debug環境でGameSceneを初期化します (Players: {_playerCount}, Mode: {_networkMode})</color>");
-            
+
             await InitializeDebugEnvironment();
         }
 
@@ -68,7 +68,7 @@ namespace Tetrage.Tests
                 // テストハーネスでセットアップ
                 _harness = new PlayModeTestHarness();
                 await _harness.SetupGameScene(_playerCount, _networkMode, _randomSeed);
-                
+
                 Debug.Log("<color=green>GameSceneDebugEntrySimple: 初期化完了</color>");
 
                 // ゲーム開始（オプション）

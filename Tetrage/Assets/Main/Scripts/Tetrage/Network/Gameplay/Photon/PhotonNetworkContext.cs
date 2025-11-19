@@ -13,8 +13,8 @@ namespace Tetrage.Network.Gameplay
         /// <summary>ホスト判定</summary>
         public bool IsHost => PhotonNetwork.IsConnectedAndReady && PhotonNetwork.IsMasterClient;
 
-        /// <summary>自ActorNumber</summary>
-        public int LocalActorNumber => PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
+        /// <summary>ユーザーのActorNumber</summary>
+        public int UserActorNumber => PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
 
         /// <summary>接続状態</summary>
         public bool IsReady => PhotonNetwork.IsConnectedAndReady;

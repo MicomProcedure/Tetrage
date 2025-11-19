@@ -9,7 +9,7 @@ namespace Tetrage.Network.Gameplay
     public sealed class VirtualNetworkContext : INetworkContext
     {
         private readonly bool _isHost;
-        private readonly int _localActorNumber;
+        private readonly int _userActorNumber;
         private readonly bool _isReady;
         private readonly bool _isInRoom;
         private readonly int _playerCount;
@@ -24,7 +24,7 @@ namespace Tetrage.Network.Gameplay
         /// <param name="isInRoom">ルーム参加状態（デフォルト: true）</param>
         public VirtualNetworkContext(int actorNumber, bool isHost, int playerCount = 4, bool isReady = true, bool isInRoom = true)
         {
-            _localActorNumber = actorNumber;
+            _userActorNumber = actorNumber;
             _isHost = isHost;
             _playerCount = playerCount;
             _isReady = isReady;
@@ -35,7 +35,7 @@ namespace Tetrage.Network.Gameplay
         public bool IsHost => _isHost;
 
         /// <summary>自ActorNumber</summary>
-        public int LocalActorNumber => _localActorNumber;
+        public int UserActorNumber => _userActorNumber;
 
         /// <summary>接続状態</summary>
         public bool IsReady => _isReady;
