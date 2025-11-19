@@ -84,7 +84,7 @@ namespace Tetrage.Tests.PlayMode
             }
 
             // 4. GameManagerを初期化（Photon待機なし）
-            _gameManager.Initialize(players, userInfo, _networkContext, _playerIdMapper);
+            _gameManager.Initialize(players, userInfo, _networkContext, _networkMode, _playerIdMapper);
 
             Debug.Log("<color=green>PlayModeTestHarness: GameScene初期化完了</color>");
 
@@ -144,6 +144,7 @@ namespace Tetrage.Tests.PlayMode
                     return new VirtualNetworkContext(
                         actorNumber: 1,
                         isHost: true,
+                        playerCount: _playerCount,
                         isReady: true,
                         isInRoom: true
                     );

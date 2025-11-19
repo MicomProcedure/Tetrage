@@ -39,6 +39,7 @@ namespace Tetrage.Managers
         private List<PlayerInfo> _participantInfos;
         private INetworkContext _networkContext;
         private IPlayerIdMapper _playerIdMapper;
+        private NetworkMode _networkMode;
 
         #endregion
 
@@ -93,8 +94,9 @@ namespace Tetrage.Managers
         /// <param name="participantInfoList">参加者情報リスト</param>
         /// <param name="userPlayerInfo">ユーザープレイヤー情報</param>
         /// <param name="networkContext">ネットワーク状態の抽象化（ApplicationManagerから提供）</param>
+        /// <param name="networkMode">ネットワークモード（テスト時はVirtualTransportを推奨）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング（ApplicationManagerから提供）</param>
-        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, IPlayerIdMapper playerIdMapper = null)
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, NetworkMode networkMode, IPlayerIdMapper playerIdMapper = null)
         {
             if (_isInitialized)
             {
@@ -116,11 +118,12 @@ namespace Tetrage.Managers
                 // 2.5 参加者情報の保持（UIへローカルで提供）
                 _participantInfos = new List<PlayerInfo>(participantInfoList);
 
+                // 2.6 NetworkContextとNetworkModeの設定
+                _networkContext = networkContext;
+                _networkMode = networkMode;
+
                 // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 _netCtl = InitializeNetworking();
-
-                // 3.5 NetworkContextの設定（ApplicationManagerから提供、未提供の場合はPhoton実装を生成）
-                _networkContext = networkContext;
 
                 // 3.6 PlayerIdMapperの設定（ApplicationManagerから提供）
                 _playerIdMapper = playerIdMapper;
@@ -446,9 +449,8 @@ namespace Tetrage.Managers
                 return _netCtl;
             }
 
-            // Phase 4: NetworkModeに応じたファクトリを選択
-            NetworkMode networkMode = ApplicationManager.Instance?.CurrentNetworkMode ?? NetworkMode.RealPhoton;
-            INetworkAdapterFactory adapterFactory = CreateNetworkAdapterFactory(networkMode);
+            // NetworkModeに応じたファクトリを選択（外部から注入されたNetworkModeを使用）
+            INetworkAdapterFactory adapterFactory = CreateNetworkAdapterFactory(_networkMode);
 
             var netCtl = new GameplayNetworkController(
                 _networkContext.IsHost,

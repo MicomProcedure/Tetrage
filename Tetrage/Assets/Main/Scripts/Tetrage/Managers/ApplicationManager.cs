@@ -94,7 +94,7 @@ namespace Tetrage.Managers
         private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumberマッピング
         private readonly List<string> _sceneHistory = new List<string>();
         private bool _isLoading = false;
-        
+
         // Phase 4: NetworkMode管理
         private NetworkMode _networkMode = NetworkMode.RealPhoton; // デフォルトはRealPhoton
         private bool _networkModeLocked = false; // GameManager.Initialize()後はロック
@@ -240,11 +240,11 @@ namespace Tetrage.Managers
             // GameManager を初期化
             try
             {
-                gameManager.Initialize(players, userInfo, _networkContext, _playerIdMapper);
-                
+                gameManager.Initialize(players, userInfo, _networkContext, _networkMode, _playerIdMapper);
+
                 // Phase 4: NetworkModeをロック（以後変更不可）
                 LockNetworkMode();
-                
+
                 Debug.Log("ApplicationManager: GameManager.Initialize を呼び出しました");
             }
             catch (System.SystemException ex)
@@ -279,7 +279,7 @@ namespace Tetrage.Managers
 
             // ActorNumberでソートしてから、シーケンシャルなPlayerIdを割り当て
             var sortedActors = actors.OrderBy(a => a.ActorNumber).ToArray();
-            
+
             for (int i = 0; i < sortedActors.Length; i++)
             {
                 var actor = sortedActors[i];
@@ -298,7 +298,7 @@ namespace Tetrage.Managers
 
                 // シーケンシャルなPlayerIdを割り当て（1,2,3...）
                 var playerId = new PlayerId(i + 1);
-                
+
                 // マッピングを登録
                 mapper.Register(playerId, actor.ActorNumber);
 
