@@ -3,6 +3,8 @@ using UnityEngine;
 using Tetrage.Tests.PlayMode;
 using Cysharp.Threading.Tasks;
 using Tetrage.Network;
+using Tetrage.Core.Constants;
+using Tetrage.Managers;
 #endif
 
 namespace Tetrage.Tests
@@ -21,10 +23,13 @@ namespace Tetrage.Tests
 
         [Header("Game Settings")]
         [Tooltip("プレイヤー数")]
-        [SerializeField, Range(3, 6)] private int _playerCount = 4;
+        [SerializeField, Range(SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT)] private int _playerCount = 4;
 
         [Tooltip("ネットワークモード")]
-        [SerializeField] private NetworkMode _networkMode = NetworkMode.VirtualTransport;
+        [SerializeField] private NetworkMode _networkMode = NetworkMode.LogicInjection;
+
+        [Tooltip("ローカルプレイヤーのインデックス（0始まり）")]
+        [SerializeField, Range(0, SettingConsts.MAX_PLAYER_COUNT - 1)] private int _localPlayerIndex = 0;
 
         [Tooltip("初期化後に自動的にゲームを開始する")]
         [SerializeField] private bool _autoStartGame = false;
@@ -32,7 +37,7 @@ namespace Tetrage.Tests
         [Tooltip("乱数シード（-1で無効、0以上で固定）")]
         [SerializeField] private int _randomSeed = -1;
 
-        private PlayModeTestHarness _harness;
+        private GameManager _gameManager;
 
         private void Awake()
         {
@@ -56,7 +61,8 @@ namespace Tetrage.Tests
                 return;
             }
 
-            Debug.Log($"<color=cyan>GameSceneDebugEntrySimple: Debug環境でGameSceneを初期化します (Players: {_playerCount}, Mode: {_networkMode})</color>");
+            _localPlayerIndex = Mathf.Clamp(_localPlayerIndex, 0, _playerCount - 1);
+            Debug.Log($"<color=cyan>GameSceneDebugEntrySimple: Debug環境でGameSceneを初期化します (Players: {_playerCount}, Mode: {_networkMode}, LocalPlayer: Player{_localPlayerIndex + 1})</color>");
 
             await InitializeDebugEnvironment();
         }
@@ -65,9 +71,13 @@ namespace Tetrage.Tests
         {
             try
             {
-                // テストハーネスでセットアップ
-                _harness = new PlayModeTestHarness();
-                await _harness.SetupGameScene(_playerCount, _networkMode, _randomSeed);
+                // PlayModeTestHelperを使用してGameManagerを初期化
+                _gameManager = PlayModeTestHelper.QuickSetup(
+                    playerCount: _playerCount,
+                    mode: _networkMode,
+                    localPlayerIndex: _localPlayerIndex,
+                    randomSeed: _randomSeed
+                );
 
                 Debug.Log("<color=green>GameSceneDebugEntrySimple: 初期化完了</color>");
 
@@ -75,7 +85,7 @@ namespace Tetrage.Tests
                 if (_autoStartGame)
                 {
                     Debug.Log("GameSceneDebugEntrySimple: ゲームを自動開始します");
-                    await _harness.StartGame();
+                    await _gameManager.StartGame();
                 }
             }
             catch (System.Exception ex)
@@ -86,7 +96,11 @@ namespace Tetrage.Tests
 
         private void OnDestroy()
         {
-            _harness?.Teardown();
+            if (_gameManager != null)
+            {
+                PlayModeTestHelper.QuickCleanup(_gameManager, _networkMode);
+                _gameManager = null;
+            }
         }
 
         [ContextMenu("Manual Initialize")]
@@ -98,7 +112,7 @@ namespace Tetrage.Tests
         [ContextMenu("Manual Start Game")]
         private void ManualStartGame()
         {
-            _harness?.StartGame().Forget();
+            _gameManager?.StartGame().Forget();
         }
 #else
         // ビルド時には完全に空のクラスになる

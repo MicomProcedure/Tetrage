@@ -7,6 +7,7 @@ using Tetrage.Core.Ids;
 using Tetrage.Managers;
 using Tetrage.Network;
 using Tetrage.Network.Gameplay;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Tests.PlayMode
 {
@@ -53,7 +54,7 @@ namespace Tetrage.Tests.PlayMode
         /// <param name="mode">NetworkMode（デフォルト: VirtualTransport）</param>
         /// <param name="randomSeed">乱数シード（再現性のあるテスト用、-1で無効）</param>
         public async UniTask SetupGameScene(
-            int playerCount = 2,
+            int playerCount = 4,
             NetworkMode mode = NetworkMode.VirtualTransport,
             int randomSeed = -1)
         {
@@ -164,7 +165,7 @@ namespace Tetrage.Tests.PlayMode
         /// </summary>
         private List<PlayerInfo> GenerateTestPlayerInfos(int count, out IPlayerIdMapper mapper)
         {
-            if (count < 2 || count > 4)
+            if (count < SettingConsts.MIN_PLAYER_COUNT || count > SettingConsts.MAX_PLAYER_COUNT)
             {
                 throw new System.ArgumentException("プレイヤー数は2-4の範囲で指定してください");
             }
