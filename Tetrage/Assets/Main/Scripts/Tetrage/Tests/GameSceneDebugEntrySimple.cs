@@ -5,6 +5,8 @@ using Cysharp.Threading.Tasks;
 using Tetrage.Network;
 using Tetrage.Core.Constants;
 using Tetrage.Managers;
+using System.Collections.Generic;
+using Tetrage.Core.DTO;
 #endif
 
 namespace Tetrage.Tests
@@ -36,6 +38,10 @@ namespace Tetrage.Tests
 
         [Tooltip("乱数シード（-1で無効、0以上で固定）")]
         [SerializeField] private int _randomSeed = -1;
+
+        [Header("Optional Settings")]
+        [Tooltip("詳細なプレイヤー設定（任意）")]
+        [SerializeField] private GameScenePlayerDebugSettings _playerDebugSettings;
 
         private GameManager _gameManager;
 
@@ -71,13 +77,41 @@ namespace Tetrage.Tests
         {
             try
             {
-                // PlayModeTestHelperを使用してGameManagerを初期化
-                _gameManager = PlayModeTestHelper.QuickSetup(
+                // 乱数シード固定
+                if (_randomSeed >= 0)
+                {
+                    PlayModeTestHelper.SetRandomSeed(_randomSeed);
+                }
+
+                // PlayerInfo生成
+                List<PlayerInfo> players;
+                if (_playerDebugSettings != null)
+                {
+                    Debug.Log("GameSceneDebugEntrySimple: GameScenePlayerDebugSettingsを使用してプレイヤーを作成します");
+                    players = _playerDebugSettings.CreatePlayerInfos(_playerCount, _localPlayerIndex);
+                }
+                else
+                {
+                    players = PlayModeTestHelper.CreateDefaultPlayers(_playerCount, _localPlayerIndex);
+                }
+
+                // NetworkContext生成
+                var networkContext = PlayModeTestHelper.CreateNetworkContext(
+                    _networkMode,
+                    localActorNumber: _localPlayerIndex + 1,
                     playerCount: _playerCount,
-                    mode: _networkMode,
-                    localPlayerIndex: _localPlayerIndex,
-                    randomSeed: _randomSeed
+                    isHost: true
                 );
+
+                // PlayerIdMapper生成
+                var mapper = PlayModeTestHelper.CreatePlayerIdMapper(players);
+
+                // UserPlayer特定
+                var userInfo = PlayModeTestHelper.GetUserPlayer(players, networkContext, mapper);
+
+                // GameManager初期化
+                _gameManager = PlayModeTestHelper.FindGameManager();
+                _gameManager.Initialize(players, userInfo, networkContext, _networkMode, mapper);
 
                 Debug.Log("<color=green>GameSceneDebugEntrySimple: 初期化完了</color>");
 
