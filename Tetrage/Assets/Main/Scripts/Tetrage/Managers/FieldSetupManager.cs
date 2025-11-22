@@ -17,6 +17,7 @@ namespace Tetrage.Managers
     {
         private readonly FieldSetupSettings _settings;
         private readonly FieldSetupDependencies _dependencies;
+        private readonly GameRuleDTO _gameRuleDTO;
         private List<IPlayer> _players;
         private Stage _stage;
 
@@ -58,10 +59,11 @@ namespace Tetrage.Managers
         /// </summary>
         /// <param name="settings">フィールドセットアップ設定（静的設定のみ）</param>
         /// <param name="dependencies">フィールドセットアップ依存性</param>
-        public FieldSetupManager(FieldSetupSettings settings, FieldSetupDependencies dependencies)
+        public FieldSetupManager(FieldSetupSettings settings, FieldSetupDependencies dependencies, GameRuleDTO gameRuleDTO)
         {
             _settings = settings;
             _dependencies = dependencies;
+            _gameRuleDTO = gameRuleDTO;
         }
 
         /// <summary>
@@ -105,11 +107,12 @@ namespace Tetrage.Managers
         {
             // 依存性注入されたFactoryを使用してStageBuilderを作成
             var stageBuilder = new StageBuilder(
-                (StageModelFactory)_dependencies.StageModelFactory,
+                _dependencies.StageModelFactory,
                 _dependencies.CardPileFactory,
                 _dependencies.CardFactory);
 
             var stage = stageBuilder
+                .WithGameRule(_gameRuleDTO)
                 .UseView(
                     _settings.StageViewPrefab,
                     _settings.StageSpawnPosition,
@@ -172,4 +175,8 @@ namespace Tetrage.Managers
             return players;
         }
     }
+
+    #region Validation
+
+    #endregion
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 using UnityEngine;
 
 namespace Tetrage.Core.Actions
@@ -41,7 +42,7 @@ namespace Tetrage.Core.Actions
         private IGameContextProvider _gameContextProvider;
         private IRoundManager _roundManager;
         private ActionAwaiter _actionAwaiter; // ActionAwaiterを追加
-        private Tetrage.Network.Gameplay.INetworkActionContext _networkCtx;
+        private INetworkActionContext _networkCtx;
 
         /// <summary>
         /// アクション実行前イベント
@@ -107,7 +108,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// ネットワークアクションコンテキストを設定
         /// </summary>
-        public void SetNetworkActionContext(Tetrage.Network.Gameplay.INetworkActionContext networkCtx)
+        public void SetNetworkActionContext(INetworkActionContext networkCtx)
         {
             _networkCtx = networkCtx;
         }

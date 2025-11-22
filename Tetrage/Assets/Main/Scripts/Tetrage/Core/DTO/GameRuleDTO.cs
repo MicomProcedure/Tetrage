@@ -8,7 +8,7 @@ namespace Tetrage.Core.DTO
 {
     #region GameRuleDTO
     /// <summary>
-    /// ゲームルール設定を表すDTO。プレイヤー数や各スートの構成情報を保持する。
+    /// ゲームルール設定を表すDTO。プレイヤー数や各スートの構成情報を保持する。値は検証済みであることが保証されている。
     /// </summary>
     public sealed record GameRuleDTO
     {
@@ -40,7 +40,7 @@ namespace Tetrage.Core.DTO
 
         #region Factory Methods
 
-        public GameRuleDTO Default => new GameRuleDTO(
+        public static GameRuleDTO Default = new GameRuleDTO(
             playerCount: InGameConsts.DEFAULT_GAME_PLAYER_COUNT,
             cardCountPerSuit: InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT,
             suitTypeCount: InGameConsts.DEFAULT_INITIAL_SUITS.Length
@@ -71,6 +71,7 @@ namespace Tetrage.Core.DTO
             {
                 throw new ArgumentOutOfRangeException(nameof(cardCountPerSuit), "カード枚数は1以上で指定してください。");
             }
+
         }
 
         private void ValidateSuitTypeCount(int suitTypeCount)
@@ -78,6 +79,10 @@ namespace Tetrage.Core.DTO
             if (suitTypeCount <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(suitTypeCount), "スートの種類数は1以上で指定してください。");
+            }
+            if (suitTypeCount > Enum.GetValues(typeof(Suit)).Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(suitTypeCount), "スートの種類数が定義されているスートの種類数を超えています。");
             }
         }
 

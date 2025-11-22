@@ -1,14 +1,14 @@
 namespace Tetrage.Network.Gameplay
 {
     /// <summary>
-    /// Photonネットワークを使用したアクションコンテキスト実装
+    /// ネットワークアダプタを使用したアクションコンテキスト実装。Actionがこのクラスを介してネットワークを通じてHostにアクション確定リクエストを送る。
     /// </summary>
-    public sealed class PhotonActionContext : INetworkActionContext
+    public sealed class GeneralNetworkActionContext : INetworkActionContext
     {
         private readonly INetworkBroadcaster _broadcaster;
         private readonly SequenceService _seq;
 
-        public PhotonActionContext(INetworkBroadcaster broadcaster, SequenceService seq)
+        public GeneralNetworkActionContext(INetworkBroadcaster broadcaster, SequenceService seq)
         {
             _broadcaster = broadcaster;
             _seq = seq;

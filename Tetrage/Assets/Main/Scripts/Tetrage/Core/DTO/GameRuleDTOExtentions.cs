@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Tetrage.Core.DTO;
 
 namespace Tetrage.Core.DTO
 {

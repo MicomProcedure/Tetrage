@@ -13,6 +13,7 @@ using Tetrage.Models;
 using Photon.Pun;
 using Tetrage.Core.Constants;
 using Tetrage.Core;
+using Tetrage.Core.Actions;
 
 namespace Tetrage.Managers
 {
@@ -40,6 +41,7 @@ namespace Tetrage.Managers
         private INetworkContext _networkContext;
         private IPlayerIdMapper _playerIdMapper;
         private NetworkMode _networkMode;
+        private GameRuleDTO _gameRuleDTO;
 
         #endregion
 
@@ -96,7 +98,8 @@ namespace Tetrage.Managers
         /// <param name="networkContext">ネットワーク状態の抽象化（ApplicationManagerから提供）</param>
         /// <param name="networkMode">ネットワークモード（テスト時はVirtualTransportを推奨）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング（ApplicationManagerから提供）</param>
-        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, NetworkMode networkMode, IPlayerIdMapper playerIdMapper = null)
+        /// <param name="gameRuleDTO">ゲームルール情報</param>
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, NetworkMode networkMode, IPlayerIdMapper playerIdMapper = null, GameRuleDTO gameRuleDTO = null)
         {
             if (_isInitialized)
             {
@@ -106,27 +109,26 @@ namespace Tetrage.Managers
 
             try
             {
+                // 0.フィールドのセットアップ
+                _participantInfos = participantInfoList;
+                _gameRuleDTO = gameRuleDTO;
+                _networkContext = networkContext;
+                _networkMode = networkMode;
+                _playerIdMapper = playerIdMapper;
+
                 // 1. FieldSetupManagerの生成
-                _fieldSetupManager = CreateFieldSetupManager(participantInfoList.Count);
+                _fieldSetupManager = CreateFieldSetupManager();
 
                 // 1.5 ネットワーク接続時は PlayerId=ActorNumber へマッピング
                 ValidatePlayerInfos(participantInfoList, networkContext);
+                ValidatePlayerCount();
 
                 // 2. フィールドのセットアップ
                 _fieldSetupManager.SetupField(participantInfoList);
 
-                // 2.5 参加者情報の保持（UIへローカルで提供）
-                _participantInfos = new List<PlayerInfo>(participantInfoList);
-
-                // 2.6 NetworkContextとNetworkModeの設定
-                _networkContext = networkContext;
-                _networkMode = networkMode;
 
                 // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 _netCtl = InitializeNetworking();
-
-                // 3.6 PlayerIdMapperの設定（ApplicationManagerから提供）
-                _playerIdMapper = playerIdMapper;
 
                 // 3.5 ユーザープレイヤーの特定
                 if (!TryGetPlayerById(userPlayerInfo.Id, out var userPlayer))
@@ -136,7 +138,7 @@ namespace Tetrage.Managers
                 }
 
                 // 4. GameContextの生成（PUNのLocalPlayerから IPlayer を解決）
-                _gameContext = new Tetrage.Core.GameContext(
+                _gameContext = new GameContext(
                     _fieldSetupManager.Stage,
                     _fieldSetupManager.Players,
                     userPlayer,
@@ -153,10 +155,10 @@ namespace Tetrage.Managers
                 );
 
                 // 5.5 ActionManager に NetworkActionContext を注入（ActionSystemはDealerのコンストラクタで初期化されている）
-                var actionMgr = Tetrage.Core.Actions.ActionSystemInitializer.GetActionManager();
+                var actionMgr = ActionSystemInitializer.GetActionManager();
                 if (actionMgr != null && _netCtl != null)
                 {
-                    var networkCtx = new PhotonActionContext(_netCtl.Broadcaster, _netCtl.Sequence);
+                    var networkCtx = new GeneralNetworkActionContext(_netCtl.Broadcaster, _netCtl.Sequence);
                     actionMgr.SetNetworkActionContext(networkCtx);
                 }
 
@@ -189,6 +191,7 @@ namespace Tetrage.Managers
             catch (System.Exception ex)
             {
                 Debug.LogError($"GameManager: 初期化中にエラーが発生: {ex.Message}");
+                StopAndReset();
                 throw;
             }
         }
@@ -196,60 +199,18 @@ namespace Tetrage.Managers
         /// <summary>
         /// FieldSetupManagerを生成する
         /// </summary>
-        /// <param name="participantCount">参加者数</param>
-        private FieldSetupManager CreateFieldSetupManager(int participantCount)
+        private FieldSetupManager CreateFieldSetupManager()
         {
-            if (_fieldSetupComponent == null)
-            {
-                throw new System.InvalidOperationException("FieldSetupComponent が見つかりません。Inspector で設定してください。");
-            }
+            if (_fieldSetupComponent == null) throw new System.InvalidOperationException("FieldSetupComponent が見つかりません。Inspector で設定してください。");
+
+            if (_gameRuleDTO == null || _participantInfos == null) throw new System.InvalidOperationException("ゲームルール情報または参加者情報が設定されていません。");
 
             // FieldSetupComponentから検証済みの設定を取得
-            var settings = _fieldSetupComponent.GetValidatedFieldSetupSettings(participantCount);
+            var settings = _fieldSetupComponent.GetValidatedFieldSetupSettings(_participantInfos.Count);
             // Registry注入版の依存性を使用
             var dependencies = _fieldSetupComponent.CreateFieldSetupDependencies(_pileRegistry, _cardRegistry, _playerRegistry);
 
-            return new FieldSetupManager(settings, dependencies);
-        }
-
-        /// <summary>
-        /// PlayerInfo の Id がルーム内の ActorNumber と対応しているか検証する。
-        /// オフライン/未接続時は検証をスキップする。
-        /// </summary>
-        private void ValidatePlayerInfos(List<PlayerInfo> input, INetworkContext networkContext)
-        {
-            // オフラインまたは未接続時は検証をスキップ
-            if (networkContext == null || !networkContext.IsInRoom)
-            {
-                return;
-            }
-
-            var actorNumbers = networkContext.GetActorNumbers();
-
-            // ActorNumber の集合を構築
-            var actorNumberSet = new HashSet<int>(actorNumbers);
-
-            // 入力の重複と存在を検証
-            var seen = new HashSet<int>();
-            for (int i = 0; i < input.Count; i++)
-            {
-                var idValue = input[i].Id.Value;
-                if (!actorNumberSet.Contains(idValue))
-                {
-                    throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が現在の ActorNumber 一覧に存在しません。");
-                }
-                if (!seen.Add(idValue))
-                {
-                    throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が重複しています。");
-                }
-            }
-
-            // 参考: 数が合わない場合は警告（観戦や未参加者の可能性）。
-            if (input.Count != networkContext.PlayerCount)
-            {
-                UnityEngine.Debug.LogWarning($"GameManager: 参加者数({input.Count})と ルーム参加者数({networkContext.PlayerCount}) に差異があります。");
-            }
-
+            return new FieldSetupManager(settings, dependencies, _gameRuleDTO);
         }
 
         private void EventSubscribe()
@@ -516,6 +477,72 @@ namespace Tetrage.Managers
         {
             return _playerRegistry.TryGet(id, out player);
         }
+
+        #endregion
+
+        #region Validation
+
+
+        /// <summary>
+        /// PlayerInfo の Id がルーム内の ActorNumber と対応しているか検証する。
+        /// オフライン/未接続時は検証をスキップする。
+        /// </summary>
+        private void ValidatePlayerInfos(List<PlayerInfo> input, INetworkContext networkContext)
+        {
+            // オフラインまたは未接続時は検証をスキップ
+            if (networkContext == null || !networkContext.IsInRoom)
+            {
+                return;
+            }
+
+            var actorNumbers = networkContext.GetActorNumbers();
+
+            // ActorNumber の集合を構築
+            var actorNumberSet = new HashSet<int>(actorNumbers);
+
+            // 入力の重複と存在を検証
+            var seen = new HashSet<int>();
+            for (int i = 0; i < input.Count; i++)
+            {
+                var idValue = input[i].Id.Value;
+                if (!actorNumberSet.Contains(idValue))
+                {
+                    throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が現在の ActorNumber 一覧に存在しません。");
+                }
+                if (!seen.Add(idValue))
+                {
+                    throw new System.InvalidOperationException($"PlayerInfo.Id={idValue} が重複しています。");
+                }
+            }
+
+            // 参考: 数が合わない場合は警告（観戦や未参加者の可能性）。
+            if (input.Count != networkContext.PlayerCount)
+            {
+                UnityEngine.Debug.LogWarning($"GameManager: 参加者数({input.Count})と ルーム参加者数({networkContext.PlayerCount}) に差異があります。");
+            }
+
+        }
+
+        private void ValidatePlayerCount()
+        {
+            if (_participantInfos == null || _participantInfos.Count == 0)
+            {
+                throw new System.InvalidOperationException("参加者情報が設定されていません。");
+            }
+            if (_participantInfos.Count != _gameRuleDTO.PlayerCount)
+            {
+                throw new System.InvalidOperationException($"参加者数({_participantInfos.Count})がゲームルールのプレイヤー数({_gameRuleDTO.PlayerCount})と一致しません。");
+            }
+            if (_participantInfos.Count > SettingConsts.MAX_PLAYER_COUNT)
+            {
+                throw new System.InvalidOperationException($"参加者数({_participantInfos.Count})が最大プレイヤー数({SettingConsts.MAX_PLAYER_COUNT})を超えています。");
+            }
+            if (_participantInfos.Count < SettingConsts.MIN_PLAYER_COUNT)
+            {
+                throw new System.InvalidOperationException($"参加者数({_participantInfos.Count})が最小プレイヤー数({SettingConsts.MIN_PLAYER_COUNT})未満です。");
+            }
+        }
+
 
         #endregion
     }
