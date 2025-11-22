@@ -8,12 +8,6 @@ namespace Tetrage.Core.Contracts
 {
     public interface IRoundManager
     {
-        event Action TurnStart;
-        event Action TurnEnd;
-        event Action RoundStart;
-        event Action RoundEnd;
-        event Action GameStart;
-        event Action GameEnd;
         public int TurnCount { get; }
         public int RoundCount { get; }
         IDealerPlanner DealerPlanner { get; }
@@ -22,14 +16,6 @@ namespace Tetrage.Core.Contracts
         void EndGame();
         UniTask StartTurnLoopAsync();
         UniTask StartSingleTurnAsync();
-        void OnTurnStart();
-        void OnTurnEnd();
-
-        void OnGameStart();
-        void OnGameEnd();
-
-        void OnRoundStart();
-        void OnRoundEnd();
 
     }
 }

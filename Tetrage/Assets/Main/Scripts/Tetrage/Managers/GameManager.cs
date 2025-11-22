@@ -14,6 +14,7 @@ using Photon.Pun;
 using Tetrage.Core.Constants;
 using Tetrage.Core;
 using Tetrage.Core.Actions;
+using R3;
 
 namespace Tetrage.Managers
 {
@@ -42,6 +43,7 @@ namespace Tetrage.Managers
         private IPlayerIdMapper _playerIdMapper;
         private NetworkMode _networkMode;
         private GameRuleDTO _gameRuleDTO;
+        private CompositeDisposable _disposables = new();
 
         #endregion
 
@@ -215,15 +217,12 @@ namespace Tetrage.Managers
 
         private void EventSubscribe()
         {
-            _dealer.GameEnd += OnGameEnd;
+            _gameContext.Events.GameEnded.Subscribe(_ => OnGameEnd()).AddTo(_disposables);
         }
 
         private void EventUnsubscribe()
         {
-            if (_dealer != null)
-            {
-                _dealer.GameEnd -= OnGameEnd;
-            }
+            _disposables.Dispose();
         }
 
 

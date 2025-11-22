@@ -17,15 +17,6 @@ namespace Tetrage.Managers
     public class Dealer : IRoundManager
     {
 
-        #region イベント
-        public event Action TurnStart;
-        public event Action TurnEnd;
-        public event Action RoundStart;
-        public event Action RoundEnd;
-        public event Action GameStart;
-        public event Action GameEnd;
-
-        #endregion
 
         #region フィールド
 
@@ -459,7 +450,6 @@ namespace Tetrage.Managers
                 Debug.LogWarning($"Dealer: PlayerId {_gameContext.CurrentPlayer.Id} のマッピングが見つかりません");
             }
             Debug.Log($"Dealer: ターン {_turnCount} を開始します");
-            TurnStart?.Invoke();
         }
         public void OnTurnEnd()
         {            // 終了イベントのネットワーク送信（任意）
@@ -475,28 +465,23 @@ namespace Tetrage.Managers
                     Debug.LogWarning($"Dealer: PlayerId {_gameContext.CurrentPlayer.Id} のマッピングが見つかりません");
                 }
             }
-            TurnEnd?.Invoke();
         }
 
         public void OnRoundStart()
         {
             _roundCount++;
             Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
-            RoundStart?.Invoke();
         }
         public void OnRoundEnd()
         {
-            RoundEnd?.Invoke();
         }
 
         public void OnGameStart()
         {
-            GameStart?.Invoke();
         }
 
         public void OnGameEnd()
         {
-            GameEnd?.Invoke();
         }
 
         #endregion

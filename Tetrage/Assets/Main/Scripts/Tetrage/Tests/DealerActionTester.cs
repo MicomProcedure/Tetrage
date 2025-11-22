@@ -33,6 +33,9 @@ namespace Tetrage.Tests
         private DealerPlanEmitter _dealerPlanEmitter;
         private RealDealerPlanner _dealerPlanner;
         private bool _testStarted = false;
+        #endregion
+
+        #region private fields
         private CompositeDisposable _disposables = new();
         #endregion
 
@@ -134,42 +137,19 @@ namespace Tetrage.Tests
 
         private void SetupEventListeners()
         {
-            if (_dealer == null) return;
-            _dealer.GameStart += OnGameStart;
-            _dealer.GameEnd += OnGameEnd;
-            _dealer.RoundStart += OnRoundStart;
-            _dealer.RoundEnd += OnRoundEnd;
-            // Turn系は Bus 優先。Bus が無い場合だけ Dealer イベントを使う
-            if (_gameContext?.Events != null)
-            {
-                _gameContext.Events.TurnStarted
-                    .Subscribe(OnTurnStartedBus)
-                    .AddTo(_disposables);
-            }
-            else
-            {
-                _dealer.TurnStart += OnTurnStart;
-            }
-            _dealer.TurnEnd += OnTurnEnd;
+            _gameContext.Events.GameStarted.Subscribe(_ => OnGameStart()).AddTo(_disposables);
+            _gameContext.Events.GameEnded.Subscribe(_ => OnGameEnd()).AddTo(_disposables);
+            _gameContext.Events.TurnStarted.Subscribe(_ => OnTurnStart()).AddTo(_disposables);
+            _gameContext.Events.TurnEnded.Subscribe(_ => OnTurnEnd()).AddTo(_disposables);
         }
 
         private void RemoveEventListeners()
         {
-            if (_dealer == null) return;
-            _dealer.GameStart -= OnGameStart;
-            _dealer.GameEnd -= OnGameEnd;
-            _dealer.RoundStart -= OnRoundStart;
-            _dealer.RoundEnd -= OnRoundEnd;
 
             // R3購読解除
             _disposables.Dispose();
             _disposables = new();
 
-            if (_gameContext?.Events == null)
-            {
-                _dealer.TurnStart -= OnTurnStart;
-            }
-            _dealer.TurnEnd -= OnTurnEnd;
         }
         #endregion
 
