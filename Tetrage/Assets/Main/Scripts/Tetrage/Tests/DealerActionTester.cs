@@ -8,8 +8,10 @@ using Tetrage.Core.Contracts;
 using Tetrage.Factories;
 using Tetrage.Core.Ids;
 using Tetrage.Network.Gameplay;
+using Tetrage.Models;
 using R3;
 using DomainEvents = Tetrage.Core.Events;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.Tests
 {
@@ -29,9 +31,10 @@ namespace Tetrage.Tests
         #region テスト用インスタンス
         private Dealer _dealer;
         private IGameContextProvider _gameContext;
-        private ActionFocusedDealerStrategy _strategy;
-        private DealerPlanEmitter _dealerPlanEmitter;
+        private IGameplayNetworkController _netCtl;
+        private INetworkContext _networkContext;
         private RealDealerPlanner _dealerPlanner;
+        private IPlayerIdMapper _playerIdMapper;
         private bool _testStarted = false;
         #endregion
 
@@ -99,6 +102,7 @@ namespace Tetrage.Tests
             try
             {
                 _dealer?.EndGame();
+                _netCtl?.Stop();
                 RemoveEventListeners();
                 _testStarted = false;
                 Log("テスト停止");
@@ -129,10 +133,44 @@ namespace Tetrage.Tests
             var bus = new R3EventBus();
             _gameContext = new Tetrage.Core.GameContext(stage, players, players[fixedPlayerIndex], bus);
 
-            _strategy = new ActionFocusedDealerStrategy(fixedPlayerIndex);
-            _dealerPlanner = new RealDealerPlanner();
-            _dealerPlanEmitter = new DealerPlanEmitter(null);
-            _dealer = new Dealer(_gameContext, _dealerPlanner, _dealerPlanEmitter);
+            // PlayerIdMapperを生成し、プレイヤーIDとアクター番号をマッピング
+            _playerIdMapper = new PlayerIdMapper();
+            for (int i = 0; i < playerCount; i++)
+            {
+                // ActorNumberは1から始まる
+                _playerIdMapper.Register(new PlayerId(i), i + 1);
+            }
+
+            // テスト環境ではHostとして動作させる
+            _networkContext = new VirtualNetworkContext(1, true, playerCount, true, true);
+
+            var pileRegistry = new IdRegistry<PileId, CardPile>();
+            var cardRegistry = new IdRegistry<CardId, Card>();
+            var playerRegistry = new IdRegistry<PlayerId, Player>();
+
+            // レジストリにプレイヤーを登録
+            foreach (var player in players)
+            {
+                if (player is Player playerModel)
+                {
+                    playerRegistry.Register(playerModel);
+                }
+            }
+
+            _netCtl = new GameplayNetworkController(
+                true, // isHost
+                pileRegistry,
+                cardRegistry,
+                playerRegistry,
+                new VirtualNetworkAdapterFactory(),
+                _playerIdMapper
+            );
+
+            // GameContextをアタッチ
+            _netCtl.AttachGameContext(_gameContext as Tetrage.Core.GameContext);
+            _netCtl.Start();
+
+            _dealer = DealerFactory.CreateDealer(GameMode.Debug, _gameContext, _networkContext, _netCtl);
         }
 
         private void SetupEventListeners()

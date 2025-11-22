@@ -11,7 +11,7 @@ namespace Tetrage.Core.Contracts
         public int TurnCount { get; }
         public int RoundCount { get; }
         IDealerPlanner DealerPlanner { get; }
-        IEventEmitter<DealerPlan> DealerPlanEmitter { get; }
+        DealerNetworkMessenger Messenger { get; }
         UniTask StartGameAsync(float timeoutSeconds = 0, CancellationToken gameCts = default);
         void EndGame();
         UniTask StartTurnLoopAsync();

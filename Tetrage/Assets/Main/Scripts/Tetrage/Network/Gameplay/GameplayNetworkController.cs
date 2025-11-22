@@ -11,9 +11,18 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class GameplayNetworkController : IGameplayNetworkController, IDisposable
     {
+        #region Properties
+        public INetworkBroadcaster Broadcaster => _broadcaster;
+        public TurnGate TurnGate => _turnGate;
+        public IGameplayEventBus EventBus => _bus;
+        public SequenceService Sequence => _sequence;
+        public IPlayerIdMapper PlayerIdMapper => _playerIdMapper;
+        #endregion
+
+        #region Fields
         private readonly ISerializer _serializer;
         private INetworkBroadcaster _broadcaster;
-        public INetworkBroadcaster Broadcaster => _broadcaster;
+
         private INetworkReceiver _receiver;
         private IGameplayEventBus _bus;
         private TurnGate _turnGate;
@@ -26,7 +35,7 @@ namespace Tetrage.Network.Gameplay
         private readonly IPlayerIdMapper _playerIdMapper;
         private bool _started;
         private bool _disposed;
-
+        #endregion
         /// <summary>
         /// GameplayNetworkControllerのコンストラクタ
         /// </summary>
@@ -78,7 +87,7 @@ namespace Tetrage.Network.Gameplay
                 _bus);
 
             _hostActionProcessor = new DefaultHostActionProcessor(this);
-            
+
             // ファクトリからBroadcaster/Receiverを生成
             _broadcaster = adapterFactory.CreateBroadcaster(_serializer);
             _receiver = adapterFactory.CreateReceiver(_serializer);
@@ -117,10 +126,6 @@ namespace Tetrage.Network.Gameplay
                 }
             });
         }
-
-        public TurnGate TurnGate => _turnGate;
-        public IGameplayEventBus EventBus => _bus;
-        public SequenceService Sequence => _sequence;
 
         public void AttachGameContext(Tetrage.Core.GameContext ctx)
         {

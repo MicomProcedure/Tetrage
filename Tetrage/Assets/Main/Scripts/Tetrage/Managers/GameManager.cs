@@ -7,7 +7,7 @@ using Cysharp.Threading.Tasks;
 using System.Threading;
 using Tetrage.Core.Contracts;
 using Tetrage.Network;
-using Tetrage.Network.Gameplay;
+using Tetrage.Network.Gameplay; // using があるか確認
 using Tetrage.Core.Ids;
 using Tetrage.Models;
 using Photon.Pun;
@@ -153,7 +153,8 @@ namespace Tetrage.Managers
                 _dealer = DealerFactory.CreateDealer(
                     _gameMode,
                     _gameContext,
-                    _netCtl?.Broadcaster
+                    _networkContext,
+                    _netCtl
                 );
 
                 // 5.5 ActionManager に NetworkActionContext を注入（ActionSystemはDealerのコンストラクタで初期化されている）
@@ -172,19 +173,6 @@ namespace Tetrage.Managers
                     _inGameUIManager.Initialize(_gameContext);
                 }
 
-                // 6. Dealerへ NetworkContext/Broadcaster/Sequence/TurnGate を提供（Hostのみ）
-                _dealer.SetNetworkContext(_networkContext);
-                if (_networkContext.IsHost)
-                {
-                    var bc = _netCtl?.Broadcaster;
-                    if (bc == null) throw new System.InvalidOperationException("Broadcaster が見つかりません。");
-                    var seq = _netCtl.Sequence;
-                    _dealer.SetEmitter(new DealerPlanEmitter(bc, seq));
-                    _dealer.SetTurnGate(_netCtl.TurnGate);
-                    _dealer.SetLifecycleEmitter(new GameLifecycleEmitter(bc, seq));
-                    // DealerにPlayerIdMapperを注入（PlayerId→ActorNumber変換用）
-                    _dealer.SetPlayerIdMapper(_playerIdMapper);
-                }
 
                 _isInitialized = true;
 
@@ -280,9 +268,9 @@ namespace Tetrage.Managers
 
         private async UniTask WaitForGameEndAsync()
         {
-            if (PhotonNetwork.IsMasterClient) return;
+            if (_networkContext.IsHost) return;
             _remoteGameEnded = false;
-            await UniTask.WaitUntil(() => _remoteGameEnded || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InRoom);
+            await UniTask.WaitUntil(() => _remoteGameEnded || !_networkContext.IsReady || !_networkContext.IsInRoom);
         }
 
         private void PublishGameStarted()

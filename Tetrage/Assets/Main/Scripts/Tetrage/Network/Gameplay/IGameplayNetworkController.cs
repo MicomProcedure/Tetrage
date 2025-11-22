@@ -13,6 +13,7 @@ namespace Tetrage.Network.Gameplay
         IGameplayEventBus EventBus { get; }
         TurnGate TurnGate { get; }
         SequenceService Sequence { get; }
+        IPlayerIdMapper PlayerIdMapper { get; }
         void AttachGameContext(Tetrage.Core.GameContext ctx);
         void Start();
         void Stop();

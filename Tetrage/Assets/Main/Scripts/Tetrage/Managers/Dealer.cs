@@ -5,9 +5,7 @@ using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
-using Tetrage.Core.DTO;
 using R3;
-using DomainEvents = Tetrage.Core.Events;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -28,15 +26,14 @@ namespace Tetrage.Managers
         public IDealerPlanner DealerPlanner { get { return _dealerPlanner; } }
 
         /// <summary>
-        /// ディーラー戦略のイベント発行用
+        /// ディーラー戦略のイベント発行用メッセンジャー
         /// </summary>
-        private IEventEmitter<DealerPlan> _dealerPlanEmitter;
-        public IEventEmitter<DealerPlan> DealerPlanEmitter => _dealerPlanEmitter;
+        private DealerNetworkMessenger _messenger;
+        public DealerNetworkMessenger Messenger => _messenger;
+
         private TurnGate _turnGate; // Hostのみ使用
-        private IEventEmitter<TurnStartedEvent> _lifecycleEmitter; // Hostのみ使用
         private IGameContextProvider _gameContext; // 読み取り専用のコンテキスト
         private INetworkContext _networkContext; // ネットワーク状態の抽象化
-        private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumber変換用
 
         /// <summary>
         /// ラウンド数
@@ -75,14 +72,14 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(IGameContextProvider gameContext, IDealerPlanner dealerPlanner, IEventEmitter<DealerPlan> dealerPlanEmitter)
+        public Dealer(IGameContextProvider gameContext, IDealerPlanner dealerPlanner, INetworkContext networkContext)
         {
             if (gameContext == null) throw new ArgumentNullException(nameof(gameContext));
             if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
 
             _gameContext = gameContext;
             _dealerPlanner = dealerPlanner;
-            _dealerPlanEmitter = dealerPlanEmitter;
+            _networkContext = networkContext;
             _roundCount = 0; // 初期化
             _turnCount = 0; // 初期化
 
@@ -96,12 +93,13 @@ namespace Tetrage.Managers
         #region 設定メソッド
 
         /// <summary>
-        /// 後からEmitterを差し替える（GameManagerのネットワーク初期化完了後に注入）。
+        /// 後からMessengerを差し替える（GameManagerのネットワーク初期化完了後に注入）。
         /// Hostのみ設定。Guestはnullのまま。
         /// </summary>
-        public void SetEmitter(IEventEmitter<DealerPlan> emitter)
+        public void SetMessenger(DealerNetworkMessenger messenger)
         {
-            _dealerPlanEmitter = emitter;
+            if (!_networkContext.IsHost) return;
+            _messenger = messenger;
         }
 
         /// <summary>
@@ -109,31 +107,8 @@ namespace Tetrage.Managers
         /// </summary>
         public void SetTurnGate(TurnGate gate)
         {
+            if (!_networkContext.IsHost) return;
             _turnGate = gate;
-        }
-
-        /// <summary>
-        /// 進行イベント用のEmitterを注入（Hostのみ）。
-        /// </summary>
-        public void SetLifecycleEmitter(IEventEmitter<TurnStartedEvent> emitter)
-        {
-            _lifecycleEmitter = emitter;
-        }
-
-        /// <summary>
-        /// NetworkContextを注入。ホスト判定等に使用する。
-        /// </summary>
-        public void SetNetworkContext(INetworkContext networkContext)
-        {
-            _networkContext = networkContext;
-        }
-
-        /// <summary>
-        /// PlayerIdMapperを注入。PlayerId→ActorNumber変換に使用する。
-        /// </summary>
-        public void SetPlayerIdMapper(IPlayerIdMapper playerIdMapper)
-        {
-            _playerIdMapper = playerIdMapper;
         }
 
 
@@ -206,31 +181,22 @@ namespace Tetrage.Managers
             // デッキ準備 & 配布（副作用なしプラン → イベント発行 → 受信適用）
             // 1) 山札シャッフル（決定論で構築される前提のため、原則空プラン）
             var shufflePlan = _dealerPlanner.PlanShuffleDeck(_gameContext.Stage.Stack);
-            _dealerPlanEmitter?.Emit(shufflePlan);
+            _messenger?.PublishDealerPlan(shufflePlan);
 
             // 2) 初期ターゲット設定
             var targetPlan = _dealerPlanner.PlanTargetSetup(_gameContext.Players, _gameContext.Stage.Stack);
-            _dealerPlanEmitter?.Emit(targetPlan);
+            _messenger?.PublishDealerPlan(targetPlan);
 
             // 3) ターン順序初期化（プランにTurnOrderを含め、Emitterで送信）
             var orderPlan = _dealerPlanner.PlanResetTurnOrder(_gameContext.Players);
-            _dealerPlanEmitter?.Emit(orderPlan);
+            _messenger?.PublishDealerPlan(orderPlan);
 
             // 4) 最初のプレイヤーを決定
             var firstPlayer = _dealerPlanner.DecideFirstPlayer(_gameContext.Players);
             Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.Id}");
-            // 最初の手番を宣言（適用はApplierが行い、CurrentPlayerを設定）
-            // PlayerId→ActorNumber変換を実行してから送信
-            if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(firstPlayer.Id, out var actorNumber))
-            {
-                _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = actorNumber });
-            }
-            else
-            {
-                Debug.LogWarning($"Dealer: PlayerId {firstPlayer.Id} のマッピングが見つかりません");
-            }
 
-
+            // 最初の手番を宣言
+            _messenger?.PublishTurnStarted(firstPlayer.Id);
         }
 
 
@@ -329,15 +295,9 @@ namespace Tetrage.Managers
                 var next = _dealerPlanner.GetNextPlayer(_gameContext.CurrentPlayer, _gameContext.Players);
                 if (next != null && IsHost())
                 {
-                    // PlayerId→ActorNumber変換を実行してから送信
-                    if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(next.Id, out var actorNumber))
-                    {
-                        _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = actorNumber });
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"Dealer: PlayerId {next.Id} のマッピングが見つかりません");
-                    }
+                    // 次手番を宣言
+                    _messenger?.PublishTurnStarted(next.Id);
+
                     if (_turnGate != null)
                     {
                         // TurnGate は PlayerId を返す
@@ -440,30 +400,17 @@ namespace Tetrage.Managers
         public void OnTurnStart()
         {
             _turnCount++;
-            // PlayerId→ActorNumber変換を実行してから送信
-            if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(_gameContext.CurrentPlayer.Id, out var actorNumber))
-            {
-                _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = actorNumber });
-            }
-            else
-            {
-                Debug.LogWarning($"Dealer: PlayerId {_gameContext.CurrentPlayer.Id} のマッピングが見つかりません");
-            }
+            // ターン開始イベントを送信
+            _messenger?.PublishTurnStarted(_gameContext.CurrentPlayer.Id);
+
             Debug.Log($"Dealer: ターン {_turnCount} を開始します");
         }
         public void OnTurnEnd()
         {            // 終了イベントのネットワーク送信（任意）
-            if (_lifecycleEmitter is GameLifecycleEmitter gle && IsHost() && _gameContext.CurrentPlayer != null)
+            if (_messenger != null && IsHost() && _gameContext.CurrentPlayer != null)
             {
-                // PlayerId→ActorNumber変換を実行してから送信
-                if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(_gameContext.CurrentPlayer.Id, out var actorNumber))
-                {
-                    gle.EmitEnded(actorNumber);
-                }
-                else
-                {
-                    Debug.LogWarning($"Dealer: PlayerId {_gameContext.CurrentPlayer.Id} のマッピングが見つかりません");
-                }
+                // ターン終了イベントを送信
+                _messenger.PublishTurnEnded(_gameContext.CurrentPlayer.Id);
             }
         }
 
