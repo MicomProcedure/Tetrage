@@ -23,7 +23,7 @@ namespace Tetrage.Managers
         /// ディーラー戦略
         /// </summary>
         private IDealerPlanner _dealerPlanner;
-        public IDealerPlanner DealerPlanner { get { return _dealerPlanner; } }
+        public IDealerPlanner DealerPlanner { get { return _dealerPlanner; } set { _dealerPlanner = value; } }
 
         /// <summary>
         /// ディーラー戦略のイベント発行用メッセンジャー
@@ -48,9 +48,9 @@ namespace Tetrage.Managers
         public int TurnCount { get { return _turnCount; } }
 
         /// <summary>
-        /// 最大ラウンド数（デフォルト: 10）
+        /// 最大ラウンド数（デフォルト: 0無制限）
         /// </summary>
-        private int _maxRounds = 100;
+        private int _maxRounds = 0;
         public int MaxRounds { get { return _maxRounds; } }
 
         // プレイヤーアクション待機用
@@ -116,13 +116,13 @@ namespace Tetrage.Managers
         /// <summary>
         /// 最大ラウンド数を設定する
         /// </summary>
-        /// <param name="maxRounds">最大ラウンド数（1以上の値）</param>
+        /// <param name="maxRounds">最大ラウンド数（0以上の値）</param>
         public void SetMaxRounds(int maxRounds)
         {
-            if (maxRounds < 1)
+            if (maxRounds < 0)
             {
-                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. 最小値1に設定します");
-                _maxRounds = 1;
+                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. デフォルト値に設定します");
+                _maxRounds = 0;
             }
             else
             {
@@ -246,7 +246,7 @@ namespace Tetrage.Managers
                 return;
             }
             // ラウンド開始イベントを通知
-            OnTurnStart();
+            PublishTurnStart();
 
             try
             {
@@ -256,7 +256,7 @@ namespace Tetrage.Managers
                 // プレイヤーのアクションを待つ（現在手番のプレイヤー）
                 // Hostの自手番は ActionAwaiter、Guest手番はネットのActionResultを待機
                 var isLocalTurn = _gameContext.UserPlayer != null && ReferenceEquals(_gameContext.CurrentPlayer, _gameContext.UserPlayer);
-                ActionResult actionResult;
+                ActionResult actionResult;  // プレイヤーアクション結果の変数宣言
                 if (isLocalTurn)
                 {
                     actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
@@ -285,7 +285,7 @@ namespace Tetrage.Managers
                 _isGameFinished = true;
             }
 
-            OnTurnEnd();
+            PublishTurnEnd();
 
 
             // 次のプレイヤーへ
@@ -343,7 +343,7 @@ namespace Tetrage.Managers
             CancelCurrentPlayerAction();
 
             // ターン終了イベントを通知
-            OnTurnEnd();
+            PublishTurnEnd();
 
             // 状態をリセット
             // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない
@@ -373,6 +373,8 @@ namespace Tetrage.Managers
         /// </summary>
         private bool CheckWinCondition()
         {
+            // 無制限の場合は常にfalseを返す
+            if (_maxRounds == 0) return false;
             // 設定された最大ラウンド数で勝利とする
             if (_roundCount >= _maxRounds)
             {
@@ -397,7 +399,7 @@ namespace Tetrage.Managers
         #endregion
 
         #region イベント通知
-        public void OnTurnStart()
+        public void PublishTurnStart()
         {
             _turnCount++;
             // ターン開始イベントを送信
@@ -405,7 +407,7 @@ namespace Tetrage.Managers
 
             Debug.Log($"Dealer: ターン {_turnCount} を開始します");
         }
-        public void OnTurnEnd()
+        public void PublishTurnEnd()
         {            // 終了イベントのネットワーク送信（任意）
             if (_messenger != null && IsHost() && _gameContext.CurrentPlayer != null)
             {
