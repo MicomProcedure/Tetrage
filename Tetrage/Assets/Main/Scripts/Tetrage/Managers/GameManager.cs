@@ -84,6 +84,11 @@ namespace Tetrage.Managers
         /// <summary>初期化済みかどうか</summary>
         public bool IsInitialized => _isInitialized;
 
+        /// <summary>
+        /// ネットワークコントローラー（デバッグ用）
+        /// </summary>
+        public IGameplayNetworkController NetworkController => _netCtl;
+
         #endregion
 
         #region ライフサイクル
@@ -101,7 +106,7 @@ namespace Tetrage.Managers
         /// <param name="networkMode">ネットワークモード（テスト時はVirtualTransportを推奨）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング（ApplicationManagerから提供）</param>
         /// <param name="gameRuleDTO">ゲームルール情報</param>
-        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, NetworkMode networkMode, IPlayerIdMapper playerIdMapper = null, GameRuleDTO gameRuleDTO = null)
+        public void Initialize(List<PlayerInfo> participantInfoList, PlayerInfo userPlayerInfo, INetworkContext networkContext, NetworkMode networkMode, IPlayerIdMapper playerIdMapper, GameRuleDTO gameRuleDTO = null)
         {
             if (_isInitialized)
             {
@@ -113,7 +118,16 @@ namespace Tetrage.Managers
             {
                 // 0.フィールドのセットアップ
                 _participantInfos = participantInfoList;
-                _gameRuleDTO = gameRuleDTO;
+                if (gameRuleDTO == null)
+                {
+                    Debug.LogWarning("GameManager: ゲームルール情報が設定されていません。デフォルト値を使用します");
+                    _gameRuleDTO = GameRuleDTO.Default;
+                }
+                else
+                {
+                    _gameRuleDTO = gameRuleDTO;
+                }
+
                 _networkContext = networkContext;
                 _networkMode = networkMode;
                 _playerIdMapper = playerIdMapper;
@@ -128,10 +142,6 @@ namespace Tetrage.Managers
                 // 2. フィールドのセットアップ
                 _fieldSetupManager.SetupField(participantInfoList);
 
-
-                // 3. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
-                _netCtl = InitializeNetworking();
-
                 // 3.5 ユーザープレイヤーの特定
                 if (!TryGetPlayerById(userPlayerInfo.Id, out var userPlayer))
                 {
@@ -139,15 +149,19 @@ namespace Tetrage.Managers
                     return;
                 }
 
+                // 4. EventBusの生成
+                var eventBus = new R3EventBus();
                 // 4. GameContextの生成（PUNのLocalPlayerから IPlayer を解決）
                 _gameContext = new GameContext(
                     _fieldSetupManager.Stage,
                     _fieldSetupManager.Players,
                     userPlayer,
-                    _netCtl.EventBus
+                    eventBus
                 );
                 Debug.Log($"GameManager: GameContext created, userPlayerId: {userPlayer.PlayerId}, PhotonActorId: {PhotonNetwork.LocalPlayer.ActorNumber}");
-                _netCtl.AttachGameContext(_gameContext);
+                // 5. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
+                _netCtl = InitializeNetworking(_gameContext);
+
 
                 // 5. Dealerの生成と初期化（ブロードキャスタを注入）
                 _dealer = DealerFactory.CreateDealer(
@@ -237,7 +251,7 @@ namespace Tetrage.Managers
                 _gameCts = new CancellationTokenSource();
 
                 // ホスト: 初期宣言を送信してDealerを実行／ゲスト: 終了まで待機
-                if (PhotonNetwork.IsMasterClient && _networkInitialized)
+                if (_networkContext.IsHost && _networkInitialized)
                 {
                     PublishGameStarted();  // ゲーム開始イベントを送信
 
@@ -390,7 +404,7 @@ namespace Tetrage.Managers
         #region ネットワーク初期化/受信ハンドラ
 
 
-        private IGameplayNetworkController InitializeNetworking()
+        private IGameplayNetworkController InitializeNetworking(GameContext ctx)
         {
             if (_networkInitialized)
             {
@@ -400,12 +414,15 @@ namespace Tetrage.Managers
             // NetworkModeに応じたファクトリを選択（外部から注入されたNetworkModeを使用）
             INetworkAdapterFactory adapterFactory = CreateNetworkAdapterFactory(_networkMode);
 
+            if (ctx.Events == null) throw new System.InvalidOperationException("GameContextにイベントバスが設定されていません。");
+
             var netCtl = new GameplayNetworkController(
                 _networkContext.IsHost,
                 _pileRegistry,
                 _cardRegistry,
                 _playerRegistry,
                 adapterFactory,
+                ctx,
                 _playerIdMapper
             );
             netCtl.Start();
@@ -425,12 +442,12 @@ namespace Tetrage.Managers
                     return new PhotonNetworkAdapterFactory();
 
                 case NetworkMode.VirtualTransport:
-                    Debug.Log("GameManager: VirtualNetworkAdapterFactoryを使用します（Phase 5で完全実装予定）");
+                    Debug.Log("GameManager: VirtualNetworkAdapterFactoryを使用します");
                     return new VirtualNetworkAdapterFactory();
 
                 case NetworkMode.LogicInjection:
-                    Debug.LogWarning("GameManager: LogicInjectionモードではNetworkAdapterは使用されません。PhotonAdapterをフォールバックとして使用します");
-                    return new PhotonNetworkAdapterFactory();
+                    Debug.LogWarning("GameManager: LogicInjectionモードではNetworkAdapterは使用されません。VirtualAdapterをフォールバックとして使用します");
+                    return new VirtualNetworkAdapterFactory();
 
                 case NetworkMode.LocalVsBot:
                     Debug.LogWarning("GameManager: LocalVsBotモードは未実装です。PhotonAdapterをフォールバックとして使用します");

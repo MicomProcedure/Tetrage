@@ -34,7 +34,8 @@ namespace Tetrage.UI
         [SerializeField] private RectTransform targetCardAnchor; // 表示位置・サイズの参照
 
         [Header("Text")]
-        [SerializeField] private List<string> _lineTexts = new List<string>(){
+        [SerializeField]
+        private List<string> _lineTexts = new List<string>(){
             "ターゲットカードの確認を行います。\n{_playerName}さんです。\n準備ができたら、「NEXT」を押してください。"
         };
 
@@ -43,15 +44,15 @@ namespace Tetrage.UI
         [SerializeField] private GameObject targetCheckButton; // 統合: ボタンGameObject
         [TextArea(2, 5)]
         [SerializeField] private string targetNewText = "新しいテキスト"; // 統合: インスペクタから変更可能なテキスト
-		[SerializeField] private Color suitTextColor = new Color(0.9f, 0.1f, 0.1f); // スート表示色（RichText）
-		[SerializeField] private Color redSuitColor = new Color(0.9f, 0.1f, 0.1f);
-		[SerializeField] private Color blackSuitColor = new Color(0.1f, 0.1f, 0.1f);
+        [SerializeField] private Color suitTextColor = new Color(0.9f, 0.1f, 0.1f); // スート表示色（RichText）
+        [SerializeField] private Color redSuitColor = new Color(0.9f, 0.1f, 0.1f);
+        [SerializeField] private Color blackSuitColor = new Color(0.1f, 0.1f, 0.1f);
 
         #endregion
 
         #region Private Fields
 
-        private IGameContextProvider _gameContext;
+        private IGameContext _gameContext;
         private PlayerId _playerId;
         private int _playerIconIndex;
         private string _playerName;
@@ -67,19 +68,19 @@ namespace Tetrage.UI
         /// ゲーム開始時にPlayerInfoを設定して初期化
         /// </summary>
         /// <param name="playerInfo">プレイヤー情報</param>
-        public void Initialize(IGameContextProvider gameContext)
+        public void Initialize(IGameContext gameContext)
         {
             _gameContext = gameContext;
             _playerId = _gameContext.UserPlayer.Id;
-            
+
             // プレイヤー番号を取得（0始まりのIDを1始まりの表示用番号に変換）
             _playerName = _gameContext.UserPlayer.UserId;
             _playerIconIndex = _gameContext.UserPlayer.IconIndex;
             _profileDisplayUI.InitializeDisplay();
-            
+
             // 初期状態を設定
             UpdatePanelState();
-            
+
             Debug.Log($"ScanUI: {_playerName}のプレイヤー情報を設定しました（UserId: {_playerName}）");
 
             // ターゲットカードの画像を生成
@@ -104,18 +105,18 @@ namespace Tetrage.UI
         {
             if (targetText != null)
             {
-				var targetCard = _gameContext.UserPlayer.Target.FirstOrDefault();
-				var suitEnum = targetCard != null ? (Suit?)targetCard.Suit : null;
-				var suitText = suitEnum?.ToString() ?? "";
-				// Suit の色は拡張メソッド IsRed / IsBlack を使用
-				Color applyColor = suitTextColor;
-				if (suitEnum.HasValue)
-				{
-					applyColor = suitEnum.Value.IsRed() ? redSuitColor : blackSuitColor;
-				}
-				var hex = ColorUtility.ToHtmlStringRGB(applyColor);
-				var coloredSuit = $"<color=#{hex}>{suitText}</color>";
-				targetText.text = targetNewText.Replace("{Suit}", coloredSuit);
+                var targetCard = _gameContext.UserPlayer.Target.FirstOrDefault();
+                var suitEnum = targetCard != null ? (Suit?)targetCard.Suit : null;
+                var suitText = suitEnum?.ToString() ?? "";
+                // Suit の色は拡張メソッド IsRed / IsBlack を使用
+                Color applyColor = suitTextColor;
+                if (suitEnum.HasValue)
+                {
+                    applyColor = suitEnum.Value.IsRed() ? redSuitColor : blackSuitColor;
+                }
+                var hex = ColorUtility.ToHtmlStringRGB(applyColor);
+                var coloredSuit = $"<color=#{hex}>{suitText}</color>";
+                targetText.text = targetNewText.Replace("{Suit}", coloredSuit);
 
             }
             else
@@ -123,7 +124,7 @@ namespace Tetrage.UI
                 Debug.LogWarning("ScanUIController: targetText が設定されていません！", this);
             }
         }
-        
+
 
         /// <summary>
         /// TargetCheckText(Finish) の統合。ボタンを非表示にする。
@@ -238,7 +239,7 @@ namespace Tetrage.UI
         {
             _isScanned = !_isScanned;
             UpdatePanelState();
-            
+
             Debug.Log($"ScanUI: {_playerName} スキャン状態変更 → {(_isScanned ? "ON" : "OFF")}");
         }
 

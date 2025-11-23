@@ -32,7 +32,7 @@ namespace Tetrage.Managers
         public DealerNetworkMessenger Messenger => _messenger;
 
         private TurnGate _turnGate; // Hostのみ使用
-        private IGameContextProvider _gameContext; // 読み取り専用のコンテキスト
+        private IGameContext _gameContext; // 読み取り専用のコンテキスト
         private INetworkContext _networkContext; // ネットワーク状態の抽象化
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(IGameContextProvider gameContext, IDealerPlanner dealerPlanner, INetworkContext networkContext)
+        public Dealer(IGameContext gameContext, IDealerPlanner dealerPlanner, INetworkContext networkContext)
         {
             if (gameContext == null) throw new ArgumentNullException(nameof(gameContext));
             if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
@@ -277,6 +277,12 @@ namespace Tetrage.Managers
             {
                 Debug.Log($"Dealer: プレイヤー {_gameContext.CurrentPlayer?.PlayerId} のアクションがキャンセルされました");
                 _isGameFinished = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Dealer: アクション実行中に致命的エラーが発生: {ex.Message}");
+                _isGameInterrupted = true;
+                _isGameFinished = true; // 強制終了
             }
 
             // 勝利条件チェック

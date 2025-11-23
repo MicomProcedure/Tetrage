@@ -27,6 +27,12 @@ namespace Tetrage.Tests
         [Tooltip("プレイヤー数")]
         [SerializeField, Range(SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT)] private int _playerCount = 4;
 
+        [Tooltip("スートごとのカード枚数")]
+        [SerializeField, Min(1)] private int _cardCountPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT;
+
+        [Tooltip("使用するスートの種類数")]
+        [SerializeField, Range(1, 4)] private int _suitTypeCount = InGameConsts.DEFAULT_INITIAL_SUITS.Length;
+
         [Tooltip("ネットワークモード")]
         [SerializeField] private NetworkMode _networkMode = NetworkMode.LogicInjection;
 
@@ -42,6 +48,9 @@ namespace Tetrage.Tests
         [Header("Optional Settings")]
         [Tooltip("詳細なプレイヤー設定（任意）")]
         [SerializeField] private GameScenePlayerDebugSettings _playerDebugSettings;
+
+        [Tooltip("ネットワークイベントデバッガ（任意）")]
+        [SerializeField] private NetworkEventDebugger _networkDebugger;
 
         private GameManager _gameManager;
 
@@ -85,20 +94,42 @@ namespace Tetrage.Tests
 
                 // PlayerInfo生成
                 List<PlayerInfo> players;
-                if (_playerDebugSettings != null)
+                int? userPlayerIndex = null;
+
+                if (_playerDebugSettings != null && _playerDebugSettings.DebugPlayerInfos.Count > 0)
                 {
                     Debug.Log("GameSceneDebugEntrySimple: GameScenePlayerDebugSettingsを使用してプレイヤーを作成します");
-                    players = _playerDebugSettings.CreatePlayerInfos(_playerCount, _localPlayerIndex);
+
+                    // IsUserPlayerが設定されている場合はそれを使用、なければ_localPlayerIndexを使用
+                    userPlayerIndex = _playerDebugSettings.GetUserPlayerIndex(_playerCount);
+                    if (userPlayerIndex == null)
+                    {
+                        userPlayerIndex = _localPlayerIndex;
+                        Debug.Log($"GameSceneDebugEntrySimple: UserPlayerが設定されていないため、_localPlayerIndex ({_localPlayerIndex}) を使用します");
+                    }
+                    else
+                    {
+                        int userPlayerCount = _playerDebugSettings.GetUserPlayerCount(_playerCount);
+                        if (userPlayerCount > 1)
+                        {
+                            Debug.LogWarning($"GameSceneDebugEntrySimple: {userPlayerCount}人のプレイヤーがUserPlayerに設定されています。最初の一人（インデックス: {userPlayerIndex}）を使用します。");
+                        }
+                        Debug.Log($"GameSceneDebugEntrySimple: UserPlayerインデックス: {userPlayerIndex}");
+                    }
+
+                    players = _playerDebugSettings.CreatePlayerInfos(_playerCount, userPlayerIndex);
                 }
                 else
                 {
+                    userPlayerIndex = _localPlayerIndex;
                     players = PlayModeTestHelper.CreateDefaultPlayers(_playerCount, _localPlayerIndex);
                 }
 
-                // NetworkContext生成
+                // NetworkContext生成（userPlayerIndexを使用）
+                int localActorNumber = (userPlayerIndex ?? _localPlayerIndex) + 1;
                 var networkContext = PlayModeTestHelper.CreateNetworkContext(
                     _networkMode,
-                    localActorNumber: _localPlayerIndex + 1,
+                    localActorNumber: localActorNumber,
                     playerCount: _playerCount,
                     isHost: true
                 );
@@ -109,9 +140,23 @@ namespace Tetrage.Tests
                 // UserPlayer特定
                 var userInfo = PlayModeTestHelper.GetUserPlayer(players, networkContext, mapper);
 
+                // GameRuleDTO生成
+                var gameRule = new GameRuleDTO(
+                    playerCount: _playerCount,
+                    cardCountPerSuit: _cardCountPerSuit,
+                    suitTypeCount: _suitTypeCount
+                );
+
                 // GameManager初期化
                 _gameManager = PlayModeTestHelper.FindGameManager();
-                _gameManager.Initialize(players, userInfo, networkContext, _networkMode, mapper);
+                _gameManager.Initialize(players, userInfo, networkContext, _networkMode, mapper, gameRule);
+
+                // NetworkEventDebuggerのセットアップ
+                if (_networkDebugger != null)
+                {
+                    _networkDebugger.Setup(_gameManager.NetworkController);
+                    Debug.Log("GameSceneDebugEntrySimple: NetworkEventDebuggerをセットアップしました");
+                }
 
                 Debug.Log("<color=green>GameSceneDebugEntrySimple: 初期化完了</color>");
 

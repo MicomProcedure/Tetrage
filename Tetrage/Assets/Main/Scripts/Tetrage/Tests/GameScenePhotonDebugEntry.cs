@@ -63,6 +63,7 @@ namespace Tetrage.Tests
         private bool _isConnecting = false;
         private bool _roomCreatedOrJoined = false;
         private ISerializer _debugSerializer;
+        private IPlayerIdMapper _playerIdMapper;
 
         #endregion
 
@@ -104,6 +105,7 @@ namespace Tetrage.Tests
         private async void Start()
         {
             Debug.Log("[GameSceneDebugEntry] デバッグモード開始");
+            _playerIdMapper = new PlayerIdMapper();
             await ConnectAndSetupRoom();
         }
 
@@ -334,8 +336,10 @@ namespace Tetrage.Tests
             // ローカルプレイヤーの情報を取得
             PlayerInfo localPlayerInfo = participantInfos.FirstOrDefault(p => p.Id.Value == PhotonNetwork.LocalPlayer.ActorNumber);
 
+            _playerIdMapper.Register(localPlayerInfo.Id, PhotonNetwork.LocalPlayer.ActorNumber);
+
             // GameManagerを初期化
-            _gameManager.Initialize(participantInfos, localPlayerInfo, new VirtualNetworkContext(_defaultActorNumber, true), NetworkMode.RealPhoton);
+            _gameManager.Initialize(participantInfos, localPlayerInfo, new PhotonNetworkContext(), NetworkMode.RealPhoton, _playerIdMapper);
             _isInitialized = true;
 
             Debug.Log("[GameSceneDebugEntry] GameManager初期化完了");

@@ -15,6 +15,16 @@ namespace Tetrage.Tests.Data
         [Tooltip("プレイヤー名")]
         public string PlayerName = "Player 1";
 
+        [Tooltip("プレイヤーID（0の場合は自動生成、1以上で指定）")]
+        [Min(0)]
+        public int PlayerId = 0;
+
+        [Tooltip("プレイヤータイプ")]
+        public PlayerType PlayerType = PlayerType.Remote;
+
+        [Tooltip("このプレイヤーをUserPlayer（ローカルプレイヤー）にする")]
+        public bool IsUserPlayer = false;
+
         [Tooltip("アイコンインデックス（0-3）")]
         [Range(0, 3)]
         public int IconIndex = 0;

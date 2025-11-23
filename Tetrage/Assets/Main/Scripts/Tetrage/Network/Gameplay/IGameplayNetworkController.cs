@@ -3,6 +3,7 @@ using Tetrage.Models;
 using Tetrage.Core;
 using Tetrage.Network.Gameplay;
 using System;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -12,9 +13,9 @@ namespace Tetrage.Network.Gameplay
         INetworkBroadcaster Broadcaster { get; }
         IGameplayEventBus EventBus { get; }
         TurnGate TurnGate { get; }
+        IGameContext GameContext { get; }
         SequenceService Sequence { get; }
         IPlayerIdMapper PlayerIdMapper { get; }
-        void AttachGameContext(Tetrage.Core.GameContext ctx);
         void Start();
         void Stop();
     }

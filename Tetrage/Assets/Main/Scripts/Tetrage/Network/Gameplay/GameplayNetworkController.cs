@@ -3,6 +3,7 @@ using Tetrage.Core.Ids;
 using Tetrage.Models;
 using Tetrage.Core;
 using Tetrage.Core.Events;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -17,6 +18,7 @@ namespace Tetrage.Network.Gameplay
         public IGameplayEventBus EventBus => _bus;
         public SequenceService Sequence => _sequence;
         public IPlayerIdMapper PlayerIdMapper => _playerIdMapper;
+        public IGameContext GameContext => _gameContext;
         #endregion
 
         #region Fields
@@ -26,7 +28,7 @@ namespace Tetrage.Network.Gameplay
         private INetworkReceiver _receiver;
         private IGameplayEventBus _bus;
         private TurnGate _turnGate;
-        private GameContext _gameContext;
+        private IGameContext _gameContext;
         private SequenceService _sequence;
         private readonly bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
@@ -46,7 +48,7 @@ namespace Tetrage.Network.Gameplay
         /// <param name="adapterFactory">ネットワークアダプタファクトリ（Photon/Virtual切替用）</param>
         /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング</param>
         /// <param name="serializer">シリアライザ（nullの場合はPhotoンJsonSerializerを使用）</param>
-        /// <param name="eventBus">イベントバス（nullの場合はR3EventBusを使用）</param>
+        /// <param name="gameContext">ゲームコンテキスト（nullの場合はR3EventBusを使用）</param>
         /// <param name="turnGate">ターンゲート（nullの場合は新規作成）</param>
         /// <param name="sequence">シーケンスサービス（nullの場合は新規作成）</param>
         public GameplayNetworkController(
@@ -55,9 +57,9 @@ namespace Tetrage.Network.Gameplay
             IdRegistry<CardId, Card> cardRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
             INetworkAdapterFactory adapterFactory,
+            IGameContext gameContext,
             IPlayerIdMapper playerIdMapper = null,
             ISerializer serializer = null,
-            IGameplayEventBus eventBus = null,
             TurnGate turnGate = null,
             SequenceService sequence = null)
         {
@@ -65,9 +67,9 @@ namespace Tetrage.Network.Gameplay
             _serializer = serializer ?? new PhotonJsonSerializer();
             _isHost = isHost;
             _playerIdMapper = playerIdMapper;
+            _gameContext = gameContext;
+            _bus = gameContext.Events;
 
-            // R3EventBusを使用（注入可能）
-            _bus = eventBus ?? new R3EventBus();
             _turnGate = turnGate ?? new TurnGate();
             _sequence = sequence ?? new SequenceService();
 
@@ -83,8 +85,7 @@ namespace Tetrage.Network.Gameplay
                 pileRegistry,
                 playerRegistry,
                 _turnGate,
-                _gameContext,
-                _bus);
+                _gameContext);
 
             _hostActionProcessor = new DefaultHostActionProcessor(this);
 
@@ -127,11 +128,6 @@ namespace Tetrage.Network.Gameplay
             });
         }
 
-        public void AttachGameContext(Tetrage.Core.GameContext ctx)
-        {
-            _gameContext = ctx;
-            // GameContextはコンストラクタで既にGameplayDomainEventHandlerに渡されている
-        }
 
         public void Start()
         {

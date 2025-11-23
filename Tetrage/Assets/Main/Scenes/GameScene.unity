@@ -872,6 +872,102 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameSceneDebugEntry
       objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].PlayerId
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[1].PlayerId
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[2].PlayerId
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[3].PlayerId
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[1].IconIndex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[2].IconIndex
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[3].IconIndex
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].PlayerName
+      value: Player1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[1].PlayerName
+      value: Player2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[2].PlayerName
+      value: Player3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[3].PlayerName
+      value: Player4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].IsUserPlayer
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[1].IsUserPlayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[1].TargetCard.Suit
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[2].TargetCard.Suit
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[3].TargetCard.Suit
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].TargetCard.Number
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[2].TargetCard.Number
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[3].TargetCard.Number
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].HandCards.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].HandCards.Array.data[0].Number
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].HandCards.Array.data[1].Number
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].HandCards.Array.data[2].Number
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 7163736901932919590, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1245.2914
@@ -912,11 +1008,55 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _autoStartGame
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _enableDebugMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _networkDebugger
+      value: 
+      objectReference: {fileID: 536511622602693467}
+    - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _localPlayerIndex
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4691975318676478442, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 536511622602693467}
   m_SourcePrefab: {fileID: 100100000, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+--- !u!1 &536511622602693466 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4691975318676478442, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+  m_PrefabInstance: {fileID: 536511622602693465}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &536511622602693467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536511622602693466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39b6be031520040d6a824627dbb1a0da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableDebugEvents: 1
+  _targetType: 0
+  _debugEventCode: 20
+  _debugJsonPayload: "{\n    \"sequence\": 0,\n    \"clientSequence\": 0,\n    \"actorPlayerId\":
+    1,\n    \"actionType\": 0,\n    \"accepted\": true,\n    \"reason\": \"\",\n   
+    \"targetCardIds\": [1],\n    \"actionStatusInt\": 0\n}"
+  _sendToAll: 1
+  _targetActorNumbers: 
 --- !u!1001 &2481798701942548761
 PrefabInstance:
   m_ObjectHideFlags: 0

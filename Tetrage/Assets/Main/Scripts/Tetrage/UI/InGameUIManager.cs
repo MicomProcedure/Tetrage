@@ -30,7 +30,7 @@ namespace Tetrage.Managers
 
 		#endregion
 		#region Private Fields
-		private IGameContextProvider _gameContext;
+		private IGameContext _gameContext;
 		private IGameplayEventBus _events;
 		private CompositeDisposable _disposables = new();
 		#endregion
@@ -39,7 +39,7 @@ namespace Tetrage.Managers
 		/// <summary>
 		/// GameContextを受け取り、イベント購読を開始する。
 		/// </summary>
-		public void Initialize(IGameContextProvider context)
+		public void Initialize(IGameContext context)
 		{
 			_gameContext = context;
 			_events = context?.Events;

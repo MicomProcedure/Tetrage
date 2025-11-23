@@ -30,7 +30,7 @@ namespace Tetrage.Tests
 
         #region テスト用インスタンス
         private Dealer _dealer;
-        private IGameContextProvider _gameContext;
+        private IGameContext _gameContext;
         private IGameplayNetworkController _netCtl;
         private INetworkContext _networkContext;
         private RealDealerPlanner _dealerPlanner;
@@ -163,11 +163,10 @@ namespace Tetrage.Tests
                 cardRegistry,
                 playerRegistry,
                 new VirtualNetworkAdapterFactory(),
+                _gameContext,
                 _playerIdMapper
             );
 
-            // GameContextをアタッチ
-            _netCtl.AttachGameContext(_gameContext as Tetrage.Core.GameContext);
             _netCtl.Start();
 
             _dealer = DealerFactory.CreateDealer(GameMode.Debug, _gameContext, _networkContext, _netCtl);

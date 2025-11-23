@@ -8,7 +8,7 @@ namespace Tetrage.Core
     /// <summary>
     /// ゲーム全体の読み取り専用コンテキスト。状態の書き込みは GameplayDomainEventHandler だけが行う想定。
     /// </summary>
-    public sealed class GameContext : IGameContextProvider
+    public sealed class GameContext : IGameContext
     {
         private IPlayer _currentPlayer;
         private IReadOnlyList<IPlayer> _players;

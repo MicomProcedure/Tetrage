@@ -23,7 +23,11 @@ namespace Tetrage.Network.Gameplay
 
         private bool ShouldApply(int sequence)
         {
-            if (sequence <= _lastSequence) return false; // 重複/古いイベントは無視
+            if (sequence <= _lastSequence)
+            {
+                UnityEngine.Debug.LogWarning($"NetworkEventApplier: 重複/古いイベントのため無視: {sequence} <= {_lastSequence}");
+                return false;
+            }// 重複/古いイベントは無視
             _lastSequence = sequence;
             return true;
         }

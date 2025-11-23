@@ -16,13 +16,13 @@ namespace Tetrage.Core.Actions
         public IReadOnlyList<IPlayer> AllPlayers { get; }
         public IReadOnlyList<IPlayer> OtherPlayers { get; }
         public IPlayer CurrentTurnPlayer { get; }
-        public IGameContextProvider GameContext { get; }
+        public IGameContext GameContext { get; }
         public ActionAwaiter ActionAwaiter { get; }
         public INetworkActionContext Network { get; }
 
         public ActionContext(
             IPlayer requesterPlayer,
-            IGameContextProvider gameContext,
+            IGameContext gameContext,
             ActionAwaiter actionAwaiter = null,
             INetworkActionContext network = null)
         {

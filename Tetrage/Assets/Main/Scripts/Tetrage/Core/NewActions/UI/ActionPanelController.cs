@@ -29,7 +29,7 @@ namespace Tetrage.Core.Actions
         [SerializeField] private int _maxRetries = 10;
 
         private ActionManager _actionManager;
-        private IGameContextProvider _gameContextProvider;
+        private IGameContext _gameContextProvider;
         private Dictionary<ActionType, Button> _actionButtons;
         private IPlayer _currentPlayer;
         private bool _isInitialized = false;
@@ -41,7 +41,7 @@ namespace Tetrage.Core.Actions
             SetupButtonClickHandlers();
         }
 
-        public void Initialize(IGameContextProvider gameContextProvider)
+        public void Initialize(IGameContext gameContextProvider)
         {
             // ActionManagerの取得と初期化
             _actionManager = ActionManager.Instance;

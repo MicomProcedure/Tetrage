@@ -9,7 +9,7 @@ namespace Tetrage.Managers
 {
     public static class DealerFactory
     {
-        public static Dealer CreateDealer(GameMode gameMode, IGameContextProvider gameContext, INetworkContext networkContext, IGameplayNetworkController netCtl)
+        public static Dealer CreateDealer(GameMode gameMode, IGameContext gameContext, INetworkContext networkContext, IGameplayNetworkController netCtl)
         {
 
             try

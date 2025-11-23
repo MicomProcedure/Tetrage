@@ -9,7 +9,7 @@ namespace Tetrage.Tests
     /// Inspector上でカード配布とプレイヤー間転送を実行できるボタンUIを提供
     /// </summary>
     [CustomEditor(typeof(CardDistributionTester))]
-    public class CardDistributionTesterEditor : Editor
+    public class CardDistributionTesterEditor : UnityEditor.Editor
     {
         private readonly string[] _pileTypeNames = { "Hands", "Tmp", "Target" };
 
@@ -17,12 +17,12 @@ namespace Tetrage.Tests
         {
             // デフォルトのInspector表示
             DrawDefaultInspector();
-            
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("カード配布テスト", EditorStyles.boldLabel);
-            
+
             CardDistributionTester tester = (CardDistributionTester)target;
-            
+
             // カード配布ボタン
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("全プレイヤーに均等配布", GUILayout.Height(30)))
@@ -34,61 +34,61 @@ namespace Tetrage.Tests
                 tester.ShowDistributionStatus();
             }
             EditorGUILayout.EndHorizontal();
-            
+
             EditorGUILayout.Space();
-            
+
             // プレイヤー間転送セクション
             EditorGUILayout.LabelField("プレイヤー間転送", EditorStyles.boldLabel);
-            
+
             // 現在の設定表示
             SerializedProperty fromPlayerProp = serializedObject.FindProperty("fromPlayerIndex");
             SerializedProperty toPlayerProp = serializedObject.FindProperty("toPlayerIndex");
             SerializedProperty fromPileProp = serializedObject.FindProperty("fromPileType");
             SerializedProperty toPileProp = serializedObject.FindProperty("toPileType");
-            
+
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField($"転送設定: プレイヤー{fromPlayerProp.intValue + 1}の{_pileTypeNames[fromPileProp.intValue]} → プレイヤー{toPlayerProp.intValue + 1}の{_pileTypeNames[toPileProp.intValue]}", EditorStyles.helpBox);
             EditorGUILayout.EndVertical();
-            
+
             // 転送実行ボタン
             if (GUILayout.Button("プレイヤー間でカード転送", GUILayout.Height(25)))
             {
                 tester.TransferCardBetweenPlayers();
             }
-            
+
             EditorGUILayout.Space();
-            
+
             // 便利機能セクション
             EditorGUILayout.LabelField("便利機能", EditorStyles.boldLabel);
-            
+
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("全カードをStackに戻す"))
             {
                 tester.ReturnAllCardsToStack();
             }
             EditorGUILayout.EndHorizontal();
-            
+
             EditorGUILayout.Space();
-            
+
             // FieldSetupManagerTesterとの連携状態表示
             var fieldSetupTester = tester.GetComponent<FieldSetupManagerTester>();
             if (fieldSetupTester != null)
             {
                 EditorGUILayout.LabelField("連携状態", EditorStyles.boldLabel);
-                
+
                 var manager = fieldSetupTester.GetFieldSetupManager();
                 if (manager != null)
                 {
                     EditorGUILayout.BeginVertical("box");
-                    
+
                     try
                     {
                         EditorGUILayout.LabelField($"プレイヤー数: {manager.Players.Count}");
                         EditorGUILayout.LabelField($"Stack: {manager.Stage.Stack.Cards.Count}枚");
                         EditorGUILayout.LabelField($"Trash: {manager.Stage.Trash.Cards.Count}枚");
-                        
+
                         EditorGUILayout.Space();
-                        
+
                         // プレイヤー別カード枚数表示
                         for (int i = 0; i < manager.Players.Count; i++)
                         {
@@ -103,7 +103,7 @@ namespace Tetrage.Tests
                     {
                         EditorGUILayout.LabelField($"エラー: {e.Message}", EditorStyles.helpBox);
                     }
-                    
+
                     EditorGUILayout.EndVertical();
                 }
                 else
@@ -115,12 +115,12 @@ namespace Tetrage.Tests
             {
                 EditorGUILayout.HelpBox("FieldSetupManagerTesterが見つかりません。\n同じGameObjectにFieldSetupManagerTesterをアタッチしてください。", MessageType.Error);
             }
-            
+
             EditorGUILayout.Space();
-            
+
             // クイック設定ボタン
             EditorGUILayout.LabelField("クイック設定", EditorStyles.boldLabel);
-            
+
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("手札配布設定"))
             {
@@ -136,7 +136,7 @@ namespace Tetrage.Tests
             }
             EditorGUILayout.EndHorizontal();
         }
-        
+
         /// <summary>
         /// 配布先カードパイルを設定
         /// </summary>
@@ -145,9 +145,9 @@ namespace Tetrage.Tests
             SerializedProperty targetPileProp = serializedObject.FindProperty("targetPileIndex");
             targetPileProp.intValue = pileIndex;
             serializedObject.ApplyModifiedProperties();
-            
+
             Debug.Log($"配布先を{_pileTypeNames[pileIndex]}に設定しました");
         }
     }
 }
-#endif 
+#endif

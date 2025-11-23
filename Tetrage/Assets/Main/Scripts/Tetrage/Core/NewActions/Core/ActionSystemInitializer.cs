@@ -11,7 +11,7 @@ namespace Tetrage.Core.Actions
     public static class ActionSystemInitializer
     {
         private static ActionManager _actionManager;
-        private static IGameContextProvider _gameContextProvider;
+        private static IGameContext _gameContextProvider;
         private static bool _isInitialized = false;
         /// <summary>
         /// アクションシステムが初期化されているかチェック
@@ -23,7 +23,7 @@ namespace Tetrage.Core.Actions
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（必須）</param>
         /// <param name="forceReinitialize">強制的に再初期化するかどうか</param>
-        public static void InitializeActionSystem(IGameContextProvider gameContextProvider, bool forceReinitialize = false)
+        public static void InitializeActionSystem(IGameContext gameContextProvider, bool forceReinitialize = false)
         {
             if (_isInitialized && !forceReinitialize)
             {
@@ -61,7 +61,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// Actionシステムを初期化する（依存をインターフェースで受ける新API）。
         /// </summary>
-        public static void InitializeActionSystem(IGameContextProvider gameContextProvider, IRoundManager roundManager, bool forceReinitialize = false)
+        public static void InitializeActionSystem(IGameContext gameContextProvider, IRoundManager roundManager, bool forceReinitialize = false)
         {
             if (_isInitialized && !forceReinitialize)
             {
@@ -101,7 +101,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// 現在のGameContextProviderを取得
         /// </summary>
-        public static IGameContextProvider GetGameContextProvider()
+        public static IGameContext GetGameContextProvider()
         {
             return _gameContextProvider;
         }
@@ -123,7 +123,7 @@ namespace Tetrage.Core.Actions
         /// Draw アクションをテスト実行
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
-        public static async void TestDrawAction(IGameContextProvider gameContextProvider = null)
+        public static async void TestDrawAction(IGameContext gameContextProvider = null)
         {
             var provider = gameContextProvider ?? _gameContextProvider;
             if (provider?.CurrentPlayer != null)
@@ -141,7 +141,7 @@ namespace Tetrage.Core.Actions
         /// Open アクションをテスト実行
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
-        public static async void TestOpenAction(IGameContextProvider gameContextProvider = null)
+        public static async void TestOpenAction(IGameContext gameContextProvider = null)
         {
             var provider = gameContextProvider ?? _gameContextProvider;
             if (provider?.CurrentPlayer != null)
@@ -159,7 +159,7 @@ namespace Tetrage.Core.Actions
         /// Reach アクションをテスト実行
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
-        public static async void TestReachAction(IGameContextProvider gameContextProvider = null)
+        public static async void TestReachAction(IGameContext gameContextProvider = null)
         {
             var provider = gameContextProvider ?? _gameContextProvider;
             if (provider?.CurrentPlayer != null)
@@ -177,7 +177,7 @@ namespace Tetrage.Core.Actions
         /// Check アクションをテスト実行
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
-        public static async void TestCheckAction(IGameContextProvider gameContextProvider = null)
+        public static async void TestCheckAction(IGameContext gameContextProvider = null)
         {
             var provider = gameContextProvider ?? _gameContextProvider;
             if (provider?.CurrentPlayer != null)
@@ -195,7 +195,7 @@ namespace Tetrage.Core.Actions
         /// Pass アクションをテスト実行
         /// </summary>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
-        public static async void TestPassAction(IGameContextProvider gameContextProvider = null)
+        public static async void TestPassAction(IGameContext gameContextProvider = null)
         {
             var provider = gameContextProvider ?? _gameContextProvider;
             if (provider?.CurrentPlayer != null)
@@ -214,7 +214,7 @@ namespace Tetrage.Core.Actions
         /// </summary>
         /// <param name="actionType">実行するアクションタイプ</param>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（省略時は現在のものを使用）</param>
-        public static async void TestAction(ActionType actionType, IGameContextProvider gameContextProvider = null)
+        public static async void TestAction(ActionType actionType, IGameContext gameContextProvider = null)
         {
             var provider = gameContextProvider ?? _gameContextProvider;
             if (provider?.CurrentPlayer != null)

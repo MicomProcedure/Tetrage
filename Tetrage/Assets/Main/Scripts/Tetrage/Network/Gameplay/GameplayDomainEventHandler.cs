@@ -1,11 +1,13 @@
 using R3;
 using System.Collections.Generic;
+using System.Linq;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
 using Tetrage.Models;
 using Tetrage.Network.Gameplay;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Core
 {
@@ -30,16 +32,15 @@ namespace Tetrage.Core
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
             TurnGate turnGate,
-            GameContext gameContext,
-            IGameplayEventBus eventBus)
+            IGameContext gameContext)
         {
             _cardRegistry = cardRegistry;
             _pileRegistry = pileRegistry;
             _playerRegistry = playerRegistry;
             _turnGate = turnGate;
-            _gameContext = gameContext;
+            _gameContext = gameContext as GameContext;
 
-            Initialize(eventBus);
+            Initialize(_gameContext.Events);
         }
 
         /// <summary>
@@ -159,27 +160,49 @@ namespace Tetrage.Core
 
         private void OnCardMoved(DomainEvents.CardMovedEvent e)
         {
+            Debug.Log($"GameplayDomainEventHandler: OnCardMoved呼び出し - CardId={e.CardId}, FromPileId={e.FromPileId}, ToPileId={e.ToPileId}, Sequence={e.Sequence}");
+
             // カードとパイルを取得
             if (!_cardRegistry.TryGet(e.CardId, out var card))
             {
-                Debug.LogWarning($"GameplayDomainEventHandler: CardId {e.CardId} が見つかりません");
+                var cardCount = _cardRegistry.Entries.Count();
+                Debug.LogWarning($"GameplayDomainEventHandler: CardId {e.CardId} が見つかりません。レジストリ内のカード数: {cardCount}");
+                // レジストリの内容をログ出力
+                foreach (var entry in _cardRegistry.Entries)
+                {
+                    Debug.Log($"  - 登録済みCardId: {entry.Key}");
+                }
                 return;
             }
 
             if (!_pileRegistry.TryGet(e.FromPileId, out var fromPile))
             {
-                Debug.LogWarning($"GameplayDomainEventHandler: FromPileId {e.FromPileId} が見つかりません");
+                var pileCount = _pileRegistry.Entries.Count();
+                Debug.LogWarning($"GameplayDomainEventHandler: FromPileId {e.FromPileId} が見つかりません。レジストリ内のパイル数: {pileCount}");
+                // レジストリの内容をログ出力
+                foreach (var entry in _pileRegistry.Entries)
+                {
+                    Debug.Log($"  - 登録済みPileId: {entry.Key}");
+                }
                 return;
             }
 
             if (!_pileRegistry.TryGet(e.ToPileId, out var toPile))
             {
-                Debug.LogWarning($"GameplayDomainEventHandler: ToPileId {e.ToPileId} が見つかりません");
+                var pileCount = _pileRegistry.Entries.Count();
+                Debug.LogWarning($"GameplayDomainEventHandler: ToPileId {e.ToPileId} が見つかりません。レジストリ内のパイル数: {pileCount}");
+                // レジストリの内容をログ出力
+                foreach (var entry in _pileRegistry.Entries)
+                {
+                    Debug.Log($"  - 登録済みPileId: {entry.Key}");
+                }
                 return;
             }
 
+            Debug.Log($"GameplayDomainEventHandler: カード移動を実行 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
             // カード移動を実行
             CardPile.TransferService.Transfer(fromPile, toPile, card);
+            Debug.Log($"GameplayDomainEventHandler: カード移動完了 - FromPile.Cards.Count={fromPile.Cards.Count}, ToPile.Cards.Count={toPile.Cards.Count}");
         }
 
         private void OnCardVisibilityChanged(DomainEvents.CardVisibilityChangedEvent e)
