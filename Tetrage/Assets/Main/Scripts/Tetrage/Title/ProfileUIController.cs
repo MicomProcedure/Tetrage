@@ -9,9 +9,6 @@ namespace Tetrage.Title
     [SerializeField] private Image iconImage;
     [SerializeField] private Sprite[] availableIcons;
     [SerializeField] private TMP_InputField nameInput;
-    [SerializeField] private Button confirmButton;
-    [SerializeField] private Button nextButton;
-    [SerializeField] private Button prevButton;
     [SerializeField] private PlayerProfileManager profileManager;
 
     private int currentIconIndex = 0;
