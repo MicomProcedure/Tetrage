@@ -150,7 +150,7 @@ GameObject:
   - component: {fileID: 2503549722023874643}
   - component: {fileID: 1076021193386596576}
   m_Layer: 5
-  m_Name: BaseTitleButton
+  m_Name: BaseButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -272,4 +272,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameColor: {r: 0, g: 0, b: 0, a: 1}
   frameThickness: 10
+  useRoundedFrame: 0
+  roundedFrameSprite: {fileID: 0}
   frameImage: {fileID: 0}
