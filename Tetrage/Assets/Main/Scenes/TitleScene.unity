@@ -490,24 +490,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3846029304924264357, guid: e8f96019a0e4f439f84f93a680e072d7, type: 3}
   m_PrefabInstance: {fileID: 580903814}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &583716603 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 935131812210304259, guid: b379e245f7c4add4a9447d6238277276, type: 3}
-  m_PrefabInstance: {fileID: 4373178979632642852}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &583716610
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 583716603}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5ab05a819496541dfa9473cbbcc44b64, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  networkErrorUI: {fileID: 238399070}
 --- !u!114 &680061887 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1967558176310552593, guid: 6bfc668f9e8af49c2acede2ff54a2f33, type: 3}
@@ -1688,7 +1670,7 @@ GameObject:
   - component: {fileID: 3313044287245454453}
   - component: {fileID: 5972642889741163149}
   m_Layer: 0
-  m_Name: ExitRoom
+  m_Name: LeaveRoom
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1772,7 +1754,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7206501765926389240, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7548100056743995683, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: 'targetPanelS.Array.data[0]'
@@ -2313,14 +2295,14 @@ PrefabInstance:
     - target: {fileID: 5093722533132850411, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
-      objectReference: {fileID: 583716610}
+      objectReference: {fileID: 5972642889741163149}
     - target: {fileID: 5093722533132850411, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_CallState
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5093722533132850411, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_MethodName
-      value: OnLeftRoom
+      value: OnExitRoom
       objectReference: {fileID: 0}
     - target: {fileID: 5093722533132850411, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
@@ -2336,7 +2318,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7408905724936456624, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8281888217376564730, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: 'targetPanelS.Array.data[0]'
@@ -2358,10 +2340,7 @@ PrefabInstance:
     m_RemovedGameObjects:
     - {fileID: 3339122297119251556, guid: b379e245f7c4add4a9447d6238277276, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 935131812210304259, guid: b379e245f7c4add4a9447d6238277276, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 583716610}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b379e245f7c4add4a9447d6238277276, type: 3}
 --- !u!1 &4468151392531531985
 GameObject:
