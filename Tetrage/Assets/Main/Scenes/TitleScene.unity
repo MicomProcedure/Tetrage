@@ -1748,13 +1748,17 @@ PrefabInstance:
       propertyPath: 'targetPanelS.Array.data[0]'
       value: 
       objectReference: {fileID: 6601901437464595469}
+    - target: {fileID: 6326913446233149059, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
+      propertyPath: autoDetectPlayerIndex
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7206501765926389240, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_Name
       value: Title
       objectReference: {fileID: 0}
     - target: {fileID: 7206501765926389240, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7548100056743995683, guid: b0ad6882c32713740867de35857f2a0c, type: 3}
       propertyPath: 'targetPanelS.Array.data[0]'
@@ -2217,6 +2221,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 7755488635055595300}
     m_Modifications:
     - target: {fileID: 203105816681011261, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 203105816681011261, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
       objectReference: {fileID: 680061887}
@@ -2260,6 +2268,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 902089702699378748, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: actionButton
+      value: 
+      objectReference: {fileID: 4373178979632642854}
+    - target: {fileID: 902089702699378748, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+      propertyPath: actionButtonText
+      value: 
+      objectReference: {fileID: 4373178979632642853}
     - target: {fileID: 935131812210304259, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -2318,7 +2334,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7408905724936456624, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8281888217376564730, guid: b379e245f7c4add4a9447d6238277276, type: 3}
       propertyPath: 'targetPanelS.Array.data[0]'
@@ -2342,6 +2358,28 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+--- !u!114 &4373178979632642853 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7742287725325898522, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+  m_PrefabInstance: {fileID: 4373178979632642852}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4373178979632642854 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 203105816681011261, guid: b379e245f7c4add4a9447d6238277276, type: 3}
+  m_PrefabInstance: {fileID: 4373178979632642852}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4468151392531531985
 GameObject:
   m_ObjectHideFlags: 0
@@ -2800,7 +2838,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkErrorUI: {fileID: 238399070}
   panelButton: {fileID: 103689754}
-  IsRandomRoomNumber: 1
+  IsRandomRoomNumber: 0
   FixedRoomCode: 00000
 --- !u!1 &9112674265741602674 stripped
 GameObject:
