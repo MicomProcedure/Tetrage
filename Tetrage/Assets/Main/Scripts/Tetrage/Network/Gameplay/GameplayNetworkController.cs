@@ -2,6 +2,8 @@ using System;
 using Tetrage.Core.Ids;
 using Tetrage.Models;
 using Tetrage.Core;
+using Tetrage.Core.Events;
+using Tetrage.Core.Contracts;
 
 namespace Tetrage.Network.Gameplay
 {
@@ -10,45 +12,89 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class GameplayNetworkController : IGameplayNetworkController, IDisposable
     {
+        #region Properties
+        public INetworkBroadcaster Broadcaster => _broadcaster;
+        public TurnGate TurnGate => _turnGate;
+        public IGameplayEventBus EventBus => _bus;
+        public SequenceService Sequence => _sequence;
+        public IPlayerIdMapper PlayerIdMapper => _playerIdMapper;
+        public IGameContext GameContext => _gameContext;
+        #endregion
+
+        #region Fields
         private readonly ISerializer _serializer;
         private INetworkBroadcaster _broadcaster;
-        public INetworkBroadcaster Broadcaster => _broadcaster;
+
         private INetworkReceiver _receiver;
         private IGameplayEventBus _bus;
         private TurnGate _turnGate;
-        private GameContext _gameContext;
+        private IGameContext _gameContext;
         private SequenceService _sequence;
-        private bool _isHost;
+        private readonly bool _isHost;
         private IHostActionProcessor _hostActionProcessor;
         private NetworkEventApplier _applier;
+        private GameplayDomainEventHandler _domainEventHandler;
+        private readonly IPlayerIdMapper _playerIdMapper;
         private bool _started;
         private bool _disposed;
-
-        public GameplayNetworkController()
-        {
-            _serializer = new PhotonJsonSerializer();
-        }
-
-        public void Initialize(
+        #endregion
+        /// <summary>
+        /// GameplayNetworkControllerのコンストラクタ
+        /// </summary>
+        /// <param name="isHost">ホストかどうか</param>
+        /// <param name="pileRegistry">カードパイルレジストリ</param>
+        /// <param name="cardRegistry">カードレジストリ</param>
+        /// <param name="playerRegistry">プレイヤーレジストリ</param>
+        /// <param name="adapterFactory">ネットワークアダプタファクトリ（Photon/Virtual切替用）</param>
+        /// <param name="playerIdMapper">PlayerId/ActorNumberマッピング</param>
+        /// <param name="serializer">シリアライザ（nullの場合はPhotoンJsonSerializerを使用）</param>
+        /// <param name="gameContext">ゲームコンテキスト（nullの場合はR3EventBusを使用）</param>
+        /// <param name="turnGate">ターンゲート（nullの場合は新規作成）</param>
+        /// <param name="sequence">シーケンスサービス（nullの場合は新規作成）</param>
+        public GameplayNetworkController(
             bool isHost,
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<CardId, Card> cardRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
-            Action<ActionRequestedEvent> onActionRequestedHost,
-            Action<GameStartedEvent> onGameStartedOptional = null)
+            INetworkAdapterFactory adapterFactory,
+            IGameContext gameContext,
+            IPlayerIdMapper playerIdMapper = null,
+            ISerializer serializer = null,
+            TurnGate turnGate = null,
+            SequenceService sequence = null)
         {
+            // 依存性注入: nullの場合はデフォルト実装を使用（後方互換性を保つ）
+            _serializer = serializer ?? new PhotonJsonSerializer();
             _isHost = isHost;
-            _bus = new SimpleGameplayEventBus();
-            _turnGate = new TurnGate();
-            _sequence = new SequenceService();
-            _applier = new NetworkEventApplier(pileRegistry, cardRegistry, playerRegistry, _bus, _turnGate, _gameContext);
+            _playerIdMapper = playerIdMapper;
+            _gameContext = gameContext;
+            _bus = gameContext.Events;
+
+            _turnGate = turnGate ?? new TurnGate();
+            _sequence = sequence ?? new SequenceService();
+
+            // DomainEventConverter作成
+            var converter = new DomainEventConverter(_playerIdMapper);
+
+            // NetworkEventApplier作成（変換専用）
+            _applier = new NetworkEventApplier(_bus, converter);
+
+            // GameplayDomainEventHandler作成（ドメインロジック実行）
+            _domainEventHandler = new GameplayDomainEventHandler(
+                cardRegistry,
+                pileRegistry,
+                playerRegistry,
+                _turnGate,
+                _gameContext);
+
             _hostActionProcessor = new DefaultHostActionProcessor(this);
-            _broadcaster = new PhotonBroadcaster(_serializer);
-            _receiver = new PhotonReceiver(_serializer);
+
+            // ファクトリからBroadcaster/Receiverを生成
+            _broadcaster = adapterFactory.CreateBroadcaster(_serializer);
+            _receiver = adapterFactory.CreateReceiver(_serializer);
 
             _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
             {
-                onGameStartedOptional?.Invoke(e);
                 _applier.Apply(e);
             });
             _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e =>
@@ -72,7 +118,6 @@ namespace Tetrage.Network.Gameplay
             {
                 if (_isHost)
                 {
-                    onActionRequestedHost?.Invoke(e);
                     // まずは既定プロセッサで即時処理（後でDealer検証に差し替え可）
                     _hostActionProcessor.Process(e);
                 }
@@ -83,15 +128,6 @@ namespace Tetrage.Network.Gameplay
             });
         }
 
-        public TurnGate TurnGate => _turnGate;
-        public IGameplayEventBus EventBus => _bus;
-        public SequenceService Sequence => _sequence;
-
-        public void AttachGameContext(Tetrage.Core.GameContext ctx)
-        {
-            _gameContext = ctx;
-            _applier?.AttachContext(ctx);
-        }
 
         public void Start()
         {
@@ -118,13 +154,16 @@ namespace Tetrage.Network.Gameplay
             try
             {
                 Stop();
+                _domainEventHandler?.Dispose();
             }
             finally
             {
                 if (_receiver is IDisposable d) d.Dispose();
+                if (_bus is R3EventBus r3Bus) r3Bus.Dispose();
                 _receiver = null;
                 _broadcaster = null;
                 _hostActionProcessor = null;
+                _domainEventHandler = null;
                 _disposed = true;
                 GC.SuppressFinalize(this);
             }

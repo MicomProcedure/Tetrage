@@ -9,16 +9,18 @@ using Tetrage.Core.Constants;
 using Tetrage.Core.Enums;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Ids;
+using System;
+
 
 namespace Tetrage.Factories
 {
     /// <summary>
     /// ステージ（初期カード付き）を構築するビルダーパターン実装
-    /// PlayerBuilderと同様の設計で、StageModelFactoryを内部利用してViewの生成も可能
+    /// PlayerBuilderと同様の設計で、IStageFactoryを内部利用してViewの生成も可能
     /// </summary>
     public class StageBuilder
     {
-        private readonly StageModelFactory _innerFactory;      // ステージモデル生成用基本ファクトリ
+        private readonly IStageFactory _innerFactory;      // ステージモデル生成用基本ファクトリ
         private readonly ICardPileFactory _cardPileFactory;    // カードパイル生成用ファクトリ
         private readonly ICardFactory _cardModelFactory;       // カードモデル生成用ファクトリ
         private CardView _cardViewPrefab;                     // カード表示用ビュープレハブ
@@ -27,21 +29,21 @@ namespace Tetrage.Factories
         private Vector3 _stageSpawnPosition;                  // ステージ表示用ビューの生成位置
         private Dictionary<CardPileType, BasicCardPileView> _cardPileViewsDict; // カードパイル表示用ビューのディクショナリ
         private bool _useView;                               // ステージ表示用ビューの使用フラグ
-        private int _countPerSuit = InGameConsts.DEFAULT_INITIAL_COUNT_PER_SUIT; // スートごとのカード枚数
+        private GameRuleDTO _gameRule = GameRuleDTO.Default; // ゲームルール
         private Dictionary<CardPileType, CardPileLayoutSettings> _cardPileLayoutSettingsDict; // カードパイル表示用ビューのレイアウト設定
 
         /// <summary>
-        /// StageModelFactoryを受け取るコンストラクタ
+        /// IStageFactoryを受け取るコンストラクタ
         /// </summary>
         /// <param name="innerFactory">ステージモデル生成用ファクトリ</param>
         /// <param name="cardPileFactory">カードパイル生成用ファクトリ</param>
         /// <param name="cardModelFactory">カードモデル生成用ファクトリ</param>
-        public StageBuilder(StageModelFactory innerFactory, ICardPileFactory cardPileFactory, ICardFactory cardModelFactory)
+        public StageBuilder(IStageFactory innerFactory, ICardPileFactory cardPileFactory, ICardFactory cardModelFactory)
         {
-            Assert.IsNotNull(innerFactory, "innerFactory(StageModelFactory) が null です");
+            Assert.IsNotNull(innerFactory, "innerFactory(IStageFactory) が null です");
             Assert.IsNotNull(cardPileFactory, "cardPileFactory が null です");
             Assert.IsNotNull(cardModelFactory, "cardModelFactory が null です");
-            
+
             _innerFactory = innerFactory;
             _cardPileFactory = cardPileFactory;
             _cardModelFactory = cardModelFactory;
@@ -55,13 +57,14 @@ namespace Tetrage.Factories
         }
 
         /// <summary>
-        /// StageModelFactoryのみを受け取るコンストラクタ（後方互換性のため）
+        /// IStageFactoryのみを受け取るコンストラクタ（後方互換性のため）
         /// </summary>
         /// <param name="innerFactory">ステージモデル生成用ファクトリ</param>
-        public StageBuilder(StageModelFactory innerFactory)
+        [Obsolete("Use StageBuilder(IStageFactory innerFactory) instead", true)]
+        public StageBuilder(IStageFactory innerFactory)
         {
-            Assert.IsNotNull(innerFactory, "innerFactory(StageModelFactory) が null です");
-            
+            Assert.IsNotNull(innerFactory, "innerFactory(IStageFactory) が null です");
+
             _innerFactory = innerFactory;
             // デフォルトのファクトリを使用（後方互換性）
             _cardPileFactory = new CardPileFactory();
@@ -88,7 +91,7 @@ namespace Tetrage.Factories
             StageView stageViewPrefab,
             Vector3 stageSpawnPosition,
             Transform stageParent,
-            CardView cardViewPrefab, 
+            CardView cardViewPrefab,
             Dictionary<CardPileType, BasicCardPileView> cardPileViewsDict)
         {
             Assert.IsNotNull(stageViewPrefab, "stageViewPrefab が null です");
@@ -96,14 +99,14 @@ namespace Tetrage.Factories
             Assert.IsNotNull(cardViewPrefab, "cardViewPrefab が null です");
             Assert.IsNotNull(cardPileViewsDict, "cardPileViewsDict が null です");
             ValidateCardPileViewDict(cardPileViewsDict);
-            
+
             _useView = true;
             _stageViewPrefab = stageViewPrefab;
             _stageSpawnPosition = stageSpawnPosition;
             _stageParent = stageParent;
             _cardViewPrefab = cardViewPrefab;
             _cardPileViewsDict = cardPileViewsDict;
-            
+
             return this;
         }
 
@@ -122,10 +125,10 @@ namespace Tetrage.Factories
         /// </summary>
         /// <param name="countPerSuit">スートごとのカード枚数</param>
         /// <returns>このStageBuilderインスタンス</returns>
-        public StageBuilder WithCountPerSuit(int countPerSuit)
+        public StageBuilder WithGameRule(GameRuleDTO gameRule)
         {
-            Assert.IsTrue(countPerSuit > 0, "countPerSuit は0より大きい値である必要があります");
-            _countPerSuit = countPerSuit;
+            Assert.IsNotNull(gameRule, "gameRule が null です");
+            _gameRule = gameRule;
             return this;
         }
 
@@ -140,7 +143,7 @@ namespace Tetrage.Factories
             // ステージ関連のCardPileTypeのみ受け入れる
             Assert.IsTrue(cardPileType == CardPileType.Stack || cardPileType == CardPileType.Trash,
                 $"StageBuilderは {CardPileType.Stack} と {CardPileType.Trash} のみサポートします");
-            
+
             _cardPileLayoutSettingsDict[cardPileType] = layoutSettings;
             return this;
         }
@@ -165,7 +168,7 @@ namespace Tetrage.Factories
             {
                 // ステージ View を生成（StageViewプレハブが指定されている場合のみ）
 
-                stageView = Object.Instantiate(_stageViewPrefab, _stageSpawnPosition, Quaternion.identity, _stageParent);
+                stageView = UnityEngine.Object.Instantiate(_stageViewPrefab, _stageSpawnPosition, Quaternion.identity, _stageParent);
 
 
                 // CardWithViewFactoryを作成（依存性注入されたCardFactoryを使用）
@@ -202,16 +205,16 @@ namespace Tetrage.Factories
         /// <returns>View付きのStackカードパイル</returns>
         private CardPile BuildStackWithView(CardPileBuilder cardPileBuilder, CardWithViewFactory cardWithViewFactory)
         {
-            var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
-            var maxCount = suits.Length * _countPerSuit;
-            
+            var suits = AllocateSuits(_gameRule.SuitTypeCount);
+            var maxCount = suits.Length * _gameRule.CardCountPerSuit;
+
             return cardPileBuilder
                 .WithName("Stack")
                 .WithMaxCount(maxCount)
                 .UseView(_cardPileViewsDict[CardPileType.Stack], _stageParent)
                 .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Stack])
                 .UseCardFactory(cardWithViewFactory)
-                .WithInitialCards(cardWithViewFactory, suits, _countPerSuit)
+                .WithInitialCards(cardWithViewFactory, suits, _gameRule.CardCountPerSuit)
                 .WithPileId(PileIds.Stack)
                 .Build();
         }
@@ -241,15 +244,15 @@ namespace Tetrage.Factories
         /// <returns>ViewなしのStackカードパイル</returns>
         private CardPile BuildStackWithoutView(CardPileBuilder cardPileBuilder)
         {
-            var suits = new[] { Suit.Spade, Suit.Heart, Suit.Diamond, Suit.Club };
-            var maxCount = suits.Length * _countPerSuit;
-            
+            var suits = AllocateSuits(_gameRule.SuitTypeCount);
+            var maxCount = suits.Length * _gameRule.CardCountPerSuit;
+
             return cardPileBuilder
                 .WithName("Stack")
                 .WithMaxCount(maxCount)
                 .WithoutView()
                 .UseCardFactory(_cardModelFactory)
-                .WithInitialCards(_cardModelFactory, suits, _countPerSuit)
+                .WithInitialCards(_cardModelFactory, suits, _gameRule.CardCountPerSuit)
                 .WithPileId(PileIds.Stack)
                 .Build();
         }
@@ -296,5 +299,18 @@ namespace Tetrage.Factories
                     $"cardPileViewsDict のキー '{requiredType}' に対応する値が null です");
             }
         }
+
+        /// <summary>
+        /// 指定されたスートの種類数分のスートを取得する
+        /// </summary>
+        /// <param name="suitTypeCount">スートの種類数</param>
+        /// <returns>スートの配列</returns>
+        private Suit[] AllocateSuits(int suitTypeCount)
+        {
+            var allSuits = (Suit[])Enum.GetValues(typeof(Suit)); // すべてのスートを取得
+            var suits = new Suit[suitTypeCount];
+            Array.Copy(allSuits, 0, suits, 0, suitTypeCount); // 指定されたスートの種類数分コピー
+            return suits;
+        }
     }
-} 
+}

@@ -4,6 +4,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 using UnityEngine;
 
 namespace Tetrage.Core.Actions
@@ -37,11 +38,11 @@ namespace Tetrage.Core.Actions
 
         private ActionPanelController _actionPanelController;
 
-        private readonly Dictionary<ActionType, Func<IPlayer, IGameContextProvider, IAction>> _actionFactories;
-        private IGameContextProvider _gameContextProvider;
+        private readonly Dictionary<ActionType, Func<IPlayer, IGameContext, IAction>> _actionFactories;
+        private IGameContext _gameContextProvider;
         private IRoundManager _roundManager;
         private ActionAwaiter _actionAwaiter; // ActionAwaiterを追加
-        private Tetrage.Network.Gameplay.INetworkActionContext _networkCtx;
+        private INetworkActionContext _networkCtx;
 
         /// <summary>
         /// アクション実行前イベント
@@ -55,18 +56,18 @@ namespace Tetrage.Core.Actions
 
         private ActionManager()
         {
-            _actionFactories = new Dictionary<ActionType, Func<IPlayer, IGameContextProvider, IAction>>();
+            _actionFactories = new Dictionary<ActionType, Func<IPlayer, IGameContext, IAction>>();
         }
 
         /// <summary>
         /// ゲームコンテキストプロバイダーを設定
         /// </summary>
-        public void SetGameContextProvider(IGameContextProvider provider)
+        public void SetGameContextProvider(IGameContext provider)
         {
             _gameContextProvider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
 
-        public IGameContextProvider GetGameContextProvider()
+        public IGameContext GetGameContextProvider()
         {
             if (_gameContextProvider == null)
             {
@@ -107,7 +108,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// ネットワークアクションコンテキストを設定
         /// </summary>
-        public void SetNetworkActionContext(Tetrage.Network.Gameplay.INetworkActionContext networkCtx)
+        public void SetNetworkActionContext(INetworkActionContext networkCtx)
         {
             _networkCtx = networkCtx;
         }
@@ -115,7 +116,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// アクションファクトリを登録（ActionType版）
         /// </summary>
-        public void RegisterActionFactory(ActionType actionType, Func<IPlayer, IGameContextProvider, IAction> factory)
+        public void RegisterActionFactory(ActionType actionType, Func<IPlayer, IGameContext, IAction> factory)
         {
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
@@ -127,7 +128,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// アクションファクトリを登録（string版 - 後方互換性のため）
         /// </summary>
-        public void RegisterActionFactory(string actionId, Func<IPlayer, IGameContextProvider, IAction> factory)
+        public void RegisterActionFactory(string actionId, Func<IPlayer, IGameContext, IAction> factory)
         {
             if (string.IsNullOrEmpty(actionId))
                 throw new ArgumentException("アクションIDは空にできません", nameof(actionId));

@@ -9,21 +9,33 @@ namespace Tetrage.Managers
 {
     public static class DealerFactory
     {
-        public static Dealer CreateDealer(GameMode gameMode, IGameContextProvider gameContext, INetworkBroadcaster broadcaster = null)
+        public static Dealer CreateDealer(GameMode gameMode, IGameContext gameContext, INetworkContext networkContext, IGameplayNetworkController netCtl)
         {
 
             try
             {
 
 
-                var emitter = broadcaster != null ? new DealerPlanEmitter(broadcaster) : null;
+                var messenger = new DealerNetworkMessenger(netCtl.Broadcaster, netCtl.Sequence, netCtl.PlayerIdMapper);
                 if (gameMode == GameMode.Debug)
                 {
-                    return new Dealer(gameContext, new RealDealerPlanner(), emitter);
+                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext);
+                    if (networkContext.IsHost)
+                    {
+                        dealer.SetMessenger(messenger);
+                        dealer.SetTurnGate(netCtl.TurnGate);
+                    }
+                    return dealer;
                 }
                 else if (gameMode == GameMode.Release)
                 {
-                    return new Dealer(gameContext, new RealDealerPlanner(), emitter);
+                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext);
+                    if (networkContext.IsHost)
+                    {
+                        dealer.SetMessenger(messenger);
+                        dealer.SetTurnGate(netCtl.TurnGate);
+                    }
+                    return dealer;
                 }
                 else
                 {

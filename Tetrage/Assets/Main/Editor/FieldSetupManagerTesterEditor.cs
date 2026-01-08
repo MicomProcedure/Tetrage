@@ -9,41 +9,41 @@ namespace Tetrage.Tests
     /// Inspectorに使いやすいボタンUIを追加します
     /// </summary>
     [CustomEditor(typeof(FieldSetupManagerTester))]
-    public class FieldSetupManagerTesterEditor : Editor
+    public class FieldSetupManagerTesterEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
             // デフォルトのInspector表示
             DrawDefaultInspector();
-            
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("テスト実行", EditorStyles.boldLabel);
-            
+
             FieldSetupManagerTester tester = (FieldSetupManagerTester)target;
-            
+
             // フィールドセットアップボタン
             if (GUILayout.Button("フィールドセットアップを実行", GUILayout.Height(30)))
             {
                 tester.SetupField();
             }
-            
+
             EditorGUILayout.Space();
-            
+
             // フィールドクリアボタン
             if (GUILayout.Button("フィールドをクリア", GUILayout.Height(25)))
             {
                 tester.ClearField();
             }
-            
+
             EditorGUILayout.Space();
-            
+
             // セットアップ状態の表示
             var manager = tester.GetFieldSetupManager();
             if (manager != null)
             {
                 EditorGUILayout.LabelField("セットアップ状態", EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
-                
+
                 try
                 {
                     EditorGUILayout.LabelField($"プレイヤー数: {manager.Players.Count}");
@@ -54,7 +54,7 @@ namespace Tetrage.Tests
                 {
                     EditorGUILayout.LabelField($"エラー: {e.Message}", EditorStyles.helpBox);
                 }
-                
+
                 EditorGUI.indentLevel--;
             }
             else
@@ -64,4 +64,4 @@ namespace Tetrage.Tests
         }
     }
 }
-#endif 
+#endif

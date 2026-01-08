@@ -94,7 +94,7 @@ namespace Tetrage.Tests
                 var dependencies = CreateFieldSetupDependencies();
 
                 // FieldSetupManagerを作成してセットアップ実行
-                _fieldSetupManager = new FieldSetupManager(settings, dependencies);
+                _fieldSetupManager = new FieldSetupManager(settings, dependencies, GameRuleDTO.Default);
                 _fieldSetupManager.SetupField(participantInfoList);
 
                 Debug.Log("FieldSetupManagerTester: フィールドセットアップが完了しました");
@@ -175,7 +175,7 @@ namespace Tetrage.Tests
         /// </summary>
         private void LogSetupResults()
         {
-            if (_fieldSetupManager == null) 
+            if (_fieldSetupManager == null)
             {
                 Debug.LogWarning("FieldSetupManagerTester: FieldSetupManagerが初期化されていません");
                 return;
@@ -262,7 +262,7 @@ namespace Tetrage.Tests
 
                 // 設定検証のみ実行
                 var settings = fieldSetupComponent.GetValidatedFieldSetupSettings(participantCount);
-                
+
                 Debug.Log("FieldSetupManagerTester: 設定検証が正常に完了しました");
                 Debug.Log($"プレイヤー位置数: {settings.PlayerLocations.Count}");
                 Debug.Log($"ステージスポーン位置: {settings.StageSpawnPosition}");

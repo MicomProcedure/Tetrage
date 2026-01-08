@@ -7,17 +7,17 @@ public class SceneNavigator : MonoBehaviour
 {
     private GameObject loadingPanelInstance;
 
-    private async UniTask ShowLoadingPanelAsync()
-    {
-        LoadingScreenController.Instance?.CreateLoadingCanvas();
-        LoadingScreenController.Instance?.Show();
-    }
+    // private async UniTask ShowLoadingPanelAsync()
+    // {
+    //     LoadingScreenController.Instance?.CreateLoadingCanvas();
+    //     LoadingScreenController.Instance?.Show();
+    // }
 
-    private void HideAndDestroyLoadingPanel()
-    {
-        LoadingScreenController.Instance?.Hide();
-        LoadingScreenController.Instance?.DestroyLoadingCanvas();
-    }
+    // private void HideAndDestroyLoadingPanel()
+    // {
+    //     LoadingScreenController.Instance?.Hide();
+    //     LoadingScreenController.Instance?.DestroyLoadingCanvas();
+    // }
 
     public async void GoToTitle()
     {

@@ -44,7 +44,8 @@ namespace Tetrage.Presenters
         private void OnCardTransferred(Card card, CardPile from, CardPile to)
         {
             // 移動されたカードが存在しない場合は処理しない
-            if (!CardViewRegistry.TryGetView(card, out var cardView)) {
+            if (!CardViewRegistry.TryGetView(card, out var cardView))
+            {
                 UnityEngine.Debug.LogError("指定されたカードはCardPilePresenterの辞書に登録されていません。");
                 return;
             }
@@ -70,7 +71,8 @@ namespace Tetrage.Presenters
             foreach (var card in cards)
             {
                 // カードが存在しない場合は処理しない
-                if (!CardViewRegistry.TryGetView(card, out var cardView)) {
+                if (!CardViewRegistry.TryGetView(card, out var cardView))
+                {
                     UnityEngine.Debug.LogError("指定されたカードはCardPilePresenterの辞書に登録されていません。");
                     return;
                 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Photon.Pun;
 using UnityEngine;
@@ -6,6 +7,8 @@ using UnityEngine.SceneManagement;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
+using Tetrage.Network;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Managers
 {
@@ -43,13 +46,58 @@ namespace Tetrage.Managers
         public static bool CanControlScene => !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
         #endregion
 
+        #region NetworkMode管理
+        /// <summary>
+        /// 現在のNetworkModeを取得する
+        /// </summary>
+        public NetworkMode CurrentNetworkMode => _networkMode;
+
+        /// <summary>
+        /// NetworkModeを設定する。
+        /// GameManager.Initialize()後は変更不可（ロック機構）。
+        /// </summary>
+        /// <param name="mode">設定するNetworkMode</param>
+        /// <returns>設定に成功した場合true、ロック後の場合false</returns>
+        public bool SetNetworkMode(NetworkMode mode)
+        {
+            if (_networkModeLocked)
+            {
+                Debug.LogWarning($"ApplicationManager: NetworkModeはロック済みです。変更できません。(現在: {_networkMode})");
+                return false;
+            }
+
+            _networkMode = mode;
+            Debug.Log($"ApplicationManager: NetworkModeを {mode} に設定しました");
+            return true;
+        }
+
+        /// <summary>
+        /// NetworkModeをロックする。
+        /// GameManager.Initialize()呼び出し時に自動的にロックされる。
+        /// </summary>
+        internal void LockNetworkMode()
+        {
+            if (!_networkModeLocked)
+            {
+                _networkModeLocked = true;
+                Debug.Log($"ApplicationManager: NetworkModeをロックしました (モード: {_networkMode})");
+            }
+        }
+        #endregion
+
         #region Fields
         private System.Threading.CancellationTokenSource _lifecycleCts;
         private const string TitleSceneName = "TitleScene";
         private const string GameSceneName = "GameScene";
         private const string ResultSceneName = "ResultScene";
+        private INetworkContext _networkContext; // NetworkModeに応じたNetworkContext（現時点はPhoton実装）
+        private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumberマッピング
         private readonly List<string> _sceneHistory = new List<string>();
         private bool _isLoading = false;
+
+        // Phase 4: NetworkMode管理
+        private NetworkMode _networkMode = NetworkMode.RealPhoton; // デフォルトはRealPhoton
+        private bool _networkModeLocked = false; // GameManager.Initialize()後はロック
         #endregion
 
         #region Unity Events
@@ -151,6 +199,10 @@ namespace Tetrage.Managers
             // Photonの接続・InRoomを待機
             await UniTask.WaitUntil(() => PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InRoom, cancellationToken: ct);
 
+            // NetworkContextの生成（現時点はPhoton実装、将来はNetworkModeに応じて切替）
+            _networkContext = new PhotonNetworkContext();
+            Debug.Log($"ApplicationManager: NetworkContext生成完了 (IsHost: {_networkContext.IsHost}, ActorNumber: {_networkContext.UserActorNumber})");
+
             // GameManager の出現を待機
             GameManager gameManager = null;
             await UniTask.WaitUntil(() =>
@@ -160,8 +212,8 @@ namespace Tetrage.Managers
                 return gameManager != null;
             }, cancellationToken: ct);
 
-            // PlayerInfo リストを構築
-            var players = BuildPlayerInfosFromPhoton();
+            // PlayerInfo リストを構築（IPlayerIdMapperも同時に生成）
+            var players = BuildPlayerInfosFromPhoton(out _playerIdMapper);
             if (players == null || players.Count == 0)
             {
                 Debug.LogError("ApplicationManager: PlayerInfo の構築に失敗");
@@ -188,7 +240,11 @@ namespace Tetrage.Managers
             // GameManager を初期化
             try
             {
-                gameManager.Initialize(players, userInfo);
+                gameManager.Initialize(players, userInfo, _networkContext, _networkMode, _playerIdMapper);
+
+                // Phase 4: NetworkModeをロック（以後変更不可）
+                LockNetworkMode();
+
                 Debug.Log("ApplicationManager: GameManager.Initialize を呼び出しました");
             }
             catch (System.SystemException ex)
@@ -203,16 +259,30 @@ namespace Tetrage.Managers
         #endregion
 
         #region PlayerInfo Builder
-        private List<PlayerInfo> BuildPlayerInfosFromPhoton()
+        /// <summary>
+        /// PhotonのPlayerListからPlayerInfoリストを構築し、IPlayerIdMapperを生成する。
+        /// PlayerIdはシーケンシャル（1,2,3...）に割り当て、ActorNumberとのマッピングを登録する。
+        /// </summary>
+        /// <param name="playerIdMapper">生成されたIPlayerIdMapper（出力）</param>
+        /// <returns>PlayerInfoリスト</returns>
+        private List<PlayerInfo> BuildPlayerInfosFromPhoton(out IPlayerIdMapper playerIdMapper)
         {
             var list = new List<PlayerInfo>();
+            var mapper = new PlayerIdMapper();
 
             var actors = PhotonNetwork.PlayerList;
-            if (actors == null || actors.Length == 0) return list;
-
-            for (int i = 0; i < actors.Length; i++)
+            if (actors == null || actors.Length == 0)
             {
-                var actor = actors[i];
+                playerIdMapper = mapper;
+                return list;
+            }
+
+            // ActorNumberでソートしてから、シーケンシャルなPlayerIdを割り当て
+            var sortedActors = actors.OrderBy(a => a.ActorNumber).ToArray();
+
+            for (int i = 0; i < sortedActors.Length; i++)
+            {
+                var actor = sortedActors[i];
                 int iconIndex = 0;
                 if (actor.CustomProperties != null && actor.CustomProperties.ContainsKey("IconIndex"))
                 {
@@ -226,9 +296,15 @@ namespace Tetrage.Managers
                     }
                 }
 
+                // シーケンシャルなPlayerIdを割り当て（1,2,3...）
+                var playerId = new PlayerId(i + 1);
+
+                // マッピングを登録
+                mapper.Register(playerId, actor.ActorNumber);
+
                 var info = new PlayerInfo
                 {
-                    Id = new PlayerId(actor.ActorNumber),
+                    Id = playerId,
                     UserId = string.IsNullOrEmpty(actor.NickName) ? $"Player_{actor.ActorNumber}" : actor.NickName,
                     PlayerType = actor.IsLocal ? PlayerType.Local : PlayerType.Remote,
                     PlayerIconIndex = iconIndex,
@@ -236,6 +312,8 @@ namespace Tetrage.Managers
                 list.Add(info);
             }
 
+            playerIdMapper = mapper;
+            Debug.Log($"ApplicationManager: PlayerIdMapper生成完了 (Player数: {list.Count})");
             return list;
         }
         #endregion
