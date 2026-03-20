@@ -100,23 +100,14 @@
 
 ---
 
-### 欠陥8: GameManagerにPhoton残存参照
+### ~~欠陥8: GameManagerにPhoton残存参照~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 3/10（VirtualTransportモードでNullReferenceException）
-- **ファイル:** `Managers/GameManager.cs`
-- **内容:**
-  - L13: `using Photon.Pun;`
-  - L161: `PhotonNetwork.LocalPlayer.ActorNumber` をデバッグログで参照
-- **影響:** VirtualTransportモードで`PhotonNetwork.LocalPlayer`がnullのためNRE発生。
-- **修正方針:** `_networkContext.UserActorNumber`に置換する。
-
-```csharp
-// 現在
-Debug.Log($"GameManager: GameContext created, userPlayerId: {userPlayer.PlayerId}, PhotonActorId: {PhotonNetwork.LocalPlayer.ActorNumber}");
-
-// 修正案
-Debug.Log($"GameManager: GameContext created, userPlayerId: {userPlayer.PlayerId}, ActorNumber: {_networkContext.UserActorNumber}");
-```
+- **修正内容:** `Managers/GameManager.cs` から `using Photon.Pun;` を削除し、
+  GameContext生成ログの ActorNumber 参照を `PhotonNetwork.LocalPlayer.ActorNumber` から
+  `_networkContext.UserActorNumber` に置換。
+- **効果:** VirtualTransportモードでの `PhotonNetwork.LocalPlayer` null 参照を解消し、
+  `INetworkContext` によるモード非依存ログ出力へ統一。
 
 ---
 
