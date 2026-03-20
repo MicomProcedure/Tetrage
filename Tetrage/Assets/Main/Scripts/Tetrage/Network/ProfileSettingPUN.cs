@@ -1,4 +1,5 @@
 using Photon.Pun;
+using Tetrage.Managers;
 using UnityEngine;
 using Tetrage.Title;
 
@@ -37,14 +38,7 @@ namespace Tetrage.Network
                 return;
             }
 
-            profileManager.LoadProfile();
-
-            var data = profileManager.Data;
-            if (data == null)
-            {
-                Debug.LogWarning("ProfileDataが存在しません");
-                return;
-            }
+            var data = ResolveLocalProfileData();
 
             // NickNameも設定
             PhotonNetwork.NickName = data.PlayerName;
@@ -61,6 +55,39 @@ namespace Tetrage.Network
             Debug.Log($"プレイヤープロパティを設定: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
         }
         
+        #endregion
+
+        #region Private Helpers
+        private PlayerProfileData ResolveLocalProfileData()
+        {
+            var app = ApplicationManager.Instance;
+            var localSessionPlayer = app?.PlayerSession?.LocalPlayer;
+            if (localSessionPlayer != null)
+            {
+                return new PlayerProfileData
+                {
+                    PlayerName = localSessionPlayer.PlayerName,
+                    IconIndex = localSessionPlayer.IconIndex,
+                };
+            }
+
+            if (profileManager == null)
+            {
+                profileManager = FindFirstObjectByType<PlayerProfileManager>();
+            }
+
+            if (profileManager != null)
+            {
+                profileManager.LoadProfile();
+                if (profileManager.Data != null)
+                {
+                    return profileManager.Data;
+                }
+            }
+
+            Debug.LogWarning("ProfileDataが存在しないためデフォルト値を使用します");
+            return new PlayerProfileData();
+        }
         #endregion
 
         #region Photon Callbacks

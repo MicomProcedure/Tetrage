@@ -7,7 +7,8 @@ using Tetrage.UI;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
 using Tetrage.Core.Actions;
-using Tetrage.Animations;
+using R3;
+using DomainEvents = Tetrage.Core.Events;
 
 namespace Tetrage.Managers
 {
@@ -29,16 +30,16 @@ namespace Tetrage.Managers
 
 		#endregion
 		#region Private Fields
-		private IGameContextProvider _gameContext;
+		private IGameContext _gameContext;
 		private IGameplayEventBus _events;
-		private bool _subscribed;
+		private CompositeDisposable _disposables = new();
 		#endregion
 
 		#region Public API
 		/// <summary>
 		/// GameContextを受け取り、イベント購読を開始する。
 		/// </summary>
-		public void Initialize(IGameContextProvider context)
+		public void Initialize(IGameContext context)
 		{
 			_gameContext = context;
 			_events = context?.Events;
@@ -77,30 +78,45 @@ namespace Tetrage.Managers
 		{
 			Unsubscribe();
 		}
+
+		private void OnDestroy()
+		{
+			Unsubscribe();
+		}
 		#endregion
 
 		#region Subscription
 		private void Subscribe()
 		{
-			if (_subscribed || _events == null) return;
-			_events.TurnStartedApplied += OnTurnStarted;
-			_events.GameStartedApplied += OnGameStarted;
-			_events.FinishingGameApplied += OnFinishingGame;
-			_subscribed = true;
+			if (_events == null) return;
+
+			// R3のObservableで購読
+			_events.GameStarted
+				.Subscribe(OnGameStarted)
+				.AddTo(_disposables);
+
+			_events.TurnStarted
+				.Subscribe(OnTurnStarted)
+				.AddTo(_disposables);
+
+			_events.FinishingGame
+				.Subscribe(OnFinishingGame)
+				.AddTo(_disposables);
+
+			_events.ActionResult
+				.Subscribe(OnActionResult)
+				.AddTo(_disposables);
 		}
 
 		private void Unsubscribe()
 		{
-			if (!_subscribed || _events == null) return;
-			_events.TurnStartedApplied -= OnTurnStarted;
-			_events.GameStartedApplied -= OnGameStarted;
-			_events.FinishingGameApplied -= OnFinishingGame;
-			_subscribed = false;
+			_disposables.Dispose();
+			_disposables = new();
 		}
 		#endregion
 
 		#region Event Handlers
-		private void OnGameStarted(GameStartedEvent e)
+		private void OnGameStarted(DomainEvents.GameStartedEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnGameStarted");
 			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
@@ -114,28 +130,33 @@ namespace Tetrage.Managers
 			}
 		}
 
-		private void OnTurnStarted(TurnStartedEvent e)
+		private void OnTurnStarted(DomainEvents.TurnStartedEvent e)
 		{
-			Debug.Log($"InGameUIManager: OnTurnStarted, currentPlayerActorNumber: {e.currentPlayerActorNumber}");
+			Debug.Log($"InGameUIManager: OnTurnStarted, currentPlayerId: {e.CurrentPlayerId}");
 			if (_playerUIPanelManager == null) return;
-			// e.currentPlayerActorNumber を使ってハイライト
-			_playerUIPanelManager.SetCurrentPlayer(e.currentPlayerActorNumber);
-			// _actionPanelController.OnTurnStartedEvent(e);
+			// DomainEventのCurrentPlayerIdを使ってハイライト（intに変換）
+			_playerUIPanelManager.SetCurrentPlayer(e.CurrentPlayerId.Value);
 		}
 
-		private void OnActionResult(ActionResultEvent e)
+		private void OnActionResult(DomainEvents.ActionResultEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnActionResult");
-			if (_TetrageSoloCutInAnimCtl != null && e.actionType == ActionType.TetrageSolo)
+			if (_TetrageSoloCutInAnimCtl != null && e.ActionType == ActionType.TetrageSolo)
 			{
 				_TetrageSoloCutInAnimCtl.PlayCutIn();
 			}
 		}
 
-		private void OnFinishingGame(FinishingGameEvent e)
+		private void OnFinishingGame(DomainEvents.FinishingGameEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnFinishingGame");
-			_resultUI.DisplayResult(e.winnerActorNumbers, _gameContext.Players);
+			// PlayerId[]をint[]に変換
+			var winnerIds = new int[e.WinnerPlayerIds.Count];
+			for (int i = 0; i < e.WinnerPlayerIds.Count; i++)
+			{
+				winnerIds[i] = e.WinnerPlayerIds[i].Value;
+			}
+			_resultUI.DisplayResult(winnerIds, _gameContext.Players);
 		}
 		#endregion
 

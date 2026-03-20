@@ -8,7 +8,7 @@ namespace Tetrage.Core.DTO
     /// プレイヤーの情報を管理するクラス
     /// </summary>
     [Serializable]
-    public struct PlayerInfo
+    public record PlayerInfo
     {
         public PlayerId Id;   // プレイヤーのID
         public string UserId;   // プレイヤーのユーザーID

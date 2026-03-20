@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Contracts;
 using Tetrage.Models;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core.Actions
 {
@@ -15,15 +16,15 @@ namespace Tetrage.Core.Actions
         public IReadOnlyList<IPlayer> AllPlayers { get; }
         public IReadOnlyList<IPlayer> OtherPlayers { get; }
         public IPlayer CurrentTurnPlayer { get; }
-        public IGameContextProvider GameContext { get; }
+        public IGameContext GameContext { get; }
         public ActionAwaiter ActionAwaiter { get; }
-        public Tetrage.Network.Gameplay.INetworkActionContext Network { get; }
+        public INetworkActionContext Network { get; }
 
         public ActionContext(
             IPlayer requesterPlayer,
-            IGameContextProvider gameContext,
+            IGameContext gameContext,
             ActionAwaiter actionAwaiter = null,
-            Tetrage.Network.Gameplay.INetworkActionContext network = null)
+            INetworkActionContext network = null)
         {
             RequesterPlayer = requesterPlayer;
             GameContext = gameContext;

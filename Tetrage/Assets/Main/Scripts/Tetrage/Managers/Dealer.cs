@@ -1,14 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
-using Tetrage.Models;
 using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
-using Photon.Pun;
-using Tetrage.Core.DTO;
+using R3;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -18,15 +15,6 @@ namespace Tetrage.Managers
     public class Dealer : IRoundManager
     {
 
-        #region イベント
-        public event Action TurnStart;
-        public event Action TurnEnd;
-        public event Action RoundStart;
-        public event Action RoundEnd;
-        public event Action GameStart;
-        public event Action GameEnd;
-
-        #endregion
 
         #region フィールド
 
@@ -35,16 +23,17 @@ namespace Tetrage.Managers
         /// ディーラー戦略
         /// </summary>
         private IDealerPlanner _dealerPlanner;
-        public IDealerPlanner DealerPlanner { get { return _dealerPlanner; } }
+        public IDealerPlanner DealerPlanner { get { return _dealerPlanner; } set { _dealerPlanner = value; } }
 
         /// <summary>
-        /// ディーラー戦略のイベント発行用
+        /// ディーラー戦略のイベント発行用メッセンジャー
         /// </summary>
-        private IEventEmitter<DealerPlan> _dealerPlanEmitter;
-        public IEventEmitter<DealerPlan> DealerPlanEmitter => _dealerPlanEmitter;
+        private DealerNetworkMessenger _messenger;
+        public DealerNetworkMessenger Messenger => _messenger;
+
         private TurnGate _turnGate; // Hostのみ使用
-        private IEventEmitter<TurnStartedEvent> _lifecycleEmitter; // Hostのみ使用
-        private IGameContextProvider _gameContext; // 読み取り専用のコンテキスト
+        private IGameContext _gameContext; // 読み取り専用のコンテキスト
+        private INetworkContext _networkContext; // ネットワーク状態の抽象化
 
         /// <summary>
         /// ラウンド数
@@ -59,9 +48,9 @@ namespace Tetrage.Managers
         public int TurnCount { get { return _turnCount; } }
 
         /// <summary>
-        /// 最大ラウンド数（デフォルト: 10）
+        /// 最大ラウンド数（デフォルト: 0無制限）
         /// </summary>
-        private int _maxRounds = 100;
+        private int _maxRounds = 0;
         public int MaxRounds { get { return _maxRounds; } }
 
         // プレイヤーアクション待機用
@@ -83,14 +72,14 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(IGameContextProvider gameContext, IDealerPlanner dealerPlanner, IEventEmitter<DealerPlan> dealerPlanEmitter)
+        public Dealer(IGameContext gameContext, IDealerPlanner dealerPlanner, INetworkContext networkContext)
         {
             if (gameContext == null) throw new ArgumentNullException(nameof(gameContext));
             if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
 
             _gameContext = gameContext;
             _dealerPlanner = dealerPlanner;
-            _dealerPlanEmitter = dealerPlanEmitter;
+            _networkContext = networkContext;
             _roundCount = 0; // 初期化
             _turnCount = 0; // 初期化
 
@@ -104,12 +93,13 @@ namespace Tetrage.Managers
         #region 設定メソッド
 
         /// <summary>
-        /// 後からEmitterを差し替える（GameManagerのネットワーク初期化完了後に注入）。
+        /// 後からMessengerを差し替える（GameManagerのネットワーク初期化完了後に注入）。
         /// Hostのみ設定。Guestはnullのまま。
         /// </summary>
-        public void SetEmitter(IEventEmitter<DealerPlan> emitter)
+        public void SetMessenger(DealerNetworkMessenger messenger)
         {
-            _dealerPlanEmitter = emitter;
+            if (!_networkContext.IsHost) return;
+            _messenger = messenger;
         }
 
         /// <summary>
@@ -117,15 +107,8 @@ namespace Tetrage.Managers
         /// </summary>
         public void SetTurnGate(TurnGate gate)
         {
+            if (!_networkContext.IsHost) return;
             _turnGate = gate;
-        }
-
-        /// <summary>
-        /// 進行イベント用のEmitterを注入（Hostのみ）。
-        /// </summary>
-        public void SetLifecycleEmitter(IEventEmitter<TurnStartedEvent> emitter)
-        {
-            _lifecycleEmitter = emitter;
         }
 
 
@@ -133,13 +116,13 @@ namespace Tetrage.Managers
         /// <summary>
         /// 最大ラウンド数を設定する
         /// </summary>
-        /// <param name="maxRounds">最大ラウンド数（1以上の値）</param>
+        /// <param name="maxRounds">最大ラウンド数（0以上の値）</param>
         public void SetMaxRounds(int maxRounds)
         {
-            if (maxRounds < 1)
+            if (maxRounds < 0)
             {
-                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. 最小値1に設定します");
-                _maxRounds = 1;
+                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. デフォルト値に設定します");
+                _maxRounds = 0;
             }
             else
             {
@@ -198,23 +181,22 @@ namespace Tetrage.Managers
             // デッキ準備 & 配布（副作用なしプラン → イベント発行 → 受信適用）
             // 1) 山札シャッフル（決定論で構築される前提のため、原則空プラン）
             var shufflePlan = _dealerPlanner.PlanShuffleDeck(_gameContext.Stage.Stack);
-            _dealerPlanEmitter?.Emit(shufflePlan);
+            _messenger?.PublishDealerPlan(shufflePlan);
 
             // 2) 初期ターゲット設定
             var targetPlan = _dealerPlanner.PlanTargetSetup(_gameContext.Players, _gameContext.Stage.Stack);
-            _dealerPlanEmitter?.Emit(targetPlan);
+            _messenger?.PublishDealerPlan(targetPlan);
 
             // 3) ターン順序初期化（プランにTurnOrderを含め、Emitterで送信）
             var orderPlan = _dealerPlanner.PlanResetTurnOrder(_gameContext.Players);
-            _dealerPlanEmitter?.Emit(orderPlan);
+            _messenger?.PublishDealerPlan(orderPlan);
 
             // 4) 最初のプレイヤーを決定
             var firstPlayer = _dealerPlanner.DecideFirstPlayer(_gameContext.Players);
-            Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.PlayerId}");
-            // 最初の手番を宣言（適用はApplierが行い、CurrentPlayerを設定）
-            _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = firstPlayer.PlayerId });
+            Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.Id}");
 
-
+            // 最初の手番を宣言
+            _messenger?.PublishTurnStarted(firstPlayer.Id);
         }
 
 
@@ -264,7 +246,7 @@ namespace Tetrage.Managers
                 return;
             }
             // ラウンド開始イベントを通知
-            OnTurnStart();
+            PublishTurnStart();
 
             try
             {
@@ -274,7 +256,7 @@ namespace Tetrage.Managers
                 // プレイヤーのアクションを待つ（現在手番のプレイヤー）
                 // Hostの自手番は ActionAwaiter、Guest手番はネットのActionResultを待機
                 var isLocalTurn = _gameContext.UserPlayer != null && ReferenceEquals(_gameContext.CurrentPlayer, _gameContext.UserPlayer);
-                ActionResult actionResult;
+                ActionResult actionResult;  // プレイヤーアクション結果の変数宣言
                 if (isLocalTurn)
                 {
                     actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
@@ -296,6 +278,12 @@ namespace Tetrage.Managers
                 Debug.Log($"Dealer: プレイヤー {_gameContext.CurrentPlayer?.PlayerId} のアクションがキャンセルされました");
                 _isGameFinished = true;
             }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Dealer: アクション実行中に致命的エラーが発生: {ex.Message}");
+                _isGameInterrupted = true;
+                _isGameFinished = true; // 強制終了
+            }
 
             // 勝利条件チェック
             if (CheckWinCondition())
@@ -303,7 +291,7 @@ namespace Tetrage.Managers
                 _isGameFinished = true;
             }
 
-            OnTurnEnd();
+            PublishTurnEnd();
 
 
             // 次のプレイヤーへ
@@ -311,14 +299,18 @@ namespace Tetrage.Managers
             {
                 // 次手番を決定し、TurnStarted を発行（Emitter経由）し、適用完了を待つ
                 var next = _dealerPlanner.GetNextPlayer(_gameContext.CurrentPlayer, _gameContext.Players);
-                if (next != null && PhotonNetwork.IsMasterClient)
+                if (next != null && IsHost())
                 {
-                    _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = next.PlayerId });
+                    // 次手番を宣言
+                    _messenger?.PublishTurnStarted(next.Id);
+
                     if (_turnGate != null)
                     {
-                        await _turnGate.WaitNextAsync();
+                        // TurnGate は PlayerId を返す
+                        var receivedPlayerId = await _turnGate.WaitNextAsync();
+                        Debug.Log($"Dealer: TurnGate解放 - 受信PlayerId={receivedPlayerId}, 期待値={next.Id}");
                     }
-                    Debug.Log($"Dealer: 次のターンは Player {next.PlayerId}");
+                    Debug.Log($"Dealer: 次のターンは Player {next.Id}");
                 }
             }
         }
@@ -334,31 +326,19 @@ namespace Tetrage.Managers
                 return ActionResult.Failure("待機対象またはイベントバスが無効です");
             }
 
-            var tcs = new UniTaskCompletionSource<ActionResult>();
-            System.Action<Tetrage.Network.Gameplay.ActionResultEvent> handler = null;
-
-            handler = (e) =>
-            {
-                if (e.actorPlayerId == waitingPlayer.PlayerId)
-                {
-                    // 成否はネット結果に合わせる
-                    var res = e.accepted ? ActionResult.Success() : ActionResult.Failure(e.reason);
-                    tcs.TrySetResult(res);
-                }
-            };
-
             try
             {
-                _gameContext.Events.ActionResultApplied += handler;
+                // R3のObservableで該当プレイヤーのActionResultを待機
+                // FirstAsync()はTask<T>を返すので、直接awaitする
+                var result = await _gameContext.Events.ActionResult
+                    .FirstAsync(e => e.ActorPlayerId == waitingPlayer.PlayerId, token);
 
-                using (token.Register(() => tcs.TrySetCanceled()))
-                {
-                    return await tcs.Task;
-                }
+                // 成否はネット結果に合わせる
+                return result.Accepted ? ActionResult.Success() : ActionResult.Failure(result.Reason);
             }
-            finally
+            catch (OperationCanceledException)
             {
-                _gameContext.Events.ActionResultApplied -= handler;
+                return ActionResult.Failure("ActionResult待機がキャンセルされました");
             }
         }
         #endregion
@@ -369,7 +349,7 @@ namespace Tetrage.Managers
             CancelCurrentPlayerAction();
 
             // ターン終了イベントを通知
-            OnTurnEnd();
+            PublishTurnEnd();
 
             // 状態をリセット
             // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない
@@ -399,6 +379,8 @@ namespace Tetrage.Managers
         /// </summary>
         private bool CheckWinCondition()
         {
+            // 無制限の場合は常にfalseを返す
+            if (_maxRounds == 0) return false;
             // 設定された最大ラウンド数で勝利とする
             if (_roundCount >= _maxRounds)
             {
@@ -423,41 +405,41 @@ namespace Tetrage.Managers
         #endregion
 
         #region イベント通知
-        public void OnTurnStart()
+
+        /// <summary>
+        /// ターンカウントをインクリメントする。
+        /// TurnStartedのネットワーク送信はFirstDeal()または前ターン末尾で行われるため、
+        /// ここではカウント管理のみ行う。
+        /// </summary>
+        public void PublishTurnStart()
         {
             _turnCount++;
-            _lifecycleEmitter?.Emit(new TurnStartedEvent { currentPlayerActorNumber = _gameContext.CurrentPlayer.PlayerId });
-            Debug.Log($"Dealer: ターン {_turnCount} を開始します");
-            TurnStart?.Invoke();
+            Debug.Log($"Dealer: ターン {_turnCount} を開始します (CurrentPlayer: {_gameContext.CurrentPlayer?.PlayerId})");
         }
-        public void OnTurnEnd()
+        public void PublishTurnEnd()
         {            // 終了イベントのネットワーク送信（任意）
-            if (_lifecycleEmitter is GameLifecycleEmitter gle && PhotonNetwork.IsMasterClient && _gameContext.CurrentPlayer != null)
+            if (_messenger != null && IsHost() && _gameContext.CurrentPlayer != null)
             {
-                gle.EmitEnded(_gameContext.CurrentPlayer.PlayerId);
+                // ターン終了イベントを送信
+                _messenger.PublishTurnEnded(_gameContext.CurrentPlayer.Id);
             }
-            TurnEnd?.Invoke();
         }
 
         public void OnRoundStart()
         {
             _roundCount++;
             Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
-            RoundStart?.Invoke();
         }
         public void OnRoundEnd()
         {
-            RoundEnd?.Invoke();
         }
 
         public void OnGameStart()
         {
-            GameStart?.Invoke();
         }
 
         public void OnGameEnd()
         {
-            GameEnd?.Invoke();
         }
 
         #endregion
@@ -539,9 +521,14 @@ namespace Tetrage.Managers
             return true;
         }
 
-        private static bool IsHost()
+        private bool IsHost()
         {
-            return PhotonNetwork.IsConnectedAndReady && PhotonNetwork.IsMasterClient;
+            if (_networkContext == null)
+            {
+                Debug.LogWarning("Dealer: NetworkContextが設定されていません。falseを返します。");
+                return false;
+            }
+            return _networkContext.IsHost;
         }
 
         #endregion

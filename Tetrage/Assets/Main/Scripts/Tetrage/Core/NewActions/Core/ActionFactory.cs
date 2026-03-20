@@ -51,7 +51,7 @@ namespace Tetrage.Core.Actions
         /// <param name="requester">実行プレイヤー</param>
         /// <param name="gameContextProvider">ゲームコンテキストプロバイダー（未使用、互換性のため保持）</param>
         /// <returns>作成されたアクション</returns>
-        public static IAction CreateAction(ActionType actionType, IPlayer requester, IGameContextProvider gameContextProvider = null)
+        public static IAction CreateAction(ActionType actionType, IPlayer requester, IGameContext gameContextProvider = null)
         {
             if (requester == null)
                 throw new ArgumentNullException(nameof(requester));

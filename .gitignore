@@ -94,3 +94,7 @@ Tetrage/[Aa]ssets/[Ss]treamingAssets/aa/*
 
 # font
 Tetrage/Assets/TextMesh Pro/Fonts/Kinkakuji-Normal SDF.asset
+Tetrage/AGENTS.md
+
+# git worktrees
+.worktrees/

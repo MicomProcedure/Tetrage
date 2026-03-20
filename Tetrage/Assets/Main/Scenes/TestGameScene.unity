@@ -871,130 +871,71 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 40b3e0f28729eff4f8aecdfefe7c3234, type: 3}
---- !u!1 &2127726745
-GameObject:
+--- !u!1001 &1924212728715005566
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2127726747}
-  - component: {fileID: 2127726746}
-  - component: {fileID: 2127726748}
-  m_Layer: 0
-  m_Name: GameSceneDebugEntry
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2127726746
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2127726745}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e6d669576ea8462195cf401e7fc9f32, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _photonView: {fileID: 2127726748}
-  _gameManager: {fileID: 1474775980}
-  _debugRoomCode: 00000
-  _maxPlayers: 4
-  _autoStartGame: 1
-  _waitForPlayersTimeout: 10
-  _fixedRegion: jp
-  _connectionTimeout: 15
-  _debugPlayerInfos:
-  - PlayerName: Yuto77
-    IconIndex: 0
-    SetInitialCards: 1
-    TargetCard:
-      Suit: 1
-      Number: 1
-    HandCards: []
-  - PlayerName: Mira
-    IconIndex: 1
-    SetInitialCards: 1
-    TargetCard:
-      Suit: 1
-      Number: 2
-    HandCards:
-    - Suit: 1
-      Number: 3
-  - PlayerName: Takakusaki
-    IconIndex: 2
-    SetInitialCards: 1
-    TargetCard:
-      Suit: 2
-      Number: 1
-    HandCards:
-    - Suit: 2
-      Number: 2
-    - Suit: 2
-      Number: 3
-  - PlayerName: 283
-    IconIndex: 3
-    SetInitialCards: 1
-    TargetCard:
-      Suit: 3
-      Number: 1
-    HandCards:
-    - Suit: 3
-      Number: 2
-    - Suit: 3
-      Number: 3
-    - Suit: 3
-      Number: 4
-  _useDebugPlayerInfo: 1
-  _firstDealWaitTime: 2
-  _clearCardsBeforeSetup: 1
-  _enableDebugEvents: 0
-  _debugEventCode: 21
-  _debugJsonPayload: '{}'
-  _sendToAll: 1
-  _targetActorNumbers: 
---- !u!4 &2127726747
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2127726745}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1245.2914, y: 260.89578, z: 9.708677}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2127726748
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2127726745}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ObservedComponentsFoldoutOpen: 1
-  Group: 0
-  prefixField: -1
-  Synchronization: 3
-  OwnershipTransfer: 0
-  observableSearch: 2
-  ObservedComponents: []
-  sceneViewId: 1
-  InstantiationId: 0
-  isRuntimeInstantiated: 0
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 361964789538952179, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: sceneViewId
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1373377518495472976, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: _gameManager
+      value: 
+      objectReference: {fileID: 1474775980}
+    - target: {fileID: 2900085623532414564, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_Name
+      value: LegacyGameSceneDebugEntry
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1245.2914
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 260.89578
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 9.708677
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6609130697355778157, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b9afd04b01beb654ab0f7ee7e355ce43, type: 3}
 --- !u!1001 &2481798701942548761
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1078,4 +1019,4 @@ SceneRoots:
   - {fileID: 2074764622}
   - {fileID: 1624701597}
   - {fileID: 2481798701942548761}
-  - {fileID: 2127726747}
+  - {fileID: 1924212728715005566}

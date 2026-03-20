@@ -37,7 +37,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// ゲームコンテキストプロバイダー
         /// </summary>
-        IGameContextProvider GameContext { get; }
+        IGameContext GameContext { get; }
 
         /// <summary>
         /// アクション待機・キャンセル制御を担当するActionAwaiter

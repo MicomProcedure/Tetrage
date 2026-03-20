@@ -10,6 +10,7 @@ namespace Tetrage.Animations
     {
         /// <summary>
         /// 指定されたGameObjectをA地点からB地点まで移動させます
+        /// Time.timeScaleに依存しない実装（unscaledDeltaTimeを使用）
         /// </summary>
         /// <param name="target">移動させるGameObject</param>
         /// <param name="startPosition">開始位置</param>
@@ -26,12 +27,12 @@ namespace Tetrage.Animations
             {
                 if (target == null) return;
 
-                elapsedTime += Time.deltaTime;
+                elapsedTime += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsedTime / duration);
-                
+
                 // 線形補間で位置を計算
                 target.transform.position = Vector3.Lerp(startPosition, endPosition, t);
-                
+
                 await UniTask.Yield();
             }
 
@@ -44,6 +45,7 @@ namespace Tetrage.Animations
 
         /// <summary>
         /// 指定されたGameObjectをA地点からB地点までイージングをかけて移動させます
+        /// Time.timeScaleに依存しない実装（unscaledDeltaTimeを使用）
         /// </summary>
         /// <param name="target">移動させるGameObject</param>
         /// <param name="startPosition">開始位置</param>
@@ -60,15 +62,15 @@ namespace Tetrage.Animations
             {
                 if (target == null) return;
 
-                elapsedTime += Time.deltaTime;
+                elapsedTime += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsedTime / duration);
-                
+
                 // イージング関数を適用（easeInOutQuad）
                 t = t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
-                
+
                 // 補間で位置を計算
                 target.transform.position = Vector3.Lerp(startPosition, endPosition, t);
-                
+
                 await UniTask.Yield();
             }
 
@@ -79,4 +81,4 @@ namespace Tetrage.Animations
             }
         }
     }
-} 
+}
