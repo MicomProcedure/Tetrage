@@ -6,6 +6,18 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class VirtualNetworkAdapterFactory : INetworkAdapterFactory
     {
+        private readonly VirtualTransportHub _hub;
+
+        public VirtualNetworkAdapterFactory()
+            : this(new VirtualTransportHub())
+        {
+        }
+
+        public VirtualNetworkAdapterFactory(VirtualTransportHub hub)
+        {
+            _hub = hub;
+        }
+
         /// <summary>
         /// VirtualBroadcasterを生成する
         /// </summary>
@@ -13,7 +25,7 @@ namespace Tetrage.Network.Gameplay
         /// <returns>VirtualBroadcaster</returns>
         public INetworkBroadcaster CreateBroadcaster(ISerializer serializer)
         {
-            return new VirtualBroadcaster(serializer);
+            return new VirtualBroadcaster(serializer, _hub);
         }
 
         /// <summary>
@@ -23,7 +35,7 @@ namespace Tetrage.Network.Gameplay
         /// <returns>VirtualReceiver</returns>
         public INetworkReceiver CreateReceiver(ISerializer serializer)
         {
-            return new VirtualReceiver(serializer);
+            return new VirtualReceiver(serializer, _hub);
         }
     }
 }

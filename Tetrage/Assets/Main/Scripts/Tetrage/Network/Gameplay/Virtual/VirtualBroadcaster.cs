@@ -9,10 +9,12 @@ namespace Tetrage.Network.Gameplay
     public sealed class VirtualBroadcaster : INetworkBroadcaster
     {
         private readonly ISerializer _serializer;
+        private readonly VirtualTransportHub _hub;
 
-        public VirtualBroadcaster(ISerializer serializer)
+        public VirtualBroadcaster(ISerializer serializer, VirtualTransportHub hub)
         {
             _serializer = serializer;
+            _hub = hub;
         }
 
         /// <summary>
@@ -24,7 +26,7 @@ namespace Tetrage.Network.Gameplay
         public void Raise<T>(EventCode code, T payload)
         {
             var bytes = _serializer.Serialize(payload);
-            VirtualTransportHub.Instance.BroadcastToAll((byte)code, bytes);
+            _hub.BroadcastToAll((byte)code, bytes);
             Debug.Log($"VirtualBroadcaster: Raise (Code: {code}, Payload: {typeof(T).Name})");
         }
 
@@ -43,7 +45,7 @@ namespace Tetrage.Network.Gameplay
             }
 
             var bytes = _serializer.Serialize(payload);
-            VirtualTransportHub.Instance.BroadcastToActors((byte)code, bytes, targetActorNumbers);
+            _hub.BroadcastToActors((byte)code, bytes, targetActorNumbers);
             Debug.Log($"VirtualBroadcaster: RaiseToActors (Code: {code}, Targets: {string.Join(", ", targetActorNumbers)})");
         }
 

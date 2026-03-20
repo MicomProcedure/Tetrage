@@ -269,10 +269,18 @@ Assert.IsTrue(eventReceived);
 
 ## 次のステップ（Phase 7）
 
-Phase 7「統合テスト」では、実際のゲームシナリオでテストを実行します：
-1. ResultUISimpleTestを仮想輸送で実行
-2. ロジック注入でのUIテスト
-3. バグ修正・最適化
+Phase 7「統合テスト」では、実際のゲームシナリオで以下を自動化します：
+1. VirtualTransportで `StartGame -> GameEnded` までの完走検証
+2. VirtualTransport通信経路（DTO受信 -> Converter -> Applier -> EventBus反映）の検証
+3. LogicInjectionでのUI反映検証
+4. バグ修正・最適化
+
+---
+
+## 検証資産（再定義）
+
+- 維持: `PlayModeTestHarness`, `PlayModeTestHelper`, `GameSceneDebugEntrySimple`, `GameLogicPlayModeTests`
+- 廃止: 旧手動デバッグ系スクリプト（旧Photonデバッグ入口、Factory/FieldSetup/ResultUI単体デバッガ群）
 
 ---
 
