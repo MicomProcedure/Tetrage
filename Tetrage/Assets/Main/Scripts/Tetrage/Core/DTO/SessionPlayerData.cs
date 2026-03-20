@@ -7,13 +7,13 @@ namespace Tetrage.Core.DTO
     /// ネットワーク実装に依存しない共通表現として利用する。
     /// </summary>
     [Serializable]
-    public record SessionPlayerData
+    public class SessionPlayerData
     {
         #region Public Fields
-        public int SessionId { get; init; }
-        public string PlayerName { get; init; }
-        public int IconIndex { get; init; }
-        public bool IsLocal { get; init; }
+        public int SessionId { get; set; }
+        public string PlayerName { get; set; }
+        public int IconIndex { get; set; }
+        public bool IsLocal { get; set; }
         #endregion
     }
 }

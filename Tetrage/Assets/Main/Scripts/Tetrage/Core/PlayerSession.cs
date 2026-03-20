@@ -57,12 +57,10 @@ namespace Tetrage.Core
         {
             if (_localSessionId >= 0 && _participants.TryGetValue(_localSessionId, out var existingLocal))
             {
-                var updated = existingLocal with
-                {
-                    PlayerName = NormalizePlayerName(name),
-                    IconIndex = iconIndex,
-                    IsLocal = true,
-                };
+                var updated = Clone(existingLocal);
+                updated.PlayerName = NormalizePlayerName(name);
+                updated.IconIndex = iconIndex;
+                updated.IsLocal = true;
 
                 _participants[_localSessionId] = updated;
                 OnParticipantUpdated?.Invoke(updated);
@@ -117,12 +115,10 @@ namespace Tetrage.Core
                 return;
             }
 
-            var updated = existing with
-            {
-                PlayerName = name == null ? existing.PlayerName : NormalizePlayerName(name),
-                IconIndex = iconIndex ?? existing.IconIndex,
-                IsLocal = isLocal ?? existing.IsLocal,
-            };
+            var updated = Clone(existing);
+            updated.PlayerName = name == null ? existing.PlayerName : NormalizePlayerName(name);
+            updated.IconIndex = iconIndex ?? existing.IconIndex;
+            updated.IsLocal = isLocal ?? existing.IsLocal;
 
             _participants[sessionId] = updated;
             if (updated.IsLocal)
@@ -143,7 +139,9 @@ namespace Tetrage.Core
             {
                 var localSnapshot = LocalPlayer;
                 _participants.Clear();
-                _participants[localSnapshot.SessionId] = localSnapshot with { IsLocal = true };
+                var localPlayer = Clone(localSnapshot);
+                localPlayer.IsLocal = true;
+                _participants[localSnapshot.SessionId] = localPlayer;
                 _localSessionId = localSnapshot.SessionId;
             }
             else
@@ -200,6 +198,17 @@ namespace Tetrage.Core
             }
 
             return playerName.Trim();
+        }
+
+        private static SessionPlayerData Clone(SessionPlayerData source)
+        {
+            return new SessionPlayerData
+            {
+                SessionId = source.SessionId,
+                PlayerName = source.PlayerName,
+                IconIndex = source.IconIndex,
+                IsLocal = source.IsLocal,
+            };
         }
         #endregion
     }
