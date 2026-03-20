@@ -6,7 +6,12 @@ using Tetrage.Network;
 using Tetrage.Core.Constants;
 using Tetrage.Managers;
 using System.Collections.Generic;
+using System.Linq;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Enums;
+using Tetrage.Core.Ids;
+using Photon.Pun;
+using Photon.Realtime;
 #endif
 
 namespace Tetrage.Tests
@@ -38,6 +43,25 @@ namespace Tetrage.Tests
 
         [Tooltip("ローカルプレイヤーのインデックス（0始まり）")]
         [SerializeField, Range(0, SettingConsts.MAX_PLAYER_COUNT - 1)] private int _localPlayerIndex = 0;
+
+        [Header("RealPhoton Debug Settings")]
+        [Tooltip("RealPhoton時に参加するルーム名")]
+        [SerializeField] private string _realPhotonRoomName = "Tetrage_DebugRoom";
+
+        [Tooltip("RealPhoton時にJoinOrCreateRoomを使う")]
+        [SerializeField] private bool _useJoinOrCreateRoom = true;
+
+        [Tooltip("RealPhoton初期化前に待機する最小プレイヤー数")]
+        [SerializeField, Range(SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT)] private int _realPhotonRequiredPlayerCount = 2;
+
+        [Tooltip("Photon接続待機タイムアウト（秒）")]
+        [SerializeField, Min(1f)] private float _realPhotonConnectTimeoutSec = 20f;
+
+        [Tooltip("Photon入室待機タイムアウト（秒）")]
+        [SerializeField, Min(1f)] private float _realPhotonJoinRoomTimeoutSec = 20f;
+
+        [Tooltip("必要人数待機タイムアウト（秒）")]
+        [SerializeField, Min(1f)] private float _realPhotonWaitPlayersTimeoutSec = 60f;
 
         [Tooltip("初期化後に自動的にゲームを開始する")]
         [SerializeField] private bool _autoStartGame = false;
@@ -94,48 +118,65 @@ namespace Tetrage.Tests
 
                 // PlayerInfo生成
                 List<PlayerInfo> players;
-                int? userPlayerIndex = null;
+                INetworkContext networkContext;
+                IPlayerIdMapper mapper;
 
-                if (_playerDebugSettings != null && _playerDebugSettings.DebugPlayerInfos.Count > 0)
+                if (_networkMode == NetworkMode.RealPhoton)
                 {
-                    Debug.Log("GameSceneDebugEntrySimple: GameScenePlayerDebugSettingsを使用してプレイヤーを作成します");
-
-                    // IsUserPlayerが設定されている場合はそれを使用、なければ_localPlayerIndexを使用
-                    userPlayerIndex = _playerDebugSettings.GetUserPlayerIndex(_playerCount);
-                    if (userPlayerIndex == null)
+                    if (_playerDebugSettings != null && _playerDebugSettings.DebugPlayerInfos.Count > 0)
                     {
-                        userPlayerIndex = _localPlayerIndex;
-                        Debug.Log($"GameSceneDebugEntrySimple: UserPlayerが設定されていないため、_localPlayerIndex ({_localPlayerIndex}) を使用します");
-                    }
-                    else
-                    {
-                        int userPlayerCount = _playerDebugSettings.GetUserPlayerCount(_playerCount);
-                        if (userPlayerCount > 1)
-                        {
-                            Debug.LogWarning($"GameSceneDebugEntrySimple: {userPlayerCount}人のプレイヤーがUserPlayerに設定されています。最初の一人（インデックス: {userPlayerIndex}）を使用します。");
-                        }
-                        Debug.Log($"GameSceneDebugEntrySimple: UserPlayerインデックス: {userPlayerIndex}");
+                        Debug.LogWarning("GameSceneDebugEntrySimple: RealPhotonモードではGameScenePlayerDebugSettingsを無視します");
                     }
 
-                    players = _playerDebugSettings.CreatePlayerInfos(_playerCount, userPlayerIndex);
+                    await EnsureRealPhotonReadyAsync();
+                    networkContext = new PhotonNetworkContext();
+                    players = BuildPlayerInfosFromPhoton(out mapper);
+                    _playerCount = players.Count;
                 }
                 else
                 {
-                    userPlayerIndex = _localPlayerIndex;
-                    players = PlayModeTestHelper.CreateDefaultPlayers(_playerCount, _localPlayerIndex);
+                    int? userPlayerIndex = null;
+                    if (_playerDebugSettings != null && _playerDebugSettings.DebugPlayerInfos.Count > 0)
+                    {
+                        Debug.Log("GameSceneDebugEntrySimple: GameScenePlayerDebugSettingsを使用してプレイヤーを作成します");
+
+                        // IsUserPlayerが設定されている場合はそれを使用、なければ_localPlayerIndexを使用
+                        userPlayerIndex = _playerDebugSettings.GetUserPlayerIndex(_playerCount);
+                        if (userPlayerIndex == null)
+                        {
+                            userPlayerIndex = _localPlayerIndex;
+                            Debug.Log($"GameSceneDebugEntrySimple: UserPlayerが設定されていないため、_localPlayerIndex ({_localPlayerIndex}) を使用します");
+                        }
+                        else
+                        {
+                            int userPlayerCount = _playerDebugSettings.GetUserPlayerCount(_playerCount);
+                            if (userPlayerCount > 1)
+                            {
+                                Debug.LogWarning($"GameSceneDebugEntrySimple: {userPlayerCount}人のプレイヤーがUserPlayerに設定されています。最初の一人（インデックス: {userPlayerIndex}）を使用します。");
+                            }
+                            Debug.Log($"GameSceneDebugEntrySimple: UserPlayerインデックス: {userPlayerIndex}");
+                        }
+
+                        players = _playerDebugSettings.CreatePlayerInfos(_playerCount, userPlayerIndex);
+                    }
+                    else
+                    {
+                        userPlayerIndex = _localPlayerIndex;
+                        players = PlayModeTestHelper.CreateDefaultPlayers(_playerCount, _localPlayerIndex);
+                    }
+
+                    // NetworkContext生成（userPlayerIndexを使用）
+                    int localActorNumber = (userPlayerIndex ?? _localPlayerIndex) + 1;
+                    networkContext = PlayModeTestHelper.CreateNetworkContext(
+                        _networkMode,
+                        localActorNumber: localActorNumber,
+                        playerCount: _playerCount,
+                        isHost: true
+                    );
+
+                    // PlayerIdMapper生成
+                    mapper = PlayModeTestHelper.CreatePlayerIdMapper(players);
                 }
-
-                // NetworkContext生成（userPlayerIndexを使用）
-                int localActorNumber = (userPlayerIndex ?? _localPlayerIndex) + 1;
-                var networkContext = PlayModeTestHelper.CreateNetworkContext(
-                    _networkMode,
-                    localActorNumber: localActorNumber,
-                    playerCount: _playerCount,
-                    isHost: true
-                );
-
-                // PlayerIdMapper生成
-                var mapper = PlayModeTestHelper.CreatePlayerIdMapper(players);
 
                 // UserPlayer特定
                 var userInfo = PlayModeTestHelper.GetUserPlayer(players, networkContext, mapper);
@@ -172,6 +213,124 @@ namespace Tetrage.Tests
                 Debug.LogError($"GameSceneDebugEntrySimple: 初期化エラー: {ex.Message}\n{ex.StackTrace}");
             }
         }
+
+        #region RealPhoton Debug
+
+        private async UniTask EnsureRealPhotonReadyAsync()
+        {
+            if (!PhotonNetwork.IsConnected)
+            {
+                Debug.Log("GameSceneDebugEntrySimple: Photonへ接続します");
+                PhotonNetwork.ConnectUsingSettings();
+            }
+
+            await WaitUntilWithTimeout(
+                () => PhotonNetwork.IsConnectedAndReady,
+                _realPhotonConnectTimeoutSec,
+                "Photon接続");
+
+            if (!PhotonNetwork.InRoom)
+            {
+                var roomName = string.IsNullOrWhiteSpace(_realPhotonRoomName)
+                    ? "Tetrage_DebugRoom"
+                    : _realPhotonRoomName.Trim();
+                var maxPlayers = (byte)Mathf.Clamp(_playerCount, SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT);
+
+                if (_useJoinOrCreateRoom)
+                {
+                    var options = new RoomOptions
+                    {
+                        MaxPlayers = maxPlayers,
+                        IsVisible = true,
+                        IsOpen = true
+                    };
+                    Debug.Log($"GameSceneDebugEntrySimple: JoinOrCreateRoomを実行します (Room: {roomName}, MaxPlayers: {maxPlayers})");
+                    PhotonNetwork.JoinOrCreateRoom(roomName, options, TypedLobby.Default);
+                }
+                else
+                {
+                    Debug.Log($"GameSceneDebugEntrySimple: JoinRoomを実行します (Room: {roomName})");
+                    PhotonNetwork.JoinRoom(roomName);
+                }
+            }
+
+            await WaitUntilWithTimeout(
+                () => PhotonNetwork.InRoom,
+                _realPhotonJoinRoomTimeoutSec,
+                "Photon入室");
+
+            int requiredPlayerCount = Mathf.Clamp(
+                _realPhotonRequiredPlayerCount,
+                SettingConsts.MIN_PLAYER_COUNT,
+                SettingConsts.MAX_PLAYER_COUNT);
+
+            await WaitUntilWithTimeout(
+                () => PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= requiredPlayerCount,
+                _realPhotonWaitPlayersTimeoutSec,
+                $"必要人数({requiredPlayerCount})の参加");
+
+            Debug.Log($"GameSceneDebugEntrySimple: RealPhoton準備完了 (Room: {PhotonNetwork.CurrentRoom?.Name}, Players: {PhotonNetwork.CurrentRoom?.PlayerCount ?? 0})");
+        }
+
+        private List<PlayerInfo> BuildPlayerInfosFromPhoton(out IPlayerIdMapper mapper)
+        {
+            var photonPlayers = PhotonNetwork.PlayerList
+                .OrderBy(player => player.ActorNumber)
+                .ToArray();
+
+            if (photonPlayers.Length == 0)
+            {
+                throw new System.InvalidOperationException("Photonルームにプレイヤーが存在しません");
+            }
+
+            mapper = new PlayerIdMapper();
+            var result = new List<PlayerInfo>(photonPlayers.Length);
+            for (int i = 0; i < photonPlayers.Length; i++)
+            {
+                var photonPlayer = photonPlayers[i];
+                var playerId = new PlayerId(i + 1);
+                mapper.Register(playerId, photonPlayer.ActorNumber);
+
+                result.Add(new PlayerInfo
+                {
+                    Id = playerId,
+                    UserId = string.IsNullOrWhiteSpace(photonPlayer.NickName)
+                        ? $"Player_{photonPlayer.ActorNumber}"
+                        : photonPlayer.NickName,
+                    PlayerType = photonPlayer.IsLocal ? PlayerType.Local : PlayerType.Remote,
+                    PlayerIconIndex = ResolvePhotonIconIndex(photonPlayer)
+                });
+            }
+
+            return result;
+        }
+
+        private static int ResolvePhotonIconIndex(Player photonPlayer)
+        {
+            if (photonPlayer.CustomProperties == null || !photonPlayer.CustomProperties.TryGetValue("IconIndex", out var iconValue))
+            {
+                return 0;
+            }
+
+            return iconValue is int iconIndex ? iconIndex : 0;
+        }
+
+        private static async UniTask WaitUntilWithTimeout(System.Func<bool> predicate, float timeoutSec, string waitLabel)
+        {
+            float startTime = Time.realtimeSinceStartup;
+            while (!predicate())
+            {
+                float elapsed = Time.realtimeSinceStartup - startTime;
+                if (elapsed >= timeoutSec)
+                {
+                    throw new System.TimeoutException($"タイムアウト: {waitLabel} ({timeoutSec:0.0}s)");
+                }
+
+                await UniTask.Delay(100);
+            }
+        }
+
+        #endregion
 
         private void OnDestroy()
         {
