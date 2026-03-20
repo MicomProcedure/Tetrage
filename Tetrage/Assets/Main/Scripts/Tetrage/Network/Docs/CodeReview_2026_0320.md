@@ -62,35 +62,15 @@
 
 ---
 
-### 欠陥4: ApplicationManagerがPhotonモード専用の初期化フロー
+### ~~欠陥4: ApplicationManagerがPhotonモード専用の初期化フロー~~ ✅ 修正済み (2026-03-20, PR #148)
 
 - **深刻度:** 7/10（VirtualTransportモードの本番パスが存在しない）
-- **ファイル:** `Managers/ApplicationManager.cs` L197-258
-- **内容:** `InitializeGameSceneAsync()`が`PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InRoom`を直接チェックしており、`_networkMode`による分岐が実装されていない。`BuildPlayerInfosFromPhoton()`もPhoton専用。
-- **影響:** ApplicationManager経由のVirtualTransport/LogicInjection初期化が永久にブロックされる。現状はPlayModeTestHarnessで迂回しているが、本番利用パス（将来のオフライン対戦など）が塞がれている。
-- **修正方針:** `_networkMode`に応じた初期化パスを分岐する。
-
-```csharp
-// 修正案（概要）
-private async UniTaskVoid InitializeGameSceneAsync(CancellationToken ct)
-{
-    switch (_networkMode)
-    {
-        case NetworkMode.RealPhoton:
-            await WaitForPhotonConnection(ct);
-            _networkContext = new PhotonNetworkContext();
-            players = BuildPlayerInfosFromPhoton(out _playerIdMapper);
-            break;
-        case NetworkMode.VirtualTransport:
-        case NetworkMode.LogicInjection:
-            _networkContext = new VirtualNetworkContext(...);
-            players = BuildVirtualPlayerInfos(out _playerIdMapper);
-            break;
-    }
-    // 共通の初期化処理
-    gameManager.Initialize(players, userInfo, _networkContext, _networkMode, _playerIdMapper);
-}
-```
+- **ファイル:** `Managers/ApplicationManager.cs`
+- **修正内容:** PR #148 `feat: Photon非依存のPlayerSessionを導入`（commit `f00f96d9`）にて対処済み。
+  - `InitializeGameSceneAsync()`に`switch (_networkMode)`の分岐を実装
+  - `RealPhoton`: Photon接続待機 → `SyncSessionFromPhoton()`でセッション同期
+  - `VirtualTransport` / `LogicInjection` / `LocalVsBot`: `EnsureSessionPlayersForOfflineMode()`で仮想プレイヤーを補完し`VirtualNetworkContext`を生成
+  - `IPlayerSession`（Photon非依存セッション管理）を導入し、プレイヤー情報構築を統一
 
 ---
 
