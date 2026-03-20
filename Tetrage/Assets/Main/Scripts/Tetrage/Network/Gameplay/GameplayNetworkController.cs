@@ -87,7 +87,7 @@ namespace Tetrage.Network.Gameplay
                 _turnGate,
                 _gameContext);
 
-            _hostActionProcessor = new DefaultHostActionProcessor(this);
+            _hostActionProcessor = new DefaultHostActionProcessor(this, _playerIdMapper);
 
             // ファクトリからBroadcaster/Receiverを生成
             _broadcaster = adapterFactory.CreateBroadcaster(_serializer);
