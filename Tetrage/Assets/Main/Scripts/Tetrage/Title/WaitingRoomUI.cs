@@ -33,6 +33,9 @@ namespace Tetrage.Title
         
         private Dictionary<int, ProfileDisplayUI> playerItems = new Dictionary<int, ProfileDisplayUI>();
         private const string IS_READY_KEY = "isReady";  // カスタムプロパティのキー
+        private bool wasInRoom = false;                // 前回有効化時点の部屋参加状態
+
+        private int playerCount = 4; // ゲーム設定人数
         
         #endregion
 
@@ -40,6 +43,7 @@ namespace Tetrage.Title
         
         void Start()
         {
+            wasInRoom = PhotonNetwork.InRoom;
             UpdateRoomCode();
             UpdatePlayerList();
             InitializeActionButton();
@@ -56,10 +60,26 @@ namespace Tetrage.Title
             // Start()が既に呼ばれている場合のみ更新（初回はStart()で処理）
             if (Time.frameCount > 0)
             {
+                // パネル表示切り替え等で `OnJoinedRoom()` がこのコンポーネントに伝わらないケースでも、
+                // 「部屋に入った直後」なら必ずローカルReadyを初期化します。
+                bool enteredRoom = PhotonNetwork.InRoom && !wasInRoom;
+                if (enteredRoom)
+                {
+                    ResetLocalReadyState();
+                }
+
                 UpdateRoomCode();
                 UpdatePlayerList();
                 UpdateActionButton();
             }
+
+            wasInRoom = PhotonNetwork.InRoom;
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+            wasInRoom = PhotonNetwork.InRoom;
         }
         
         #endregion
@@ -221,6 +241,8 @@ namespace Tetrage.Title
         public override void OnJoinedRoom()
         {
             Debug.Log("部屋に参加しました");
+            // 再入室時に「前回のReady/Not Ready」を引き継がないように、ゲストの準備状態を必ず初期化します。
+            ResetLocalReadyState();
             UpdateRoomCode();
             UpdatePlayerList();
             UpdateActionButton();
@@ -281,18 +303,54 @@ namespace Tetrage.Title
                 }
             }
 
-            // ゲストの場合はisReadyを初期化（false）
-            if (!PhotonNetwork.IsMasterClient && PhotonNetwork.InRoom)
-            {
-                Hashtable initialProps = new Hashtable() { { IS_READY_KEY, false } };
-                PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
-            }
+            // ゲストの準備状態を初期化して、ボタン表示が過去の部屋状態を引き継がないようにします。
+            ResetLocalReadyState();
 
             // ボタンのクリックイベントを設定
             actionButton.onClick.RemoveAllListeners();
             actionButton.onClick.AddListener(OnActionButtonClicked);
 
             UpdateActionButton();
+        }
+
+        /// <summary>
+        /// ゲストのローカル準備状態をリセットします。
+        /// </summary>
+        private void ResetLocalReadyState()
+        {
+            if (!PhotonNetwork.InRoom)
+            {
+                return;
+            }
+
+            // ホストは「全員Ready」でゲーム開始可否を判断する側なので、触りません。
+            if (PhotonNetwork.IsMasterClient)
+            {
+                return;
+            }
+
+            // 型が Photon 側で bool ではなくなっても破綻しないように、「解釈できない/trueの場合は確実にfalseへ」戻します。
+            bool shouldReset = true;
+            if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue(IS_READY_KEY, out object value))
+            {
+                shouldReset = value switch
+                {
+                    bool b => b,                 // trueならリセット、falseなら維持
+                    int i => i != 0,            // 0以外ならtrue相当としてリセット
+                    long l => l != 0,
+                    byte by => by != 0,
+                    string s => bool.TryParse(s, out bool parsed) ? parsed : true,
+                    _ => true                    // 解釈不可は確実にリセット
+                };
+            }
+
+            if (!shouldReset)
+            {
+                return;
+            }
+
+            Hashtable props = new Hashtable() { { IS_READY_KEY, false } };
+            PhotonNetwork.LocalPlayer.SetCustomProperties(props);
         }
 
         /// <summary>
@@ -326,7 +384,7 @@ namespace Tetrage.Title
             {
                 // 現在の準備状態を取得
                 bool isReady = GetLocalPlayerReadyState();
-                actionButtonText.text = !isReady ? "Ready" : "Not Ready";
+                actionButtonText.text = !isReady ? "Ready" : "Cancel";
                 actionButton.interactable = true;  // ゲストは常に切り替え可能
             }
         }
@@ -377,8 +435,8 @@ namespace Tetrage.Title
         }
 
         /// <summary>
-        /// 全ゲストが準備完了しているかチェック
-        /// ホストを除いた全員がisReadyがTrueになっていたらtrueを返す
+        /// ホストを除いた期待ゲスト人数（`playerCount - 1`）と
+        /// `isReady == true` の人数が一致し、かつ実ゲスト数も一致したら true を返す
         /// </summary>
         private bool AreAllGuestsReady()
         {
@@ -389,7 +447,8 @@ namespace Tetrage.Title
             }
 
             Player[] players = PhotonNetwork.PlayerList;
-            bool hasGuest = false;
+            int expectedGuestCount = Mathf.Max(0, playerCount - 1); // ホストを除いたゲーム設定人数
+
             int readyGuestCount = 0;
             int totalGuestCount = 0;
 
@@ -401,7 +460,6 @@ namespace Tetrage.Title
                     continue;
                 }
 
-                hasGuest = true;
                 totalGuestCount++;
 
                 // isReadyプロパティをチェック
@@ -422,16 +480,10 @@ namespace Tetrage.Title
                 }
             }
 
-            // ゲストが1人もいない場合は準備完了とみなす
-            if (!hasGuest || totalGuestCount == 0)
-            {
-                Debug.Log("[AreAllGuestsReady] ゲストが存在しないため、準備完了とみなします");
-                return true;
-            }
-
-            // 全ゲストが準備完了しているかチェック
-            bool allReady = readyGuestCount == totalGuestCount;
-            Debug.Log($"[AreAllGuestsReady] ゲスト数: {totalGuestCount}, 準備完了数: {readyGuestCount}, 結果: {allReady}");
+            // 「playerCount - 1」と「isReady == true の数」が一致し、
+            // かつ実ゲスト数も一致する場合のみ true
+            bool allReady = totalGuestCount == expectedGuestCount && readyGuestCount == expectedGuestCount;
+            Debug.Log($"[AreAllGuestsReady] 設定人数: {playerCount}, 期待ゲスト数: {expectedGuestCount}, 実ゲスト数: {totalGuestCount}, 準備完了数: {readyGuestCount}, 結果: {allReady}");
             return allReady;
         }
         #endregion

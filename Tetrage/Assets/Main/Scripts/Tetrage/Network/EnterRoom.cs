@@ -1,6 +1,7 @@
 using Photon.Pun;
 using UnityEngine;
 using Tetrage.Title;
+using ExitGames.Client.Photon;
 
 
 /// <summary>
@@ -10,6 +11,8 @@ namespace Tetrage.Network
 {
     public class EnterRoom : MonoBehaviourPunCallbacks
     {
+        private const string IS_READY_KEY = "isReady";
+
         [SerializeField] private NumberInputController numberInputController;
         [SerializeField] private NetworkErrorUI networkErrorUI;
         [SerializeField] private PanelButton panelButton;
@@ -91,6 +94,15 @@ namespace Tetrage.Network
         public override void OnJoinedRoom()
         {
             Debug.Log("部屋参加成功: " + PhotonNetwork.CurrentRoom.Name);
+
+            // ゲスト側は入室時に必ず Ready（isReady=false）から開始する。
+            // 退室後に CustomProperties が残ってしまうケースがあるため、入室成功時点で明示的にリセットします。
+            if (!PhotonNetwork.IsMasterClient)
+            {
+                Hashtable props = new Hashtable { { IS_READY_KEY, false } };
+                PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+            }
+
             panelButton.HidePanel();
             panelButton.ShowPanel();
         }
