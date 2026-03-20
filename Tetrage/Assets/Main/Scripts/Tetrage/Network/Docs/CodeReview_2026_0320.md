@@ -74,25 +74,19 @@
 
 ---
 
-### 欠陥5: DealerPlanEmitterとDealerNetworkMessengerの責務重複
+### ~~欠陥5: DealerPlanEmitterとDealerNetworkMessengerの責務重複~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 5/10（保守性低下・混乱の原因）
-- **ファイル:**
-  - `Network/Gameplay/DealerPlanEmitter.cs`
-  - `Network/Gameplay/DealerNetworkMessenger.cs`
-- **内容:** 両クラスが「DealerPlanをネットワークDTOに分解して送信する」という同一責務を持つ。`DealerNetworkMessenger`は`IPlayerIdMapper`を使用してPlayerId→ActorNumber変換を行うが、`DealerPlanEmitter`はこの変換を行わない。DealerはMessengerのみを使用しており、Emitterは事実上デッドコード化している。
-- **影響:** どちらを使うべきか不明瞭。将来の修正時に片方だけ修正してもう片方が放置されるリスク。
-- **修正方針:** `DealerPlanEmitter`を削除し、`DealerNetworkMessenger.PublishDealerPlan()`に統合する。
+- **修正内容:** `DealerPlanEmitter.cs`・`IEventEmitter.cs` をコードベースから完全削除。
+  `DealerNetworkMessenger.PublishDealerPlan()` に一本化し、PlayerId→ActorNumber変換を保証する正しいパスのみ残した。
 
 ---
 
-### 欠陥6: SimpleGameplayEventBusが残存
+### ~~欠陥6: SimpleGameplayEventBusが残存~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 3/10（デッドコード）
-- **ファイル:** `Network/Gameplay/GameplayEventBus.cs` L181-220
-- **内容:** `[Obsolete]`マーク付きで、全メソッドが`NotImplementedException`をthrowする状態で残存している。
-- **影響:** AGENTS.mdのリファクタ方針「旧仕様は残さず新仕様に一新させる」に違反。誤って参照された場合にランタイム例外が発生する。
-- **修正方針:** クラス定義ごと削除する。
+- **修正内容:** `GameplayEventBus.cs` から `SimpleGameplayEventBus` クラスと `#region` ブロックを完全削除。
+  不要になった `using System;` も同時に除去。
 
 ---
 

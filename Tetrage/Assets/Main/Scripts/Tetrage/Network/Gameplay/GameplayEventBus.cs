@@ -1,4 +1,3 @@
-using System;
 using R3;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
@@ -178,46 +177,6 @@ namespace Tetrage.Network.Gameplay
 
     #endregion
 
-    #region SimpleGameplayEventBus（旧実装・Phase2.5完了後に削除予定）
-
-    /// <summary>
-    /// シンプルなイベントバス実装。メインスレッドでの呼び出しは呼び出し元で保証してください。
-    /// 【非推奨】Phase2.5完了後に削除予定。R3EventBusを使用してください。
-    /// </summary>
-    [Obsolete("Phase2.5完了後に削除予定。R3EventBusを使用してください。")]
-    public sealed class SimpleGameplayEventBus : IGameplayEventBus
-    {
-        // 旧実装のまま保持（UI層移行前のため）
-        public Observable<DomainEvents.GameStartedEvent> GameStarted => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.TurnStartedEvent> TurnStarted => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.TurnEndedEvent> TurnEnded => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.ListOrderDeclaredEvent> ListOrderDeclared => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.CardMovedEvent> CardMoved => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.CardVisibilityChangedEvent> CardVisibilityChanged => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.PileShuffledEvent> PileShuffled => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.ActionRequestedEvent> ActionRequested => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.ActionResultEvent> ActionResult => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.ScanPhaseStartedEvent> ScanPhaseStarted => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.ScanPhaseEndedEvent> ScanPhaseEnded => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.FinishingGameEvent> FinishingGame => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public Observable<DomainEvents.GameEndedEvent> GameEnded => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-
-        public void Publish(DomainEvents.GameStartedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.TurnStartedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.TurnEndedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.ListOrderDeclaredEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.CardMovedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.CardVisibilityChangedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.PileShuffledEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.ActionRequestedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.ActionResultEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.ScanPhaseStartedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.ScanPhaseEndedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.FinishingGameEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-        public void Publish(DomainEvents.GameEndedEvent e) => throw new NotImplementedException("SimpleGameplayEventBus is obsolete. Use R3EventBus.");
-    }
-
-    #endregion
 }
 
 
