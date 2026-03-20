@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Ids;
@@ -37,7 +38,8 @@ namespace Tetrage.Core.Events
                     }
                     else
                     {
-                        Debug.LogWarning($"DomainEventConverter: ActorNumber {actorNumber} のマッピングが見つかりません");
+                        throw new InvalidOperationException(
+                            $"DomainEventConverter: ActorNumber {actorNumber} のPlayerIdマッピングが見つかりません（GameStarted）");
                     }
                 }
             }
@@ -60,8 +62,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.currentPlayerActorNumber, out var playerId))
             {
-                Debug.LogWarning($"DomainEventConverter: ActorNumber {dto.currentPlayerActorNumber} のマッピングが見つかりません");
-                playerId = new PlayerId(-1); // フォールバック
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.currentPlayerActorNumber} のPlayerIdマッピングが見つかりません（TurnStarted）");
             }
 
             return new TurnStartedEvent(
@@ -78,8 +80,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.previousPlayerActorNumber, out var playerId))
             {
-                Debug.LogWarning($"DomainEventConverter: ActorNumber {dto.previousPlayerActorNumber} のマッピングが見つかりません");
-                playerId = new PlayerId(-1); // フォールバック
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.previousPlayerActorNumber} のPlayerIdマッピングが見つかりません（TurnEnded）");
             }
 
             return new TurnEndedEvent(
@@ -133,7 +135,7 @@ namespace Tetrage.Core.Events
                     }
                     else
                     {
-                        Debug.LogWarning($"DomainEventConverter: ActorNumber {actorNumber} のマッピングが見つかりません");
+                        Debug.LogError($"DomainEventConverter: ActorNumber {actorNumber} のPlayerIdマッピングが見つかりません（GameEnded）");
                     }
                 }
             }
@@ -162,7 +164,7 @@ namespace Tetrage.Core.Events
                     }
                     else
                     {
-                        Debug.LogWarning($"DomainEventConverter: ActorNumber {actorNumber} のマッピングが見つかりません");
+                        Debug.LogError($"DomainEventConverter: ActorNumber {actorNumber} のPlayerIdマッピングが見つかりません（FinishingGame）");
                     }
                 }
             }
@@ -181,8 +183,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.userPlayerActorNumber, out var userPlayerId))
             {
-                Debug.LogWarning($"DomainEventConverter: ActorNumber {dto.userPlayerActorNumber} のマッピングが見つかりません");
-                userPlayerId = new PlayerId(-1);
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.userPlayerActorNumber} のPlayerIdマッピングが見つかりません（ScanPhaseStarted.userPlayer）");
             }
 
             var playerIds = new List<PlayerId>();
@@ -196,7 +198,7 @@ namespace Tetrage.Core.Events
                     }
                     else
                     {
-                        Debug.LogWarning($"DomainEventConverter: ActorNumber {actorNumber} のマッピングが見つかりません");
+                        Debug.LogError($"DomainEventConverter: ActorNumber {actorNumber} のPlayerIdマッピングが見つかりません（ScanPhaseStarted.players）");
                     }
                 }
             }
@@ -240,8 +242,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.actorPlayerId, out var playerId))
             {
-                Debug.LogWarning($"DomainEventConverter: ActorNumber {dto.actorPlayerId} のマッピングが見つかりません");
-                playerId = new PlayerId(-1);
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.actorPlayerId} のPlayerIdマッピングが見つかりません（ActionRequested）");
             }
 
             var cardIds = dto.targetCardIds?.Select(id => new CardId(id)).ToList() ?? new List<CardId>();
@@ -264,8 +266,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.actorPlayerId, out var playerId))
             {
-                Debug.LogWarning($"DomainEventConverter: ActorNumber {dto.actorPlayerId} のマッピングが見つかりません");
-                playerId = new PlayerId(-1);
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.actorPlayerId} のPlayerIdマッピングが見つかりません（ActionResult）");
             }
 
             var cardIds = dto.targetCardIds?.Select(id => new CardId(id)).ToList() ?? new List<CardId>();
@@ -311,8 +313,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetActorNumber(domainEvent.CurrentPlayerId, out var actorNumber))
             {
-                Debug.LogWarning($"DomainEventConverter: PlayerId {domainEvent.CurrentPlayerId} のマッピングが見つかりません");
-                actorNumber = -1;
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: PlayerId {domainEvent.CurrentPlayerId} のActorNumberマッピングが見つかりません（TurnStarted→DTO）");
             }
 
             return new Tetrage.Network.Gameplay.TurnStartedEvent
@@ -330,8 +332,8 @@ namespace Tetrage.Core.Events
         {
             if (!_playerIdMapper.TryGetActorNumber(domainEvent.PreviousPlayerId, out var actorNumber))
             {
-                Debug.LogWarning($"DomainEventConverter: PlayerId {domainEvent.PreviousPlayerId} のマッピングが見つかりません");
-                actorNumber = -1;
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: PlayerId {domainEvent.PreviousPlayerId} のActorNumberマッピングが見つかりません（TurnEnded→DTO）");
             }
 
             return new Tetrage.Network.Gameplay.TurnEndedEvent

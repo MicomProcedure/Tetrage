@@ -96,29 +96,13 @@
 
 ---
 
-### 欠陥7: DomainEventConverterがマッピング失敗時にPlayerId(-1)をフォールバック
+### ~~欠陥7: DomainEventConverterがマッピング失敗時にPlayerId(-1)をフォールバック~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 5/10（サイレントなデータ破損）
-- **ファイル:** `Core/Events/DomainEventConverter.cs` 複数箇所
-- **内容:** `TryGetPlayerId()`が失敗した場合、`PlayerId(-1)`をフォールバック値として生成し、WarningログのみでDomainEventの生成を続行する。
-- **影響:** 不正な`PlayerId(-1)`がドメイン層に流入し、`GameplayDomainEventHandler`でプレイヤー検索が失敗する。エラーの根本原因が変換層ではなくハンドラ層で検出されるため、デバッグが困難になる。
-- **修正方針:** マッピング失敗時は例外をスローするか、`Result<T>`パターンで呼び出し元に失敗を通知する。少なくとも`Debug.LogError`に昇格すべき。
-
-```csharp
-// 現在（サイレント失敗）
-if (!_playerIdMapper.TryGetPlayerId(dto.currentPlayerActorNumber, out var playerId))
-{
-    Debug.LogWarning(...);
-    playerId = new PlayerId(-1); // 不正値が伝播
-}
-
-// 修正案
-if (!_playerIdMapper.TryGetPlayerId(dto.currentPlayerActorNumber, out var playerId))
-{
-    throw new InvalidOperationException(
-        $"ActorNumber {dto.currentPlayerActorNumber} のPlayerIdマッピングが見つかりません");
-}
-```
+- **修正内容:** `Core/Events/DomainEventConverter.cs` 全箇所を修正。
+  - **単一値マッピング失敗**（TurnStarted, TurnEnded, ScanPhaseStarted.userPlayer, ActionRequested, ActionResult, ToDto系）→ `InvalidOperationException` をスロー（fail-fast）
+  - **リスト列挙での失敗**（GameStarted → throw, GameEnded, FinishingGame, ScanPhaseStarted.players → `Debug.LogError` に昇格）
+  - 不正な `PlayerId(-1)` がドメイン層に流入するサイレント失敗を根絶
 
 ---
 
