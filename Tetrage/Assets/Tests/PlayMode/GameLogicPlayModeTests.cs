@@ -219,9 +219,10 @@ namespace Tetrage.Tests.PlayMode
             // Arrange: ゲストとして初期化（StartGameは終了待機モードに入る）
             _harness = new PlayModeTestHarness();
             yield return _harness.SetupGameScene(
-                playerCount: 2,
-                mode: NetworkMode.VirtualTransport,
-                isHost: false
+                2,
+                NetworkMode.VirtualTransport,
+                -1,
+                false
             ).ToCoroutine();
 
             // Act: StartGameを非同期開始
