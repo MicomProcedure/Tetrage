@@ -459,14 +459,28 @@ namespace Tetrage.Managers
             }
         }
 
+        /// <summary>
+        /// ゲーム開始時のプレイヤー順序をActorNumber配列として構築する。
+        /// IPlayerIdMapperでPlayerId→ActorNumber変換を行う。
+        /// </summary>
         private int[] BuildInitialPlayerOrder()
         {
             if (_playerRegistry == null) return null;
+
             var list = new List<int>();
-            // 現状は登録順序を採用。必要なら座席順や任意の順序に変更可。
             foreach (var kv in _playerRegistry.Entries)
             {
-                list.Add(kv.Key.Value);
+                var playerId = kv.Key;
+                if (_playerIdMapper != null && _playerIdMapper.TryGetActorNumber(playerId, out var actorNumber))
+                {
+                    list.Add(actorNumber);
+                }
+                else
+                {
+                    // マッパーなし（VirtualTransport等でPlayerId==ActorNumberの場合）はそのまま使用
+                    Debug.LogWarning($"GameManager: PlayerId {playerId} のActorNumberマッピングが見つかりません。PlayerId.Valueをフォールバックとして使用します");
+                    list.Add(playerId.Value);
+                }
             }
             return list.ToArray();
         }

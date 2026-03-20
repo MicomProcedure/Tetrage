@@ -52,30 +52,13 @@
 
 ---
 
-### 欠陥3: GameManager.BuildInitialPlayerOrder()がPlayerIdをActorNumberとして送信
+### ~~欠陥3: GameManager.BuildInitialPlayerOrder()がPlayerIdをActorNumberとして送信~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 7/10（ID誤同定によるゲーム破綻）
-- **ファイル:** `Managers/GameManager.cs` L462-472
-- **内容:** `GameStartedEvent.playerActorNumbers`フィールドにActorNumberを格納すべきところ、`_playerRegistry`のキー（PlayerId）の`.Value`を使用している。
-- **影響:** PlayerIdは1,2,3...のシーケンシャル、ActorNumberはPhotonが割り当てる任意の整数。途中退出・再接続時に両者が一致しなくなり、全プレイヤーの同定が破綻する。
-- **修正方針:** `IPlayerIdMapper`を使用してPlayerId→ActorNumber変換を行う。
-
-```csharp
-// 現在（問題あり）
-foreach (var kv in _playerRegistry.Entries)
-{
-    list.Add(kv.Key.Value); // PlayerId.Value を ActorNumber として送信
-}
-
-// 修正案
-foreach (var kv in _playerRegistry.Entries)
-{
-    if (_playerIdMapper.TryGetActorNumber(kv.Key, out var actorNumber))
-    {
-        list.Add(actorNumber);
-    }
-}
-```
+- **ファイル:** `Managers/GameManager.cs`
+- **修正内容:**
+  - `_playerIdMapper.TryGetActorNumber()`でPlayerId→ActorNumber変換を行うよう修正
+  - マッパーなし・マッピング未登録の場合は警告ログを出力してPlayerId.Valueにフォールバック（VirtualTransport等、PlayerId==ActorNumberの環境向け）
 
 ---
 
