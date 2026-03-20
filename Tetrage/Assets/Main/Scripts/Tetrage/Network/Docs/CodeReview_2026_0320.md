@@ -41,15 +41,14 @@
 
 ---
 
-### 欠陥2: Dealer.StartSingleTurnAsync()でTurnStartedが二重発行
+### ~~欠陥2: Dealer.StartSingleTurnAsync()でTurnStartedが二重発行~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 8/10（ゲームロジック破綻の可能性）
 - **ファイル:** `Managers/Dealer.cs`
-- **内容:** 初回ターンにおいて以下の順序でTurnStartedが2回発行される。
-  1. `FirstDeal()` → `_messenger?.PublishTurnStarted(firstPlayer)` → TurnGate待機 → 解放
-  2. `StartSingleTurnAsync()` → `PublishTurnStart()` → `_messenger?.PublishTurnStarted(currentPlayer)` ← **同じプレイヤーに対して2回目**
-- **影響:** シーケンス番号は別々に採番されるため、`NetworkEventApplier`の重複チェックを通過し、TurnStartedハンドラが2回実行される。GameContextのターンインデックスが不正にインクリメントされる。
-- **修正方針:** `StartSingleTurnAsync()`先頭の`PublishTurnStart()`を初回ターンでスキップするか、`FirstDeal()`でのTurnStarted発行と`StartTurnLoopAsync()`でのPublishTurnStart()の責務を明確に整理する。
+- **修正内容:**
+  - `PublishTurnStart()`からネットワーク送信（`_messenger?.PublishTurnStarted()`）を除去
+  - TurnStartedの発行責務を`FirstDeal()`（初回）と前ターン末尾（2回目以降）に一本化
+  - `PublishTurnStart()`はターンカウント管理専用に限定
 
 ---
 

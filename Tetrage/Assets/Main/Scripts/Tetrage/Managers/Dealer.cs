@@ -405,13 +405,16 @@ namespace Tetrage.Managers
         #endregion
 
         #region イベント通知
+
+        /// <summary>
+        /// ターンカウントをインクリメントする。
+        /// TurnStartedのネットワーク送信はFirstDeal()または前ターン末尾で行われるため、
+        /// ここではカウント管理のみ行う。
+        /// </summary>
         public void PublishTurnStart()
         {
             _turnCount++;
-            // ターン開始イベントを送信
-            _messenger?.PublishTurnStarted(_gameContext.CurrentPlayer.Id);
-
-            Debug.Log($"Dealer: ターン {_turnCount} を開始します");
+            Debug.Log($"Dealer: ターン {_turnCount} を開始します (CurrentPlayer: {_gameContext.CurrentPlayer?.PlayerId})");
         }
         public void PublishTurnEnd()
         {            // 終了イベントのネットワーク送信（任意）
