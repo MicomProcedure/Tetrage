@@ -10,7 +10,6 @@ using Tetrage.Network;
 using Tetrage.Network.Gameplay; // using があるか確認
 using Tetrage.Core.Ids;
 using Tetrage.Models;
-using Photon.Pun;
 using Tetrage.Core.Constants;
 using Tetrage.Core;
 using Tetrage.Core.Actions;
@@ -158,7 +157,7 @@ namespace Tetrage.Managers
                     userPlayer,
                     eventBus
                 );
-                Debug.Log($"GameManager: GameContext created, userPlayerId: {userPlayer.PlayerId}, PhotonActorId: {PhotonNetwork.LocalPlayer.ActorNumber}");
+                Debug.Log($"GameManager: GameContext created, userPlayerId: {userPlayer.PlayerId}, ActorNumber: {_networkContext.UserActorNumber}");
                 // 5. ネットワーク受信・適用の初期化（ホスト/ゲスト共通）
                 _netCtl = InitializeNetworking(_gameContext);
 
