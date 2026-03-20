@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Photon.Pun;
+using Tetrage.Core;
+using Tetrage.Core.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Tetrage.Core.DTO;
@@ -9,6 +11,7 @@ using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
 using Tetrage.Network;
 using Tetrage.Network.Gameplay;
+using Tetrage.Title;
 
 namespace Tetrage.Managers
 {
@@ -37,6 +40,8 @@ namespace Tetrage.Managers
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             _lifecycleCts = new System.Threading.CancellationTokenSource();
+            _playerSession = new PlayerSession();
+            InitializeLocalPlayerSession();
             Debug.Log("ApplicationManager: 初期化");
         }
         #endregion
@@ -51,6 +56,7 @@ namespace Tetrage.Managers
         /// 現在のNetworkModeを取得する
         /// </summary>
         public NetworkMode CurrentNetworkMode => _networkMode;
+        public IPlayerSession PlayerSession => _playerSession;
 
         /// <summary>
         /// NetworkModeを設定する。
@@ -90,8 +96,11 @@ namespace Tetrage.Managers
         private const string TitleSceneName = "TitleScene";
         private const string GameSceneName = "GameScene";
         private const string ResultSceneName = "ResultScene";
+        private const string PlayerProfileSaveKey = "PlayerProfile";
         private INetworkContext _networkContext; // NetworkModeに応じたNetworkContext（現時点はPhoton実装）
         private IPlayerIdMapper _playerIdMapper; // PlayerId/ActorNumberマッピング
+        private IPlayerSession _playerSession; // Photon非依存プレイヤーセッション
+        private readonly Dictionary<int, int> _sessionIdToActorNumberMap = new Dictionary<int, int>();
         private readonly List<string> _sceneHistory = new List<string>();
         private bool _isLoading = false;
 
@@ -196,11 +205,48 @@ namespace Tetrage.Managers
         #region Initialize Flow
         private async UniTaskVoid InitializeGameSceneAsync(System.Threading.CancellationToken ct)
         {
-            // Photonの接続・InRoomを待機
-            await UniTask.WaitUntil(() => PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InRoom, cancellationToken: ct);
+            List<PlayerInfo> players;
+            PlayerInfo userInfo;
 
-            // NetworkContextの生成（現時点はPhoton実装、将来はNetworkModeに応じて切替）
-            _networkContext = new PhotonNetworkContext();
+            switch (_networkMode)
+            {
+                case NetworkMode.RealPhoton:
+                    await UniTask.WaitUntil(() => PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InRoom, cancellationToken: ct);
+                    _networkContext = new PhotonNetworkContext();
+                    SyncSessionFromPhoton();
+                    players = _playerSession.BuildPlayerInfos(out _playerIdMapper, _sessionIdToActorNumberMap);
+                    if (!TryGetRealPhotonUserInfo(players, out userInfo))
+                    {
+                        return;
+                    }
+                    break;
+
+                case NetworkMode.VirtualTransport:
+                case NetworkMode.LogicInjection:
+                case NetworkMode.LocalVsBot:
+                    EnsureSessionPlayersForOfflineMode();
+                    players = _playerSession.BuildPlayerInfos(out _playerIdMapper);
+                    userInfo = players.Find(p => p.PlayerType == PlayerType.Local);
+                    if (userInfo == null)
+                    {
+                        Debug.LogError("ApplicationManager: オフライン用のローカルプレイヤーが見つかりません");
+                        return;
+                    }
+
+                    _networkContext = new VirtualNetworkContext(
+                        actorNumber: userInfo.Id.Value,
+                        isHost: true,
+                        playerCount: players.Count,
+                        isReady: true,
+                        isInRoom: true
+                    );
+                    break;
+
+                default:
+                    Debug.LogError($"ApplicationManager: 未知のNetworkModeです。mode={_networkMode}");
+                    return;
+            }
+
             Debug.Log($"ApplicationManager: NetworkContext生成完了 (IsHost: {_networkContext.IsHost}, ActorNumber: {_networkContext.UserActorNumber})");
 
             // GameManager の出現を待機
@@ -212,30 +258,11 @@ namespace Tetrage.Managers
                 return gameManager != null;
             }, cancellationToken: ct);
 
-            // PlayerInfo リストを構築（IPlayerIdMapperも同時に生成）
-            var players = BuildPlayerInfosFromPhoton(out _playerIdMapper);
             if (players == null || players.Count == 0)
             {
                 Debug.LogError("ApplicationManager: PlayerInfo の構築に失敗");
                 return;
             }
-
-            // ローカルプレイヤーを特定
-            var localActorNumber = PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
-            if (localActorNumber < 0)
-            {
-                Debug.LogError("ApplicationManager: LocalPlayer が無効");
-                return;
-            }
-
-            var userInfoIndex = players.FindIndex(p => p.Id.Value == localActorNumber);
-            if (userInfoIndex < 0)
-            {
-                Debug.LogError($"ApplicationManager: ローカルプレイヤー({localActorNumber})が PlayerInfo に存在しません");
-                return;
-            }
-
-            var userInfo = players[userInfoIndex];
 
             // GameManager を初期化
             try
@@ -258,32 +285,69 @@ namespace Tetrage.Managers
         }
         #endregion
 
-        #region PlayerInfo Builder
-        /// <summary>
-        /// PhotonのPlayerListからPlayerInfoリストを構築し、IPlayerIdMapperを生成する。
-        /// PlayerIdはシーケンシャル（1,2,3...）に割り当て、ActorNumberとのマッピングを登録する。
-        /// </summary>
-        /// <param name="playerIdMapper">生成されたIPlayerIdMapper（出力）</param>
-        /// <returns>PlayerInfoリスト</returns>
-        private List<PlayerInfo> BuildPlayerInfosFromPhoton(out IPlayerIdMapper playerIdMapper)
+        #region Session Helpers
+        private void InitializeLocalPlayerSession()
         {
-            var list = new List<PlayerInfo>();
-            var mapper = new PlayerIdMapper();
+            var loaded = TryLoadLocalProfile(out var playerName, out var iconIndex);
+            if (!loaded)
+            {
+                playerName = "Player";
+                iconIndex = 0;
+            }
+
+            _playerSession.RegisterLocalPlayer(playerName, iconIndex);
+        }
+
+        private bool TryLoadLocalProfile(out string playerName, out int iconIndex)
+        {
+            playerName = "Player";
+            iconIndex = 0;
+
+            if (!PlayerPrefs.HasKey(PlayerProfileSaveKey))
+            {
+                return false;
+            }
+
+            var json = PlayerPrefs.GetString(PlayerProfileSaveKey);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return false;
+            }
+
+            try
+            {
+                var profile = JsonUtility.FromJson<PlayerProfileData>(json);
+                if (profile == null)
+                {
+                    return false;
+                }
+
+                playerName = string.IsNullOrWhiteSpace(profile.PlayerName) ? "Player" : profile.PlayerName.Trim();
+                iconIndex = profile.IconIndex;
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"ApplicationManager: ローカルプロファイル読み込みに失敗しました: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void SyncSessionFromPhoton()
+        {
+            _playerSession.Clear(false);
+            _sessionIdToActorNumberMap.Clear();
 
             var actors = PhotonNetwork.PlayerList;
             if (actors == null || actors.Length == 0)
             {
-                playerIdMapper = mapper;
-                return list;
+                return;
             }
 
-            // ActorNumberでソートしてから、シーケンシャルなPlayerIdを割り当て
             var sortedActors = actors.OrderBy(a => a.ActorNumber).ToArray();
-
-            for (int i = 0; i < sortedActors.Length; i++)
+            foreach (var actor in sortedActors)
             {
-                var actor = sortedActors[i];
-                int iconIndex = 0;
+                var iconIndex = 0;
                 if (actor.CustomProperties != null && actor.CustomProperties.ContainsKey("IconIndex"))
                 {
                     try
@@ -296,25 +360,51 @@ namespace Tetrage.Managers
                     }
                 }
 
-                // シーケンシャルなPlayerIdを割り当て（1,2,3...）
-                var playerId = new PlayerId(i + 1);
+                var playerName = string.IsNullOrWhiteSpace(actor.NickName) ? $"Player_{actor.ActorNumber}" : actor.NickName;
+                var sessionId = _playerSession.AddParticipant(playerName, iconIndex, actor.IsLocal);
+                _sessionIdToActorNumberMap[sessionId] = actor.ActorNumber;
+            }
+        }
 
-                // マッピングを登録
-                mapper.Register(playerId, actor.ActorNumber);
-
-                var info = new PlayerInfo
-                {
-                    Id = playerId,
-                    UserId = string.IsNullOrEmpty(actor.NickName) ? $"Player_{actor.ActorNumber}" : actor.NickName,
-                    PlayerType = actor.IsLocal ? PlayerType.Local : PlayerType.Remote,
-                    PlayerIconIndex = iconIndex,
-                };
-                list.Add(info);
+        private bool TryGetRealPhotonUserInfo(List<PlayerInfo> players, out PlayerInfo userInfo)
+        {
+            userInfo = null;
+            var localActorNumber = PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
+            if (localActorNumber < 0)
+            {
+                Debug.LogError("ApplicationManager: LocalPlayer が無効です");
+                return false;
             }
 
-            playerIdMapper = mapper;
-            Debug.Log($"ApplicationManager: PlayerIdMapper生成完了 (Player数: {list.Count})");
-            return list;
+            if (!_playerIdMapper.TryGetPlayerId(localActorNumber, out var localPlayerId))
+            {
+                Debug.LogError($"ApplicationManager: ActorNumber={localActorNumber} のPlayerIdマッピングが見つかりません");
+                return false;
+            }
+
+            var index = players.FindIndex(p => p.Id.Equals(localPlayerId));
+            if (index < 0)
+            {
+                Debug.LogError($"ApplicationManager: ローカルプレイヤー(PlayerId={localPlayerId.Value})が PlayerInfo に存在しません");
+                return false;
+            }
+
+            userInfo = players[index];
+            return true;
+        }
+
+        private void EnsureSessionPlayersForOfflineMode()
+        {
+            if (_playerSession.ParticipantCount == 0)
+            {
+                InitializeLocalPlayerSession();
+            }
+
+            while (_playerSession.ParticipantCount < 4)
+            {
+                var index = _playerSession.ParticipantCount + 1;
+                _playerSession.AddParticipant($"Player_{index}", 0, false);
+            }
         }
         #endregion
     }
