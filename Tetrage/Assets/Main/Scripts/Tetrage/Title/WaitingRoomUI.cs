@@ -404,9 +404,9 @@ namespace Tetrage.Title
             {
                 if (AreAllGuestsReady())
                 {
-                    // TODO: ゲーム開始処理を実装
+                    //ゲーム開始処理を実装
                     Debug.Log("ゲームを開始します");
-                    // PhotonNetwork.LoadLevel("GameScene"); などの処理
+                    PhotonNetwork.LoadLevel("GameScene"); 
                 }
             }
             // ゲストの場合は準備状態を切り替え
