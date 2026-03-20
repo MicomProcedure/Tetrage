@@ -238,8 +238,9 @@ namespace Tetrage.Tests.PlayMode
         /// </summary>
         public static void CleanupVirtualTransport()
         {
-            VirtualTransportHub.DestroyInstance();
-            Debug.Log("PlayModeTestHelper: VirtualTransportHubクリーンアップ完了");
+            // VirtualTransportHubはインスタンス注入方式に移行済みのため、
+            // グローバルクリーンアップは不要。
+            Debug.Log("PlayModeTestHelper: VirtualTransportはインスタンス管理のためグローバルクリーンアップ不要");
         }
 
         /// <summary>

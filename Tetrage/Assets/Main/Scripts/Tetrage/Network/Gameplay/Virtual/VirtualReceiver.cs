@@ -11,14 +11,16 @@ namespace Tetrage.Network.Gameplay
     public sealed class VirtualReceiver : INetworkReceiver, IDisposable
     {
         private readonly ISerializer _serializer;
+        private readonly VirtualTransportHub _hub;
         private readonly Dictionary<byte, Action<byte[]>> _handlers = new Dictionary<byte, Action<byte[]>>();
         private int _actorNumber = -1;
         private bool _active = false;
         private bool _disposed = false;
 
-        public VirtualReceiver(ISerializer serializer)
+        public VirtualReceiver(ISerializer serializer, VirtualTransportHub hub)
         {
             _serializer = serializer;
+            _hub = hub;
         }
 
         /// <summary>
@@ -58,7 +60,7 @@ namespace Tetrage.Network.Gameplay
             }
 
             // VirtualTransportHubに登録してActorNumberを取得
-            _actorNumber = VirtualTransportHub.Instance.RegisterReceiver(this);
+            _actorNumber = _hub.RegisterReceiver(this);
             _active = true;
             Debug.Log($"VirtualReceiver: 受信開始 (ActorNumber: {_actorNumber})");
         }
@@ -75,7 +77,7 @@ namespace Tetrage.Network.Gameplay
 
             if (_actorNumber >= 0)
             {
-                VirtualTransportHub.Instance.UnregisterReceiver(_actorNumber);
+                _hub.UnregisterReceiver(_actorNumber);
             }
 
             _active = false;

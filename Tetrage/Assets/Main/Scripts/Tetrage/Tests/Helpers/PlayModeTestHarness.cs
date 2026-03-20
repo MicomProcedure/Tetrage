@@ -8,6 +8,7 @@ using Tetrage.Managers;
 using Tetrage.Network;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Constants;
+using Tetrage.Core.Actions;
 
 namespace Tetrage.Tests.PlayMode
 {
@@ -23,6 +24,7 @@ namespace Tetrage.Tests.PlayMode
         private IPlayerIdMapper _playerIdMapper;
         private NetworkMode _networkMode;
         private int _playerCount;
+        private bool _isHost;
 
         /// <summary>
         /// GameManagerへの参照を取得
@@ -56,10 +58,12 @@ namespace Tetrage.Tests.PlayMode
         public async UniTask SetupGameScene(
             int playerCount = 4,
             NetworkMode mode = NetworkMode.VirtualTransport,
-            int randomSeed = -1)
+            int randomSeed = -1,
+            bool isHost = true)
         {
             _networkMode = mode;
             _playerCount = playerCount;
+            _isHost = isHost;
 
             Debug.Log($"<color=cyan>PlayModeTestHarness: GameScene初期化開始 (Players: {playerCount}, Mode: {mode})</color>");
 
@@ -71,7 +75,7 @@ namespace Tetrage.Tests.PlayMode
             }
 
             // 1. NetworkContextを生成（Photon不要）
-            _networkContext = CreateNetworkContext(mode);
+            _networkContext = CreateNetworkContext(mode, _isHost);
 
             // 2. テスト用PlayerInfoを生成
             var players = GenerateTestPlayerInfos(playerCount, out _playerIdMapper);
@@ -83,6 +87,9 @@ namespace Tetrage.Tests.PlayMode
             {
                 throw new System.Exception("PlayModeTestHarness: GameManagerがシーンに見つかりません");
             }
+
+            // ActionSystemの静的状態を毎回リセットして、前テストの破棄済み状態を持ち越さない
+            ActionSystemInitializer.ResetActionSystem();
 
             // 4. GameManagerを初期化（Photon待機なし）
             _gameManager.Initialize(players, userInfo, _networkContext, _networkMode, _playerIdMapper);
@@ -119,13 +126,6 @@ namespace Tetrage.Tests.PlayMode
                 _gameManager.StopAndReset();
             }
 
-            // VirtualTransportHubのリセット（シングルトンの場合のみ必要）
-            if (_networkMode == NetworkMode.VirtualTransport)
-            {
-                // 将来的にはインスタンスベース化されるため不要になる
-                VirtualTransportHub.DestroyInstance();
-            }
-
             _gameManager = null;
             _networkContext = null;
             _playerIdMapper = null;
@@ -136,7 +136,7 @@ namespace Tetrage.Tests.PlayMode
         /// <summary>
         /// NetworkModeに応じたNetworkContextを生成
         /// </summary>
-        private INetworkContext CreateNetworkContext(NetworkMode mode)
+        private INetworkContext CreateNetworkContext(NetworkMode mode, bool isHost)
         {
             switch (mode)
             {
@@ -144,7 +144,7 @@ namespace Tetrage.Tests.PlayMode
                 case NetworkMode.LogicInjection:
                     return new VirtualNetworkContext(
                         actorNumber: 1,
-                        isHost: true,
+                        isHost: isHost,
                         playerCount: _playerCount,
                         isReady: true,
                         isInRoom: true
