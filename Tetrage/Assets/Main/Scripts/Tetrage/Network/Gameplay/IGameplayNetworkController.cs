@@ -16,6 +16,10 @@ namespace Tetrage.Network.Gameplay
         IGameContext GameContext { get; }
         SequenceService Sequence { get; }
         IPlayerIdMapper PlayerIdMapper { get; }
+        /// <summary>
+        /// NetworkEventApplier が最後に受理した sequence。デバッグ用ネットワーク送信の sequence 補正に利用。
+        /// </summary>
+        int LastAppliedNetworkSequence { get; }
         void Start();
         void Stop();
     }

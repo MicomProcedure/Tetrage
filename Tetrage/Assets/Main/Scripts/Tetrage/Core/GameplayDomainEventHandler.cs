@@ -377,7 +377,7 @@ namespace Tetrage.Core
             _isScanPhaseActive = false;
             _pendingWinnerPlayerIds = e.WinnerPlayerIds ?? _pendingWinnerPlayerIds;
             Debug.Log($"GameplayDomainEventHandler: GameEnded受信 勝者数={_pendingWinnerPlayerIds?.Count ?? 0}");
-            // TODO(Scene): GameManager経由でResultSceneへ遷移し、完了後にTitleへ戻す。
+            // 結果UIは InGameUIManager（FinishingGame）→ ResultUI。タイトルへは ResultUI から ApplicationManager.GoToTitle。
         }
 
         private async UniTaskVoid HandleGuestScanSelectionAsync()

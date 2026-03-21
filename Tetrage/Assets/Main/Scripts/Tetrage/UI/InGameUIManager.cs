@@ -14,6 +14,7 @@ namespace Tetrage.Managers
 {
 	/// <summary>
 	/// ゲーム中UIの集約管理。GameplayEventBusを購読して各UIへ反映する。
+	/// 試合結果は専用シーンではなく <see cref="Tetrage.UI.ResultUI"/> オーバーレイ（FinishingGame 時に表示）。
 	/// </summary>
 	public class InGameUIManager : MonoBehaviour
 	{
@@ -77,6 +78,33 @@ namespace Tetrage.Managers
 		public void Teardown()
 		{
 			Unsubscribe();
+		}
+
+		/// <summary>
+		/// ゲーム中HUD（プレイヤーパネル・アクションパネル・スキャンUIなど）の表示切替。
+		/// Result表示時は false にして結果オーバーレイだけ見えるようにする。
+		/// </summary>
+		public void SetGameplayHudVisible(bool visible)
+		{
+			if (_playerUIPanelManager != null)
+			{
+				_playerUIPanelManager.gameObject.SetActive(visible);
+			}
+
+			if (_actionPanelController != null)
+			{
+				_actionPanelController.gameObject.SetActive(visible);
+			}
+
+			if (_ScanUIController != null)
+			{
+				_ScanUIController.gameObject.SetActive(visible);
+			}
+
+			if (_TetrageSoloCutInAnimCtl != null)
+			{
+				_TetrageSoloCutInAnimCtl.gameObject.SetActive(visible);
+			}
 		}
 
 		private void OnDestroy()
@@ -150,12 +178,27 @@ namespace Tetrage.Managers
 		private void OnFinishingGame(DomainEvents.FinishingGameEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnFinishingGame");
+			if (_resultUI == null)
+			{
+				Debug.LogWarning("InGameUIManager: ResultUI が未設定のため結果を表示しません");
+				return;
+			}
+
+			if (_gameContext?.Players == null)
+			{
+				Debug.LogWarning("InGameUIManager: Players が無いため Result を表示しません");
+				return;
+			}
+
+			SetGameplayHudVisible(false);
+
 			// PlayerId[]をint[]に変換
 			var winnerIds = new int[e.WinnerPlayerIds.Count];
 			for (int i = 0; i < e.WinnerPlayerIds.Count; i++)
 			{
 				winnerIds[i] = e.WinnerPlayerIds[i].Value;
 			}
+
 			_resultUI.DisplayResult(winnerIds, _gameContext.Players);
 		}
 		#endregion

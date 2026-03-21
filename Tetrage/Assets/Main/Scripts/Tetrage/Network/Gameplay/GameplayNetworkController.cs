@@ -19,6 +19,7 @@ namespace Tetrage.Network.Gameplay
         public SequenceService Sequence => _sequence;
         public IPlayerIdMapper PlayerIdMapper => _playerIdMapper;
         public IGameContext GameContext => _gameContext;
+        public int LastAppliedNetworkSequence => _applier != null ? _applier.LastAppliedSequence : 0;
         #endregion
 
         #region Fields
