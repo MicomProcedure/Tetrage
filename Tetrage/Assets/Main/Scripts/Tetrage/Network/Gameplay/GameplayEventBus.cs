@@ -87,7 +87,7 @@ namespace Tetrage.Network.Gameplay
         [Conditional("DEVELOPMENT_BUILD")]
         private static void LogPublish(string message)
         {
-            Debug.Log(message);
+            UnityEngine.Debug.Log(message);
         }
 
         #endregion

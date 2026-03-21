@@ -10,6 +10,7 @@ using System.Linq;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
+using Tetrage.Network.Gameplay;
 using Photon.Pun;
 using Photon.Realtime;
 #endif
