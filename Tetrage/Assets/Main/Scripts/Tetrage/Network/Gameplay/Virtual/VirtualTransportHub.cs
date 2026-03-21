@@ -10,27 +10,11 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class VirtualTransportHub
     {
-        private static VirtualTransportHub _instance;
         private readonly Dictionary<int, VirtualReceiver> _receivers = new Dictionary<int, VirtualReceiver>();
         private int _nextActorNumber = 1;
         private readonly object _lock = new object();
 
-        /// <summary>
-        /// シングルトンインスタンスを取得
-        /// </summary>
-        public static VirtualTransportHub Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new VirtualTransportHub();
-                }
-                return _instance;
-            }
-        }
-
-        private VirtualTransportHub()
+        public VirtualTransportHub()
         {
             Debug.Log("VirtualTransportHub: インスタンス作成");
         }
@@ -154,15 +138,6 @@ namespace Tetrage.Network.Gameplay
             }
         }
 
-        /// <summary>
-        /// シングルトンインスタンスを破棄（テスト用）
-        /// </summary>
-        public static void DestroyInstance()
-        {
-            _instance?.Reset();
-            _instance = null;
-            Debug.Log("VirtualTransportHub: インスタンス破棄");
-        }
     }
 }
 

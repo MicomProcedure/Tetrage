@@ -111,24 +111,14 @@
 
 ---
 
-### 欠陥9: R3EventBusの過剰ログ出力
+### ~~欠陥9: R3EventBusの過剰ログ出力~~ ✅ 修正済み (2026-03-20)
 
 - **深刻度:** 2/10（パフォーマンス影響）
-- **ファイル:** `Network/Gameplay/GameplayEventBus.cs` L80-156
-- **内容:** R3EventBusの全Publish()メソッドにDebug.Logが含まれる。本番ビルドでも実行される。
-- **影響:** 毎フレーム複数回のイベント発行がある場合、GCアロケーション（string interpolation）がパフォーマンスに影響する。
-- **修正方針:** 条件付きコンパイルでデバッグビルドのみに限定する。
-
-```csharp
-// 修正案
-public void Publish(DomainEvents.TurnStartedEvent e)
-{
-    _turnStarted.OnNext(e);
-#if TETRAGE_DEBUG_EVENTS
-    Debug.Log($"R3EventBus: TurnStarted published, Sequence={e.Sequence}");
-#endif
-}
-```
+- **ファイル:** `Network/Gameplay/GameplayEventBus.cs`
+- **修正内容:**
+  - `LogPublish` を `[Conditional("UNITY_EDITOR")]` / `[Conditional("DEVELOPMENT_BUILD")]` でラップ
+  - エディタ実行および Development Build のプレイヤービルドでのみ `Debug.Log` が有効
+  - リリース（非Development）プレイヤービルドでは呼び出しと文字列補間がコンパイル時に除去され、GC負荷を避ける
 
 ---
 
@@ -208,7 +198,6 @@ PlayModeTestHarness以外からVirtualTransportモードを使えるようにす
 
 ### 第5優先: 品質改善 (推奨度: 6/10)
 
-9. **欠陥9** ログ出力の条件付きコンパイル化
 10. **欠陥10** VirtualTransportHubのインスタンスベース化
 
 **見積もり:** 1日

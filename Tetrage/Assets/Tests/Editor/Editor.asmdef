@@ -4,7 +4,9 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Tetrage"
+        "Tetrage",
+        "R3",
+        "R3.Unity"
     ],
     "includePlatforms": [
         "Editor"
