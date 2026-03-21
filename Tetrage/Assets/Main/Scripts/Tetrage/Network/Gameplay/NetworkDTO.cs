@@ -99,6 +99,22 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
+    public struct ScanTargetSelectedEvent
+    {
+        public int sequence;
+        public int actorPlayerId;
+        public int selectedTargetActorNumber;
+    }
+
+    [Serializable]
+    public struct ScanResultEvent
+    {
+        public int sequence;
+        public int targetActorNumber;
+        public int targetSuit;
+    }
+
+    [Serializable]
     public struct FinishingGameEvent
     {
         public int sequence;

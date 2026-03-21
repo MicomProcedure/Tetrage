@@ -73,6 +73,10 @@ namespace Tetrage.Network.Gameplay
             _turnGate = turnGate ?? new TurnGate();
             _sequence = sequence ?? new SequenceService();
 
+            // ファクトリからBroadcaster/Receiverを生成
+            _broadcaster = adapterFactory.CreateBroadcaster(_serializer);
+            _receiver = adapterFactory.CreateReceiver(_serializer);
+
             // DomainEventConverter作成
             var converter = new DomainEventConverter(_playerIdMapper);
 
@@ -85,13 +89,14 @@ namespace Tetrage.Network.Gameplay
                 pileRegistry,
                 playerRegistry,
                 _turnGate,
-                _gameContext);
+                _gameContext,
+                _broadcaster,
+                _playerIdMapper,
+                _sequence,
+                new DefaultScanTargetSelector(),
+                _isHost);
 
             _hostActionProcessor = new DefaultHostActionProcessor(this, _playerIdMapper);
-
-            // ファクトリからBroadcaster/Receiverを生成
-            _broadcaster = adapterFactory.CreateBroadcaster(_serializer);
-            _receiver = adapterFactory.CreateReceiver(_serializer);
 
             _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
             {
@@ -110,6 +115,8 @@ namespace Tetrage.Network.Gameplay
             _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
             _receiver.On<StartScanPhaseEvent>(EventCode.StartScanPhase, e => _applier.Apply(e));
             _receiver.On<EndScanPhaseEvent>(EventCode.EndScanPhase, e => _applier.Apply(e));
+            _receiver.On<ScanTargetSelectedEvent>(EventCode.ScanTargetSelected, e => _applier.Apply(e));
+            _receiver.On<ScanResultEvent>(EventCode.ScanResult, e => _applier.Apply(e));
             _receiver.On<FinishingGameEvent>(EventCode.FinishingGame, e => _applier.Apply(e));
             _receiver.On<GameEndedEvent>(EventCode.GameEnded, e => _applier.Apply(e));
             _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => _applier.Apply(e));

@@ -1,4 +1,5 @@
 using R3;
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Enums;
@@ -8,6 +9,7 @@ using Tetrage.Network.Gameplay;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
 using Tetrage.Core.Contracts;
+using NetworkDto = Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core
 {
@@ -22,7 +24,14 @@ namespace Tetrage.Core
         private readonly IdRegistry<PlayerId, Player> _playerRegistry;
         private readonly TurnGate _turnGate;
         private readonly GameContext _gameContext;
+        private readonly INetworkBroadcaster _broadcaster;
+        private readonly IPlayerIdMapper _playerIdMapper;
+        private readonly SequenceService _sequence;
+        private readonly IScanTargetSelector _scanTargetSelector;
+        private readonly bool _isHost;
         private CompositeDisposable _disposables = new();
+        private bool _isScanPhaseActive;
+        private IReadOnlyList<PlayerId> _pendingWinnerPlayerIds = new List<PlayerId>();
 
         // 受信したプレイヤーの並び順（GameStartedで確定）
         public IReadOnlyList<Player> OrderedPlayers { get; private set; }
@@ -32,13 +41,23 @@ namespace Tetrage.Core
             IdRegistry<PileId, CardPile> pileRegistry,
             IdRegistry<PlayerId, Player> playerRegistry,
             TurnGate turnGate,
-            IGameContext gameContext)
+            IGameContext gameContext,
+            INetworkBroadcaster broadcaster,
+            IPlayerIdMapper playerIdMapper,
+            SequenceService sequence,
+            IScanTargetSelector scanTargetSelector,
+            bool isHost)
         {
             _cardRegistry = cardRegistry;
             _pileRegistry = pileRegistry;
             _playerRegistry = playerRegistry;
             _turnGate = turnGate;
             _gameContext = gameContext as GameContext;
+            _broadcaster = broadcaster;
+            _playerIdMapper = playerIdMapper;
+            _sequence = sequence;
+            _scanTargetSelector = scanTargetSelector;
+            _isHost = isHost;
 
             Initialize(_gameContext.Events);
         }
@@ -86,6 +105,14 @@ namespace Tetrage.Core
 
             eventBus.ScanPhaseEnded
                 .Subscribe(OnScanPhaseEnded)
+                .AddTo(_disposables);
+
+            eventBus.ScanTargetSelected
+                .Subscribe(OnScanTargetSelected)
+                .AddTo(_disposables);
+
+            eventBus.ScanResultReceived
+                .Subscribe(OnScanResultReceived)
                 .AddTo(_disposables);
 
             eventBus.FinishingGame
@@ -307,22 +334,77 @@ namespace Tetrage.Core
 
         private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)
         {
-            // 空実装: フェーズ開始のUI反映などは将来追加
+            _isScanPhaseActive = true;
+
+            if (_isHost)
+            {
+                Debug.Log("GameplayDomainEventHandler: ScanPhase開始（Host）");
+                return;
+            }
+
+            HandleGuestScanSelectionAsync().Forget();
         }
 
         private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
         {
-            // 空実装: フェーズ終了のUI反映などは将来追加
+            _isScanPhaseActive = false;
+            Debug.Log("GameplayDomainEventHandler: ScanPhase終了");
+            // TODO(UI): ScanPhase終了に合わせて偵察UIを閉じる。
+        }
+
+        private void OnScanTargetSelected(DomainEvents.ScanTargetSelectedEvent e)
+        {
+            if (!_isHost) return;
+            Debug.Log($"GameplayDomainEventHandler: ScanTargetSelected受信 actor={e.ActorPlayerId}, target={e.SelectedTargetPlayerId}");
+        }
+
+        private void OnScanResultReceived(DomainEvents.ScanResultReceivedEvent e)
+        {
+            if (_isHost) return;
+            Debug.Log($"GameplayDomainEventHandler: ScanResult受信 target={e.TargetPlayerId}, suit={e.TargetSuit}");
+            // TODO(UI): ローカルプレイヤー専用の偵察結果UIを表示する。
         }
 
         private void OnFinishingGame(DomainEvents.FinishingGameEvent e)
         {
-            // 空実装: ゲーム終了処理開始のロジックは将来追加
+            _pendingWinnerPlayerIds = e.WinnerPlayerIds ?? new List<PlayerId>();
+            Debug.Log($"GameplayDomainEventHandler: FinishingGame受信 勝者候補数={_pendingWinnerPlayerIds.Count}");
+            // TODO(UI): リザルト演出開始前のフェード/カットインをここで開始する。
         }
 
         private void OnGameEnded(DomainEvents.GameEndedEvent e)
         {
-            // 空実装: ゲーム終了のロジックは将来追加
+            _isScanPhaseActive = false;
+            _pendingWinnerPlayerIds = e.WinnerPlayerIds ?? _pendingWinnerPlayerIds;
+            Debug.Log($"GameplayDomainEventHandler: GameEnded受信 勝者数={_pendingWinnerPlayerIds?.Count ?? 0}");
+            // TODO(Scene): GameManager経由でResultSceneへ遷移し、完了後にTitleへ戻す。
+        }
+
+        private async UniTaskVoid HandleGuestScanSelectionAsync()
+        {
+            if (_isHost || !_isScanPhaseActive) return;
+            if (_gameContext?.UserPlayer == null || _scanTargetSelector == null || _broadcaster == null || _playerIdMapper == null) return;
+
+            var self = _gameContext.UserPlayer;
+            var candidates = _gameContext.Players
+                .Where(player => player.Id != self.Id)
+                .ToList();
+            if (candidates.Count == 0) return;
+
+            // TODO(UI): ここで候補プレイヤー選択UIを表示し、選択結果を受け取る。
+            var selectedTarget = await _scanTargetSelector.SelectTargetAsync(self, candidates);
+            if (selectedTarget == null) return;
+
+            if (!_playerIdMapper.TryGetActorNumber(self.Id, out var selfActorNumber)) return;
+            if (!_playerIdMapper.TryGetActorNumber(selectedTarget.Id, out var selectedActorNumber)) return;
+
+            var payload = new NetworkDto.ScanTargetSelectedEvent
+            {
+                sequence = _sequence?.NextSequence() ?? 0,
+                actorPlayerId = selfActorNumber,
+                selectedTargetActorNumber = selectedActorNumber
+            };
+            _broadcaster.Raise(EventCode.ScanTargetSelected, payload);
         }
 
         #endregion

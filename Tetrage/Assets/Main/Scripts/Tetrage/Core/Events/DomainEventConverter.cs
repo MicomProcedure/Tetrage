@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Ids;
+using Tetrage.Core.Enums;
 using Tetrage.Network.Gameplay;
 using UnityEngine;
 
@@ -219,6 +220,50 @@ namespace Tetrage.Core.Events
             return new ScanPhaseEndedEvent(
                 sequence: dto.sequence,
                 stateVersion: dto.stateVersion
+            );
+        }
+
+        /// <summary>
+        /// ScanTargetSelectedEvent (DTO) → ScanTargetSelectedEvent (Domain)
+        /// </summary>
+        public ScanTargetSelectedEvent ToDomain(Tetrage.Network.Gameplay.ScanTargetSelectedEvent dto)
+        {
+            if (!_playerIdMapper.TryGetPlayerId(dto.actorPlayerId, out var actorPlayerId))
+            {
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.actorPlayerId} のPlayerIdマッピングが見つかりません（ScanTargetSelected.actor）");
+            }
+
+            if (!_playerIdMapper.TryGetPlayerId(dto.selectedTargetActorNumber, out var selectedTargetPlayerId))
+            {
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.selectedTargetActorNumber} のPlayerIdマッピングが見つかりません（ScanTargetSelected.target）");
+            }
+
+            return new ScanTargetSelectedEvent(
+                sequence: dto.sequence,
+                actorPlayerId: actorPlayerId,
+                selectedTargetPlayerId: selectedTargetPlayerId,
+                stateVersion: 0
+            );
+        }
+
+        /// <summary>
+        /// ScanResultEvent (DTO) → ScanResultReceivedEvent (Domain)
+        /// </summary>
+        public ScanResultReceivedEvent ToDomain(Tetrage.Network.Gameplay.ScanResultEvent dto)
+        {
+            if (!_playerIdMapper.TryGetPlayerId(dto.targetActorNumber, out var targetPlayerId))
+            {
+                throw new InvalidOperationException(
+                    $"DomainEventConverter: ActorNumber {dto.targetActorNumber} のPlayerIdマッピングが見つかりません（ScanResult.target）");
+            }
+
+            return new ScanResultReceivedEvent(
+                sequence: dto.sequence,
+                targetPlayerId: targetPlayerId,
+                targetSuit: (Suit)dto.targetSuit,
+                stateVersion: 0
             );
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
 
 namespace Tetrage.Network.Gameplay
@@ -85,6 +86,19 @@ namespace Tetrage.Network.Gameplay
                 stateVersion = _seq.NextStateVersion(),
             };
             _broadcaster.Raise(EventCode.EndScanPhase, e);
+        }
+
+        public void PublishScanResultToActor(PlayerId receiverPlayerId, PlayerId targetPlayerId, Suit targetSuit)
+        {
+            var receiverActorNumber = GetActorNumber(receiverPlayerId);
+            var targetActorNumber = GetActorNumber(targetPlayerId);
+            var e = new ScanResultEvent
+            {
+                sequence = _seq.NextSequence(),
+                targetActorNumber = targetActorNumber,
+                targetSuit = (int)targetSuit,
+            };
+            _broadcaster.RaiseToActor(EventCode.ScanResult, e, receiverActorNumber);
         }
 
         public void PublishFinishingGame(List<PlayerId> winnerPlayerIds)

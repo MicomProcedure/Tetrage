@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7163736901932919590}
   - component: {fileID: 8129540638083541530}
   - component: {fileID: 6262279904972623621}
+  - component: {fileID: 1301985651417744481}
   m_Layer: 0
   m_Name: GameSceneDebugEntry
   m_TagString: Untagged
@@ -47,11 +48,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _enableDebugMode: 1
   _playerCount: 4
-  _networkMode: 2
+  _cardCountPerSuit: 13
+  _suitTypeCount: 4
+  _networkMode: 0
   _localPlayerIndex: 0
-  _autoStartGame: 0
+  _realPhotonRoomName: Tetrage_DebugRoom
+  _useJoinOrCreateRoom: 1
+  _realPhotonUnnamedMainUsesCreateRoom: 1
+  _realPhotonRequiredPlayerCount: 4
+  _realPhotonConnectTimeoutSec: 20
+  _realPhotonJoinRoomTimeoutSec: 20
+  _realPhotonWaitPlayersTimeoutSec: 180
+  _autoStartGame: 1
   _randomSeed: -1
   _playerDebugSettings: {fileID: 6262279904972623621}
+  _networkDebugger: {fileID: 1301985651417744481}
+  _mppmShareInspectorSnapshotAcrossProcesses: 1
 --- !u!114 &6262279904972623621
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,4 +76,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 923d0a5c7c44e9940a4b409035d65bad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _debugPlayerInfos: []
+  _debugPlayerInfos:
+  - PlayerName: Player1
+    PlayerId: 1
+    PlayerType: 0
+    IsUserPlayer: 1
+    IconIndex: 0
+    SetInitialCards: 0
+    TargetCard:
+      Suit: 0
+      Number: 1
+    HandCards:
+    - Suit: 0
+      Number: 2
+    - Suit: 0
+      Number: 3
+    - Suit: 0
+      Number: 4
+  - PlayerName: Player2
+    PlayerId: 2
+    PlayerType: 0
+    IsUserPlayer: 0
+    IconIndex: 1
+    SetInitialCards: 0
+    TargetCard:
+      Suit: 1
+      Number: 0
+    HandCards: []
+  - PlayerName: Player3
+    PlayerId: 3
+    PlayerType: 0
+    IsUserPlayer: 0
+    IconIndex: 2
+    SetInitialCards: 0
+    TargetCard:
+      Suit: 2
+      Number: 1
+    HandCards: []
+  - PlayerName: Player4
+    PlayerId: 4
+    PlayerType: 0
+    IsUserPlayer: 0
+    IconIndex: 3
+    SetInitialCards: 0
+    TargetCard:
+      Suit: 3
+      Number: 1
+    HandCards: []
+--- !u!114 &1301985651417744481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4691975318676478442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39b6be031520040d6a824627dbb1a0da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableDebugEvents: 1
+  _targetType: 0
+  _debugEventCode: 20
+  _debugJsonPayload: "{\n    \"sequence\": 0,\n    \"clientSequence\": 0,\n    \"actorPlayerId\":
+    1,\n    \"actionType\": 0,\n    \"accepted\": true,\n    \"reason\": \"\",\n   
+    \"targetCardIds\": [1],\n    \"actionStatusInt\": 0\n}"
+  _sendToAll: 1
+  _targetActorNumbers: 

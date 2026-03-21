@@ -98,3 +98,5 @@ Tetrage/AGENTS.md
 
 # git worktrees
 .worktrees/
+Tetrage/Assets/Main/Scripts/tmp/
+Tetrage/Assets/Main/Scripts/tmp.meta
