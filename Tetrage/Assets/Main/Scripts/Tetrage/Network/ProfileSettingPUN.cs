@@ -1,5 +1,4 @@
 using Photon.Pun;
-using Tetrage.Managers;
 using UnityEngine;
 using Tetrage.Title;
 
@@ -19,6 +18,8 @@ namespace Tetrage.Network
 
         #region Private Fields
         
+        private const string PlayerProfileSaveKey = "PlayerProfile";
+
         // プロパティ設定済みフラグ
         private bool isPropertiesSet = false;
         
@@ -31,19 +32,41 @@ namespace Tetrage.Network
         /// </summary>
         public void SetPlayerProperties()
         {
-            // 既に設定済みの場合はスキップ
-            if (isPropertiesSet && PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey("PlayerName"))
+            var data = ResolveLocalProfileData();
+            ApplyPlayerProfileDataToPhoton(data);
+            isPropertiesSet = true;
+            Debug.Log($"プレイヤープロパティを設定: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
+        }
+
+        /// <summary>
+        /// ローカル保存直後など、部屋にいるときだけPhotonへプロフィールを再送する。
+        /// </summary>
+        public void PushProfileToPhotonIfInRoom()
+        {
+            if (!PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null)
             {
-                Debug.Log("プレイヤープロパティは既に設定済みです。スキップします。");
                 return;
             }
 
             var data = ResolveLocalProfileData();
+            ApplyPlayerProfileDataToPhoton(data);
+            isPropertiesSet = true;
+            Debug.Log($"[Push] プレイヤープロパティを更新: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
+        }
 
-            // NickNameも設定
+        /// <summary>
+        /// <see cref="PlayerProfileManager.SaveProfile"/> などから呼ぶ。シーンに <see cref="ProfileSettingPUN"/> が無ければ何もしない。
+        /// </summary>
+        public static void TryPushProfileToPhotonIfInRoom()
+        {
+            var pun = FindFirstObjectByType<ProfileSettingPUN>();
+            pun?.PushProfileToPhotonIfInRoom();
+        }
+
+        private static void ApplyPlayerProfileDataToPhoton(PlayerProfileData data)
+        {
             PhotonNetwork.NickName = data.PlayerName;
 
-            // CustomPropertiesに設定
             ExitGames.Client.Photon.Hashtable properties = new ExitGames.Client.Photon.Hashtable
             {
                 { "IconIndex", data.IconIndex },
@@ -51,8 +74,6 @@ namespace Tetrage.Network
             };
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(properties);
-            isPropertiesSet = true;
-            Debug.Log($"プレイヤープロパティを設定: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
         }
         
         #endregion
@@ -60,17 +81,6 @@ namespace Tetrage.Network
         #region Private Helpers
         private PlayerProfileData ResolveLocalProfileData()
         {
-            var app = ApplicationManager.Instance;
-            var localSessionPlayer = app?.PlayerSession?.LocalPlayer;
-            if (localSessionPlayer != null)
-            {
-                return new PlayerProfileData
-                {
-                    PlayerName = localSessionPlayer.PlayerName,
-                    IconIndex = localSessionPlayer.IconIndex,
-                };
-            }
-
             if (profileManager == null)
             {
                 profileManager = FindFirstObjectByType<PlayerProfileManager>();
@@ -79,14 +89,40 @@ namespace Tetrage.Network
             if (profileManager != null)
             {
                 profileManager.LoadProfile();
-                if (profileManager.Data != null)
-                {
-                    return profileManager.Data;
-                }
+                return profileManager.Data;
+            }
+
+            var fromPrefs = TryLoadProfileFromPlayerPrefs();
+            if (fromPrefs != null)
+            {
+                return fromPrefs;
             }
 
             Debug.LogWarning("ProfileDataが存在しないためデフォルト値を使用します");
             return new PlayerProfileData();
+        }
+
+        private static PlayerProfileData TryLoadProfileFromPlayerPrefs()
+        {
+            if (!PlayerPrefs.HasKey(PlayerProfileSaveKey))
+            {
+                return null;
+            }
+
+            var json = PlayerPrefs.GetString(PlayerProfileSaveKey);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            try
+            {
+                return JsonUtility.FromJson<PlayerProfileData>(json);
+            }
+            catch
+            {
+                return null;
+            }
         }
         #endregion
 

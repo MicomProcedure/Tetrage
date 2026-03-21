@@ -1,4 +1,5 @@
 using System;
+using Tetrage.Network;
 using UnityEngine;
 
 namespace Tetrage.Title
@@ -88,6 +89,8 @@ namespace Tetrage.Title
         PlayerPrefs.SetString(SaveKey, json);
         PlayerPrefs.Save();
         Debug.Log($"プロファイル保存成功: IconIndex={Data.IconIndex}, PlayerName={Data.PlayerName}");
+
+        ProfileSettingPUN.TryPushProfileToPhotonIfInRoom();
     }
 
     public void UpdateProfile(int iconIndex, string playerName)
