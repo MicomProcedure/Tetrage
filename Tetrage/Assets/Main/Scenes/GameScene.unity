@@ -1009,6 +1009,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _networkMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
       propertyPath: _autoStartGame
       value: 1
       objectReference: {fileID: 0}
