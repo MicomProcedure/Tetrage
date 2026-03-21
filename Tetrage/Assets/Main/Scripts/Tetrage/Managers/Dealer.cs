@@ -502,7 +502,7 @@ namespace Tetrage.Managers
                 return false;
             }
 
-            var winners = BuildWinnersFromActionResult(descriptor, actionResult);
+            var winners = BuildWinnersFromActionResult(descriptor);
             _messenger?.PublishFinishingGame(winners);
             _messenger?.PublishGameEnded(winners);
             _isGameFinished = true;
@@ -521,44 +521,89 @@ namespace Tetrage.Managers
             return false;
         }
 
-        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptor descriptor, ActionResult actionResult)
+        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptor descriptor)
         {
-            var winners = new List<PlayerId>();
-
-            if (descriptor.actionStatusInt == 1)
+            if (descriptor.actionType == ActionType.TetrageSolo)
             {
-                winners.Add(new PlayerId(descriptor.actorPlayerId));
-                return winners;
+                return EvaluateSoloWinners(descriptor.actorPlayerId);
             }
 
-            // statusInt だけで勝者を表現できないため、reasonから補助情報を抽出する。
-            var reason = actionResult?.ErrorMessage ?? string.Empty;
-            var reasonNumbers = System.Text.RegularExpressions.Regex
-                .Matches(reason, @"\d+")
-                .Select(match => int.Parse(match.Value))
-                .Distinct()
+            if (descriptor.actionType == ActionType.TetrageMulti)
+            {
+                return EvaluateMultiWinners(descriptor.actorPlayerId, descriptor.targetCardIds);
+            }
+
+            return new List<PlayerId>();
+        }
+
+        private List<PlayerId> EvaluateSoloWinners(int actorPlayerId)
+        {
+            var actorId = new PlayerId(actorPlayerId);
+            if (!TryResolvePlayerById(actorId, out var actorPlayer))
+            {
+                return new List<PlayerId>();
+            }
+
+            var actorCard = actorPlayer.Target.FirstOrDefault();
+            if (actorCard == null)
+            {
+                return new List<PlayerId>();
+            }
+
+            var matchedPlayerIds = _gameContext.Players
+                .Where(player => player.Id != actorId)
+                .Where(player =>
+                {
+                    var card = player.Target.FirstOrDefault();
+                    return card != null && card.Suit == actorCard.Suit;
+                })
+                .Select(player => player.Id)
                 .ToList();
 
-            foreach (var value in reasonNumbers)
+            if (matchedPlayerIds.Count == 0)
             {
-                var candidateId = new PlayerId(value);
-                if (_playerIdMapper != null && _playerIdMapper.TryGetPlayerId(value, out var mappedPlayerId))
-                {
-                    candidateId = mappedPlayerId;
-                }
+                return new List<PlayerId> { actorId };
+            }
 
-                if (TryResolvePlayerById(candidateId, out _))
+            var losers = new HashSet<PlayerId>(matchedPlayerIds) { actorId };
+            return _gameContext.Players
+                .Where(player => !losers.Contains(player.Id))
+                .Select(player => player.Id)
+                .ToList();
+        }
+
+        private List<PlayerId> EvaluateMultiWinners(int actorPlayerId, CardId[] selectedTargetCardIds)
+        {
+            var actorId = new PlayerId(actorPlayerId);
+            if (!TryResolvePlayerById(actorId, out var actorPlayer))
+            {
+                return new List<PlayerId>();
+            }
+
+            var actorCard = actorPlayer.Target.FirstOrDefault();
+            if (actorCard == null)
+            {
+                return new List<PlayerId>();
+            }
+
+            if (selectedTargetCardIds != null && selectedTargetCardIds.Length > 0)
+            {
+                var selectedCardId = selectedTargetCardIds[0];
+                var selectedPlayer = _gameContext.Players
+                    .FirstOrDefault(player =>
+                    {
+                        if (player.Id == actorId) return false;
+                        var card = player.Target.FirstOrDefault();
+                        return card != null && card.Id == selectedCardId;
+                    });
+
+                var selectedCard = selectedPlayer?.Target.FirstOrDefault();
+                if (selectedPlayer != null && selectedCard != null && selectedCard.Suit == actorCard.Suit)
                 {
-                    winners.Add(candidateId);
+                    return new List<PlayerId> { actorId, selectedPlayer.Id };
                 }
             }
 
-            if (winners.Count > 0)
-            {
-                return winners;
-            }
-
-            var actorId = new PlayerId(descriptor.actorPlayerId);
             return _gameContext.Players
                 .Where(player => player.Id != actorId)
                 .Select(player => player.Id)

@@ -1,6 +1,8 @@
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
+using Tetrage.Core.Contracts;
 using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Tetrage.Network.Gameplay
@@ -35,6 +37,31 @@ namespace Tetrage.Network.Gameplay
                 .ToArray();
         }
 
+        private IPlayer ResolvePlayer(int actorNumber)
+        {
+            if (_playerIdMapper == null || _netCtl?.GameContext?.Players == null)
+            {
+                return null;
+            }
+
+            if (!_playerIdMapper.TryGetPlayerId(actorNumber, out var playerId))
+            {
+                return null;
+            }
+
+            return _netCtl.GameContext.Players.FirstOrDefault(player => player.Id == playerId);
+        }
+
+        private Tetrage.Models.Card GetTargetCard(IPlayer player)
+        {
+            return player?.Target?.FirstOrDefault();
+        }
+
+        private string BuildWinnersReason(IEnumerable<int> winnerActorNumbers)
+        {
+            return $"winners:{string.Join(",", winnerActorNumbers)}";
+        }
+
         public void Process(ActionRequestedEvent e)
         {
             var seq = _netCtl.Sequence;
@@ -46,6 +73,9 @@ namespace Tetrage.Network.Gameplay
                     break;
                 case ActionType.TetrageSolo:
                     ProcessTetrageSolo(e, seq);
+                    break;
+                case ActionType.TetrageMulti:
+                    ProcessTetrageMulti(e, seq);
                     break;
                 default:
                     ProcessDefault(e, seq);
@@ -117,6 +147,52 @@ namespace Tetrage.Network.Gameplay
 
         private void ProcessTetrageSolo(ActionRequestedEvent e, SequenceService seq)
         {
+            var requester = ResolvePlayer(e.actorPlayerId);
+            var requesterCard = GetTargetCard(requester);
+            if (requester == null || requesterCard == null)
+            {
+                var fallback = new ActionResultEvent
+                {
+                    sequence = seq.NextSequence(),
+                    clientSequence = e.clientSequence,
+                    actorPlayerId = e.actorPlayerId,
+                    actionType = e.actionType,
+                    accepted = false,
+                    reason = "勝利判定に必要なターゲット情報を取得できません",
+                    targetCardIds = e.targetCardIds,
+                    actionStatusInt = 0,
+                };
+                _netCtl.Broadcaster.Raise(EventCode.ActionResult, fallback);
+                return;
+            }
+
+            var matchedActorNumbers = _netCtl.GameContext.Players
+                .Where(player => player.PlayerId != requester.PlayerId)
+                .Where(player =>
+                {
+                    var card = GetTargetCard(player);
+                    return card != null && card.Suit == requesterCard.Suit;
+                })
+                .Select(player =>
+                {
+                    return _playerIdMapper.TryGetActorNumber(player.Id, out var actorNumber) ? actorNumber : -1;
+                })
+                .Where(actor => actor > 0)
+                .Distinct()
+                .ToList();
+
+            var isSuccess = matchedActorNumbers.Count == 0;
+            var winnerActorNumbers = new List<int>();
+            if (isSuccess)
+            {
+                winnerActorNumbers.Add(e.actorPlayerId);
+            }
+            else
+            {
+                var loserSet = new HashSet<int>(matchedActorNumbers) { e.actorPlayerId };
+                winnerActorNumbers.AddRange(_playerIdMapper.GetAllActorNumbers().Where(actor => !loserSet.Contains(actor)));
+            }
+
             var res = new ActionResultEvent
             {
                 sequence = seq.NextSequence(),
@@ -124,9 +200,71 @@ namespace Tetrage.Network.Gameplay
                 actorPlayerId = e.actorPlayerId,
                 actionType = e.actionType,
                 accepted = true,
-                reason = e.actionStatusInt == 1 ? $"{e.actorPlayerId} 勝利" : "敗北",
+                reason = BuildWinnersReason(winnerActorNumbers),
                 targetCardIds = e.targetCardIds,
-                actionStatusInt = e.actionStatusInt,
+                actionStatusInt = isSuccess ? 1 : 0,
+            };
+            _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
+        }
+
+        private void ProcessTetrageMulti(ActionRequestedEvent e, SequenceService seq)
+        {
+            var requester = ResolvePlayer(e.actorPlayerId);
+            var requesterCard = GetTargetCard(requester);
+            if (requester == null || requesterCard == null)
+            {
+                var fallback = new ActionResultEvent
+                {
+                    sequence = seq.NextSequence(),
+                    clientSequence = e.clientSequence,
+                    actorPlayerId = e.actorPlayerId,
+                    actionType = e.actionType,
+                    accepted = false,
+                    reason = "勝利判定に必要なターゲット情報を取得できません",
+                    targetCardIds = e.targetCardIds,
+                    actionStatusInt = 0,
+                };
+                _netCtl.Broadcaster.Raise(EventCode.ActionResult, fallback);
+                return;
+            }
+
+            IPlayer selectedPlayer = null;
+            if (e.targetCardIds != null && e.targetCardIds.Length > 0)
+            {
+                var selectedCardId = e.targetCardIds[0];
+                selectedPlayer = _netCtl.GameContext.Players
+                    .FirstOrDefault(player =>
+                    {
+                        if (player.PlayerId == requester.PlayerId) return false;
+                        var targetCard = GetTargetCard(player);
+                        return targetCard != null && targetCard.Id.Value == selectedCardId;
+                    });
+            }
+
+            var selectedCard = GetTargetCard(selectedPlayer);
+            var isSuccess = selectedCard != null && selectedCard.Suit == requesterCard.Suit;
+
+            var winnerActorNumbers = new List<int>();
+            if (isSuccess && _playerIdMapper.TryGetActorNumber(selectedPlayer.Id, out var selectedActorNumber))
+            {
+                winnerActorNumbers.Add(e.actorPlayerId);
+                winnerActorNumbers.Add(selectedActorNumber);
+            }
+            else
+            {
+                winnerActorNumbers.AddRange(GetOtherActorNumbers(e.actorPlayerId));
+            }
+
+            var res = new ActionResultEvent
+            {
+                sequence = seq.NextSequence(),
+                clientSequence = e.clientSequence,
+                actorPlayerId = e.actorPlayerId,
+                actionType = e.actionType,
+                accepted = true,
+                reason = BuildWinnersReason(winnerActorNumbers.Distinct()),
+                targetCardIds = e.targetCardIds,
+                actionStatusInt = isSuccess ? 1 : 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
