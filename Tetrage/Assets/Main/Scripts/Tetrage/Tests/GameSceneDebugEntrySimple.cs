@@ -1,5 +1,7 @@
 using UnityEngine;
 #if UNITY_EDITOR
+using System;
+using System.IO;
 using Tetrage.Tests.PlayMode;
 using Cysharp.Threading.Tasks;
 using Tetrage.Network;
@@ -21,6 +23,7 @@ namespace Tetrage.Tests
     /// GameSceneを直接起動した時のDebugエントリポイント（シンプル版）。
     /// エディタ実行時のみ動作し、ビルドには影響しない。
     /// ApplicationManagerが存在する場合は自動的に自己無効化する。
+    /// MPPM 時はメインEditorのインスペクタ（NetworkMode 等）を Library 経由で仮想Playerへ同期できる。
     /// </summary>
     public class GameSceneDebugEntrySimple : MonoBehaviour
     {
@@ -40,7 +43,7 @@ namespace Tetrage.Tests
         [SerializeField, Range(1, 4)] private int _suitTypeCount = InGameConsts.DEFAULT_INITIAL_SUITS.Length;
 
         [Tooltip("ネットワークモード")]
-        [SerializeField] private NetworkMode _networkMode = NetworkMode.LogicInjection;
+        [SerializeField] private NetworkMode _networkMode = NetworkMode.RealPhoton;
 
         [Tooltip("ローカルプレイヤーのインデックス（0始まり）")]
         [SerializeField, Range(0, SettingConsts.MAX_PLAYER_COUNT - 1)] private int _localPlayerIndex = 0;
@@ -49,23 +52,13 @@ namespace Tetrage.Tests
         [Tooltip("RealPhoton時に参加するルーム名")]
         [SerializeField] private string _realPhotonRoomName = "Tetrage_DebugRoom";
 
-        private enum RealPhotonDebugRole
-        {
-            Auto = 0,
-            Host = 1,
-            Guest = 2
-        }
-
-        [Tooltip("RealPhotonでのロール。Hostを明示するとCreateRoom運用に切り替え可能")]
-        [SerializeField] private RealPhotonDebugRole _realPhotonDebugRole = RealPhotonDebugRole.Auto;
-
-        [Tooltip("RealPhotonでHostロール時にCreateRoomを優先し、Host判定のぶれを防ぐ")]
-        [SerializeField] private bool _realPhotonHostUsesCreateRoom = true;
-
-        [Tooltip("RealPhoton時にJoinOrCreateRoomを使う")]
+        [Tooltip("RealPhoton時にJoinOrCreateRoomを使う（単体エディタPlay時のフォールバック。Multi-Play時は内部でHost/Guestを振り分ける）")]
         [SerializeField] private bool _useJoinOrCreateRoom = true;
 
-        [Tooltip("RealPhoton初期化前に待機する最小プレイヤー数")]
+        [Tooltip("MPPMでメインEditorに -name が付かず ReadOnlyTags も空のとき CreateRoom する（デフォルトオン: Master取り合い回避。単体エディタで同じRoomを JoinOrCreate したい・CreateRoom が衝突する場合はオフ）")]
+        [SerializeField] private bool _realPhotonUnnamedMainUsesCreateRoom = true;
+
+        [Tooltip("エディタ上の整合用（OnValidate で _playerCount と同期）。待機人数は _playerCount のみを使用する（MPPM でインスタンス間の値が食い違うとメインだけ待ち続ける非対称が起きるため）")]
         [SerializeField, Range(SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT)] private int _realPhotonRequiredPlayerCount = 2;
 
         [Tooltip("Photon接続待機タイムアウト（秒）")]
@@ -74,8 +67,8 @@ namespace Tetrage.Tests
         [Tooltip("Photon入室待機タイムアウト（秒）")]
         [SerializeField, Min(1f)] private float _realPhotonJoinRoomTimeoutSec = 20f;
 
-        [Tooltip("必要人数待機タイムアウト（秒）")]
-        [SerializeField, Min(1f)] private float _realPhotonWaitPlayersTimeoutSec = 60f;
+        [Tooltip("必要人数待機タイムアウト（秒）。MPPMでは仮想Playerの接続がメインより遅れることが多いため、4人待ちなら120〜300秒を推奨")]
+        [SerializeField, Min(1f)] private float _realPhotonWaitPlayersTimeoutSec = 180f;
 
         [Tooltip("初期化後に自動的にゲームを開始する")]
         [SerializeField] private bool _autoStartGame = false;
@@ -90,7 +83,21 @@ namespace Tetrage.Tests
         [Tooltip("ネットワークイベントデバッガ（任意）")]
         [SerializeField] private NetworkEventDebugger _networkDebugger;
 
+        [Header("MPPM インスペクタ同期")]
+        [Tooltip("オン時: メインEditorのPlay開始で Library にスナップショットを書き、仮想Playerプロセスが読み取って NetworkMode 等を揃える（シーン上書きが仮想に届かない場合の対策）")]
+        [SerializeField] private bool _mppmShareInspectorSnapshotAcrossProcesses = true;
+
         private GameManager _gameManager;
+
+        /// <summary>
+        /// ApplicationManager 不在の直接 GameScene 起動時のみ、RealPhoton デバッグ中に PUN のシーン同期を一時的に無効化する。
+        /// </summary>
+        private bool _punAutoSyncSceneGuardActive;
+
+        /// <summary>
+        /// ガード適用前の <see cref="PhotonNetwork.AutomaticallySyncScene"/> を保持する。
+        /// </summary>
+        private bool _punAutoSyncScenePrevious;
 
         private void Awake()
         {
@@ -101,11 +108,25 @@ namespace Tetrage.Tests
                 gameObject.SetActive(false);
                 return;
             }
+
+            TryPublishMppmInspectorSnapshotIfMainEditor();
+        }
+
+        /// <summary>
+        /// MPPM 等で同一シーンでもインスタンスごとにシリアライズ値がずれると、必要人数待ちだけ非対称になる。
+        /// _realPhotonRequiredPlayerCount は _playerCount に揃える。
+        /// </summary>
+        private void OnValidate()
+        {
+            _playerCount = Mathf.Clamp(_playerCount, SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT);
+            _realPhotonRequiredPlayerCount = _playerCount;
         }
 
         private async void Start()
         {
             // Awakeで無効化されている場合はここには到達しない
+
+            await TryConsumeMppmInspectorSnapshotIfVirtualPlayerAsync();
 
             if (!_enableDebugMode)
             {
@@ -235,10 +256,255 @@ namespace Tetrage.Tests
             }
         }
 
+        #region MPPM MainEditor インスペクタ同期
+
+        [Serializable]
+        private sealed class MppmGameSceneDebugSnapshot
+        {
+            public string formatVersion = "1";
+            public bool enableDebugMode;
+            public int playerCount;
+            public int cardCountPerSuit;
+            public int suitTypeCount;
+            public int networkMode;
+            public string realPhotonRoomName = "";
+            public bool useJoinOrCreateRoom;
+            public bool realPhotonUnnamedMainUsesCreateRoom;
+            public int realPhotonRequiredPlayerCount;
+            public float realPhotonConnectTimeoutSec;
+            public float realPhotonJoinRoomTimeoutSec;
+            public float realPhotonWaitPlayersTimeoutSec;
+            public bool autoStartGame;
+            public int randomSeed;
+        }
+
+        private const string MppmSnapshotFormatVersion = "1";
+
+        private static string GetMppmSnapshotAbsolutePath()
+        {
+            try
+            {
+                string projectRoot = Directory.GetParent(Application.dataPath)?.FullName;
+                return string.IsNullOrEmpty(projectRoot)
+                    ? null
+                    : Path.Combine(projectRoot, "Library", "TetrageMppmGameSceneDebugEntry.snapshot.json");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void TryPublishMppmInspectorSnapshotIfMainEditor()
+        {
+            if (!_mppmShareInspectorSnapshotAcrossProcesses)
+            {
+                return;
+            }
+
+            if (!TryGetMultiplayerPlayModeMainEditor(out var isMain) || !isMain)
+            {
+                return;
+            }
+
+            string path = GetMppmSnapshotAbsolutePath();
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            try
+            {
+                string dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                MppmGameSceneDebugSnapshot snap = BuildMppmSnapshotFromInspector();
+                File.WriteAllText(path, JsonUtility.ToJson(snap));
+                Debug.Log($"GameSceneDebugEntrySimple: MPPM用インスペクタスナップショットを保存しました ({path})");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"GameSceneDebugEntrySimple: スナップショット保存に失敗しました: {ex.Message}");
+            }
+        }
+
+        private MppmGameSceneDebugSnapshot BuildMppmSnapshotFromInspector()
+        {
+            return new MppmGameSceneDebugSnapshot
+            {
+                formatVersion = MppmSnapshotFormatVersion,
+                enableDebugMode = _enableDebugMode,
+                playerCount = _playerCount,
+                cardCountPerSuit = _cardCountPerSuit,
+                suitTypeCount = _suitTypeCount,
+                networkMode = (int)_networkMode,
+                realPhotonRoomName = _realPhotonRoomName ?? "",
+                useJoinOrCreateRoom = _useJoinOrCreateRoom,
+                realPhotonUnnamedMainUsesCreateRoom = _realPhotonUnnamedMainUsesCreateRoom,
+                realPhotonRequiredPlayerCount = _realPhotonRequiredPlayerCount,
+                realPhotonConnectTimeoutSec = _realPhotonConnectTimeoutSec,
+                realPhotonJoinRoomTimeoutSec = _realPhotonJoinRoomTimeoutSec,
+                realPhotonWaitPlayersTimeoutSec = _realPhotonWaitPlayersTimeoutSec,
+                autoStartGame = _autoStartGame,
+                randomSeed = _randomSeed
+            };
+        }
+
+        private async UniTask TryConsumeMppmInspectorSnapshotIfVirtualPlayerAsync()
+        {
+            if (!_mppmShareInspectorSnapshotAcrossProcesses)
+            {
+                return;
+            }
+
+            if (!TryGetMultiplayerPlayModeMainEditor(out var isMain) || isMain)
+            {
+                return;
+            }
+
+            string path = GetMppmSnapshotAbsolutePath();
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            for (var attempt = 0; attempt < 150; attempt++)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        DateTime writeTime = File.GetLastWriteTimeUtc(path);
+                        if ((DateTime.UtcNow - writeTime).TotalMinutes > 15d)
+                        {
+                            Debug.LogWarning(
+                                "GameSceneDebugEntrySimple: スナップショットが古すぎます（15分以上前）。メインEditorを再度Playしてください。");
+                            return;
+                        }
+
+                        string json = File.ReadAllText(path);
+                        var snap = JsonUtility.FromJson<MppmGameSceneDebugSnapshot>(json);
+                        if (snap == null || snap.formatVersion != MppmSnapshotFormatVersion)
+                        {
+                            Debug.LogWarning("GameSceneDebugEntrySimple: スナップショット形式が不正のため同期をスキップします。");
+                            return;
+                        }
+
+                        ApplyMppmInspectorSnapshot(snap);
+                        ApplyLocalPlayerIndexFromMppmPlayerTag();
+                        Debug.Log(
+                            $"GameSceneDebugEntrySimple: MPPM仮想PlayerへメインEditorのインスペクタを同期しました (NetworkMode={_networkMode}, Players={_playerCount})");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"GameSceneDebugEntrySimple: スナップショット読込失敗: {ex.Message}");
+                    return;
+                }
+
+                await UniTask.Delay(20);
+            }
+
+            Debug.LogWarning(
+                "GameSceneDebugEntrySimple: メインEditorのスナップショットが得られませんでした（メインを先にPlayするか、同期を有効にしてください）");
+        }
+
+        private void ApplyMppmInspectorSnapshot(MppmGameSceneDebugSnapshot s)
+        {
+            _enableDebugMode = s.enableDebugMode;
+            _playerCount = Mathf.Clamp(
+                s.playerCount,
+                SettingConsts.MIN_PLAYER_COUNT,
+                SettingConsts.MAX_PLAYER_COUNT);
+            _cardCountPerSuit = Mathf.Max(1, s.cardCountPerSuit);
+            _suitTypeCount = Mathf.Clamp(s.suitTypeCount, 1, 4);
+            if (Enum.IsDefined(typeof(NetworkMode), s.networkMode))
+            {
+                _networkMode = (NetworkMode)s.networkMode;
+            }
+
+            _realPhotonRoomName = string.IsNullOrEmpty(s.realPhotonRoomName)
+                ? "Tetrage_DebugRoom"
+                : s.realPhotonRoomName;
+            _useJoinOrCreateRoom = s.useJoinOrCreateRoom;
+            _realPhotonUnnamedMainUsesCreateRoom = s.realPhotonUnnamedMainUsesCreateRoom;
+            _realPhotonConnectTimeoutSec = Mathf.Max(1f, s.realPhotonConnectTimeoutSec);
+            _realPhotonJoinRoomTimeoutSec = Mathf.Max(1f, s.realPhotonJoinRoomTimeoutSec);
+            _realPhotonWaitPlayersTimeoutSec = Mathf.Max(1f, s.realPhotonWaitPlayersTimeoutSec);
+            _autoStartGame = s.autoStartGame;
+            _randomSeed = s.randomSeed;
+            OnValidate();
+        }
+
+        private void ApplyLocalPlayerIndexFromMppmPlayerTag()
+        {
+            if (!TryGetMultiplayerPlayModePlayerName(out var playerName) || string.IsNullOrEmpty(playerName))
+            {
+                return;
+            }
+
+            for (int i = 0; i < SettingConsts.MAX_PLAYER_COUNT; i++)
+            {
+                if (string.Equals(playerName, $"Player{i + 1}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _localPlayerIndex = i;
+                    return;
+                }
+            }
+        }
+
+        #endregion
+
         #region RealPhoton Debug
+
+        /// <summary>
+        /// ApplicationManager 経由でない GameScene 直起動では、<c>AutomaticallySyncScene</c> が有効だと
+        /// ルームのカレントシーン prop とビルドインデックスの不一致などで <c>PhotonNetwork.LoadLevel</c> が走り、
+        /// このシーンがアンロードされて GameManager が破棄されることがある。
+        /// 本番フロー（ApplicationManager あり）では触らない。
+        /// </summary>
+        private void ApplyPunAutoSyncSceneGuardIfDirectGameScenePlay()
+        {
+            if (ApplicationManager.Instance != null)
+            {
+                return;
+            }
+
+            if (_punAutoSyncSceneGuardActive)
+            {
+                return;
+            }
+
+            _punAutoSyncScenePrevious = PhotonNetwork.AutomaticallySyncScene;
+            if (_punAutoSyncScenePrevious)
+            {
+                Debug.Log(
+                    "GameSceneDebugEntrySimple: ApplicationManagerなしの直接起動のため PhotonNetwork.AutomaticallySyncScene をオフにします（ルームのシーン同期で GameScene が載せ替わるのを防ぐ）");
+            }
+
+            PhotonNetwork.AutomaticallySyncScene = false;
+            _punAutoSyncSceneGuardActive = true;
+        }
+
+        private void RestorePunAutoSyncSceneGuardIfNeeded()
+        {
+            if (!_punAutoSyncSceneGuardActive)
+            {
+                return;
+            }
+
+            PhotonNetwork.AutomaticallySyncScene = _punAutoSyncScenePrevious;
+            _punAutoSyncSceneGuardActive = false;
+        }
 
         private async UniTask EnsureRealPhotonReadyAsync()
         {
+            ApplyPunAutoSyncSceneGuardIfDirectGameScenePlay();
+
             if (!PhotonNetwork.IsConnected)
             {
                 Debug.Log("GameSceneDebugEntrySimple: Photonへ接続します");
@@ -252,48 +518,7 @@ namespace Tetrage.Tests
 
             if (!PhotonNetwork.InRoom)
             {
-                var roomName = string.IsNullOrWhiteSpace(_realPhotonRoomName)
-                    ? "Tetrage_DebugRoom"
-                    : _realPhotonRoomName.Trim();
-                var maxPlayers = (byte)Mathf.Clamp(_playerCount, SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT);
-                var role = _realPhotonDebugRole;
-
-                if (role == RealPhotonDebugRole.Host && _realPhotonHostUsesCreateRoom)
-                {
-                    var hostRoomOptions = new RoomOptions
-                    {
-                        MaxPlayers = maxPlayers,
-                        IsVisible = true,
-                        IsOpen = true
-                    };
-                    Debug.Log($"GameSceneDebugEntrySimple: HostロールでCreateRoomを実行します (Room: {roomName}, MaxPlayers: {maxPlayers})");
-                    PhotonNetwork.CreateRoom(roomName, hostRoomOptions, TypedLobby.Default);
-                }
-                else if (role == RealPhotonDebugRole.Guest)
-                {
-                    Debug.Log($"GameSceneDebugEntrySimple: GuestロールでJoinRoomを実行します (Room: {roomName})");
-                    PhotonNetwork.JoinRoom(roomName);
-                }
-                else
-
-                {
-                    if (_useJoinOrCreateRoom)
-                    {
-                        var options = new RoomOptions
-                        {
-                            MaxPlayers = maxPlayers,
-                            IsVisible = true,
-                            IsOpen = true
-                        };
-                        Debug.Log($"GameSceneDebugEntrySimple: JoinOrCreateRoomを実行します (Room: {roomName}, MaxPlayers: {maxPlayers})");
-                        PhotonNetwork.JoinOrCreateRoom(roomName, options, TypedLobby.Default);
-                    }
-                    else
-                    {
-                        Debug.Log($"GameSceneDebugEntrySimple: JoinRoomを実行します (Room: {roomName})");
-                        PhotonNetwork.JoinRoom(roomName);
-                    }
-                }
+                await EnterRealPhotonDebugRoomAsync();
             }
 
             await WaitUntilWithTimeout(
@@ -301,23 +526,170 @@ namespace Tetrage.Tests
                 _realPhotonJoinRoomTimeoutSec,
                 "Photon入室");
 
+            // 待機人数は _playerCount のみ（_realPhotonRequiredPlayerCount は OnValidate で同期済み想定だが、実行時もここを正とする）
             int requiredPlayerCount = Mathf.Clamp(
-                _realPhotonRequiredPlayerCount,
+                _playerCount,
                 SettingConsts.MIN_PLAYER_COUNT,
                 SettingConsts.MAX_PLAYER_COUNT);
 
+            Debug.Log(
+                $"GameSceneDebugEntrySimple: ルーム人数が {requiredPlayerCount} 人に達するまで待機します（最大 {_realPhotonWaitPlayersTimeoutSec:0.#}s）。基準は _playerCount のみ。");
+
             await WaitUntilWithTimeout(
-                () => PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= requiredPlayerCount,
+                () => RealPhotonRoomHasAtLeastPlayerCount(requiredPlayerCount),
                 _realPhotonWaitPlayersTimeoutSec,
-                $"必要人数({requiredPlayerCount})の参加");
+                $"必要人数({requiredPlayerCount})の参加",
+                BuildPhotonRoomPlayerCountProgress(requiredPlayerCount),
+                10f);
 
             LogRealPhotonRuntimeStatus("RealPhoton準備完了");
-            if (_realPhotonDebugRole == RealPhotonDebugRole.Host && !PhotonNetwork.IsMasterClient)
+            if (IsRealPhotonDebugHostInstance(out _) && !PhotonNetwork.IsMasterClient)
             {
-                Debug.LogWarning("GameSceneDebugEntrySimple: HostロールですがMasterClientではありません。GameManager.StartGameは実行されません。");
+                Debug.LogWarning("GameSceneDebugEntrySimple: メインEditor側（Host想定）ですがMasterClientではありません。GameManager.StartGameは実行されません。");
             }
 
             Debug.Log($"GameSceneDebugEntrySimple: RealPhoton準備完了 (Room: {PhotonNetwork.CurrentRoom?.Name}, Players: {PhotonNetwork.CurrentRoom?.PlayerCount ?? 0})");
+        }
+
+        /// <summary>
+        /// Multiplayer Play Mode 時は <c>-name</c> に応じて CreateRoom / JoinRoom を振り分ける。
+        /// 単体エディタPlay（<c>-name</c> なし）は従来どおり <see cref="_useJoinOrCreateRoom"/> に従う。
+        /// </summary>
+        private async UniTask EnterRealPhotonDebugRoomAsync()
+        {
+            var roomName = string.IsNullOrWhiteSpace(_realPhotonRoomName)
+                ? "Tetrage_DebugRoom"
+                : _realPhotonRoomName.Trim();
+            var maxPlayers = (byte)Mathf.Clamp(_playerCount, SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT);
+
+            // IsMainEditor は単体エディタでも true になり得るため、CreateRoom は -name=Player1 / ReadOnlyTags / 明示オプションのときだけ行う。
+            if (TryGetMultiplayerPlayModeMainEditor(out var isMainEditor))
+            {
+                bool hasCmdName = TryGetMultiplayerPlayModePlayerName(out var cmdPlayerName);
+                bool tagsNonEmpty = TryHasNonEmptyMppmReadOnlyTags();
+                Debug.Log(
+                    $"GameSceneDebugEntrySimple: MPPM CurrentPlayer.IsMainEditor={isMainEditor}, cmdLineName={(hasCmdName ? cmdPlayerName : "なし")}, readOnlyTagsNonEmpty={tagsNonEmpty}, unnamedMainCreateRoomOpt={_realPhotonUnnamedMainUsesCreateRoom}");
+
+                if (isMainEditor)
+                {
+                    bool createAsHost =
+                        (hasCmdName && string.Equals(cmdPlayerName, "Player1", System.StringComparison.OrdinalIgnoreCase))
+                        || (!hasCmdName && (tagsNonEmpty || _realPhotonUnnamedMainUsesCreateRoom));
+
+                    if (createAsHost)
+                    {
+                        var hostRoomOptions = new RoomOptions
+                        {
+                            MaxPlayers = maxPlayers,
+                            IsVisible = true,
+                            IsOpen = true
+                        };
+                        string reason = hasCmdName && string.Equals(cmdPlayerName, "Player1", System.StringComparison.OrdinalIgnoreCase)
+                            ? "-name=Player1"
+                            : tagsNonEmpty
+                                ? "ReadOnlyTags"
+                                : "インスペクタオプション(unnamedMainUsesCreateRoom)";
+                        Debug.Log($"GameSceneDebugEntrySimple: メインEditorとしてCreateRoomします（{reason}） (Room: {roomName}, MaxPlayers: {maxPlayers})");
+                        PhotonNetwork.CreateRoom(roomName, hostRoomOptions, TypedLobby.Default);
+                        return;
+                    }
+
+                    if (!hasCmdName)
+                    {
+                        Debug.LogWarning(
+                            "GameSceneDebugEntrySimple: メインEditorで -name が無く、ReadOnlyTags も空、CreateRoom オプションもオフです。単体Playとして JoinOrCreate/Join します。MPPM で Master が取れない場合はオプションをオンにするかシナリオでタグを付けてください。");
+                        EnterRealPhotonSingleEditorFallbackRoom(roomName, maxPlayers);
+                        return;
+                    }
+
+                    Debug.LogWarning(
+                        $"GameSceneDebugEntrySimple: メインEditorだが -name が '{cmdPlayerName}' のため JoinRoom を試みます (Room: {roomName})");
+                    PhotonNetwork.JoinRoom(roomName);
+                    return;
+                }
+
+                if (hasCmdName && IsMultiplayVirtualPlayerName(cmdPlayerName, out var staggerMs))
+                {
+                    Debug.Log($"GameSceneDebugEntrySimple: Multi-Play 仮想Player({cmdPlayerName}): HostのCreateRoom完了待ちのため {staggerMs}ms 待機してから JoinRoom します (Room: {roomName})");
+                    await UniTask.Delay(staggerMs);
+                    Debug.Log($"GameSceneDebugEntrySimple: Multi-Play 仮想Player({cmdPlayerName})としてJoinRoomします (Room: {roomName})");
+                    PhotonNetwork.JoinRoom(roomName);
+                    return;
+                }
+
+                if (hasCmdName && string.Equals(cmdPlayerName, "Player1", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    var hostRoomOptions = new RoomOptions
+                    {
+                        MaxPlayers = maxPlayers,
+                        IsVisible = true,
+                        IsOpen = true
+                    };
+                    Debug.LogWarning(
+                        $"GameSceneDebugEntrySimple: 仮想Player側なのに -name=Player1。CreateRoom を試みます (Room: {roomName})");
+                    PhotonNetwork.CreateRoom(roomName, hostRoomOptions, TypedLobby.Default);
+                    return;
+                }
+
+                Debug.LogWarning($"GameSceneDebugEntrySimple: MPPM仮想Playerで -name が取得できないか未対応です。600ms 待機後に JoinRoom します (Room: {roomName})");
+                await UniTask.Delay(600);
+                PhotonNetwork.JoinRoom(roomName);
+                return;
+            }
+
+            if (!TryGetMultiplayerPlayModePlayerName(out var mppmPlayerName))
+            {
+                EnterRealPhotonSingleEditorFallbackRoom(roomName, maxPlayers);
+                return;
+            }
+
+            if (string.Equals(mppmPlayerName, "Player1", System.StringComparison.OrdinalIgnoreCase))
+            {
+                var hostRoomOptions = new RoomOptions
+                {
+                    MaxPlayers = maxPlayers,
+                    IsVisible = true,
+                    IsOpen = true
+                };
+                Debug.Log($"GameSceneDebugEntrySimple: Multi-Play メインEditor(Player1)としてCreateRoomします (Room: {roomName}, MaxPlayers: {maxPlayers})");
+                PhotonNetwork.CreateRoom(roomName, hostRoomOptions, TypedLobby.Default);
+                return;
+            }
+
+            if (IsMultiplayVirtualPlayerName(mppmPlayerName, out var nameStaggerMs))
+            {
+                Debug.Log($"GameSceneDebugEntrySimple: Multi-Play 仮想Player({mppmPlayerName}): HostのCreateRoom完了待ちのため {nameStaggerMs}ms 待機してから JoinRoom します (Room: {roomName})");
+                await UniTask.Delay(nameStaggerMs);
+                Debug.Log($"GameSceneDebugEntrySimple: Multi-Play 仮想Player({mppmPlayerName})としてJoinRoomします (Room: {roomName})");
+                PhotonNetwork.JoinRoom(roomName);
+                return;
+            }
+
+            Debug.LogWarning($"GameSceneDebugEntrySimple: 未対応の -name '{mppmPlayerName}' のため JoinRoom を試みます (Room: {roomName})");
+            PhotonNetwork.JoinRoom(roomName);
+        }
+
+        /// <summary>
+        /// MPPM API が無い、または <c>-name</c> が無いときの単体エディタ向け入室。
+        /// </summary>
+        private void EnterRealPhotonSingleEditorFallbackRoom(string roomName, byte maxPlayers)
+        {
+            if (_useJoinOrCreateRoom)
+            {
+                var options = new RoomOptions
+                {
+                    MaxPlayers = maxPlayers,
+                    IsVisible = true,
+                    IsOpen = true
+                };
+                Debug.Log($"GameSceneDebugEntrySimple: 単体PlayのためJoinOrCreateRoomします (Room: {roomName}, MaxPlayers: {maxPlayers})");
+                PhotonNetwork.JoinOrCreateRoom(roomName, options, TypedLobby.Default);
+            }
+            else
+            {
+                Debug.Log($"GameSceneDebugEntrySimple: 単体PlayのためJoinRoomします (Room: {roomName})");
+                PhotonNetwork.JoinRoom(roomName);
+            }
         }
 
         private List<PlayerInfo> BuildPlayerInfosFromPhoton(out IPlayerIdMapper mapper)
@@ -363,9 +735,43 @@ namespace Tetrage.Tests
             return iconValue is int iconIndex ? iconIndex : 0;
         }
 
-        private static async UniTask WaitUntilWithTimeout(System.Func<bool> predicate, float timeoutSec, string waitLabel)
+        /// <summary>
+        /// CurrentRoom.PlayerCount と PlayerList のどちらかが先に更新されることがあるため、多い方を採用する。
+        /// </summary>
+        private static bool RealPhotonRoomHasAtLeastPlayerCount(int requiredPlayerCount)
+        {
+            if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom == null)
+            {
+                return false;
+            }
+
+            int roomCount = PhotonNetwork.CurrentRoom.PlayerCount;
+            int listCount = PhotonNetwork.PlayerList != null ? PhotonNetwork.PlayerList.Length : 0;
+            return Mathf.Max(roomCount, listCount) >= requiredPlayerCount;
+        }
+
+        private static System.Func<string> BuildPhotonRoomPlayerCountProgress(int requiredPlayerCount)
+        {
+            return () =>
+            {
+                var room = PhotonNetwork.CurrentRoom;
+                int roomCnt = room != null ? room.PlayerCount : 0;
+                int listCnt = PhotonNetwork.PlayerList != null ? PhotonNetwork.PlayerList.Length : 0;
+                int effective = Mathf.Max(roomCnt, listCnt);
+                return
+                    $"effective={effective}/{requiredPlayerCount} (Room.PlayerCount={roomCnt}, PlayerList.Length={listCnt}), Room={room?.Name ?? "(none)"}, InRoom={PhotonNetwork.InRoom}, IsMaster={PhotonNetwork.IsMasterClient}";
+            };
+        }
+
+        private static async UniTask WaitUntilWithTimeout(
+            System.Func<bool> predicate,
+            float timeoutSec,
+            string waitLabel,
+            System.Func<string> progressDescription = null,
+            float progressLogIntervalSec = 0f)
         {
             float startTime = Time.realtimeSinceStartup;
+            float lastProgressLog = startTime;
             while (!predicate())
             {
                 float elapsed = Time.realtimeSinceStartup - startTime;
@@ -374,14 +780,179 @@ namespace Tetrage.Tests
                     throw new System.TimeoutException($"タイムアウト: {waitLabel} ({timeoutSec:0.0}s)");
                 }
 
+                if (progressDescription != null && progressLogIntervalSec > 0f)
+                {
+                    float now = Time.realtimeSinceStartup;
+                    if (now - lastProgressLog >= progressLogIntervalSec)
+                    {
+                        Debug.Log(
+                            $"GameSceneDebugEntrySimple: 待機中… {waitLabel} | {progressDescription()} | 経過 {elapsed:0.#}s / {timeoutSec:0.#}s");
+                        lastProgressLog = now;
+                    }
+                }
+
                 await UniTask.Delay(100);
             }
+        }
+
+        /// <summary>
+        /// Multiplayer Play Mode では起動引数 <c>-name</c> が <c>Player1</c>（メインEditor）または <c>Player2</c>〜<c>Player4</c>（仮想Player）になる。
+        /// メイン（Player1）および単体Play（<c>-name</c> なし）をゲーム進行ホスト想定とする。
+        /// </summary>
+        private static bool IsRealPhotonDebugHostInstance(out string mppmPlayerName)
+        {
+            if (TryGetMultiplayerPlayModeMainEditor(out var isMain))
+            {
+                TryGetMultiplayerPlayModePlayerName(out mppmPlayerName);
+                if (string.IsNullOrEmpty(mppmPlayerName))
+                {
+                    mppmPlayerName = isMain ? "(MainEditor)" : "(VirtualPlayer)";
+                }
+
+                return isMain;
+            }
+
+            if (!TryGetMultiplayerPlayModePlayerName(out mppmPlayerName))
+            {
+                return true;
+            }
+
+            if (string.Equals(mppmPlayerName, "Player1", System.StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (IsMultiplayVirtualPlayerName(mppmPlayerName, out _))
+            {
+                return false;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// <c>com.unity.multiplayer.playmode</c> の <c>CurrentPlayer.IsMainEditor</c> を参照する。
+        /// asmdef 依存を増やさないためリフレクションを使用する（パッケージ未導入時は false を返す）。
+        /// </summary>
+        private static System.Type ResolveMultiplayerPlaymodeCurrentPlayerType()
+        {
+            return System.Type.GetType("Unity.Multiplayer.Playmode.CurrentPlayer, Unity.Multiplayer.Playmode")
+                ?? System.Type.GetType("Unity.Multiplayer.PlayMode.CurrentPlayer, Unity.Multiplayer.PlayMode");
+        }
+
+        private static bool TryGetMultiplayerPlayModeMainEditor(out bool isMainEditor)
+        {
+            isMainEditor = true;
+            try
+            {
+                var currentPlayerType = ResolveMultiplayerPlaymodeCurrentPlayerType();
+                if (currentPlayerType == null)
+                {
+                    return false;
+                }
+
+                var property = currentPlayerType.GetProperty(
+                    "IsMainEditor",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (property == null)
+                {
+                    return false;
+                }
+
+                if (property.GetValue(null) is bool value)
+                {
+                    isMainEditor = value;
+                    return true;
+                }
+            }
+            catch
+            {
+                // Multiplayer Play Mode Assembly が無い、または API 変更時は無視
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// MPPM の <c>CurrentPlayer.ReadOnlyTags()</c> が1件以上あるか（シナリオでタグを付けた場合、メインが -name 無しでもホスト判定に使える）。
+        /// </summary>
+        private static bool TryHasNonEmptyMppmReadOnlyTags()
+        {
+            try
+            {
+                var currentPlayerType = ResolveMultiplayerPlaymodeCurrentPlayerType();
+                if (currentPlayerType == null)
+                {
+                    return false;
+                }
+
+                var method = currentPlayerType.GetMethod(
+                    "ReadOnlyTags",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (method == null)
+                {
+                    return false;
+                }
+
+                if (method.Invoke(null, null) is string[] tags)
+                {
+                    return tags.Length > 0;
+                }
+            }
+            catch
+            {
+                // API 変更時は無視
+            }
+
+            return false;
+        }
+
+        private static bool IsMultiplayVirtualPlayerName(string playerName, out int staggerMs)
+        {
+            staggerMs = 600;
+            if (string.Equals(playerName, "Player2", System.StringComparison.OrdinalIgnoreCase))
+            {
+                staggerMs = 300;
+                return true;
+            }
+
+            if (string.Equals(playerName, "Player3", System.StringComparison.OrdinalIgnoreCase))
+            {
+                staggerMs = 600;
+                return true;
+            }
+
+            if (string.Equals(playerName, "Player4", System.StringComparison.OrdinalIgnoreCase))
+            {
+                staggerMs = 900;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetMultiplayerPlayModePlayerName(out string playerName)
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (string.Equals(args[i], "-name", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    playerName = args[i + 1];
+                    return !string.IsNullOrEmpty(playerName);
+                }
+            }
+
+            playerName = null;
+            return false;
         }
 
         #endregion
 
         private void OnDestroy()
         {
+            RestorePunAutoSyncSceneGuardIfNeeded();
+
             if (_gameManager != null)
             {
                 PlayModeTestHelper.QuickCleanup(_gameManager, _networkMode);
@@ -425,8 +996,9 @@ namespace Tetrage.Tests
             int masterActor = PhotonNetwork.MasterClient?.ActorNumber ?? -1;
             string roomName = PhotonNetwork.CurrentRoom?.Name ?? "(none)";
             int roomPlayerCount = PhotonNetwork.CurrentRoom?.PlayerCount ?? 0;
+            var hostInstance = IsRealPhotonDebugHostInstance(out var mppmName);
             Debug.Log(
-                $"GameSceneDebugEntrySimple: [{label}] Role={_realPhotonDebugRole}, InRoom={PhotonNetwork.InRoom}, IsMasterClient={PhotonNetwork.IsMasterClient}, LocalActor={localActor}, MasterActor={masterActor}, Room={roomName}, RoomPlayers={roomPlayerCount}");
+                $"GameSceneDebugEntrySimple: [{label}] RealPhotonHostInstance={hostInstance}, MppmName={mppmName ?? "なし"}, InRoom={PhotonNetwork.InRoom}, IsMasterClient={PhotonNetwork.IsMasterClient}, LocalActor={localActor}, MasterActor={masterActor}, Room={roomName}, RoomPlayers={roomPlayerCount}");
         }
 #else
         // ビルド時には完全に空のクラスになる
