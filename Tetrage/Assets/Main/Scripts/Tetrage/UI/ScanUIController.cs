@@ -1,14 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Tetrage.Core.DTO;
 using Tetrage.Core.Ids;
 using Tetrage.Core.Contracts;
 using Tetrage.Title;
-using System.Collections.Generic;
-using System.Linq;
-using Tetrage.Core.Enums;
 using Tetrage.Data;
+using Tetrage.Core.Enums;
 namespace Tetrage.UI
 {
     /// <summary>
@@ -21,6 +18,7 @@ namespace Tetrage.UI
 
         [Header("Panel References")]
         [SerializeField] private GameObject targetPanel;
+        [SerializeField] private TextMeshProUGUI Text_1;
         [SerializeField] private TextMeshProUGUI statusText;
         [SerializeField] private ProfileDisplayUI _profileDisplayUI;
 
@@ -31,22 +29,7 @@ namespace Tetrage.UI
         [SerializeField] private Image trumpBackImage;
         [SerializeField] private GameObject inactiveStateObject;
         [SerializeField] private CardImageMapper cardImageMapper;
-        [SerializeField] private RectTransform targetCardAnchor; // 表示位置・サイズの参照
 
-        [Header("Text")]
-        [SerializeField]
-        private List<string> _lineTexts = new List<string>(){
-            "ターゲットカードの確認を行います。\n{_playerName}さんです。\n準備ができたら、「NEXT」を押してください。"
-        };
-
-        [Header("Target Check Text (Integrated)")]
-        [SerializeField] private TextMeshProUGUI targetText; // 統合: 変更対象のTextMeshPro
-        [SerializeField] private GameObject targetCheckButton; // 統合: ボタンGameObject
-        [TextArea(2, 5)]
-        [SerializeField] private string targetNewText = "新しいテキスト"; // 統合: インスペクタから変更可能なテキスト
-        [SerializeField] private Color suitTextColor = new Color(0.9f, 0.1f, 0.1f); // スート表示色（RichText）
-        [SerializeField] private Color redSuitColor = new Color(0.9f, 0.1f, 0.1f);
-        [SerializeField] private Color blackSuitColor = new Color(0.1f, 0.1f, 0.1f);
 
         #endregion
 
@@ -61,219 +44,122 @@ namespace Tetrage.UI
 
         #endregion
 
+        #region Unity Lifecycle
 
-        #region Public Methods
-
-        /// <summary>
-        /// ゲーム開始時にPlayerInfoを設定して初期化
-        /// </summary>
-        /// <param name="playerInfo">プレイヤー情報</param>
-        public void Initialize(IGameContext gameContext)
+        private void OnEnable()
         {
-            _gameContext = gameContext;
-            _playerId = _gameContext.UserPlayer.Id;
-
-            // プレイヤー番号を取得（0始まりのIDを1始まりの表示用番号に変換）
-            _playerName = _gameContext.UserPlayer.UserId;
-            _playerIconIndex = _gameContext.UserPlayer.IconIndex;
-            _profileDisplayUI.InitializeDisplay();
-
-            // 初期状態を設定
-            UpdatePanelState();
-
-            Debug.Log($"ScanUI: {_playerName}のプレイヤー情報を設定しました（UserId: {_playerName}）");
-
-            // ターゲットカードの画像を生成
-
-        }
-
-        /// <summary>
-        /// パネルの状態をリセット
-        /// </summary>
-        public void ResetState()
-        {
-            _isScanned = false;
-            UpdatePanelState();
-        }
-
-        #region Button Methods
-
-        /// <summary>
-        /// TargetCheckText(ChangeText) の統合。対象テキストを書き換える。
-        /// </summary>
-		public void ChangeText()
-        {
-            if (targetText != null)
-            {
-                var targetCard = _gameContext.UserPlayer.Target.FirstOrDefault();
-                var suitEnum = targetCard != null ? (Suit?)targetCard.Suit : null;
-                var suitText = suitEnum?.ToString() ?? "";
-                // Suit の色は拡張メソッド IsRed / IsBlack を使用
-                Color applyColor = suitTextColor;
-                if (suitEnum.HasValue)
-                {
-                    applyColor = suitEnum.Value.IsRed() ? redSuitColor : blackSuitColor;
-                }
-                var hex = ColorUtility.ToHtmlStringRGB(applyColor);
-                var coloredSuit = $"<color=#{hex}>{suitText}</color>";
-                targetText.text = targetNewText.Replace("{Suit}", coloredSuit);
-
-            }
-            else
-            {
-                Debug.LogWarning("ScanUIController: targetText が設定されていません！", this);
-            }
-        }
-
-
-        /// <summary>
-        /// TargetCheckText(Finish) の統合。ボタンを非表示にする。
-        /// </summary>
-        public void Finish()
-        {
-            // 優先: 指定のターゲット用ボタン
-            if (targetCheckButton != null)
-            {
-                var btn = targetCheckButton.GetComponent<Button>();
-                if (btn != null) btn.interactable = false;
-                targetCheckButton.SetActive(false);
-                return;
-            }
-
-            // フォールバック: NextButton を無効化
             if (NextButton != null)
             {
-                NextButton.interactable = false;
-                NextButton.gameObject.SetActive(false);
-                return;
+                NextButton.onClick.AddListener(OnNextButtonClicked1);
             }
-
         }
 
-        /// <summary>
-        /// プレイヤーのターゲットカードImageを生成し、アンカーTransformに追従した位置・サイズで表示
-        /// </summary>
-        public void SpawnTargetCardImage()
+        private void OnDisable()
         {
-            if (cardImageMapper == null || targetCardAnchor == null)
+            if (NextButton != null)
             {
-                Debug.LogWarning("ScanUIController: cardImageMapper または targetCardAnchor が設定されていません", this);
-                return;
-            }
-
-            var targetCard = _gameContext.UserPlayer.Target.FirstOrDefault();
-            if (targetCard == null)
-            {
-                Debug.LogWarning("ScanUIController: ユーザーのターゲットカードが見つかりません", this);
-                return;
-            }
-
-            var sprite = cardImageMapper.GetCardSprite(targetCard.Suit, targetCard.Number);
-            if (sprite == null)
-            {
-                Debug.LogWarning($"ScanUIController: マッパーにスプライトがありません Suit={targetCard.Suit} Number={targetCard.Number}", this);
-                return;
-            }
-
-            var go = new GameObject("TargetCardImage");
-            go.transform.SetParent(targetCardAnchor, false);
-            var img = go.AddComponent<Image>();
-            img.sprite = sprite;
-            img.preserveAspect = true;
-
-            // アンカーが Image を持っていれば、関連プロパティを継承
-            var anchorImg = targetCardAnchor.GetComponent<Image>();
-            if (anchorImg != null)
-            {
-                img.preserveAspect = anchorImg.preserveAspect;
-                img.raycastTarget = anchorImg.raycastTarget;
-                img.color = anchorImg.color;
-                img.material = anchorImg.material;
-                img.maskable = anchorImg.maskable;
-                img.type = anchorImg.type;
-                img.fillCenter = anchorImg.fillCenter;
-                img.fillMethod = anchorImg.fillMethod;
-                img.fillAmount = anchorImg.fillAmount;
-                img.fillClockwise = anchorImg.fillClockwise;
-                img.fillOrigin = anchorImg.fillOrigin;
-            }
-
-            var rt = img.rectTransform;
-            rt.anchorMin = targetCardAnchor.anchorMin;
-            rt.anchorMax = targetCardAnchor.anchorMax;
-            rt.pivot = targetCardAnchor.pivot;
-            rt.sizeDelta = targetCardAnchor.sizeDelta;
-            rt.localRotation = targetCardAnchor.localRotation;
-            Debug.Log($"ScanUIController: ターゲットカード画像を生成しました Suit={targetCard.Suit} Number={targetCard.Number}");
-
-            // 参照を保持（既存があれば置き換え）
-            if (_spawnedTargetCardImage != null && _spawnedTargetCardImage != go)
-            {
-                Destroy(_spawnedTargetCardImage);
-            }
-            _spawnedTargetCardImage = go;
-        }
-
-        /// <summary>
-        /// 生成済みターゲットカード画像を削除（UIボタン用）
-        /// </summary>
-        public void DeleteTargetCardImage()
-        {
-            if (_spawnedTargetCardImage != null)
-            {
-                Destroy(_spawnedTargetCardImage);
-                _spawnedTargetCardImage = null;
-                Debug.Log("ScanUIController: ターゲットカード画像を削除しました");
+                NextButton.onClick.RemoveListener(OnNextButtonClicked1);
             }
         }
-        #endregion
 
         #endregion
 
-        #region Private Methods
+        #region Initialization
 
         /// <summary>
-        /// スキャンボタンが押された時の処理
+        /// GameContext からゲーム開始時のユーザー情報を取得し、スキャン案内テキストを設定する。
         /// </summary>
-        private void OnNextButtonClicked()
+        public void Initialize(IGameContext gameContext)
         {
-            _isScanned = !_isScanned;
-            UpdatePanelState();
-
-            Debug.Log($"ScanUI: {_playerName} スキャン状態変更 → {(_isScanned ? "ON" : "OFF")}");
-        }
-
-        /// <summary>
-        /// パネルの状態を更新
-        /// </summary>
-        private void UpdatePanelState()
-        {
-            // プレイヤー番号テキストの更新
-            if (_profileDisplayUI != null)
+            _isScanned = false;
+            _gameContext = gameContext;
+            var user = gameContext?.UserPlayer;
+            if (user == null)
             {
-                _profileDisplayUI.SetManualInputData(_playerIconIndex, _playerName);
+                Debug.LogWarning("ScanUIController: UserPlayer が null のため初期化をスキップします");
+                return;
             }
 
-            // ステータステキストの更新
+            _playerId = user.Id;
+            _playerIconIndex = user.IconIndex;
+            _playerName = user.UserId ?? string.Empty;
+
+            int seatNumber = user.Id.Value;
+            string seatLabel = $"{seatNumber}P";
+
+            if (Text_1 != null)
+            {
+                Text_1.richText = true;
+                Text_1.text =
+                    "ターゲットカードの確認を行います。\n" +
+                    $"{_playerName}さんは{seatNumber}Pです。\n" +
+                    "準備ができたら,「Next」を押してください。";
+            }
+
             if (statusText != null)
             {
-                statusText.text = _lineTexts[0].Replace("{_playerName}", _playerName);
+                statusText.text = seatLabel;
             }
 
-            // 状態オブジェクトの表示切り替え
-            if (trumpBackImage != null)
+            if (_profileDisplayUI != null)
             {
-                trumpBackImage.gameObject.SetActive(_isScanned);
-            }
-
-            if (inactiveStateObject != null)
-            {
-                inactiveStateObject.SetActive(!_isScanned);
+                _profileDisplayUI.SetManualInputData(user.IconIndex, user.UserId);
             }
         }
 
+        #endregion
 
+        #region Next Button
+
+        public void OnNextButtonClicked1()
+        {
+            if (_isScanned)
+            {
+                return;
+            }
+
+            var user = _gameContext?.UserPlayer;
+            var targetPile = user?.Target;
+            if (targetPile == null || targetPile.Count == 0)
+            {
+                Debug.LogWarning("ScanUIController: ターゲットカードが存在しません");
+                return;
+            }
+
+            var card = targetPile.Cards[0];
+            var suit = card.Suit;
+
+            if (cardImageMapper == null)
+            {
+                Debug.LogWarning("ScanUIController: CardImageMapper が未設定です");
+            }
+            else if (trumpBackImage != null)
+            {
+                var face = cardImageMapper.GetCardSprite(suit, card.Number);
+                if (face != null)
+                {
+                    trumpBackImage.sprite = face;
+                }
+                else
+                {
+                    Debug.LogWarning($"ScanUIController: カード画像が見つかりません ({suit} {card.Number})");
+                }
+            }
+
+            if (Text_1 != null)
+            {
+                string suitLabel = suit.GetKatakanaName();
+                string suitColorHex = ColorUtility.ToHtmlStringRGBA(Color.red);
+                Text_1.text =
+                    $"あなたのターゲットカードは、<color=#{suitColorHex}>{suitLabel}</color>です。\n" +
+                    "ターゲットを覚えて、そのまま「Next」を押してください。";
+            }
+
+            _isScanned = true;
+        }
 
         #endregion
+
     }
 }
+
