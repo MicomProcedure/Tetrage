@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using R3;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
@@ -76,82 +77,97 @@ namespace Tetrage.Network.Gameplay
         public Observable<DomainEvents.FinishingGameEvent> FinishingGame => _finishingGame;
         public Observable<DomainEvents.GameEndedEvent> GameEnded => _gameEnded;
 
+        #region Debug logging
+
+        /// <summary>
+        /// Publish ごとの詳細ログ。本番リリースビルドでは呼び出し自体がコンパイルから除去され、
+        /// 文字列補間のGCコストも発生しない。
+        /// </summary>
+        [Conditional("UNITY_EDITOR")]
+        [Conditional("DEVELOPMENT_BUILD")]
+        private static void LogPublish(string message)
+        {
+            Debug.Log(message);
+        }
+
+        #endregion
+
         public void Publish(DomainEvents.GameStartedEvent e)
         {
             _gameStarted.OnNext(e);
-            Debug.Log($"R3EventBus: GameStarted published, Sequence={e.Sequence}, PlayerIds={string.Join(",", e.PlayerIds)}");
+            LogPublish($"R3EventBus: GameStarted published, Sequence={e.Sequence}, PlayerIds={string.Join(",", e.PlayerIds)}");
         }
 
         public void Publish(DomainEvents.TurnStartedEvent e)
         {
             _turnStarted.OnNext(e);
-            Debug.Log($"R3EventBus: TurnStarted published, Sequence={e.Sequence}, CurrentPlayerId={e.CurrentPlayerId}");
+            LogPublish($"R3EventBus: TurnStarted published, Sequence={e.Sequence}, CurrentPlayerId={e.CurrentPlayerId}");
         }
 
         public void Publish(DomainEvents.TurnEndedEvent e)
         {
             _turnEnded.OnNext(e);
-            Debug.Log($"R3EventBus: TurnEnded published, Sequence={e.Sequence}, PreviousPlayerId={e.PreviousPlayerId}");
+            LogPublish($"R3EventBus: TurnEnded published, Sequence={e.Sequence}, PreviousPlayerId={e.PreviousPlayerId}");
         }
 
         public void Publish(DomainEvents.ListOrderDeclaredEvent e)
         {
             _listOrderDeclared.OnNext(e);
-            Debug.Log($"R3EventBus: ListOrderDeclared published, Sequence={e.Sequence}");
+            LogPublish($"R3EventBus: ListOrderDeclared published, Sequence={e.Sequence}");
         }
 
         public void Publish(DomainEvents.CardMovedEvent e)
         {
             _cardMoved.OnNext(e);
-            Debug.Log($"R3EventBus: CardMoved published, Sequence={e.Sequence}, CardId={e.CardId}, From={e.FromPileId}, To={e.ToPileId}");
+            LogPublish($"R3EventBus: CardMoved published, Sequence={e.Sequence}, CardId={e.CardId}, From={e.FromPileId}, To={e.ToPileId}");
         }
 
         public void Publish(DomainEvents.CardVisibilityChangedEvent e)
         {
             _cardVisibilityChanged.OnNext(e);
-            Debug.Log($"R3EventBus: CardVisibilityChanged published, Sequence={e.Sequence}, CardId={e.CardId}, IsVisible={e.IsVisible}");
+            LogPublish($"R3EventBus: CardVisibilityChanged published, Sequence={e.Sequence}, CardId={e.CardId}, IsVisible={e.IsVisible}");
         }
 
         public void Publish(DomainEvents.PileShuffledEvent e)
         {
             _pileShuffled.OnNext(e);
-            Debug.Log($"R3EventBus: PileShuffled published, Sequence={e.Sequence}, PileId={e.PileId}");
+            LogPublish($"R3EventBus: PileShuffled published, Sequence={e.Sequence}, PileId={e.PileId}");
         }
 
         public void Publish(DomainEvents.ActionRequestedEvent e)
         {
             _actionRequested.OnNext(e);
-            Debug.Log($"R3EventBus: ActionRequested published, Sequence={e.Sequence}, ActorPlayerId={e.ActorPlayerId}");
+            LogPublish($"R3EventBus: ActionRequested published, Sequence={e.Sequence}, ActorPlayerId={e.ActorPlayerId}");
         }
 
         public void Publish(DomainEvents.ActionResultEvent e)
         {
             _actionResult.OnNext(e);
-            Debug.Log($"R3EventBus: ActionResult published, Sequence={e.Sequence}, Accepted={e.Accepted}");
+            LogPublish($"R3EventBus: ActionResult published, Sequence={e.Sequence}, Accepted={e.Accepted}");
         }
 
         public void Publish(DomainEvents.ScanPhaseStartedEvent e)
         {
             _scanPhaseStarted.OnNext(e);
-            Debug.Log($"R3EventBus: ScanPhaseStarted published, Sequence={e.Sequence}, UserPlayerId={e.UserPlayerId}");
+            LogPublish($"R3EventBus: ScanPhaseStarted published, Sequence={e.Sequence}, UserPlayerId={e.UserPlayerId}");
         }
 
         public void Publish(DomainEvents.ScanPhaseEndedEvent e)
         {
             _scanPhaseEnded.OnNext(e);
-            Debug.Log($"R3EventBus: ScanPhaseEnded published, Sequence={e.Sequence}");
+            LogPublish($"R3EventBus: ScanPhaseEnded published, Sequence={e.Sequence}");
         }
 
         public void Publish(DomainEvents.FinishingGameEvent e)
         {
             _finishingGame.OnNext(e);
-            Debug.Log($"R3EventBus: FinishingGame published, Sequence={e.Sequence}, WinnerIds={string.Join(",", e.WinnerPlayerIds)}");
+            LogPublish($"R3EventBus: FinishingGame published, Sequence={e.Sequence}, WinnerIds={string.Join(",", e.WinnerPlayerIds)}");
         }
 
         public void Publish(DomainEvents.GameEndedEvent e)
         {
             _gameEnded.OnNext(e);
-            Debug.Log($"R3EventBus: GameEnded published, Sequence={e.Sequence}, WinnerIds={string.Join(",", e.WinnerPlayerIds)}");
+            LogPublish($"R3EventBus: GameEnded published, Sequence={e.Sequence}, WinnerIds={string.Join(",", e.WinnerPlayerIds)}");
         }
 
         /// <summary>
