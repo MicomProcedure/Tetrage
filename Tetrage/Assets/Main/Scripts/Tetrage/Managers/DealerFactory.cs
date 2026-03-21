@@ -4,6 +4,7 @@ using Tetrage.Core.Enums;
 using UnityEngine;
 using Tetrage.Network.Gameplay;
 using Tetrage.Managers.DealerStrategies;
+using Tetrage.Core;
 
 namespace Tetrage.Managers
 {
@@ -19,7 +20,7 @@ namespace Tetrage.Managers
                 var messenger = new DealerNetworkMessenger(netCtl.Broadcaster, netCtl.Sequence, netCtl.PlayerIdMapper);
                 if (gameMode == GameMode.Debug)
                 {
-                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext);
+                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext, netCtl.PlayerIdMapper, new DefaultScanTargetSelector());
                     if (networkContext.IsHost)
                     {
                         dealer.SetMessenger(messenger);
@@ -29,7 +30,7 @@ namespace Tetrage.Managers
                 }
                 else if (gameMode == GameMode.Release)
                 {
-                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext);
+                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext, netCtl.PlayerIdMapper, new DefaultScanTargetSelector());
                     if (networkContext.IsHost)
                     {
                         dealer.SetMessenger(messenger);

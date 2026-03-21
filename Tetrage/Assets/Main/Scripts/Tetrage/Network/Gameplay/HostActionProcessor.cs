@@ -126,6 +126,7 @@ namespace Tetrage.Network.Gameplay
                 accepted = true,
                 reason = e.actionStatusInt == 1 ? $"{e.actorPlayerId} 勝利" : "敗北",
                 targetCardIds = e.targetCardIds,
+                actionStatusInt = e.actionStatusInt,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
@@ -141,6 +142,7 @@ namespace Tetrage.Network.Gameplay
                 accepted = true,
                 reason = string.Empty,
                 targetCardIds = e.targetCardIds,
+                actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }

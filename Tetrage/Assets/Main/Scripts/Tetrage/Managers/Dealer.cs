@@ -1,10 +1,15 @@
 using System;
 using System.Threading;
+using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
+using Tetrage.Core.Enums;
+using Tetrage.Core.Ids;
+using Tetrage.Core;
 using R3;
 
 /// <summary>
@@ -34,6 +39,9 @@ namespace Tetrage.Managers
         private TurnGate _turnGate; // Hostのみ使用
         private IGameContext _gameContext; // 読み取り専用のコンテキスト
         private INetworkContext _networkContext; // ネットワーク状態の抽象化
+        private IPlayerIdMapper _playerIdMapper;
+        private IScanTargetSelector _scanTargetSelector;
+        private IPlayer _initialTurnPlayer;
 
         /// <summary>
         /// ラウンド数
@@ -65,6 +73,8 @@ namespace Tetrage.Managers
         private bool _isGameInterrupted = false;
         public bool IsGameInterrupted { get { return _isGameInterrupted; } }
 
+        private const float ScanSelectionTimeoutSeconds = 10f;
+
         #endregion
 
         #region コンストラクタ
@@ -72,7 +82,12 @@ namespace Tetrage.Managers
         /// <summary>
         /// 戦略パターン対応のデフォルトコンストラクタ
         /// </summary>
-        public Dealer(IGameContext gameContext, IDealerPlanner dealerPlanner, INetworkContext networkContext)
+        public Dealer(
+            IGameContext gameContext,
+            IDealerPlanner dealerPlanner,
+            INetworkContext networkContext,
+            IPlayerIdMapper playerIdMapper,
+            IScanTargetSelector scanTargetSelector = null)
         {
             if (gameContext == null) throw new ArgumentNullException(nameof(gameContext));
             if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
@@ -80,6 +95,8 @@ namespace Tetrage.Managers
             _gameContext = gameContext;
             _dealerPlanner = dealerPlanner;
             _networkContext = networkContext;
+            _playerIdMapper = playerIdMapper;
+            _scanTargetSelector = scanTargetSelector ?? new DefaultScanTargetSelector();
             _roundCount = 0; // 初期化
             _turnCount = 0; // 初期化
 
@@ -155,8 +172,16 @@ namespace Tetrage.Managers
             // ゲーム終了フラグをリセット
             _isGameFinished = false;
 
+            // ScanPhase（FirstDeal後・最初のターン開始前）
+            await ExecuteScanPhaseAsync(gameCts);
+
+            if (_initialTurnPlayer != null && IsHost())
+            {
+                _messenger?.PublishTurnStarted(_initialTurnPlayer.Id);
+            }
+
             // 初回のTurnStartedが適用されるまで待機（CurrentPlayerが設定されるまで）
-            if (_turnGate != null)
+            if (_turnGate != null && _initialTurnPlayer != null)
             {
                 await _turnGate.WaitNextAsync();
             }
@@ -193,10 +218,8 @@ namespace Tetrage.Managers
 
             // 4) 最初のプレイヤーを決定
             var firstPlayer = _dealerPlanner.DecideFirstPlayer(_gameContext.Players);
+            _initialTurnPlayer = firstPlayer;
             Debug.Log($"Dealer: ゲーム開始 - 最初のプレイヤーは Player {firstPlayer.Id}");
-
-            // 最初の手番を宣言
-            _messenger?.PublishTurnStarted(firstPlayer.Id);
         }
 
 
@@ -248,6 +271,7 @@ namespace Tetrage.Managers
             // ラウンド開始イベントを通知
             PublishTurnStart();
 
+            ActionResult actionResult = ActionResult.Failure("アクションが実行されませんでした");
             try
             {
                 // 現在のプレイヤーが設定されているかどうかを検証
@@ -256,7 +280,6 @@ namespace Tetrage.Managers
                 // プレイヤーのアクションを待つ（現在手番のプレイヤー）
                 // Hostの自手番は ActionAwaiter、Guest手番はネットのActionResultを待機
                 var isLocalTurn = _gameContext.UserPlayer != null && ReferenceEquals(_gameContext.CurrentPlayer, _gameContext.UserPlayer);
-                ActionResult actionResult;  // プレイヤーアクション結果の変数宣言
                 if (isLocalTurn)
                 {
                     actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
@@ -283,6 +306,12 @@ namespace Tetrage.Managers
                 Debug.LogError($"Dealer: アクション実行中に致命的エラーが発生: {ex.Message}");
                 _isGameInterrupted = true;
                 _isGameFinished = true; // 強制終了
+            }
+
+            if (HandleGameEndingByAction(actionResult))
+            {
+                PublishTurnEnd();
+                return;
             }
 
             // 勝利条件チェック
@@ -333,14 +362,209 @@ namespace Tetrage.Managers
                 var result = await _gameContext.Events.ActionResult
                     .FirstAsync(e => e.ActorPlayerId == waitingPlayer.PlayerId, token);
 
+                var descriptor = new ActionRequestDescriptor
+                {
+                    actionType = result.ActionType,
+                    actorPlayerId = result.ActorPlayerId.Value,
+                    targetCardIds = result.TargetCardIds?.Select(id => id).ToArray(),
+                    actionStatusInt = result.ActionStatusInt
+                };
+
                 // 成否はネット結果に合わせる
-                return result.Accepted ? ActionResult.Success() : ActionResult.Failure(result.Reason);
+                return result.Accepted
+                    ? ActionResult.Success(descriptor)
+                    : ActionResult.Failure(result.Reason, descriptor);
             }
             catch (OperationCanceledException)
             {
                 return ActionResult.Failure("ActionResult待機がキャンセルされました");
             }
         }
+        #endregion
+
+        #region ScanPhase
+
+        private async UniTask ExecuteScanPhaseAsync(CancellationToken token)
+        {
+            if (!IsHost() || _messenger == null || _gameContext?.Players == null || _gameContext.Players.Count <= 1)
+            {
+                return;
+            }
+
+            var playerIds = _gameContext.Players.Select(player => player.Id).ToList();
+            _messenger.PublishScanPhaseStart(_gameContext.UserPlayer.Id, playerIds);
+
+            var hostCandidates = _gameContext.Players
+                .Where(player => !ReferenceEquals(player, _gameContext.UserPlayer))
+                .ToList();
+
+            if (hostCandidates.Count > 0)
+            {
+                // TODO(UI): 将来はここでホスト向けの対象選択UIを開く。
+                var hostTarget = await _scanTargetSelector.SelectTargetAsync(_gameContext.UserPlayer, hostCandidates);
+                var hostTargetCard = hostTarget.Target.FirstOrDefault();
+                if (hostTargetCard != null)
+                {
+                    Debug.Log($"ScanPhase: Hostは {hostTarget.UserId} のターゲットを確認しました（Suit: {hostTargetCard.Suit}）");
+                    // TODO(UI): Host本人にのみ偵察結果をUI表示する。
+                }
+            }
+
+            var guestSelections = await CollectGuestScanSelectionsAsync(ScanSelectionTimeoutSeconds, token);
+            foreach (var pair in guestSelections)
+            {
+                if (!TryResolvePlayerById(pair.Value, out var selectedTarget)) continue;
+                var targetCard = selectedTarget.Target.FirstOrDefault();
+                if (targetCard == null) continue;
+
+                _messenger.PublishScanResultToActor(
+                    receiverPlayerId: pair.Key,
+                    targetPlayerId: pair.Value,
+                    targetSuit: targetCard.Suit);
+            }
+
+            _messenger.PublishScanPhaseEnd();
+        }
+
+        private async UniTask<Dictionary<PlayerId, PlayerId>> CollectGuestScanSelectionsAsync(float timeoutSeconds, CancellationToken token)
+        {
+            var selections = new Dictionary<PlayerId, PlayerId>();
+            var userId = _gameContext.UserPlayer.Id;
+            var guestPlayers = _gameContext.Players
+                .Where(player => player.Id != userId)
+                .ToList();
+
+            if (guestPlayers.Count == 0)
+            {
+                return selections;
+            }
+
+            using var disposables = new CompositeDisposable();
+            _gameContext.Events.ScanTargetSelected
+                .Subscribe(e =>
+                {
+                    if (e.ActorPlayerId == userId) return;
+                    if (!guestPlayers.Any(player => player.Id == e.ActorPlayerId)) return;
+                    if (!TryResolvePlayerById(e.SelectedTargetPlayerId, out var selectedTarget)) return;
+                    if (e.SelectedTargetPlayerId == e.ActorPlayerId) return;
+
+                    selections[e.ActorPlayerId] = e.SelectedTargetPlayerId;
+                    Debug.Log($"Dealer: ScanTargetSelected 受信 actor={e.ActorPlayerId}, target={e.SelectedTargetPlayerId}");
+                })
+                .AddTo(disposables);
+
+            var deadline = Time.realtimeSinceStartup + Mathf.Max(0f, timeoutSeconds);
+            while (!token.IsCancellationRequested && selections.Count < guestPlayers.Count)
+            {
+                if (Time.realtimeSinceStartup >= deadline)
+                {
+                    break;
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return selections;
+            }
+
+            foreach (var guest in guestPlayers)
+            {
+                if (selections.ContainsKey(guest.Id)) continue;
+                var fallbackTarget = SelectDefaultScanTarget(guest.Id);
+                if (fallbackTarget == null) continue;
+                selections[guest.Id] = fallbackTarget.Id;
+                Debug.LogWarning($"Dealer: ScanPhase選択タイムアウトのため、Player {guest.Id} にデフォルト対象 {fallbackTarget.Id} を適用しました");
+            }
+
+            return selections;
+        }
+
+        private IPlayer SelectDefaultScanTarget(PlayerId actorPlayerId)
+        {
+            return _gameContext.Players.FirstOrDefault(player => player.Id != actorPlayerId);
+        }
+
+        #endregion
+
+        #region Game Ending
+
+        private bool HandleGameEndingByAction(ActionResult actionResult)
+        {
+            if (!TryGetActionDescriptor(actionResult, out var descriptor))
+            {
+                return false;
+            }
+
+            if (descriptor.actionType != ActionType.TetrageSolo && descriptor.actionType != ActionType.TetrageMulti)
+            {
+                return false;
+            }
+
+            var winners = BuildWinnersFromActionResult(descriptor, actionResult);
+            _messenger?.PublishFinishingGame(winners);
+            _messenger?.PublishGameEnded(winners);
+            _isGameFinished = true;
+            return true;
+        }
+
+        private bool TryGetActionDescriptor(ActionResult actionResult, out ActionRequestDescriptor descriptor)
+        {
+            if (actionResult?.AdditionalData is ActionRequestDescriptor typed)
+            {
+                descriptor = typed;
+                return true;
+            }
+
+            descriptor = default;
+            return false;
+        }
+
+        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptor descriptor, ActionResult actionResult)
+        {
+            var winners = new List<PlayerId>();
+
+            if (descriptor.actionStatusInt == 1)
+            {
+                winners.Add(new PlayerId(descriptor.actorPlayerId));
+                return winners;
+            }
+
+            // statusInt だけで勝者を表現できないため、reasonから補助情報を抽出する。
+            var reason = actionResult?.ErrorMessage ?? string.Empty;
+            var reasonNumbers = System.Text.RegularExpressions.Regex
+                .Matches(reason, @"\d+")
+                .Select(match => int.Parse(match.Value))
+                .Distinct()
+                .ToList();
+
+            foreach (var value in reasonNumbers)
+            {
+                var candidateId = new PlayerId(value);
+                if (_playerIdMapper != null && _playerIdMapper.TryGetPlayerId(value, out var mappedPlayerId))
+                {
+                    candidateId = mappedPlayerId;
+                }
+
+                if (TryResolvePlayerById(candidateId, out _))
+                {
+                    winners.Add(candidateId);
+                }
+            }
+
+            if (winners.Count > 0)
+            {
+                return winners;
+            }
+
+            var actorId = new PlayerId(descriptor.actorPlayerId);
+            return _gameContext.Players
+                .Where(player => player.Id != actorId)
+                .Select(player => player.Id)
+                .ToList();
+        }
+
         #endregion
 
         public void EndGame()
@@ -519,6 +743,12 @@ namespace Tetrage.Managers
                 return false;
             }
             return true;
+        }
+
+        private bool TryResolvePlayerById(PlayerId playerId, out IPlayer player)
+        {
+            player = _gameContext.Players.FirstOrDefault(p => p.Id == playerId);
+            return player != null;
         }
 
         private bool IsHost()

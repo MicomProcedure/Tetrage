@@ -23,6 +23,8 @@ namespace Tetrage.Network.Gameplay
         Observable<DomainEvents.ActionResultEvent> ActionResult { get; }
         Observable<DomainEvents.ScanPhaseStartedEvent> ScanPhaseStarted { get; }
         Observable<DomainEvents.ScanPhaseEndedEvent> ScanPhaseEnded { get; }
+        Observable<DomainEvents.ScanTargetSelectedEvent> ScanTargetSelected { get; }
+        Observable<DomainEvents.ScanResultReceivedEvent> ScanResultReceived { get; }
         Observable<DomainEvents.FinishingGameEvent> FinishingGame { get; }
         Observable<DomainEvents.GameEndedEvent> GameEnded { get; }
 
@@ -37,6 +39,8 @@ namespace Tetrage.Network.Gameplay
         void Publish(DomainEvents.ActionResultEvent e);
         void Publish(DomainEvents.ScanPhaseStartedEvent e);
         void Publish(DomainEvents.ScanPhaseEndedEvent e);
+        void Publish(DomainEvents.ScanTargetSelectedEvent e);
+        void Publish(DomainEvents.ScanResultReceivedEvent e);
         void Publish(DomainEvents.FinishingGameEvent e);
         void Publish(DomainEvents.GameEndedEvent e);
     }
@@ -60,6 +64,8 @@ namespace Tetrage.Network.Gameplay
         private readonly Subject<DomainEvents.ActionResultEvent> _actionResult = new();
         private readonly Subject<DomainEvents.ScanPhaseStartedEvent> _scanPhaseStarted = new();
         private readonly Subject<DomainEvents.ScanPhaseEndedEvent> _scanPhaseEnded = new();
+        private readonly Subject<DomainEvents.ScanTargetSelectedEvent> _scanTargetSelected = new();
+        private readonly Subject<DomainEvents.ScanResultReceivedEvent> _scanResultReceived = new();
         private readonly Subject<DomainEvents.FinishingGameEvent> _finishingGame = new();
         private readonly Subject<DomainEvents.GameEndedEvent> _gameEnded = new();
 
@@ -74,6 +80,8 @@ namespace Tetrage.Network.Gameplay
         public Observable<DomainEvents.ActionResultEvent> ActionResult => _actionResult;
         public Observable<DomainEvents.ScanPhaseStartedEvent> ScanPhaseStarted => _scanPhaseStarted;
         public Observable<DomainEvents.ScanPhaseEndedEvent> ScanPhaseEnded => _scanPhaseEnded;
+        public Observable<DomainEvents.ScanTargetSelectedEvent> ScanTargetSelected => _scanTargetSelected;
+        public Observable<DomainEvents.ScanResultReceivedEvent> ScanResultReceived => _scanResultReceived;
         public Observable<DomainEvents.FinishingGameEvent> FinishingGame => _finishingGame;
         public Observable<DomainEvents.GameEndedEvent> GameEnded => _gameEnded;
 
@@ -158,6 +166,18 @@ namespace Tetrage.Network.Gameplay
             LogPublish($"R3EventBus: ScanPhaseEnded published, Sequence={e.Sequence}");
         }
 
+        public void Publish(DomainEvents.ScanTargetSelectedEvent e)
+        {
+            _scanTargetSelected.OnNext(e);
+            LogPublish($"R3EventBus: ScanTargetSelected published, Sequence={e.Sequence}, Actor={e.ActorPlayerId}, Target={e.SelectedTargetPlayerId}");
+        }
+
+        public void Publish(DomainEvents.ScanResultReceivedEvent e)
+        {
+            _scanResultReceived.OnNext(e);
+            LogPublish($"R3EventBus: ScanResultReceived published, Sequence={e.Sequence}, Target={e.TargetPlayerId}, Suit={e.TargetSuit}");
+        }
+
         public void Publish(DomainEvents.FinishingGameEvent e)
         {
             _finishingGame.OnNext(e);
@@ -186,6 +206,8 @@ namespace Tetrage.Network.Gameplay
             _actionResult.Dispose();
             _scanPhaseStarted.Dispose();
             _scanPhaseEnded.Dispose();
+            _scanTargetSelected.Dispose();
+            _scanResultReceived.Dispose();
             _finishingGame.Dispose();
             _gameEnded.Dispose();
         }
