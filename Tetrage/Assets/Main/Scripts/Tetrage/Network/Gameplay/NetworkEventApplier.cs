@@ -64,6 +64,21 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
+        public void Apply(ScanTargetSelectedEvent e)
+        {
+            // Guest -> Host の入力イベントは送信元ごとにsequence空間が異なるため順序ガードを通さない。
+            var domainEvent = _converter.ToDomain(e);
+            _eventBus.Publish(domainEvent);
+        }
+
+        public void Apply(ScanResultEvent e)
+        {
+            if (!ShouldApply(e.sequence)) return;
+
+            var domainEvent = _converter.ToDomain(e);
+            _eventBus.Publish(domainEvent);
+        }
+
         public void Apply(FinishingGameEvent e)
         {
             if (!ShouldApply(e.sequence)) return;

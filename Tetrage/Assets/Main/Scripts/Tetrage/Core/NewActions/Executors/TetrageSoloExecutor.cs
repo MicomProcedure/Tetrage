@@ -29,15 +29,15 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure("自分のTargetカードが見つかりません");
                 }
 
-                // 2. 他のプレイヤー全員のTargetカードの取得
-                var otherTargetCards = GetAllOtherTargetCards(context);
-                if (otherTargetCards == null || !otherTargetCards.Any())
+                // 2. 他のプレイヤー全員の取得
+                var otherPlayers = context.OtherPlayers?.ToList();
+                if (otherPlayers == null || !otherPlayers.Any())
                 {
                     return ActionResult.Failure("他のプレイヤーのTargetカードが見つかりません");
                 }
 
                 // 3. 自分のスートが他のプレイヤー全員のスートと異なるかチェック
-                var isWin = CheckUniqueSuit(myTargetCard, otherTargetCards, out var matchedPlayers);
+                var isWin = CheckUniqueSuit(myTargetCard, otherPlayers, out var matchedPlayers);
 
                 // 4. 勝者の決定
                 var winners = DetermineWinners(context, isWin, matchedPlayers);
@@ -77,57 +77,31 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// 他の全プレイヤーのTargetカードを取得
-        /// </summary>
-        private List<Models.Card> GetAllOtherTargetCards(IActionContext context)
-        {
-            var targetCards = new List<Models.Card>();
-
-            foreach (var player in context.OtherPlayers)
-            {
-                var targetCard = GetTargetCard(player);
-                if (targetCard != null)
-                {
-                    targetCards.Add(targetCard);
-                }
-                else
-                {
-                    Debug.LogWarning($"プレイヤー {player.UserId} のTargetカードが見つかりません");
-                }
-            }
-
-            return targetCards;
-        }
-
-        #endregion
-
-        #region Private Methods - Game Logic
-
-        /// <summary>
         /// 自分のスートが他の全プレイヤーのスートと異なるかチェック
         /// </summary>
         /// <param name="myCard">自分のTargetカード</param>
-        /// <param name="otherCards">他のプレイヤーのTargetカードリスト</param>
+        /// <param name="otherPlayers">他のプレイヤー一覧</param>
         /// <param name="matchedPlayers">スートが一致したプレイヤーのリスト（outパラメータ）</param>
         /// <returns>全員と異なる場合true、誰か一人でも同じスートがあればfalse</returns>
-        private bool CheckUniqueSuit(Models.Card myCard, List<Models.Card> otherCards, out List<IPlayer> matchedPlayers)
+        private bool CheckUniqueSuit(Models.Card myCard, List<IPlayer> otherPlayers, out List<IPlayer> matchedPlayers)
         {
             var mySuit = myCard.Suit;
             matchedPlayers = new List<IPlayer>();
 
             // 他のプレイヤーのカードの中に同じスートがあるかチェック
-            foreach (var card in otherCards)
+            foreach (var player in otherPlayers)
             {
-                if (card.Suit == mySuit)
+                var targetCard = GetTargetCard(player);
+                if (targetCard == null)
                 {
-                    Debug.Log($"スート一致検出: 自分 {mySuit} vs 他プレイヤー {card.Suit}");
-                    // 同じスートが見つかったので敗北
-                    /*敗北：自分、同じスートだった人
-                      勝利：他のプレイヤー*/
-                    
-                    // 注意: この実装では card から player を逆引きできないため、
-                    // CheckUniqueSuit を呼び出す側で context を渡す必要がある
-                    // または、このメソッドのシグネチャを変更する必要がある
+                    Debug.LogWarning($"プレイヤー {player.UserId} のTargetカードが見つかりません");
+                    continue;
+                }
+
+                if (targetCard.Suit == mySuit)
+                {
+                    matchedPlayers.Add(player);
+                    Debug.Log($"スート一致検出: 自分 {mySuit} vs {player.UserId} {targetCard.Suit}");
                 }
             }
 

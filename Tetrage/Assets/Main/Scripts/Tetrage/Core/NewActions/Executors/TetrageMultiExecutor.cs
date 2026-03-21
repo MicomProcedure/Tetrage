@@ -3,6 +3,8 @@ using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core.Actions
 {
@@ -55,23 +57,26 @@ namespace Tetrage.Core.Actions
                 // 5. テトラージュマルチの成功判定
                 var isSuccess = CheckTetrageMultiSuccess(context, participants, openPlayers);
 
-                // 6. 勝者の決定
-                var winners = DetermineWinners(context, participants, openPlayers, isSuccess, myTargetCard);
-
-                // 7. 結果の返答
+                // 6. 結果の返答
                 var resultMessage = isSuccess ? "テトラージュマルチ成功" : "テトラージュマルチ失敗";
                 
                 Debug.Log($"TetrageMulti アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} - 結果: {resultMessage}");
 
-                return ActionResult.Success(new
+                var targetCards = targetPlayers
+                    .Select(GetTargetCard)
+                    .Where(card => card != null)
+                    .Select(card => card.Id)
+                    .ToArray();
+
+                var descriptor = new ActionRequestDescriptor
                 {
-                    MyTargetCard = new { myTargetCard.Suit, myTargetCard.Number },
-                    Participants = participants.Select(p => p.UserId).ToArray(),
-                    OpenPlayers = openPlayers.Select(p => p.UserId).ToArray(),
-                    Winners = winners.Select(p => p.UserId).ToArray(),
-                    IsSuccess = isSuccess,
-                    Message = resultMessage
-                });
+                    actionType = ActionType.TetrageMulti,
+                    actorPlayerId = context.RequesterPlayer.PlayerId,
+                    targetCardIds = targetCards,
+                    actionStatusInt = isSuccess ? 1 : 0
+                };
+
+                return ActionResult.Success(descriptor);
             }
             catch (System.Exception ex)
             {

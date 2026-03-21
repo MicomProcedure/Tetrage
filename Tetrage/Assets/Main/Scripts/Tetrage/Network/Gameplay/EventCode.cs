@@ -20,6 +20,8 @@ namespace Tetrage.Network.Gameplay
         ActionResult = 21,
         PileShuffledWithSeed = 22,
         ListOrderDeclared = 23,
+        ScanTargetSelected = 24,
+        ScanResult = 25,
     }
 }
 

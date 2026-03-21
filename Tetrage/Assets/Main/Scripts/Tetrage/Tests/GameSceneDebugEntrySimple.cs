@@ -49,6 +49,19 @@ namespace Tetrage.Tests
         [Tooltip("RealPhoton時に参加するルーム名")]
         [SerializeField] private string _realPhotonRoomName = "Tetrage_DebugRoom";
 
+        private enum RealPhotonDebugRole
+        {
+            Auto = 0,
+            Host = 1,
+            Guest = 2
+        }
+
+        [Tooltip("RealPhotonでのロール。Hostを明示するとCreateRoom運用に切り替え可能")]
+        [SerializeField] private RealPhotonDebugRole _realPhotonDebugRole = RealPhotonDebugRole.Auto;
+
+        [Tooltip("RealPhotonでHostロール時にCreateRoomを優先し、Host判定のぶれを防ぐ")]
+        [SerializeField] private bool _realPhotonHostUsesCreateRoom = true;
+
         [Tooltip("RealPhoton時にJoinOrCreateRoomを使う")]
         [SerializeField] private bool _useJoinOrCreateRoom = true;
 
@@ -205,8 +218,15 @@ namespace Tetrage.Tests
                 // ゲーム開始（オプション）
                 if (_autoStartGame)
                 {
-                    Debug.Log("GameSceneDebugEntrySimple: ゲームを自動開始します");
-                    await _gameManager.StartGame();
+                    if (_networkMode == NetworkMode.RealPhoton && !PhotonNetwork.IsMasterClient)
+                    {
+                        Debug.LogWarning("GameSceneDebugEntrySimple: RealPhotonのAutoStartはMasterClientのみ実行できます。今回は待機します。");
+                    }
+                    else
+                    {
+                        Debug.Log("GameSceneDebugEntrySimple: ゲームを自動開始します");
+                        await _gameManager.StartGame();
+                    }
                 }
             }
             catch (System.Exception ex)
@@ -236,22 +256,43 @@ namespace Tetrage.Tests
                     ? "Tetrage_DebugRoom"
                     : _realPhotonRoomName.Trim();
                 var maxPlayers = (byte)Mathf.Clamp(_playerCount, SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT);
+                var role = _realPhotonDebugRole;
 
-                if (_useJoinOrCreateRoom)
+                if (role == RealPhotonDebugRole.Host && _realPhotonHostUsesCreateRoom)
                 {
-                    var options = new RoomOptions
+                    var hostRoomOptions = new RoomOptions
                     {
                         MaxPlayers = maxPlayers,
                         IsVisible = true,
                         IsOpen = true
                     };
-                    Debug.Log($"GameSceneDebugEntrySimple: JoinOrCreateRoomを実行します (Room: {roomName}, MaxPlayers: {maxPlayers})");
-                    PhotonNetwork.JoinOrCreateRoom(roomName, options, TypedLobby.Default);
+                    Debug.Log($"GameSceneDebugEntrySimple: HostロールでCreateRoomを実行します (Room: {roomName}, MaxPlayers: {maxPlayers})");
+                    PhotonNetwork.CreateRoom(roomName, hostRoomOptions, TypedLobby.Default);
+                }
+                else if (role == RealPhotonDebugRole.Guest)
+                {
+                    Debug.Log($"GameSceneDebugEntrySimple: GuestロールでJoinRoomを実行します (Room: {roomName})");
+                    PhotonNetwork.JoinRoom(roomName);
                 }
                 else
+
                 {
-                    Debug.Log($"GameSceneDebugEntrySimple: JoinRoomを実行します (Room: {roomName})");
-                    PhotonNetwork.JoinRoom(roomName);
+                    if (_useJoinOrCreateRoom)
+                    {
+                        var options = new RoomOptions
+                        {
+                            MaxPlayers = maxPlayers,
+                            IsVisible = true,
+                            IsOpen = true
+                        };
+                        Debug.Log($"GameSceneDebugEntrySimple: JoinOrCreateRoomを実行します (Room: {roomName}, MaxPlayers: {maxPlayers})");
+                        PhotonNetwork.JoinOrCreateRoom(roomName, options, TypedLobby.Default);
+                    }
+                    else
+                    {
+                        Debug.Log($"GameSceneDebugEntrySimple: JoinRoomを実行します (Room: {roomName})");
+                        PhotonNetwork.JoinRoom(roomName);
+                    }
                 }
             }
 
@@ -269,6 +310,12 @@ namespace Tetrage.Tests
                 () => PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= requiredPlayerCount,
                 _realPhotonWaitPlayersTimeoutSec,
                 $"必要人数({requiredPlayerCount})の参加");
+
+            LogRealPhotonRuntimeStatus("RealPhoton準備完了");
+            if (_realPhotonDebugRole == RealPhotonDebugRole.Host && !PhotonNetwork.IsMasterClient)
+            {
+                Debug.LogWarning("GameSceneDebugEntrySimple: HostロールですがMasterClientではありません。GameManager.StartGameは実行されません。");
+            }
 
             Debug.Log($"GameSceneDebugEntrySimple: RealPhoton準備完了 (Room: {PhotonNetwork.CurrentRoom?.Name}, Players: {PhotonNetwork.CurrentRoom?.PlayerCount ?? 0})");
         }
@@ -351,7 +398,35 @@ namespace Tetrage.Tests
         [ContextMenu("Manual Start Game")]
         private void ManualStartGame()
         {
+            if (_gameManager == null)
+            {
+                Debug.LogWarning("GameSceneDebugEntrySimple: GameManagerが未初期化のためゲーム開始できません");
+                return;
+            }
+
+            if (_networkMode == NetworkMode.RealPhoton && !PhotonNetwork.IsMasterClient)
+            {
+                LogRealPhotonRuntimeStatus("Manual Start Blocked");
+                Debug.LogWarning("GameSceneDebugEntrySimple: RealPhotonではMasterClientのみゲーム開始可能です。");
+                return;
+            }
+
             _gameManager?.StartGame().Forget();
+        }
+
+        private void LogRealPhotonRuntimeStatus(string label)
+        {
+            if (_networkMode != NetworkMode.RealPhoton)
+            {
+                return;
+            }
+
+            int localActor = PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
+            int masterActor = PhotonNetwork.MasterClient?.ActorNumber ?? -1;
+            string roomName = PhotonNetwork.CurrentRoom?.Name ?? "(none)";
+            int roomPlayerCount = PhotonNetwork.CurrentRoom?.PlayerCount ?? 0;
+            Debug.Log(
+                $"GameSceneDebugEntrySimple: [{label}] Role={_realPhotonDebugRole}, InRoom={PhotonNetwork.InRoom}, IsMasterClient={PhotonNetwork.IsMasterClient}, LocalActor={localActor}, MasterActor={masterActor}, Room={roomName}, RoomPlayers={roomPlayerCount}");
         }
 #else
         // ビルド時には完全に空のクラスになる
