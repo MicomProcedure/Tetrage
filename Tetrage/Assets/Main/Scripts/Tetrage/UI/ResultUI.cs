@@ -78,6 +78,9 @@ namespace Tetrage.UI
                 _resultPanel.SetActive(true);
             }
 
+            // 同一 Canvas 上で Result が先頭子だと他 HUD より背面になるため、表示時は最前面へ
+            transform.SetAsLastSibling();
+
             Debug.Log($"ResultUI: 勝者 {winnerItems.Count}人, 敗者 {loserItems.Count}人を表示");
         }
 

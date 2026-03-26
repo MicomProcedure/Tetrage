@@ -88,7 +88,7 @@ namespace Tetrage.Managers
 		{
 			if (_playerUIPanelManager != null)
 			{
-				_playerUIPanelManager.gameObject.SetActive(visible);
+				_playerUIPanelManager.SetPlayerHudRootVisible(visible);
 			}
 
 			if (_actionPanelController != null)
