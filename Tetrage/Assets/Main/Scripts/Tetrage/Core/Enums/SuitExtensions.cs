@@ -68,6 +68,18 @@ namespace Tetrage.Core.Enums
         };
 
         /// <summary>
+        /// スートの表示用カタカナ名を取得する
+        /// </summary>
+        public static string GetKatakanaName(this Suit suit) => suit switch
+        {
+            Suit.Spade => "スペード",
+            Suit.Heart => "ハート",
+            Suit.Diamond => "ダイヤ",
+            Suit.Club => "クラブ",
+            _ => "?"
+        };
+
+        /// <summary>
         /// スートの色を取得する
         /// </summary>
         /// <param name="suit">対象のスート</param>
