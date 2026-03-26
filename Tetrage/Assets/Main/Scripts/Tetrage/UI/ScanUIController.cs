@@ -102,10 +102,8 @@ namespace Tetrage.UI
             _isScanned = false;
             _gameContext = gameContext;
             _networkController = networkController;
-            var user = gameContext?.UserPlayer;
-            if (user == null)
+            if (!TryGetInitializeUser(gameContext, out var user))
             {
-                Debug.LogWarning("ScanUIController: UserPlayer が null のため初期化をスキップします");
                 return;
             }
 
@@ -201,7 +199,7 @@ namespace Tetrage.UI
 
         private void OnScanResultReceived(ScanResultReceivedEvent e)
         {
-            if (_gameContext?.UserPlayer == null) return;
+            if (!ValidateScanResultContext()) return;
 
             string suitLabel = e.TargetSuit.GetKatakanaName();
             string suitColorHex = ColorUtility.ToHtmlStringRGBA(Color.red);
@@ -229,7 +227,7 @@ namespace Tetrage.UI
         private void BuildOpponentDropdown()
         {
             _opponentIdsOrdered.Clear();
-            if (_scanOpponentDropdown == null || _gameContext?.Players == null || _gameContext.UserPlayer == null)
+            if (!ValidateBuildOpponentDropdownContext())
             {
                 return;
             }
@@ -267,16 +265,16 @@ namespace Tetrage.UI
                 return;
             }
 
-            // ScanPhase 外の従来動作（自分のターゲット表示）—必要なら残す
-            var user = _gameContext?.UserPlayer;
-            var targetPile = user?.Target;
-            if (targetPile == null || targetPile.Count == 0)
+            RevealOwnTargetCard();
+        }
+
+        private void RevealOwnTargetCard()
+        {
+            if (!TryGetOwnTargetCard(out var card))
             {
-                Debug.LogWarning("ScanUIController: ターゲットカードが存在しません");
                 return;
             }
 
-            var card = targetPile.Cards[0];
             var suit = card.Suit;
 
             if (cardImageMapper == null)
@@ -310,36 +308,8 @@ namespace Tetrage.UI
 
         private void TrySendScanTargetSelected()
         {
-            if (_networkController == null || _gameContext?.UserPlayer == null)
+            if (!ValidateScanTargetSelection(out var selfActor, out var targetActor))
             {
-                Debug.LogError("ScanUIController: ネットワークまたは UserPlayer が無効です");
-                return;
-            }
-
-            if (_scanOpponentDropdown == null || _opponentIdsOrdered.Count == 0)
-            {
-                Debug.LogError("ScanUIController: 偵察対象ドロップダウンが未設定か、候補がありません。Inspector で TMP_Dropdown を割り当ててください。");
-                return;
-            }
-
-            int idx = _scanOpponentDropdown.value;
-            if (idx < 0 || idx >= _opponentIdsOrdered.Count)
-            {
-                Debug.LogWarning("ScanUIController: ドロップダウンの選択が無効です");
-                return;
-            }
-
-            var targetPlayerId = _opponentIdsOrdered[idx];
-            var mapper = _networkController.PlayerIdMapper;
-            if (!mapper.TryGetActorNumber(_gameContext.UserPlayer.Id, out var selfActor))
-            {
-                Debug.LogError("ScanUIController: 自PlayerId の ActorNumber 変換に失敗しました");
-                return;
-            }
-
-            if (!mapper.TryGetActorNumber(targetPlayerId, out var targetActor))
-            {
-                Debug.LogError("ScanUIController: 対象 PlayerId の ActorNumber 変換に失敗しました");
                 return;
             }
 
@@ -356,6 +326,87 @@ namespace Tetrage.UI
             {
                 Text_1.text = "偵察対象を送信しました。結果を待っています…";
             }
+        }
+
+        #endregion
+
+        #region Validation
+        private bool ValidateScanTargetSelection(out int selfActor, out int targetActor)
+        {
+            selfActor = default;
+            targetActor = default;
+
+            if (_networkController == null || _gameContext?.UserPlayer == null)
+            {
+                Debug.LogError("ScanUIController: ネットワークまたは UserPlayer が無効です");
+                return false;
+            }
+
+            if (_scanOpponentDropdown == null || _opponentIdsOrdered.Count == 0)
+            {
+                Debug.LogError("ScanUIController: 偵察対象ドロップダウンが未設定か、候補がありません。Inspector で TMP_Dropdown を割り当ててください。");
+                return false;
+            }
+
+            int idx = _scanOpponentDropdown.value;
+            if (idx < 0 || idx >= _opponentIdsOrdered.Count)
+            {
+                Debug.LogWarning("ScanUIController: ドロップダウンの選択が無効です");
+                return false;
+            }
+
+            var targetPlayerId = _opponentIdsOrdered[idx];
+            var mapper = _networkController.PlayerIdMapper;
+
+            if (!mapper.TryGetActorNumber(_gameContext.UserPlayer.Id, out selfActor))
+            {
+                Debug.LogError("ScanUIController: 自PlayerId の ActorNumber 変換に失敗しました");
+                return false;
+            }
+
+            if (!mapper.TryGetActorNumber(targetPlayerId, out targetActor))
+            {
+                Debug.LogError("ScanUIController: 対象 PlayerId の ActorNumber 変換に失敗しました");
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryGetInitializeUser(IGameContext gameContext, out IPlayer user)
+        {
+            user = gameContext?.UserPlayer;
+            if (user != null)
+            {
+                return true;
+            }
+
+            Debug.LogWarning("ScanUIController: UserPlayer が null のため初期化をスキップします");
+            return false;
+        }
+
+        private bool ValidateScanResultContext()
+        {
+            return _gameContext?.UserPlayer != null;
+        }
+
+        private bool ValidateBuildOpponentDropdownContext()
+        {
+            return _scanOpponentDropdown != null && _gameContext?.Players != null && _gameContext.UserPlayer != null;
+        }
+
+        private bool TryGetOwnTargetCard(out Tetrage.Models.Card card)
+        {
+            card = null;
+            var targetPile = _gameContext?.UserPlayer?.Target;
+            if (targetPile == null || targetPile.Count == 0)
+            {
+                Debug.LogWarning("ScanUIController: ターゲットカードが存在しません");
+                return false;
+            }
+
+            card = targetPile.Cards[0];
+            return true;
         }
 
         #endregion
