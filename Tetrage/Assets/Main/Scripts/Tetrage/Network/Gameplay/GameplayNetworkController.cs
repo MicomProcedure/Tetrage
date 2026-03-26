@@ -91,10 +91,8 @@ namespace Tetrage.Network.Gameplay
                 playerRegistry,
                 _turnGate,
                 _gameContext,
-                _broadcaster,
                 _playerIdMapper,
                 _sequence,
-                new DefaultScanTargetSelector(),
                 _isHost);
 
             _hostActionProcessor = new DefaultHostActionProcessor(this, _playerIdMapper);

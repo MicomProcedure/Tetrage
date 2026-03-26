@@ -66,7 +66,9 @@ namespace Tetrage.Network.Gameplay
         /// </summary>
         public void OnEvent(EventData photonEvent)
         {
+            #if UNITY_EDITOR
             Debug.Log($"PhotonReceiver: OnEvent code={photonEvent.Code} dataType={(photonEvent?.CustomData != null ? photonEvent.CustomData.GetType().Name : "null")}");
+            #endif
             if (_handlers.TryGetValue(photonEvent.Code, out var h))
             {
                 if (photonEvent.CustomData is byte[] bytes)

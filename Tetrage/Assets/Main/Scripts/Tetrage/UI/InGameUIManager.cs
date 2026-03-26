@@ -40,7 +40,8 @@ namespace Tetrage.Managers
 		/// <summary>
 		/// GameContextを受け取り、イベント購読を開始する。
 		/// </summary>
-		public void Initialize(IGameContext context)
+		/// <param name="gameplayNetwork">ScanPhase で ScanTargetSelected を送るために ScanUI に渡す（未設定なら送信不可）</param>
+		public void Initialize(IGameContext context, IGameplayNetworkController gameplayNetwork = null)
 		{
 			_gameContext = context;
 			_events = context?.Events;
@@ -53,7 +54,7 @@ namespace Tetrage.Managers
 
 			if (_ScanUIController != null)
 			{
-				_ScanUIController.Initialize(_gameContext);
+				_ScanUIController.Initialize(_gameContext, gameplayNetwork);
 			}
 
 			if (_actionPanelController != null)
@@ -68,6 +69,7 @@ namespace Tetrage.Managers
 			}
 
 			Subscribe();
+			ApplyInitialHudVisibility();
 
 			// 初期パネル構築はGameManager等から明示的に渡す想定
 		}
@@ -77,6 +79,10 @@ namespace Tetrage.Managers
 		/// </summary>
 		public void Teardown()
 		{
+			if (_ScanUIController != null)
+			{
+				_ScanUIController.TeardownScan();
+			}
 			Unsubscribe();
 		}
 
@@ -134,6 +140,14 @@ namespace Tetrage.Managers
 			_events.ActionResult
 				.Subscribe(OnActionResult)
 				.AddTo(_disposables);
+
+			_events.ScanPhaseStarted
+				.Subscribe(OnScanPhaseStarted)
+				.AddTo(_disposables);
+
+			_events.ScanPhaseEnded
+				.Subscribe(OnScanPhaseEnded)
+				.AddTo(_disposables);
 		}
 
 		private void Unsubscribe()
@@ -164,6 +178,9 @@ namespace Tetrage.Managers
 			if (_playerUIPanelManager == null) return;
 			// DomainEventのCurrentPlayerIdを使ってハイライト（intに変換）
 			_playerUIPanelManager.SetCurrentPlayer(e.CurrentPlayerId.Value);
+
+			// ScanPhase あり: OnScanPhaseEnded で既に有効化済み。スキップ時は ScanPhaseEnded が来ないためここで有効化する
+			SetActionPanelActive(true);
 		}
 
 		private void OnActionResult(DomainEvents.ActionResultEvent e)
@@ -171,6 +188,7 @@ namespace Tetrage.Managers
 			Debug.Log($"InGameUIManager: OnActionResult");
 			if (_TetrageSoloCutInAnimCtl != null && e.ActionType == ActionType.TetrageSolo)
 			{
+				_TetrageSoloCutInAnimCtl.gameObject.SetActive(true);
 				_TetrageSoloCutInAnimCtl.PlayCutIn();
 			}
 		}
@@ -190,6 +208,8 @@ namespace Tetrage.Managers
 				return;
 			}
 
+			_resultUI.gameObject.SetActive(true);
+
 			SetGameplayHudVisible(false);
 
 			// PlayerId[]をint[]に変換
@@ -201,6 +221,53 @@ namespace Tetrage.Managers
 
 			_resultUI.DisplayResult(winnerIds, _gameContext.Players);
 		}
+
+		private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)
+		{
+			Debug.Log("InGameUIManager: OnScanPhaseStarted");
+			SetScanUiActive(true);
+		}
+
+		private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
+		{
+			Debug.Log("InGameUIManager: OnScanPhaseEnded");
+			SetScanUiActive(false);
+			SetActionPanelActive(true);
+		}
+
+		#endregion
+
+		#region 初期表示・UIの有効化
+
+		/// <summary>
+		/// 初期化直後のHUD状態。ゲーム開始演出・プレイヤーパネルは表示し、
+		/// Scan・アクション・カットイン・結果はイベントまで非表示にする。
+		/// </summary>
+		private void ApplyInitialHudVisibility()
+		{
+			SetScanUiActive(false);
+			SetActionPanelActive(false);
+			SetCutInActive(false);
+			if (_resultUI != null)
+			{
+				_resultUI.gameObject.SetActive(false);
+			}
+		}
+
+		private static void SetUiRootActive(MonoBehaviour component, bool active)
+		{
+			if (component != null)
+			{
+				component.gameObject.SetActive(active);
+			}
+		}
+
+		private void SetScanUiActive(bool active) => SetUiRootActive(_ScanUIController, active);
+
+		private void SetActionPanelActive(bool active) => SetUiRootActive(_actionPanelController, active);
+
+		private void SetCutInActive(bool active) => SetUiRootActive(_TetrageSoloCutInAnimCtl, active);
+
 		#endregion
 
 		#region ヘルパー

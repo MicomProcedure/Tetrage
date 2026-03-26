@@ -20,7 +20,7 @@ namespace Tetrage.Managers
                 var messenger = new DealerNetworkMessenger(netCtl.Broadcaster, netCtl.Sequence, netCtl.PlayerIdMapper);
                 if (gameMode == GameMode.Debug)
                 {
-                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext, netCtl.PlayerIdMapper, new DefaultScanTargetSelector());
+                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext, netCtl.PlayerIdMapper);
                     if (networkContext.IsHost)
                     {
                         dealer.SetMessenger(messenger);
@@ -30,7 +30,7 @@ namespace Tetrage.Managers
                 }
                 else if (gameMode == GameMode.Release)
                 {
-                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext, netCtl.PlayerIdMapper, new DefaultScanTargetSelector());
+                    var dealer = new Dealer(gameContext, new RealDealerPlanner(), networkContext, netCtl.PlayerIdMapper);
                     if (networkContext.IsHost)
                     {
                         dealer.SetMessenger(messenger);

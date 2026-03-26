@@ -183,7 +183,7 @@ namespace Tetrage.Managers
                 // 5.6 InGameUIManager 初期化（Bus購読開始）
                 if (_inGameUIManager != null)
                 {
-                    _inGameUIManager.Initialize(_gameContext);
+                    _inGameUIManager.Initialize(_gameContext, _netCtl);
                 }
 
 

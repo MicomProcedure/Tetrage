@@ -5,5 +5,7 @@ namespace Tetrage.Core.Constants
         public const int DEFAULT_CARD_PILE_ID_OFFSET = 1000;
         public const int MAX_PLAYER_COUNT = 6;
         public const int MIN_PLAYER_COUNT = 3;
+
+        public const float SCAN_SELECTION_TIMEOUT_SECONDS = 300f;
     }
 }

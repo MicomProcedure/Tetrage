@@ -1,5 +1,4 @@
 using R3;
-using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Enums;
@@ -9,8 +8,6 @@ using Tetrage.Network.Gameplay;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
 using Tetrage.Core.Contracts;
-using NetworkDto = Tetrage.Network.Gameplay;
-
 namespace Tetrage.Core
 {
     /// <summary>
@@ -24,10 +21,8 @@ namespace Tetrage.Core
         private readonly IdRegistry<PlayerId, Player> _playerRegistry;
         private readonly TurnGate _turnGate;
         private readonly GameContext _gameContext;
-        private readonly INetworkBroadcaster _broadcaster;
         private readonly IPlayerIdMapper _playerIdMapper;
         private readonly SequenceService _sequence;
-        private readonly IScanTargetSelector _scanTargetSelector;
         private readonly bool _isHost;
         private CompositeDisposable _disposables = new();
         private bool _isScanPhaseActive;
@@ -42,10 +37,8 @@ namespace Tetrage.Core
             IdRegistry<PlayerId, Player> playerRegistry,
             TurnGate turnGate,
             IGameContext gameContext,
-            INetworkBroadcaster broadcaster,
             IPlayerIdMapper playerIdMapper,
             SequenceService sequence,
-            IScanTargetSelector scanTargetSelector,
             bool isHost)
         {
             _cardRegistry = cardRegistry;
@@ -53,10 +46,8 @@ namespace Tetrage.Core
             _playerRegistry = playerRegistry;
             _turnGate = turnGate;
             _gameContext = gameContext as GameContext;
-            _broadcaster = broadcaster;
             _playerIdMapper = playerIdMapper;
             _sequence = sequence;
-            _scanTargetSelector = scanTargetSelector;
             _isHost = isHost;
 
             Initialize(_gameContext.Events);
@@ -335,21 +326,13 @@ namespace Tetrage.Core
         private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)
         {
             _isScanPhaseActive = true;
-
-            if (_isHost)
-            {
-                Debug.Log("GameplayDomainEventHandler: ScanPhase開始（Host）");
-                return;
-            }
-
-            HandleGuestScanSelectionAsync().Forget();
+            Debug.Log($"GameplayDomainEventHandler: ScanPhase開始（Host={_isHost}）。対象選択は ScanUIController から ScanTargetSelected を送信する。");
         }
 
         private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
         {
             _isScanPhaseActive = false;
             Debug.Log("GameplayDomainEventHandler: ScanPhase終了");
-            // TODO(UI): ScanPhase終了に合わせて偵察UIを閉じる。
         }
 
         private void OnScanTargetSelected(DomainEvents.ScanTargetSelectedEvent e)
@@ -362,7 +345,6 @@ namespace Tetrage.Core
         {
             if (_isHost) return;
             Debug.Log($"GameplayDomainEventHandler: ScanResult受信 target={e.TargetPlayerId}, suit={e.TargetSuit}");
-            // TODO(UI): ローカルプレイヤー専用の偵察結果UIを表示する。
         }
 
         private void OnFinishingGame(DomainEvents.FinishingGameEvent e)
@@ -378,33 +360,6 @@ namespace Tetrage.Core
             _pendingWinnerPlayerIds = e.WinnerPlayerIds ?? _pendingWinnerPlayerIds;
             Debug.Log($"GameplayDomainEventHandler: GameEnded受信 勝者数={_pendingWinnerPlayerIds?.Count ?? 0}");
             // 結果UIは InGameUIManager（FinishingGame）→ ResultUI。タイトルへは ResultUI から ApplicationManager.GoToTitle。
-        }
-
-        private async UniTaskVoid HandleGuestScanSelectionAsync()
-        {
-            if (_isHost || !_isScanPhaseActive) return;
-            if (_gameContext?.UserPlayer == null || _scanTargetSelector == null || _broadcaster == null || _playerIdMapper == null) return;
-
-            var self = _gameContext.UserPlayer;
-            var candidates = _gameContext.Players
-                .Where(player => player.Id != self.Id)
-                .ToList();
-            if (candidates.Count == 0) return;
-
-            // TODO(UI): ここで候補プレイヤー選択UIを表示し、選択結果を受け取る。
-            var selectedTarget = await _scanTargetSelector.SelectTargetAsync(self, candidates);
-            if (selectedTarget == null) return;
-
-            if (!_playerIdMapper.TryGetActorNumber(self.Id, out var selfActorNumber)) return;
-            if (!_playerIdMapper.TryGetActorNumber(selectedTarget.Id, out var selectedActorNumber)) return;
-
-            var payload = new NetworkDto.ScanTargetSelectedEvent
-            {
-                sequence = _sequence?.NextSequence() ?? 0,
-                actorPlayerId = selfActorNumber,
-                selectedTargetActorNumber = selectedActorNumber
-            };
-            _broadcaster.Raise(EventCode.ScanTargetSelected, payload);
         }
 
         #endregion
