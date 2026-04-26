@@ -5,6 +5,7 @@ using Tetrage.Models;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Tetrage.Services;
+using R3;
 
 namespace Tetrage.Presenters
 {
@@ -15,6 +16,7 @@ namespace Tetrage.Presenters
     {
         private readonly Card _model;
         private readonly CardView _view;
+        private readonly CompositeDisposable _disposables = new();
 
         public CardPresenter(Card model, CardView view)
         {
@@ -30,7 +32,9 @@ namespace Tetrage.Presenters
             // Subscribe to model changes
             _model.CardChanged += OnModelChanged;
             // Subscribe to view clicks
-            _view.Clicked += OnViewClicked;
+            _view.Clicked
+                .Subscribe(_ => OnViewClicked())
+                .AddTo(_disposables);
             // Subscribe to animation events
             _view.FlipAnimationHalfway += OnFlipAnimationHalfway;
 
@@ -110,9 +114,9 @@ namespace Tetrage.Presenters
 
             // イベント購読解除
             _model.CardChanged -= OnModelChanged;
-            _view.Clicked -= OnViewClicked;
             _view.Destroyed -= OnViewDestroyed;
             _view.FlipAnimationHalfway -= OnFlipAnimationHalfway;
+            _disposables.Dispose();
         }
     }
 }

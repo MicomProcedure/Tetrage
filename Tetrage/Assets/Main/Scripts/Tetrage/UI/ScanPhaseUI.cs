@@ -50,18 +50,6 @@ namespace Tetrage.UI
     /// </summary>
     public class ScanPhaseUI : MonoBehaviour
     {
-        private readonly struct OpponentTargetCardClick
-        {
-            public CardView CardView { get; }
-            public PlayerId TargetPlayerId { get; }
-
-            public OpponentTargetCardClick(CardView cardView, PlayerId targetPlayerId)
-            {
-                CardView = cardView;
-                TargetPlayerId = targetPlayerId;
-            }
-        }
-
         #region Serialized Fields
 
         [Header("Panel References")]
@@ -94,10 +82,7 @@ namespace Tetrage.UI
         private bool _isScanned;
         private GameObject _spawnedTargetCardImage;
 
-        private readonly Dictionary<CardView, Action> _opponentCardClickHandlers = new();
-        private readonly Subject<OpponentTargetCardClick> _opponentTargetCardClickSubject = new();
-        private CompositeDisposable _opponentTargetCardClickDisposables = new();
-        private bool _isOpponentTargetCardClickSubscribed;
+        private readonly Dictionary<CardView, IDisposable> _opponentCardClickSubscriptions = new();
         private bool _scanPhaseActive;
         private bool _scanTargetSent;
         private bool _ownTargetAcknowledgedForScan;
@@ -137,8 +122,6 @@ namespace Tetrage.UI
         private void OnDestroy()
         {
             ResetScanPhaseUiState();
-            _opponentTargetCardClickDisposables.Dispose();
-            _opponentTargetCardClickSubject.Dispose();
         }
 
         #endregion
@@ -172,7 +155,6 @@ namespace Tetrage.UI
 
             _playerLabelText.text = seatLabel;
             _profileDisplayUI.SetManualInputData(user.IconIndex, user.UserId);
-            SubscribeOpponentTargetCardClickStream();
 
             ResetScanPhaseUiState();
         }
@@ -262,9 +244,8 @@ namespace Tetrage.UI
                 }
 
                 var targetPlayerId = p.Id;  // 相手プレイヤーID
-                Action onClicked = () => _opponentTargetCardClickSubject.OnNext(new OpponentTargetCardClick(targetCardView, targetPlayerId));
-                _opponentCardClickHandlers[targetCardView] = onClicked;
-                targetCardView.Clicked += onClicked;   // 相手カード選択リストの表示を更新
+                var subscription = targetCardView.Clicked.Subscribe(_ => ApplyOpponentTargetCardSelection(targetCardView, targetPlayerId));
+                _opponentCardClickSubscriptions[targetCardView] = subscription;
                 targetCardView.Unhighlight();
             }
         }
@@ -580,20 +561,6 @@ namespace Tetrage.UI
             return CardViewRegistry.TryGetView(targetCard, out targetCardView) && targetCardView != null;
         }
 
-        private void SubscribeOpponentTargetCardClickStream()
-        {
-            if (_isOpponentTargetCardClickSubscribed)
-            {
-                return;
-            }
-
-            _opponentTargetCardClickSubject
-                .Subscribe(onClicked => ApplyOpponentTargetCardSelection(onClicked.CardView, onClicked.TargetPlayerId))
-                .AddTo(_opponentTargetCardClickDisposables);
-
-            _isOpponentTargetCardClickSubscribed = true;
-        }
-
         private void ApplyOpponentTargetCardSelection(CardView clickedCardView, PlayerId targetPlayerId)
         {
             if (!_scanPhaseActive || _scanTargetSent || !_ownTargetAcknowledgedForScan)
@@ -626,18 +593,18 @@ namespace Tetrage.UI
 
         private void ReleaseOpponentTargetCardSelection()
         {
-            foreach (var pair in _opponentCardClickHandlers)
+            foreach (var pair in _opponentCardClickSubscriptions)
             {
                 if (pair.Key == null)
                 {
                     continue;
                 }
 
-                pair.Key.Clicked -= pair.Value;
+                pair.Value.Dispose();
                 pair.Key.Unhighlight();
             }
 
-            _opponentCardClickHandlers.Clear();
+            _opponentCardClickSubscriptions.Clear();
         }
 
         private bool TryGetOwnTargetCard(out Tetrage.Models.Card card)
