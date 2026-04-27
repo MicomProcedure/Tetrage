@@ -8,11 +8,8 @@ using Tetrage.Core.Enums;
 using Tetrage.Core.Events;
 using Tetrage.Core.Ids;
 using Tetrage.Core.Contracts;
-using Tetrage.Network.Gameplay;
 using Tetrage.Data;
-using NetworkDto = Tetrage.Network.Gameplay;
 using Tetrage.Title;
-using Tetrage.Services;
 using R3;
 
 namespace Tetrage.UI
@@ -53,6 +50,7 @@ namespace Tetrage.UI
         #region Serialized Fields
 
         [Header("Panel References")]
+        [SerializeField] private GameObject _scanNaviObject;
         [SerializeField] private GameObject _targetPanel;
         [SerializeField] private TextMeshProUGUI _naviText;
         [SerializeField] private TextMeshProUGUI _playerLabelText;
@@ -75,20 +73,12 @@ namespace Tetrage.UI
         #region Private Fields
 
         private IGameContext _gameContext;
-        private IGameplayNetworkController _networkController;
         private PlayerId _playerId;
         private int _playerIconIndex;
         private string _playerName;
         private bool _isScanned;
-        private GameObject _spawnedTargetCardImage;
-
-        private readonly Dictionary<CardView, IDisposable> _opponentCardClickSubscriptions = new();
         private bool _scanPhaseActive;
-        private bool _scanTargetSent;
-        private bool _ownTargetAcknowledgedForScan;
-        private bool _hasSelectedOpponentTarget;
-        private PlayerId _selectedTargetPlayerId;
-        private CardView _selectedTargetCardView;
+        private readonly Subject<Unit> _nextClicked = new();
 
         #endregion
 
@@ -98,6 +88,10 @@ namespace Tetrage.UI
         /// Navi 表示直前に全文を加工する。ローカライズ・デバッグ文言差し替えなどに使う。null で未使用。
         /// </summary>
         public Func<string, ScanNaviTextId, string> NaviTextFormatter { get; set; }
+        /// <summary>
+        /// 自分ターゲット確認後に押された Next を通知する。
+        /// </summary>
+        public Observable<Unit> NextClicked => _nextClicked;
 
         #endregion
 
@@ -107,7 +101,7 @@ namespace Tetrage.UI
         {
             if (_nextButton != null)
             {
-                _nextButton.onClick.AddListener(OnNextButtonClicked1);
+                _nextButton.onClick.AddListener(OnNextButtonClicked);
             }
         }
 
@@ -115,13 +109,14 @@ namespace Tetrage.UI
         {
             if (_nextButton != null)
             {
-                _nextButton.onClick.RemoveListener(OnNextButtonClicked1);
+                _nextButton.onClick.RemoveListener(OnNextButtonClicked);
             }
         }
 
         private void OnDestroy()
         {
-            ResetScanPhaseUiState();
+            ResetScanPhaseUIState();
+            _nextClicked.Dispose();
         }
 
         #endregion
@@ -131,16 +126,15 @@ namespace Tetrage.UI
         /// <summary>
         /// 表示用の参照を保持する。イベント購読は行わない。
         /// </summary>
-        public void Initialize(IGameContext gameContext, IGameplayNetworkController networkController)
+        public void Initialize(IGameContext gameContext)
         {
-            if (!ValidateInitialize(gameContext, networkController))
+            if (!ValidateInitialize(gameContext))
             {
                 return;
             }
 
             _isScanned = false;
             _gameContext = gameContext;
-            _networkController = networkController;
 
             var user = gameContext.UserPlayer;
             _playerId = user.Id;
@@ -156,19 +150,17 @@ namespace Tetrage.UI
             _playerLabelText.text = seatLabel;
             _profileDisplayUI.SetManualInputData(user.IconIndex, user.UserId);
 
-            ResetScanPhaseUiState();
+            ResetScanPhaseUIState();
         }
 
         /// <summary>
         /// InGameUIManager の Teardown から呼ぶ。Scan 中の内部状態のみリセットする。
         /// </summary>
-        public void ResetScanPhaseUiState()
+        public void ResetScanPhaseUIState()
         {
             _scanPhaseActive = false;
-            _scanTargetSent = false;
-            _ownTargetAcknowledgedForScan = false;
-            ResetOpponentTargetSelection();
-            ReleaseOpponentTargetCardSelection();
+            _isScanned = false;
+            SetTargetConfirmationPanelVisible(true);
         }
 
         #endregion
@@ -179,12 +171,8 @@ namespace Tetrage.UI
         public void ApplyScanPhaseStarted(ScanPhaseStartedEvent e)
         {
             _scanPhaseActive = true;
-            _scanTargetSent = false;
             _isScanned = false;
-            _ownTargetAcknowledgedForScan = false;
-            ResetOpponentTargetSelection();
-
-            BuildOpponentSelectionView();
+            SetTargetConfirmationPanelVisible(true);
 
             SetNaviText(ScanNaviTextId.ScanPhaseAskOwnTarget, _playerName, _playerId.Value);
         }
@@ -193,10 +181,7 @@ namespace Tetrage.UI
         public void ApplyScanPhaseEnded()
         {
             _scanPhaseActive = false;
-            _scanTargetSent = false;
-            _ownTargetAcknowledgedForScan = false;
-            ResetOpponentTargetSelection();
-            ReleaseOpponentTargetCardSelection();
+            SetTargetConfirmationPanelVisible(true);
         }
 
         /// <summary>ScanResultReceived 受信時の結果表示。</summary>
@@ -224,56 +209,28 @@ namespace Tetrage.UI
             _isScanned = true;
         }
 
-        /// <summary>相手カード選択リストの表示を更新する。</summary>
-        private void BuildOpponentSelectionView()
-        {
-            ReleaseOpponentTargetCardSelection();   // 相手カード選択リストの初期化
-            if (!ValidateBuildOpponentSelectionContext())   // 相手カード選択リストのバリデーション
-            {
-                return;
-            }
-
-            foreach (var p in _gameContext.Players)   // 全プレイヤーに対して相手カード選択リストの表示を更新
-            {
-                if (p.Id == _gameContext.UserPlayer.Id) continue;
-
-                if (!TryGetTargetCardView(p, out var targetCardView))
-                {
-                    Debug.LogWarning($"ScanPhaseUI: PlayerId={p.Id.Value} のターゲットカードViewが見つからないため選択候補に含めません。");
-                    continue;
-                }
-
-                var targetPlayerId = p.Id;  // 相手プレイヤーID
-                var subscription = targetCardView.Clicked.Subscribe(_ => ApplyOpponentTargetCardSelection(targetCardView, targetPlayerId));
-                _opponentCardClickSubscriptions[targetCardView] = subscription;
-                targetCardView.Unhighlight();
-            }
-        }
-
         #endregion
 
         #region Next Button
 
         /// <summary>Prefab の Button からの別名（既存シリアライズ互換）。</summary>
-        public void OnNextButtonClicked() => OnNextButtonClicked1();
 
-        public void OnNextButtonClicked1()
+        public void OnNextButtonClicked()
         {
-            if (_scanPhaseActive && !_scanTargetSent)
+            if (_scanPhaseActive)
             {
-                if (!_ownTargetAcknowledgedForScan)
+                if (!_isScanned)
                 {
                     if (!RevealOwnTargetCardForScanPhase())
                     {
                         return;
                     }
 
-                    _ownTargetAcknowledgedForScan = true;
-                    SetNaviText(ScanNaviTextId.ScanPhaseSelectOpponent, _playerName, _playerId.Value);
+                    _isScanned = true;
                     return;
                 }
 
-                TrySendScanTargetSelected();
+                _nextClicked.OnNext(Unit.Default);
                 return;
             }
 
@@ -351,25 +308,6 @@ namespace Tetrage.UI
             return true;
         }
 
-        private void TrySendScanTargetSelected()
-        {
-            if (!ValidateScanTargetSelection(out var selfActor, out var targetActor))
-            {
-                return;
-            }
-
-            var payload = new NetworkDto.ScanTargetSelectedEvent
-            {
-                sequence = _networkController.Sequence.NextSequence(),
-                actorPlayerId = selfActor,
-                selectedTargetActorNumber = targetActor
-            };
-            _networkController.Broadcaster.Raise(EventCode.ScanTargetSelected, payload);
-            _scanTargetSent = true;
-
-            SetNaviText(ScanNaviTextId.ScanPhaseSentWaiting);
-        }
-
         #endregion
 
         #region Navi text helpers
@@ -400,11 +338,11 @@ namespace Tetrage.UI
             switch (id)
             {
                 case ScanNaviTextId.InitializeBoot:
-                    return "ScanPhase で偵察する相手を選び、Next を押してください。\n{0}さんは{1}Pです。";
+                    return "ターゲットカードの確認を行います。\n{0}さんは{1}Pです。\n準備ができたら「Next」を押してください。";
                 case ScanNaviTextId.ScanPhaseAskOwnTarget:
-                    return "まず Next で自分のターゲットカードを確認してください。\n（{0} / {1}P）";
+                    return "ターゲットカードの確認を行います。\n{0}さんは{1}Pです。\n準備ができたら「Next」を押してください。";
                 case ScanNaviTextId.ScanPhaseOwnTargetRevealed:
-                    return "あなたのターゲットカードは、{0}です。\n確認できたら相手を選択して Next を押してください。";
+                    return "あなたのターゲットは、{0}です。\nターゲットを覚えて、そのまま「Next」を押してください。";
                 case ScanNaviTextId.ScanPhaseSelectOpponent:
                     return "偵察する相手のターゲットカードをフィールド上でクリックし、もう一度 Next を押してください。\n（{0} / {1}P）";
                 case ScanNaviTextId.ScanPhaseSentWaiting:
@@ -456,7 +394,7 @@ namespace Tetrage.UI
 
         #region Validation
 
-        private bool ValidateInitialize(IGameContext gameContext, IGameplayNetworkController networkController)
+        private bool ValidateInitialize(IGameContext gameContext)
         {
             bool ok = true;
 
@@ -469,12 +407,6 @@ namespace Tetrage.UI
             if (gameContext != null && gameContext.UserPlayer == null)
             {
                 Debug.LogError("ScanPhaseUI.Initialize: gameContext.UserPlayer が null です。");
-                ok = false;
-            }
-
-            if (networkController == null)
-            {
-                Debug.LogError("ScanPhaseUI.Initialize: networkController (IGameplayNetworkController) が null です。");
                 ok = false;
             }
 
@@ -499,112 +431,26 @@ namespace Tetrage.UI
             return ok;
         }
 
-        private bool ValidateScanTargetSelection(out int selfActor, out int targetActor)
-        {
-            selfActor = default;
-            targetActor = default;
-
-            if (_networkController == null || _gameContext?.UserPlayer == null)
-            {
-                Debug.LogError("ScanPhaseUI: ネットワークまたは UserPlayer が無効です");
-                return false;
-            }
-
-            if (!_hasSelectedOpponentTarget)
-            {
-                Debug.LogWarning("ScanPhaseUI: 偵察対象が未選択です。フィールド上の相手ターゲットカードをクリックしてください。");
-                return false;
-            }
-
-            var targetPlayerId = _selectedTargetPlayerId;
-            if (targetPlayerId == _gameContext.UserPlayer.Id)
-            {
-                Debug.LogWarning("ScanPhaseUI: 自分自身は偵察対象に選択できません。");
-                return false;
-            }
-            var mapper = _networkController.PlayerIdMapper;
-
-            if (!mapper.TryGetActorNumber(_gameContext.UserPlayer.Id, out selfActor))
-            {
-                Debug.LogError("ScanPhaseUI: 自PlayerId の ActorNumber 変換に失敗しました");
-                return false;
-            }
-
-            if (!mapper.TryGetActorNumber(targetPlayerId, out targetActor))
-            {
-                Debug.LogError("ScanPhaseUI: 対象 PlayerId の ActorNumber 変換に失敗しました");
-                return false;
-            }
-
-            return true;
-        }
-
         private bool ValidateScanResultContext()
         {
             return _gameContext?.UserPlayer != null;
         }
-
-        private bool ValidateBuildOpponentSelectionContext()
+        
+        /// <summary>
+        /// ターゲット確認パネルのみ表示/非表示を切り替える。
+        /// </summary>
+        public void SetTargetConfirmationPanelVisible(bool visible)
         {
-            return _gameContext?.Players != null && _gameContext.UserPlayer != null;
-        }
-
-        private bool TryGetTargetCardView(IPlayer player, out CardView targetCardView)
-        {
-            targetCardView = null;
-            if (player?.Target?.Cards == null || player.Target.Cards.Count == 0)
+            if (_scanNaviObject != null)
             {
-                return false;
-            }
-
-            var targetCard = player.Target.Cards[0];
-            return CardViewRegistry.TryGetView(targetCard, out targetCardView) && targetCardView != null;
-        }
-
-        private void ApplyOpponentTargetCardSelection(CardView clickedCardView, PlayerId targetPlayerId)
-        {
-            if (!_scanPhaseActive || _scanTargetSent || !_ownTargetAcknowledgedForScan)
-            {
+                _scanNaviObject.SetActive(visible);
                 return;
             }
 
-            if (_selectedTargetCardView != null && _selectedTargetCardView != clickedCardView)
+            if (_targetPanel != null)
             {
-                _selectedTargetCardView.Unhighlight();
+                _targetPanel.SetActive(visible);
             }
-
-            _selectedTargetCardView = clickedCardView;
-            _selectedTargetCardView.Highlight();
-            _selectedTargetPlayerId = targetPlayerId;
-            _hasSelectedOpponentTarget = true;
-        }
-
-        private void ResetOpponentTargetSelection()
-        {
-            if (_selectedTargetCardView != null)
-            {
-                _selectedTargetCardView.Unhighlight();
-            }
-
-            _selectedTargetCardView = null;
-            _selectedTargetPlayerId = default;
-            _hasSelectedOpponentTarget = false;
-        }
-
-        private void ReleaseOpponentTargetCardSelection()
-        {
-            foreach (var pair in _opponentCardClickSubscriptions)
-            {
-                if (pair.Key == null)
-                {
-                    continue;
-                }
-
-                pair.Value.Dispose();
-                pair.Key.Unhighlight();
-            }
-
-            _opponentCardClickSubscriptions.Clear();
         }
 
         private bool TryGetOwnTargetCard(out Tetrage.Models.Card card)

@@ -21,7 +21,7 @@ namespace Tetrage.Network
         private const string PlayerProfileSaveKey = "PlayerProfile";
 
         // プロパティ設定済みフラグ
-        private bool isPropertiesSet = false;
+        private bool _isPropertiesSet = false;
         
         #endregion
 
@@ -34,7 +34,7 @@ namespace Tetrage.Network
         {
             var data = ResolveLocalProfileData();
             ApplyPlayerProfileDataToPhoton(data);
-            isPropertiesSet = true;
+            _isPropertiesSet = true;
             Debug.Log($"プレイヤープロパティを設定: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
         }
 
@@ -50,7 +50,7 @@ namespace Tetrage.Network
 
             var data = ResolveLocalProfileData();
             ApplyPlayerProfileDataToPhoton(data);
-            isPropertiesSet = true;
+            _isPropertiesSet = true;
             Debug.Log($"[Push] プレイヤープロパティを更新: IconIndex={data.IconIndex}, PlayerName={data.PlayerName}");
         }
 
@@ -141,7 +141,7 @@ namespace Tetrage.Network
         /// </summary>
         public override void OnLeftRoom()
         {
-            isPropertiesSet = false;
+            _isPropertiesSet = false;
             Debug.Log("部屋を退出したため、プロパティ設定フラグをリセットしました");
         }
         

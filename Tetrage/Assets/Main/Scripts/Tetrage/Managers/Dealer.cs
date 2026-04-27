@@ -164,8 +164,6 @@ namespace Tetrage.Managers
             // 初めてラウンドを開始する際の処理（山札シャッフル、ターゲットカード設定、ターン順序初期化、最初のプレイヤーを決定）
             FirstDeal();
 
-            // ゲーム開始イベントを通知
-            OnGameStart();
 
             // ゲーム終了フラグをリセット
             _isGameFinished = false;
@@ -427,42 +425,47 @@ namespace Tetrage.Managers
             _gameContext.Events.ScanTargetSelected
                 .Subscribe(e =>
                 {
+                    // アクターのプレイヤーIDが有効かどうかを確認
                     if (!playerIdSet.Contains(e.ActorPlayerId)) return;
+                    // 選択されたターゲットのプレイヤーIDが有効かどうかを確認
                     if (!playerIdSet.Contains(e.SelectedTargetPlayerId)) return;
+                    // 自分自身をターゲットに選択していないかを確認
                     if (e.SelectedTargetPlayerId == e.ActorPlayerId) return;
+                    // ターゲットのプレイヤーIDが実際に存在しているかを確認
                     if (!TryResolvePlayerById(e.SelectedTargetPlayerId, out _)) return;
+   
 
                     selections[e.ActorPlayerId] = e.SelectedTargetPlayerId;
                     Debug.Log($"Dealer: ScanTargetSelected 受信 actor={e.ActorPlayerId}, target={e.SelectedTargetPlayerId}");
                 })
                 .AddTo(disposables);
 
-            var deadline = Time.realtimeSinceStartup + Mathf.Max(0f, timeoutSeconds);
-            while (!token.IsCancellationRequested && selections.Count < allPlayers.Count)
+            var deadline = Time.realtimeSinceStartup + Mathf.Max(0f, timeoutSeconds);   // タイムアウト時間を設定
+            while (!token.IsCancellationRequested && selections.Count < allPlayers.Count)   // 全プレイヤーの選択が完了するまで待機
             {
-                if (Time.realtimeSinceStartup >= deadline)
+                if (Time.realtimeSinceStartup >= deadline)   // タイムアウト時間を超えた場合
                 {
                     break;
                 }
 
-                await UniTask.Yield(PlayerLoopTiming.Update, token);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);   // 更新ループを待機
             }
 
-            if (token.IsCancellationRequested)
+            if (token.IsCancellationRequested)   // キャンセルされた場合
             {
                 return selections;
             }
 
-            foreach (var player in allPlayers)
+            foreach (var player in allPlayers)   // 全プレイヤーに対してデフォルトのターゲットを適用
             {
                 if (selections.ContainsKey(player.Id)) continue;
-                var fallbackTarget = SelectDefaultScanTarget(player.Id);
+                var fallbackTarget = SelectDefaultScanTarget(player.Id);   // デフォルトのターゲットを選択
                 if (fallbackTarget == null) continue;
                 selections[player.Id] = fallbackTarget.Id;
                 Debug.LogWarning($"Dealer: ScanPhase選択タイムアウトのため、Player {player.Id} にデフォルト対象 {fallbackTarget.Id} を適用しました");
             }
 
-            return selections;
+            return selections;   // 全プレイヤーの選択結果を返す
         }
 
         private IPlayer SelectDefaultScanTarget(PlayerId actorPlayerId)
@@ -684,10 +687,6 @@ namespace Tetrage.Managers
             Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
         }
         public void OnRoundEnd()
-        {
-        }
-
-        public void OnGameStart()
         {
         }
 
