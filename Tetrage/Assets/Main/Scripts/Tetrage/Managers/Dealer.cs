@@ -12,6 +12,7 @@ using Tetrage.Core.Ids;
 using Tetrage.Core;
 using R3;
 using Tetrage.Core.Constants;
+using DomainEvents = Tetrage.Core.Events;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -42,6 +43,7 @@ namespace Tetrage.Managers
         private INetworkContext _networkContext; // ネットワーク状態の抽象化
         private IPlayerIdMapper _playerIdMapper;
         private IPlayer _initialTurnPlayer;
+        private readonly CompositeDisposable _disposables = new();
 
         private const float ScanSelectionTimeoutSeconds = SettingConsts.SCAN_SELECTION_TIMEOUT_SECONDS;
 
@@ -56,12 +58,6 @@ namespace Tetrage.Managers
         /// </summary>
         private int _turnCount = 0;
         public int TurnCount { get { return _turnCount; } }
-
-        /// <summary>
-        /// 最大ラウンド数（デフォルト: 0無制限）
-        /// </summary>
-        private int _maxRounds = 0;
-        public int MaxRounds { get { return _maxRounds; } }
 
         // プレイヤーアクション待機用
         private ActionAwaiter _actionAwaiter;   // ActionAwaiter に責任を委譲
@@ -99,6 +95,7 @@ namespace Tetrage.Managers
             _turnCount = 0; // 初期化
 
             InitializeActionSystem();
+            SubscribeDomainEvent();
             // GameContext は GameManager 側で生成後に注入されるため、ActionSystem 初期化は後段で行う
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
         }
@@ -126,25 +123,6 @@ namespace Tetrage.Managers
             _turnGate = gate;
         }
 
-
-
-        /// <summary>
-        /// 最大ラウンド数を設定する
-        /// </summary>
-        /// <param name="maxRounds">最大ラウンド数（0以上の値）</param>
-        public void SetMaxRounds(int maxRounds)
-        {
-            if (maxRounds < 0)
-            {
-                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. デフォルト値に設定します");
-                _maxRounds = 0;
-            }
-            else
-            {
-                _maxRounds = maxRounds;
-                Debug.Log($"Dealer: 最大ラウンド数を{_maxRounds}に設定しました");
-            }
-        }
 
         #endregion
 
@@ -185,8 +163,6 @@ namespace Tetrage.Managers
             await StartTurnLoopAsync(timeoutSeconds, gameCts);
 
             Debug.Log("Dealer: ゲームが終了します");
-
-            EndGame();
         }
 
         /// <summary>
@@ -306,14 +282,7 @@ namespace Tetrage.Managers
 
             if (HandleGameEndingByAction(actionResult))
             {
-                PublishTurnEnd();
                 return;
-            }
-
-            // 勝利条件チェック
-            if (CheckWinCondition())
-            {
-                _isGameFinished = true;
             }
 
             PublishTurnEnd();
@@ -477,6 +446,11 @@ namespace Tetrage.Managers
 
         #region Game Ending
 
+        /// <summary>
+        /// アクション結果によってゲーム終了を判定する
+        /// </summary>
+        /// <param name="actionResult">アクション結果</param>
+        /// <returns>ゲーム終了フラグ</returns>
         private bool HandleGameEndingByAction(ActionResult actionResult)
         {
             if (!TryGetActionDescriptor(actionResult, out var descriptor))
@@ -492,7 +466,6 @@ namespace Tetrage.Managers
             var winners = BuildWinnersFromActionResult(descriptor);
             _messenger?.PublishFinishingGame(winners);
             _messenger?.PublishGameEnded(winners);
-            _isGameFinished = true;
             return true;
         }
 
@@ -599,54 +572,6 @@ namespace Tetrage.Managers
 
         #endregion
 
-        public void EndGame()
-        {
-            // 進行中のプレイヤーアクションをキャンセル
-            CancelCurrentPlayerAction();
-
-            // ターン終了イベントを通知
-            PublishTurnEnd();
-
-            // 状態をリセット
-            // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない
-
-            // ActionAwaiter を破棄
-            _actionAwaiter?.Dispose();
-
-            if (_isGameInterrupted)
-            {
-                Debug.Log("Dealer: ゲームが途中中断されました");
-            }
-
-            // ゲームが途中中断されたかどうかをリセット
-            _isGameInterrupted = false;
-
-            OnGameEnd(); // ゲーム終了イベントを通知
-
-            Debug.Log("Dealer: ゲームを終了しました");
-        }
-
-
-
-
-
-        /// <summary>
-        /// 勝利条件をチェックする（仮実装）
-        /// </summary>
-        private bool CheckWinCondition()
-        {
-            // 無制限の場合は常にfalseを返す
-            if (_maxRounds == 0) return false;
-            // 設定された最大ラウンド数で勝利とする
-            if (_roundCount >= _maxRounds)
-            {
-                Debug.Log($"Dealer: 最大ラウンド数({_maxRounds})に到達しました。ゲームを終了します。");
-                return true;
-            }
-
-            return false;
-        }
-
         // 既存インターフェース互換のオーバーロード
         public async UniTask StartTurnLoopAsync()
         {
@@ -686,12 +611,42 @@ namespace Tetrage.Managers
             _roundCount++;
             Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
         }
+        
         public void OnRoundEnd()
         {
         }
 
-        public void OnGameEnd()
+
+        #endregion
+
+        #region イベント購読
+
+        private void SubscribeDomainEvent()
         {
+            _gameContext.Events.GameEnded
+                .Subscribe(OnGameEnded)
+                .AddTo(_disposables);
+        }
+
+        private void OnGameEnded(DomainEvents.GameEndedEvent e)
+        {
+            if (_isGameFinished) return;
+
+            // GameEnded受信を終了状態への遷移点として、Dealerの後始末もここで完了する。
+            _isGameFinished = true; // ゲーム終了フラグをセット
+            CancelCurrentPlayerAction();
+            PublishTurnEnd();
+
+            // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない。
+            _actionAwaiter?.Dispose();
+
+            if (_isGameInterrupted)
+            {
+                Debug.Log("Dealer: ゲームが途中中断されました");
+            }
+
+            _isGameInterrupted = false; // ゲーム中断フラグをリセット
+            Debug.Log("Dealer: ゲームを終了しました");
         }
 
         #endregion
