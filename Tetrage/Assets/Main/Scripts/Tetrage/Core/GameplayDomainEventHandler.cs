@@ -326,7 +326,7 @@ namespace Tetrage.Core
         private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)
         {
             _isScanPhaseActive = true;
-            Debug.Log($"GameplayDomainEventHandler: ScanPhase開始（Host={_isHost}）。対象選択は ScanUIController から ScanTargetSelected を送信する。");
+            Debug.Log($"GameplayDomainEventHandler: ScanPhase開始（Host={_isHost}）。対象選択は ScanPhaseUI から ScanTargetSelected を送信する。");
         }
 
         private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
