@@ -46,8 +46,12 @@ namespace Tetrage.UI
 
         #region Public API（非override）
         /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
-        public async void AddCardView(CardView cardView)
+        public async void AddCardView(CardView cardView, bool animate = true)
         {
+            #if UNITY_EDITOR
+            // UnityEngine.Debug.Log($"<color=red>[CardAnimation] AddCardView開始: PileView={gameObject.name}, CardView={cardView?.gameObject.name}, ActiveInHierarchy={gameObject.activeInHierarchy}</color>");
+            #endif
+
             // 移動元の位置を保存
             Vector3 startPosition = cardView.transform.position;
             
@@ -60,17 +64,31 @@ namespace Tetrage.UI
             // 1フレーム待機してレイアウトが確定するのを待つ
             await UniTask.Yield();
             Vector3 endPosition = cardView.transform.localPosition;
+            Vector3 endWorldPosition = cardView.transform.parent.TransformPoint(endPosition);
             
             // 元の位置に戻す
             cardView.transform.position = startPosition;
+
+            #if UNITY_EDITOR
+            // UnityEngine.Debug.Log($"<color=red>[CardAnimation] 移動開始: PileView={gameObject.name}, CardView={cardView.gameObject.name}, Parent={cardView.transform.parent.name}, StartWorld={startPosition}, EndLocal={endPosition}, EndWorld={endWorldPosition}</color>");
+            #endif
             
             // アニメーション実行
-            await AnimationHelper.MoveToWithEasing(
+            if (animate)
+            {
+                await AnimationHelper.MoveToWithEasing(
                 cardView.gameObject,
                 startPosition,
-                cardView.transform.parent.TransformPoint(endPosition), // ローカル→ワールド座標変換
+                endWorldPosition,
                 0.5f
-            );
+                );
+            }else{
+                cardView.transform.localPosition = endPosition; // アニメーションを使用しない場合は直接位置を設定
+            }
+
+            #if UNITY_EDITOR
+            // UnityEngine.Debug.Log($"<color=red>[CardAnimation] 移動完了: PileView={gameObject.name}, CardView={cardView.gameObject.name}, CurrentWorld={cardView.transform.position}, CurrentLocal={cardView.transform.localPosition}</color>");
+            #endif
         }
 
         /// <summary>カード表示用ViewをこのPileViewから外します。</summary>

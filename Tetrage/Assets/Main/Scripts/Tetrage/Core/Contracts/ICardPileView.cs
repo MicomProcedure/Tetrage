@@ -14,7 +14,9 @@ namespace Tetrage.Core.Contracts
         public event Action Destroyed;
 
         /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
-        public void AddCardView(CardView cardView);
+        /// <param name="cardView">追加するカード表示用View</param>
+        /// <param name="animate">アニメーションを使用するかどうか</param>
+        public void AddCardView(CardView cardView, bool animate = true);
 
         /// <summary>カード表示用ViewをこのPileViewから外します。</summary>
         public void RemoveCardView(CardView cardView);
