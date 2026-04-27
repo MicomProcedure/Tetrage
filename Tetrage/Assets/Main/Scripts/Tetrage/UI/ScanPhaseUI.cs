@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Tetrage.Core;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Events;
 using Tetrage.Core.Ids;
@@ -193,7 +192,7 @@ namespace Tetrage.UI
             }
 
             string suitLabel = e.TargetSuit.GetKatakanaName();
-            string suitColorHex = ColorUtility.ToHtmlStringRGBA(Color.red);
+            string suitColorHex = GetSuitTextColorHex(e.TargetSuit);
             string suitColored = BuildColoredSuitRichText(suitLabel, suitColorHex);
             SetNaviText(ScanNaviTextId.ScanPhaseResult, e.TargetPlayerId.Value, suitColored);
 
@@ -269,7 +268,7 @@ namespace Tetrage.UI
             }
 
             string suitLabel = suit.GetKatakanaName();
-            string suitColorHex = ColorUtility.ToHtmlStringRGBA(Color.red);
+            string suitColorHex = GetSuitTextColorHex(suit);
             SetNaviText(ScanNaviTextId.IdleOwnTargetRevealed, BuildColoredSuitRichText(suitLabel, suitColorHex));
 
             _isScanned = true;
@@ -302,7 +301,7 @@ namespace Tetrage.UI
             }
 
             string suitLabel = suit.GetKatakanaName();
-            string suitColorHex = ColorUtility.ToHtmlStringRGBA(Color.red);
+            string suitColorHex = GetSuitTextColorHex(suit);
             SetNaviText(ScanNaviTextId.ScanPhaseOwnTargetRevealed, BuildColoredSuitRichText(suitLabel, suitColorHex));
 
             return true;
@@ -315,6 +314,12 @@ namespace Tetrage.UI
         private static string BuildColoredSuitRichText(string suitLabel, string colorHexNoHash)
         {
             return $"<color=#{colorHexNoHash}>{suitLabel}</color>";
+        }
+
+        private static string GetSuitTextColorHex(Suit suit)
+        {
+            var color = suit.IsRed() ? Color.red : Color.black;
+            return ColorUtility.ToHtmlStringRGBA(color);
         }
 
         private string GetNaviTemplate(ScanNaviTextId id)
