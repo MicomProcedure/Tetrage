@@ -171,10 +171,7 @@ namespace Tetrage.Managers
 				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
 				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
 			}
-			if (_gameStartAnimation != null)
-			{
-				_gameStartAnimation.PlayGameStartAnimation();
-			}
+
 		}
 
 		private void OnTurnStarted(DomainEvents.TurnStartedEvent e)
@@ -245,6 +242,8 @@ namespace Tetrage.Managers
 			SetScanUIActive(false);
 			SetInGameNavigationActive(false);
 			SetActionPanelActive(true);
+
+			_gameStartAnimation?.PlayGameStartAnimation();	// ゲーム開始演出を再生
 		}
 
 		private void OnScanResultReceived(DomainEvents.ScanResultReceivedEvent e)
