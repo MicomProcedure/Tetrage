@@ -135,6 +135,7 @@ namespace Tetrage.Managers
         {
             // return予定のプレイヤーリストを作成
             var players = new List<IPlayer>();
+            var displaySeatOrderedParticipants = BuildDisplaySeatOrderedParticipants(participantInfoList);
 
             // 依存性注入されたIPlayerFactoryを使用（RegisteringPlayerFactory対応）
             var playerBuilder = new PlayerBuilder(_dependencies.PlayerModelFactory, _dependencies.CardPileFactory);
@@ -147,7 +148,7 @@ namespace Tetrage.Managers
 
             // 要請に応じてプレイヤーを作成する
             int playerIndex = 0;
-            foreach (var participantInfo in participantInfoList)
+            foreach (var participantInfo in displaySeatOrderedParticipants)
             {
                 var player = playerBuilder
                     .WithUserId(participantInfo.UserId)
@@ -173,6 +174,48 @@ namespace Tetrage.Managers
                 Debug.Log($"FieldSetupManager: プレイヤーID: {player.Id}, ユーザーID: {player.UserId}");
             }
             return players;
+        }
+
+        /// <summary>
+        /// 画面表示用の席順を構築する。ローカルプレイヤーを先頭にし、それ以外は元順序を維持する。
+        /// </summary>
+        private static List<PlayerInfo> BuildDisplaySeatOrderedParticipants(List<PlayerInfo> participantInfoList)
+        {
+            var orderedParticipants = new List<PlayerInfo>(participantInfoList.Count);  // 画面表示用の席順を構築するためのリスト
+            PlayerInfo localParticipant = null;
+
+            for (int i = 0; i < participantInfoList.Count; i++) // ローカルプレイヤーを先頭にする
+            {
+                var participant = participantInfoList[i];
+                if (participant != null && participant.PlayerType == PlayerType.Local && localParticipant == null)
+                {
+                    localParticipant = participant;
+                }
+            }
+
+            if (localParticipant != null)
+            {
+                orderedParticipants.Add(localParticipant);
+            }
+
+            for (int i = 0; i < participantInfoList.Count; i++) // ローカルプレイヤーを除く
+            {
+                var participant = participantInfoList[i];
+                if (participant == null)
+                {
+                    continue;
+                }
+
+                // ローカルプレイヤーは先頭に追加済みなので重複追加しない
+                if (ReferenceEquals(participant, localParticipant))
+                {
+                    continue;
+                }
+
+                orderedParticipants.Add(participant);
+            }
+
+            return orderedParticipants;
         }
     }
 
