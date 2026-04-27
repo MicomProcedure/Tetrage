@@ -15,13 +15,13 @@ namespace Tetrage.Core.Ids
         public static readonly PileId Trash = new PileId(2);
         #endregion
 
-        #region プレイヤー固有パイル（ActorNumber 由来）
+        #region プレイヤー固有パイル（PlayerId.Value 由来）
         /// <summary>各プレイヤーの手札</summary>
-        public static PileId PlayerHands(int PlayerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + PlayerId);
+        public static PileId PlayerHands(int playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + playerId);
         /// <summary>各プレイヤーのターゲット</summary>
-        public static PileId PlayerTarget(int PlayerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 1000 + PlayerId);
+        public static PileId PlayerTarget(int playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 1000 + playerId);
         /// <summary>各プレイヤーの一時置き場</summary>
-        public static PileId PlayerTmp(int PlayerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 2000 + PlayerId);
+        public static PileId PlayerTmp(int playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 2000 + playerId);
         #endregion
     }
 }

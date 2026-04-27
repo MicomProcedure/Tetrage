@@ -102,7 +102,7 @@ namespace Tetrage.Network.Gameplay
     public struct ScanTargetSelectedEvent
     {
         public int sequence;
-        public int actorPlayerId;
+        public int actorPlayerId; // ActorNumber
         public int selectedTargetActorNumber;
     }
 
@@ -144,7 +144,7 @@ namespace Tetrage.Network.Gameplay
     {
         public int sequence;
         public int clientSequence; // クライアント側の識別用
-        public int actorPlayerId;
+        public int actorPlayerId; // ActorNumber（ネットワーク境界はActorNumberで統一）
         public ActionType actionType;
         public int[] targetCardIds; // 単数 or 複数対象（CardId.Valueの配列）
         public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
@@ -155,7 +155,7 @@ namespace Tetrage.Network.Gameplay
     {
         public int sequence;
         public int clientSequence; // エコーバック（関連付け）
-        public int actorPlayerId;
+        public int actorPlayerId; // ActorNumber（ネットワーク境界はActorNumberで統一）
         public ActionType actionType;
         public bool accepted;      // 成否
         public string reason;      // 失敗時
@@ -170,7 +170,7 @@ namespace Tetrage.Network.Gameplay
     public struct ActionRequestDescriptor
     {
         public ActionType actionType;
-        public int actorPlayerId;
+        public int actorPlayerId; // PlayerId.Value（ドメイン内部の識別値）
         public CardId[] targetCardIds;
         public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }

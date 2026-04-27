@@ -174,7 +174,7 @@ namespace Tetrage.Managers
                 var actionMgr = ActionSystemInitializer.GetActionManager();
                 if (actionMgr != null && _netCtl != null)
                 {
-                    var networkCtx = new GeneralNetworkActionContext(_netCtl.Broadcaster, _netCtl.Sequence);
+                    var networkCtx = new GeneralNetworkActionContext(_netCtl.Broadcaster, _netCtl.Sequence, _netCtl.PlayerIdMapper);
                     actionMgr.SetNetworkActionContext(networkCtx);
                 }
 
