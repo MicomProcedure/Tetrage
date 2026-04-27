@@ -8,9 +8,18 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public sealed class NetworkEventApplier
     {
+        #region Fields
         private readonly IGameplayEventBus _eventBus;
         private readonly DomainEventConverter _converter;
         private int _lastSequence;
+        #endregion
+
+        #region Sequence
+        /// <summary>
+        /// 直近で適用したネットワークイベントの sequence（デバッグ送信の補正などに使用）。
+        /// </summary>
+        public int LastAppliedSequence => _lastSequence;
+        #endregion
 
         public NetworkEventApplier(
             IGameplayEventBus eventBus,

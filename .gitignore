@@ -100,3 +100,12 @@ Tetrage/AGENTS.md
 .worktrees/
 Tetrage/Assets/Main/Scripts/tmp/
 Tetrage/Assets/Main/Scripts/tmp.meta
+Tetrage/Assets/Main/Prefabs/UI/ScanPhase/ScanPlayerSelectionElement.prefab
+Tetrage/Assets/Main/Prefabs/UI/ScanPhase/ScanPlayerSelectionElement.prefab.meta
+Tetrage/Assets/Main/Prefabs/UI/ScanPhase/ScanPlayerSelectionUI.prefab
+Tetrage/Assets/Main/Prefabs/UI/ScanPhase/ScanPlayerSelectionUI.prefab.meta
+Tetrage/Assets/Main/Scripts/Tetrage/UI/ScanPlayerSelectionElement.cs
+Tetrage/Assets/Main/Scripts/Tetrage/UI/ScanPlayerSelectionElement.cs.meta
+Tetrage/Assets/Main/Scripts/Tetrage/UI/ScanPlayerSelectionUI.cs
+Tetrage/Assets/Main/Scripts/Tetrage/UI/ScanPlayerSelectionUI.cs.meta
+Tetrage/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset

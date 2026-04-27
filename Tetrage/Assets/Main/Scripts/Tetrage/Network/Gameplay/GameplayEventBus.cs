@@ -88,6 +88,11 @@ namespace Tetrage.Network.Gameplay
         #region Debug logging
 
         /// <summary>
+        /// Publish ログのコンソール表示色（リッチテキスト用 hex）
+        /// </summary>
+        private const string PublishLogColorHex = "#FF69B4";
+
+        /// <summary>
         /// Publish ごとの詳細ログ。本番リリースビルドでは呼び出し自体がコンパイルから除去され、
         /// 文字列補間のGCコストも発生しない。
         /// </summary>
@@ -95,7 +100,7 @@ namespace Tetrage.Network.Gameplay
         [Conditional("DEVELOPMENT_BUILD")]
         private static void LogPublish(string message)
         {
-            UnityEngine.Debug.Log(message);
+            UnityEngine.Debug.Log($"<color={PublishLogColorHex}>{message}</color>");
         }
 
         #endregion

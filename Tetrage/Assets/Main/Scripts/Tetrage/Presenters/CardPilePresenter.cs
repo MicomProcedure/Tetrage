@@ -76,7 +76,7 @@ namespace Tetrage.Presenters
                     UnityEngine.Debug.LogError("指定されたカードはCardPilePresenterの辞書に登録されていません。");
                     return;
                 }
-                _view.AddCardView(cardView);
+                _view.AddCardView(cardView, animate: false);
             }
         }
 

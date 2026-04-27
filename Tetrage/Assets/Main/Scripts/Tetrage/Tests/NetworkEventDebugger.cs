@@ -19,6 +19,7 @@ namespace Tetrage.Tests
     /// </summary>
     public class NetworkEventDebugger : MonoBehaviour
     {
+        #region Serialized fields
         [Header("Debug Network Event")]
         [SerializeField] private bool _enableDebugEvents = true;
         [SerializeField] private EventTargetType _targetType = EventTargetType.NetworkBroadcast;
@@ -26,9 +27,14 @@ namespace Tetrage.Tests
         [SerializeField, TextArea(3, 10)] private string _debugJsonPayload = "{}";
         [SerializeField] private bool _sendToAll = true;
         [SerializeField] private int[] _targetActorNumbers;
+        [Tooltip("NetworkBroadcast 経由のとき、DTO の sequence を NetworkEventApplier の最終値より大きく自動補正する（古い sequence だと Apply が無視されるため）。")]
+        [SerializeField] private bool _autoBumpNetworkSequence = true;
+        #endregion
 
+        #region Dependencies
         private IGameplayNetworkController _networkController;
         private DomainEventConverter _converter;
+        #endregion
 
         /// <summary>
         /// ネットワークコントローラーを設定する
@@ -91,8 +97,14 @@ namespace Tetrage.Tests
 
         private void SendViaNetwork(object payload, Type payloadType)
         {
+            if (_autoBumpNetworkSequence)
+            {
+                payload = NormalizeNetworkSequenceIfNeeded(payload, payloadType);
+            }
+
             // INetworkBroadcasterのメソッドをリフレクションで取得して実行
             var broadcasterType = typeof(INetworkBroadcaster);
+            string payloadJson = JsonUtility.ToJson(payload);
 
             if (_sendToAll)
             {
@@ -100,7 +112,7 @@ namespace Tetrage.Tests
                 if (raiseMethod != null)
                 {
                     raiseMethod.Invoke(_networkController.Broadcaster, new object[] { _debugEventCode, payload });
-                    Debug.Log($"[NetworkEventDebugger] Sent {_debugEventCode} to All via Network:\n{_debugJsonPayload}");
+                    Debug.Log($"[NetworkEventDebugger] Sent {_debugEventCode} to All via Network:\n{payloadJson}");
                 }
             }
             else
@@ -110,9 +122,38 @@ namespace Tetrage.Tests
                 {
                     int[] targets = _targetActorNumbers ?? Array.Empty<int>();
                     raiseToActorsMethod.Invoke(_networkController.Broadcaster, new object[] { _debugEventCode, payload, targets });
-                    Debug.Log($"[NetworkEventDebugger] Sent {_debugEventCode} to Actors [{string.Join(",", targets)}] via Network:\n{_debugJsonPayload}");
+                    Debug.Log($"[NetworkEventDebugger] Sent {_debugEventCode} to Actors [{string.Join(",", targets)}] via Network:\n{payloadJson}");
                 }
             }
+        }
+
+        /// <summary>
+        /// NetworkEventApplier は sequence が単調増加でないイベントを破棄するため、
+        /// インスペクタ JSON のままだとゲーム進行後にデバッグ送信が無視される。補正する。
+        /// </summary>
+        private object NormalizeNetworkSequenceIfNeeded(object payload, Type payloadType)
+        {
+            if (payload == null || payloadType == null || _networkController == null)
+            {
+                return payload;
+            }
+
+            FieldInfo seqField = payloadType.GetField("sequence", BindingFlags.Instance | BindingFlags.Public);
+            if (seqField == null || seqField.FieldType != typeof(int))
+            {
+                return payload;
+            }
+
+            int lastApplied = _networkController.LastAppliedNetworkSequence;
+            int current = (int)seqField.GetValue(payload);
+            int adjusted = Math.Max(current, lastApplied + 1);
+            if (adjusted != current)
+            {
+                seqField.SetValue(payload, adjusted);
+                Debug.Log($"[NetworkEventDebugger] Network 用に sequence を {current} → {adjusted} に補正（LastAppliedNetworkSequence={lastApplied}）。");
+            }
+
+            return payload;
         }
 
         private void PublishToLocalEventBus(EventCode code, object dtoPayload)

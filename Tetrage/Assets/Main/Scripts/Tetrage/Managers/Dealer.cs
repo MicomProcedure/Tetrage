@@ -3,14 +3,16 @@ using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using Tetrage.Core.Contracts;
 using Cysharp.Threading.Tasks;
+using Tetrage.Core.Contracts;
 using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
 using Tetrage.Core;
 using R3;
+using Tetrage.Core.Constants;
+using DomainEvents = Tetrage.Core.Events;
 
 /// <summary>
 /// ゲームのディーラークラス。カードの配布、ターン管理、勝敗判定を行う。
@@ -40,8 +42,10 @@ namespace Tetrage.Managers
         private IGameContext _gameContext; // 読み取り専用のコンテキスト
         private INetworkContext _networkContext; // ネットワーク状態の抽象化
         private IPlayerIdMapper _playerIdMapper;
-        private IScanTargetSelector _scanTargetSelector;
         private IPlayer _initialTurnPlayer;
+        private readonly CompositeDisposable _disposables = new();
+
+        private const float ScanSelectionTimeoutSeconds = SettingConsts.SCAN_SELECTION_TIMEOUT_SECONDS;
 
         /// <summary>
         /// ラウンド数
@@ -55,12 +59,6 @@ namespace Tetrage.Managers
         private int _turnCount = 0;
         public int TurnCount { get { return _turnCount; } }
 
-        /// <summary>
-        /// 最大ラウンド数（デフォルト: 0無制限）
-        /// </summary>
-        private int _maxRounds = 0;
-        public int MaxRounds { get { return _maxRounds; } }
-
         // プレイヤーアクション待機用
         private ActionAwaiter _actionAwaiter;   // ActionAwaiter に責任を委譲
         private ActionManager _actionManager;
@@ -73,8 +71,6 @@ namespace Tetrage.Managers
         private bool _isGameInterrupted = false;
         public bool IsGameInterrupted { get { return _isGameInterrupted; } }
 
-        private const float ScanSelectionTimeoutSeconds = 10f;
-
         #endregion
 
         #region コンストラクタ
@@ -86,8 +82,7 @@ namespace Tetrage.Managers
             IGameContext gameContext,
             IDealerPlanner dealerPlanner,
             INetworkContext networkContext,
-            IPlayerIdMapper playerIdMapper,
-            IScanTargetSelector scanTargetSelector = null)
+            IPlayerIdMapper playerIdMapper)
         {
             if (gameContext == null) throw new ArgumentNullException(nameof(gameContext));
             if (dealerPlanner == null) throw new ArgumentNullException(nameof(dealerPlanner));
@@ -96,11 +91,11 @@ namespace Tetrage.Managers
             _dealerPlanner = dealerPlanner;
             _networkContext = networkContext;
             _playerIdMapper = playerIdMapper;
-            _scanTargetSelector = scanTargetSelector ?? new DefaultScanTargetSelector();
             _roundCount = 0; // 初期化
             _turnCount = 0; // 初期化
 
             InitializeActionSystem();
+            SubscribeDomainEvent();
             // GameContext は GameManager 側で生成後に注入されるため、ActionSystem 初期化は後段で行う
             Debug.Log("Dealer: インスタンスが作成されました（戦略パターン対応）");
         }
@@ -129,25 +124,6 @@ namespace Tetrage.Managers
         }
 
 
-
-        /// <summary>
-        /// 最大ラウンド数を設定する
-        /// </summary>
-        /// <param name="maxRounds">最大ラウンド数（0以上の値）</param>
-        public void SetMaxRounds(int maxRounds)
-        {
-            if (maxRounds < 0)
-            {
-                Debug.LogWarning($"Dealer: 無効な最大ラウンド数: {maxRounds}. デフォルト値に設定します");
-                _maxRounds = 0;
-            }
-            else
-            {
-                _maxRounds = maxRounds;
-                Debug.Log($"Dealer: 最大ラウンド数を{_maxRounds}に設定しました");
-            }
-        }
-
         #endregion
 
         #region ラウンド管理
@@ -166,8 +142,6 @@ namespace Tetrage.Managers
             // 初めてラウンドを開始する際の処理（山札シャッフル、ターゲットカード設定、ターン順序初期化、最初のプレイヤーを決定）
             FirstDeal();
 
-            // ゲーム開始イベントを通知
-            OnGameStart();
 
             // ゲーム終了フラグをリセット
             _isGameFinished = false;
@@ -189,8 +163,6 @@ namespace Tetrage.Managers
             await StartTurnLoopAsync(timeoutSeconds, gameCts);
 
             Debug.Log("Dealer: ゲームが終了します");
-
-            EndGame();
         }
 
         /// <summary>
@@ -310,14 +282,7 @@ namespace Tetrage.Managers
 
             if (HandleGameEndingByAction(actionResult))
             {
-                PublishTurnEnd();
                 return;
-            }
-
-            // 勝利条件チェック
-            if (CheckWinCondition())
-            {
-                _isGameFinished = true;
             }
 
             PublishTurnEnd();
@@ -391,27 +356,12 @@ namespace Tetrage.Managers
                 return;
             }
 
+            // HostがScanPhaseを開始
             var playerIds = _gameContext.Players.Select(player => player.Id).ToList();
-            _messenger.PublishScanPhaseStart(_gameContext.UserPlayer.Id, playerIds);
+            _messenger.PublishScanPhaseStart(_gameContext.UserPlayer.Id, playerIds);    // 全プレイヤーにScanPhaseStartを通知
 
-            var hostCandidates = _gameContext.Players
-                .Where(player => !ReferenceEquals(player, _gameContext.UserPlayer))
-                .ToList();
-
-            if (hostCandidates.Count > 0)
-            {
-                // TODO(UI): 将来はここでホスト向けの対象選択UIを開く。
-                var hostTarget = await _scanTargetSelector.SelectTargetAsync(_gameContext.UserPlayer, hostCandidates);
-                var hostTargetCard = hostTarget.Target.FirstOrDefault();
-                if (hostTargetCard != null)
-                {
-                    Debug.Log($"ScanPhase: Hostは {hostTarget.UserId} のターゲットを確認しました（Suit: {hostTargetCard.Suit}）");
-                    // TODO(UI): Host本人にのみ偵察結果をUI表示する。
-                }
-            }
-
-            var guestSelections = await CollectGuestScanSelectionsAsync(ScanSelectionTimeoutSeconds, token);
-            foreach (var pair in guestSelections)
+            var allSelections = await CollectAllPlayerScanSelectionsAsync(ScanSelectionTimeoutSeconds, token); // 全プレイヤーのScanTargetSelectedを集める
+            foreach (var pair in allSelections)
             {
                 if (!TryResolvePlayerById(pair.Value, out var selectedTarget)) continue;
                 var targetCard = selectedTarget.Target.FirstOrDefault();
@@ -426,59 +376,65 @@ namespace Tetrage.Managers
             _messenger.PublishScanPhaseEnd();
         }
 
-        private async UniTask<Dictionary<PlayerId, PlayerId>> CollectGuestScanSelectionsAsync(float timeoutSeconds, CancellationToken token)
+        /// <summary>
+        /// 全席分の ScanTargetSelected を集める。Host/Guest とも UI から送信されたイベントを待つ。
+        /// </summary>
+        private async UniTask<Dictionary<PlayerId, PlayerId>> CollectAllPlayerScanSelectionsAsync(float timeoutSeconds, CancellationToken token)
         {
             var selections = new Dictionary<PlayerId, PlayerId>();
-            var userId = _gameContext.UserPlayer.Id;
-            var guestPlayers = _gameContext.Players
-                .Where(player => player.Id != userId)
-                .ToList();
-
-            if (guestPlayers.Count == 0)
+            var allPlayers = _gameContext.Players.ToList();
+            if (allPlayers.Count == 0)
             {
                 return selections;
             }
+
+            var playerIdSet = new HashSet<PlayerId>(allPlayers.Select(p => p.Id));
 
             using var disposables = new CompositeDisposable();
             _gameContext.Events.ScanTargetSelected
                 .Subscribe(e =>
                 {
-                    if (e.ActorPlayerId == userId) return;
-                    if (!guestPlayers.Any(player => player.Id == e.ActorPlayerId)) return;
-                    if (!TryResolvePlayerById(e.SelectedTargetPlayerId, out var selectedTarget)) return;
+                    // アクターのプレイヤーIDが有効かどうかを確認
+                    if (!playerIdSet.Contains(e.ActorPlayerId)) return;
+                    // 選択されたターゲットのプレイヤーIDが有効かどうかを確認
+                    if (!playerIdSet.Contains(e.SelectedTargetPlayerId)) return;
+                    // 自分自身をターゲットに選択していないかを確認
                     if (e.SelectedTargetPlayerId == e.ActorPlayerId) return;
+                    // ターゲットのプレイヤーIDが実際に存在しているかを確認
+                    if (!TryResolvePlayerById(e.SelectedTargetPlayerId, out _)) return;
+   
 
                     selections[e.ActorPlayerId] = e.SelectedTargetPlayerId;
                     Debug.Log($"Dealer: ScanTargetSelected 受信 actor={e.ActorPlayerId}, target={e.SelectedTargetPlayerId}");
                 })
                 .AddTo(disposables);
 
-            var deadline = Time.realtimeSinceStartup + Mathf.Max(0f, timeoutSeconds);
-            while (!token.IsCancellationRequested && selections.Count < guestPlayers.Count)
+            var deadline = Time.realtimeSinceStartup + Mathf.Max(0f, timeoutSeconds);   // タイムアウト時間を設定
+            while (!token.IsCancellationRequested && selections.Count < allPlayers.Count)   // 全プレイヤーの選択が完了するまで待機
             {
-                if (Time.realtimeSinceStartup >= deadline)
+                if (Time.realtimeSinceStartup >= deadline)   // タイムアウト時間を超えた場合
                 {
                     break;
                 }
 
-                await UniTask.Yield(PlayerLoopTiming.Update, token);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);   // 更新ループを待機
             }
 
-            if (token.IsCancellationRequested)
+            if (token.IsCancellationRequested)   // キャンセルされた場合
             {
                 return selections;
             }
 
-            foreach (var guest in guestPlayers)
+            foreach (var player in allPlayers)   // 全プレイヤーに対してデフォルトのターゲットを適用
             {
-                if (selections.ContainsKey(guest.Id)) continue;
-                var fallbackTarget = SelectDefaultScanTarget(guest.Id);
+                if (selections.ContainsKey(player.Id)) continue;
+                var fallbackTarget = SelectDefaultScanTarget(player.Id);   // デフォルトのターゲットを選択
                 if (fallbackTarget == null) continue;
-                selections[guest.Id] = fallbackTarget.Id;
-                Debug.LogWarning($"Dealer: ScanPhase選択タイムアウトのため、Player {guest.Id} にデフォルト対象 {fallbackTarget.Id} を適用しました");
+                selections[player.Id] = fallbackTarget.Id;
+                Debug.LogWarning($"Dealer: ScanPhase選択タイムアウトのため、Player {player.Id} にデフォルト対象 {fallbackTarget.Id} を適用しました");
             }
 
-            return selections;
+            return selections;   // 全プレイヤーの選択結果を返す
         }
 
         private IPlayer SelectDefaultScanTarget(PlayerId actorPlayerId)
@@ -490,6 +446,11 @@ namespace Tetrage.Managers
 
         #region Game Ending
 
+        /// <summary>
+        /// アクション結果によってゲーム終了を判定する
+        /// </summary>
+        /// <param name="actionResult">アクション結果</param>
+        /// <returns>ゲーム終了フラグ</returns>
         private bool HandleGameEndingByAction(ActionResult actionResult)
         {
             if (!TryGetActionDescriptor(actionResult, out var descriptor))
@@ -505,7 +466,6 @@ namespace Tetrage.Managers
             var winners = BuildWinnersFromActionResult(descriptor);
             _messenger?.PublishFinishingGame(winners);
             _messenger?.PublishGameEnded(winners);
-            _isGameFinished = true;
             return true;
         }
 
@@ -612,54 +572,6 @@ namespace Tetrage.Managers
 
         #endregion
 
-        public void EndGame()
-        {
-            // 進行中のプレイヤーアクションをキャンセル
-            CancelCurrentPlayerAction();
-
-            // ターン終了イベントを通知
-            PublishTurnEnd();
-
-            // 状態をリセット
-            // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない
-
-            // ActionAwaiter を破棄
-            _actionAwaiter?.Dispose();
-
-            if (_isGameInterrupted)
-            {
-                Debug.Log("Dealer: ゲームが途中中断されました");
-            }
-
-            // ゲームが途中中断されたかどうかをリセット
-            _isGameInterrupted = false;
-
-            OnGameEnd(); // ゲーム終了イベントを通知
-
-            Debug.Log("Dealer: ゲームを終了しました");
-        }
-
-
-
-
-
-        /// <summary>
-        /// 勝利条件をチェックする（仮実装）
-        /// </summary>
-        private bool CheckWinCondition()
-        {
-            // 無制限の場合は常にfalseを返す
-            if (_maxRounds == 0) return false;
-            // 設定された最大ラウンド数で勝利とする
-            if (_roundCount >= _maxRounds)
-            {
-                Debug.Log($"Dealer: 最大ラウンド数({_maxRounds})に到達しました。ゲームを終了します。");
-                return true;
-            }
-
-            return false;
-        }
-
         // 既存インターフェース互換のオーバーロード
         public async UniTask StartTurnLoopAsync()
         {
@@ -699,16 +611,42 @@ namespace Tetrage.Managers
             _roundCount++;
             Debug.Log($"Dealer: ラウンド {_roundCount} を開始します");
         }
+        
         public void OnRoundEnd()
         {
         }
 
-        public void OnGameStart()
+
+        #endregion
+
+        #region イベント購読
+
+        private void SubscribeDomainEvent()
         {
+            _gameContext.Events.GameEnded
+                .Subscribe(OnGameEnded)
+                .AddTo(_disposables);
         }
 
-        public void OnGameEnd()
+        private void OnGameEnded(DomainEvents.GameEndedEvent e)
         {
+            if (_isGameFinished) return;
+
+            // GameEnded受信を終了状態への遷移点として、Dealerの後始末もここで完了する。
+            _isGameFinished = true; // ゲーム終了フラグをセット
+            CancelCurrentPlayerAction();
+            PublishTurnEnd();
+
+            // 手番や順序の最終状態はApplier/Contextが保持するため、ここでは直接変更しない。
+            _actionAwaiter?.Dispose();
+
+            if (_isGameInterrupted)
+            {
+                Debug.Log("Dealer: ゲームが途中中断されました");
+            }
+
+            _isGameInterrupted = false; // ゲーム中断フラグをリセット
+            Debug.Log("Dealer: ゲームを終了しました");
         }
 
         #endregion

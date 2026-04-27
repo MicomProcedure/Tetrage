@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using System;
 using Tetrage.Core.Enums;
 using Tetrage.Data;
+using R3;
 
 namespace Tetrage.UI
 {
@@ -14,10 +15,12 @@ namespace Tetrage.UI
         /// Presenter はここを購読して Dispose などの後片付けを行います。
         /// </summary>
         public event Action Destroyed;
+        private readonly Subject<Unit> _clicked = new();
 
         private void OnDestroy()
         {
             Destroyed?.Invoke();
+            _clicked.Dispose();
         }
 
         #region Serialized Fields
@@ -65,7 +68,7 @@ namespace Tetrage.UI
 
         #region Events
 
-        public event Action Clicked;
+        public Observable<Unit> Clicked => _clicked;
         public event Action FlipAnimationHalfway;
 
         #endregion
@@ -75,7 +78,7 @@ namespace Tetrage.UI
         public void OnPointerClick(PointerEventData e)
         {
             Debug.Log($"CardView: OnPointerClick {e.pointerId}");
-            Clicked?.Invoke();
+            _clicked.OnNext(Unit.Default);
         }
 
         #endregion

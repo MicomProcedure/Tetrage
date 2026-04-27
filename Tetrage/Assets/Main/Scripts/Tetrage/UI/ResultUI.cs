@@ -35,10 +35,10 @@ namespace Tetrage.UI
         /// <summary>
         /// 結果を表示
         /// </summary>
-        /// <param name="winnerUserIds">勝者のUserIdリスト</param>
+        /// <param name="winnerActorNumbers">勝者の PlayerId.Value 一覧</param>
         /// <param name="allPlayers">全プレイヤーのリスト</param>
         public void DisplayResult(
-            int[] winnerActorNumbers, 
+            int[] winnerActorNumbers,
             IReadOnlyList<IPlayer> allPlayers)
         {
             if (winnerActorNumbers == null || allPlayers == null)
@@ -59,7 +59,7 @@ namespace Tetrage.UI
                 {
                     AddLoserItem(player);
                 }
-                
+
                 // アイコンを設定
                 {
                     if (winnerActorNumbers.Contains(player.Id.Value))
@@ -78,6 +78,9 @@ namespace Tetrage.UI
                 _resultPanel.SetActive(true);
             }
 
+            // 同一 Canvas 上で Result が先頭子だと他 HUD より背面になるため、表示時は最前面へ
+            transform.SetAsLastSibling();
+
             Debug.Log($"ResultUI: 勝者 {winnerItems.Count}人, 敗者 {loserItems.Count}人を表示");
         }
 
@@ -90,6 +93,10 @@ namespace Tetrage.UI
             {
                 _resultPanel.SetActive(false);
             }
+
+            // 結果だけ閉じる場合にHUDを戻す（タイトル遷移でシーン破棄される場合は冗長だが無害）
+            var inGameUi = FindFirstObjectByType<InGameUIManager>(FindObjectsInactive.Exclude);
+            inGameUi?.SetGameplayHudVisible(true);
         }
 
         /// <summary>

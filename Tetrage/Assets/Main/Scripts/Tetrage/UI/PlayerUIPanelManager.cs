@@ -134,6 +134,38 @@ namespace Tetrage.UI
             _playerInfoList.Clear();
             _playerIdToPanel.Clear();
         }
+
+        #region Visibility
+
+        /// <summary>
+        /// <see cref="panelParent"/> 以下に生成したプレイヤーパネルの表示切替。
+        /// マネージャと panelParent が別オブジェクトのとき、マネージャだけ SetActive してもアイコンが残るため利用する。
+        /// </summary>
+        public void SetPanelsContainerVisible(bool visible)
+        {
+            if (panelParent != null)
+            {
+                panelParent.gameObject.SetActive(visible);
+            }
+        }
+
+        /// <summary>
+        /// InGamePlayerUI ルート（PanelContainer・テンプレ用プレハブなど兄弟含む）の表示切替。
+        /// </summary>
+        public void SetPlayerHudRootVisible(bool visible)
+        {
+            Transform hudRoot = transform.parent;
+            if (hudRoot != null)
+            {
+                hudRoot.gameObject.SetActive(visible);
+                return;
+            }
+
+            SetPanelsContainerVisible(visible);
+            gameObject.SetActive(visible);
+        }
+
+        #endregion
         
         /// <summary>
         /// 指定したPlayerIdのパネルをハイライト

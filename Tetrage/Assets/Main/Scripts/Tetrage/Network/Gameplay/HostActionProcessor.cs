@@ -62,14 +62,32 @@ namespace Tetrage.Network.Gameplay
             return $"winners:{string.Join(",", winnerActorNumbers)}";
         }
 
+        private bool TryResolvePlayerId(int actorNumber, out PlayerId playerId)
+        {
+            playerId = default;
+            if (!_playerIdMapper.TryGetPlayerId(actorNumber, out var resolvedPlayerId))
+            {
+                Debug.LogError($"HostActionProcessor: ActorNumber {actorNumber} のPlayerId変換に失敗しました");
+                return false;
+            }
+
+            playerId = resolvedPlayerId;
+            return true;
+        }
+
         public void Process(ActionRequestedEvent e)
         {
             var seq = _netCtl.Sequence;
             Debug.Log($"HostActionProcessor: Process {e.actionType}, ActorPlayerId: {e.actorPlayerId}, TargetCardIds: {string.Join(", ", e.targetCardIds ?? System.Array.Empty<int>())}");
+            if (!TryResolvePlayerId(e.actorPlayerId, out var actorPlayerId))
+            {
+                return;
+            }
+
             switch (e.actionType)
             {
                 case ActionType.Draw:
-                    ProcessDraw(e, seq);
+                    ProcessDraw(e, actorPlayerId, seq);
                     break;
                 case ActionType.TetrageSolo:
                     ProcessTetrageSolo(e, seq);
@@ -92,7 +110,7 @@ namespace Tetrage.Network.Gameplay
         ///   [1]: Stackに戻したカード（戻した順）
         ///   [2]: Trashに送ったカード（送った順）
         /// </summary>
-        private void ProcessDraw(ActionRequestedEvent e, SequenceService seq)
+        private void ProcessDraw(ActionRequestedEvent e, PlayerId actorPlayerId, SequenceService seq)
         {
             var othersInt = GetOtherActorNumbers(e.actorPlayerId);
             Debug.Log($"HostActionProcessor: Process Draw, ActorPlayerId: {e.actorPlayerId}, Others: [{string.Join(", ", othersInt)}]");
@@ -108,7 +126,7 @@ namespace Tetrage.Network.Gameplay
                     stateVersion = seq.NextStateVersion(),
                     cardId = selected.Value,
                     fromPileId = PileIds.Stack.Value,
-                    toPileId = PileIds.PlayerHands(e.actorPlayerId).Value,
+                    toPileId = PileIds.PlayerHands(actorPlayerId.Value).Value,
                 };
                 _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedSelected, othersInt);
 
@@ -124,7 +142,7 @@ namespace Tetrage.Network.Gameplay
                         sequence = seq.NextSequence(),
                         stateVersion = seq.NextStateVersion(),
                         cardId = trashCardId.Value,
-                        fromPileId = PileIds.PlayerHands(e.actorPlayerId).Value,
+                        fromPileId = PileIds.PlayerHands(actorPlayerId.Value).Value,
                         toPileId = PileIds.Trash.Value,
                     };
                     _netCtl.Broadcaster.RaiseToActors(EventCode.CardMoved, movedToTrash, othersInt);

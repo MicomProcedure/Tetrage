@@ -19,6 +19,7 @@ namespace Tetrage.Network.Gameplay
         public SequenceService Sequence => _sequence;
         public IPlayerIdMapper PlayerIdMapper => _playerIdMapper;
         public IGameContext GameContext => _gameContext;
+        public int LastAppliedNetworkSequence => _applier != null ? _applier.LastAppliedSequence : 0;
         #endregion
 
         #region Fields
@@ -90,10 +91,8 @@ namespace Tetrage.Network.Gameplay
                 playerRegistry,
                 _turnGate,
                 _gameContext,
-                _broadcaster,
                 _playerIdMapper,
                 _sequence,
-                new DefaultScanTargetSelector(),
                 _isHost);
 
             _hostActionProcessor = new DefaultHostActionProcessor(this, _playerIdMapper);

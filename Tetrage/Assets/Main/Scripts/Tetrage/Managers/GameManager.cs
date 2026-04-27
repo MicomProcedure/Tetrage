@@ -42,7 +42,7 @@ namespace Tetrage.Managers
         private IPlayerIdMapper _playerIdMapper;
         private NetworkMode _networkMode;
         private GameRuleDTO _gameRuleDTO;
-        private CompositeDisposable _disposables = new();
+        private CompositeDisposable _disposables;
 
         #endregion
 
@@ -174,7 +174,7 @@ namespace Tetrage.Managers
                 var actionMgr = ActionSystemInitializer.GetActionManager();
                 if (actionMgr != null && _netCtl != null)
                 {
-                    var networkCtx = new GeneralNetworkActionContext(_netCtl.Broadcaster, _netCtl.Sequence);
+                    var networkCtx = new GeneralNetworkActionContext(_netCtl.Broadcaster, _netCtl.Sequence, _netCtl.PlayerIdMapper);
                     actionMgr.SetNetworkActionContext(networkCtx);
                 }
 
@@ -183,7 +183,7 @@ namespace Tetrage.Managers
                 // 5.6 InGameUIManager 初期化（Bus購読開始）
                 if (_inGameUIManager != null)
                 {
-                    _inGameUIManager.Initialize(_gameContext);
+                    _inGameUIManager.Initialize(_gameContext, _netCtl);
                 }
 
 
@@ -218,12 +218,15 @@ namespace Tetrage.Managers
 
         private void EventSubscribe()
         {
-            _gameContext.Events.GameEnded.Subscribe(_ => OnGameEnd()).AddTo(_disposables);
+            _disposables ??= new CompositeDisposable();
+            _gameContext.Events.GameEnded.Subscribe(OnGameEnd).AddTo(_disposables);
         }
 
         private void EventUnsubscribe()
         {
+            if (_disposables == null) return;
             _disposables.Dispose();
+            _disposables = null;
         }
 
 
@@ -304,11 +307,12 @@ namespace Tetrage.Managers
 
         #region イベントハンドラ
 
-        private void OnGameEnd()
+        private void OnGameEnd(Tetrage.Core.Events.GameEndedEvent _)
         {
             Debug.Log("GameManager: ゲーム終了イベントを受信");
             _isGameRunning = false;
             _remoteGameEnded = true;
+            // 結果表示は InGameUIManager（FinishingGame → ResultUI）に任せる
             EventUnsubscribe();
         }
 

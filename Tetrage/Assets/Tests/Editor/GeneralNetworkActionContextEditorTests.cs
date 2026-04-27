@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using Tetrage.Core.Ids;
 using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Tests.Editor
@@ -29,7 +30,9 @@ namespace Tetrage.Tests.Editor
         public void Request_RaisesActionRequestedEvent()
         {
             var spy = new BroadcasterSpy();
-            var ctx = new GeneralNetworkActionContext(spy, new SequenceService());
+            var mapper = new PlayerIdMapper();
+            mapper.Register(new PlayerId(1), 10);
+            var ctx = new GeneralNetworkActionContext(spy, new SequenceService(), mapper);
             var request = new ActionRequestedEvent
             {
                 sequence = 1,
@@ -41,12 +44,16 @@ namespace Tetrage.Tests.Editor
 
             Assert.AreEqual(EventCode.ActionRequested, spy.LastCode);
             Assert.IsInstanceOf<ActionRequestedEvent>(spy.LastPayload);
+            var dto = (ActionRequestedEvent)spy.LastPayload;
+            Assert.AreEqual(10, dto.actorPlayerId);
         }
 
         [Test]
         public void NextClientSequence_UsesSequenceService()
         {
-            var ctx = new GeneralNetworkActionContext(new BroadcasterSpy(), new SequenceService());
+            var mapper = new PlayerIdMapper();
+            mapper.Register(new PlayerId(1), 10);
+            var ctx = new GeneralNetworkActionContext(new BroadcasterSpy(), new SequenceService(), mapper);
 
             Assert.AreEqual(1, ctx.NextClientSequence());
             Assert.AreEqual(2, ctx.NextClientSequence());

@@ -45,3 +45,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _playerUIPanelManager: {fileID: 0}
+  _actionPanelController: {fileID: 0}
+  _gameStartAnimation: {fileID: 0}
+  _ScanUIController: {fileID: 0}
+  _resultUI: {fileID: 0}
+  _TetrageSoloCutInAnimCtl: {fileID: 0}
