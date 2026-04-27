@@ -53,7 +53,7 @@ namespace Tetrage.UI
         [SerializeField] private GameObject _targetPanel;
         [SerializeField] private TextMeshProUGUI _naviText;
         [SerializeField] private TextMeshProUGUI _playerLabelText;
-        [SerializeField] private ProfileDisplayUI _profileDisplayUI;
+        [SerializeField] private ProfileDisplayView _profileDisplayView;
 
         [Header("Navi text templates")]
         [Tooltip("未設定の Id はコード内のデフォルト文言を使う。同一 Id が複数ある場合は先頭を採用。")]
@@ -147,7 +147,7 @@ namespace Tetrage.UI
             SetNaviText(ScanNaviTextId.InitializeBoot, _playerName, seatNumber);
 
             _playerLabelText.text = seatLabel;
-            _profileDisplayUI.SetManualInputData(user.IconIndex, user.UserId);
+            _profileDisplayView.SetProfile(user.IconIndex, user.UserId);
 
             ResetScanPhaseUIState();
         }
@@ -427,7 +427,7 @@ namespace Tetrage.UI
                 ok = false;
             }
 
-            if (_profileDisplayUI == null)
+            if (_profileDisplayView == null)
             {
                 Debug.LogError("ScanPhaseUI.Initialize: _profileDisplayUI が未設定です。Inspector で割り当ててください。");
                 ok = false;
