@@ -14,6 +14,12 @@ namespace Tetrage.UI
 
         #endregion
 
+        private void Awake(){
+
+            this.gameObject.SetActive(true);
+
+        }
+
         #region Public API
 
         /// <summary>

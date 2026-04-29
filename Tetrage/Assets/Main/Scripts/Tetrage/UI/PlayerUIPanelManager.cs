@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Tetrage.Components;
+using Tetrage.Core.Contracts;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 
@@ -18,19 +20,11 @@ namespace Tetrage.UI
         
         [Header("Position Settings")]
         [SerializeField] private bool useFixedPositions = true;
-        
-        // スロット番号と位置のマッピング
-        [SerializeField] private List<PlayerSlotPositionMapping> playerSlotPositionMappings = new List<PlayerSlotPositionMapping>
-        {
-            new PlayerSlotPositionMapping { slotIndex = 0, rect = new Rect( 0, -250, 0, 0) },
-            new PlayerSlotPositionMapping { slotIndex = 1, rect = new Rect( -400, 0, 0, 0) },
-            new PlayerSlotPositionMapping { slotIndex = 2, rect = new Rect( 0, 250, 0, 0) },
-            new PlayerSlotPositionMapping { slotIndex = 3, rect = new Rect( 400, 0, 0, 0) },
-        };
+        [SerializeField] private RectPositionConfig playerSlotPositionsPrefab;
 
         [Header("Debug Draw")]
         [SerializeField] private bool drawDebugPositions = true;
-        [SerializeField] private System.Collections.Generic.List<Color> debugColors = new System.Collections.Generic.List<Color>
+        [SerializeField] private List<Color> debugColors = new List<Color>
         {
             new Color(0.2f, 0.8f, 1f, 1f),
             new Color(1f, 0.6f, 0.2f, 1f),
@@ -47,6 +41,7 @@ namespace Tetrage.UI
         private List<PlayerUI> _activePanels = new List<PlayerUI>();
         private List<PlayerInfo> _playerInfoList = new List<PlayerInfo>();
         private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();
+        private IPositionConfig PlayerSlotPositionsConfig => playerSlotPositionsPrefab;
         #endregion
 
         #region Unity Lifecycle
@@ -179,6 +174,28 @@ namespace Tetrage.UI
                 Debug.LogWarning($"PlayerUIPanelManager: 指定のPlayerIdに対応するパネルが見つかりませんでした (PlayerId={playerId})");
             }
         }
+
+        /// <summary>
+        /// PlayerIdに対応するPlayerUIを取得する
+        /// </summary>
+        public bool TryGetPlayerUI(int playerId, out PlayerUI playerUI)
+        {
+            return _playerIdToPanel.TryGetValue(playerId, out playerUI) && playerUI != null;
+        }
+
+        /// <summary>
+        /// PlayerIdに対応するTargetPile同期用マーカーを取得する
+        /// </summary>
+        public bool TryGetTargetPileMarker(int playerId, out RectTransform marker)
+        {
+            marker = null;
+            if (!TryGetPlayerUI(playerId, out var playerUI))
+            {
+                return false;
+            }
+
+            return playerUI.TryGetTargetPileMarker(out marker);
+        }
         
         /// <summary>
         /// 現在の位置マッピングをログ出力（デバッグ用）
@@ -187,9 +204,15 @@ namespace Tetrage.UI
         public void LogCurrentPositions()
         {
             Debug.Log("=== Current Player Positions ===");
-            foreach (var mapping in playerSlotPositionMappings)
+            if (PlayerSlotPositionsConfig?.Position == null)
             {
-                Debug.Log($"SlotIndex={mapping.slotIndex}: Rect={mapping.rect}");
+                Debug.LogWarning("PlayerUIPanelManager: PlayerSlotPositionsConfig が未設定です");
+                return;
+            }
+
+            for (int i = 0; i < PlayerSlotPositionsConfig.Position.Count; i++)
+            {
+                Debug.Log($"SlotIndex={i}: Position={PlayerSlotPositionsConfig.Position[i]}");
             }
         }
         
@@ -244,9 +267,9 @@ namespace Tetrage.UI
                 isValid = false;
             }
 
-            if (useFixedPositions && (playerSlotPositionMappings == null || playerSlotPositionMappings.Count == 0))
+            if (useFixedPositions && PlayerSlotPositionsConfig == null)
             {
-                Debug.LogError("PlayerUIPanelManager: 固定配置を使う場合は playerSlotPositionMappings を設定してください", this);
+                Debug.LogError("PlayerUIPanelManager: 固定配置を使う場合は playerSlotPositionsPrefab を設定してください", this);
                 isValid = false;
             }
 
@@ -258,16 +281,21 @@ namespace Tetrage.UI
         /// </summary>
         private void ApplyFixedPositions()
         {
+            if (PlayerSlotPositionsConfig?.Position == null)
+            {
+                Debug.LogWarning("PlayerUIPanelManager: PlayerSlotPositionsConfig が未設定のため固定配置を適用できません");
+                return;
+            }
+
+            var positions = PlayerSlotPositionsConfig.Position;
             for (int i = 0; i < _activePanels.Count; i++)
             {
                 PlayerUI panel = _activePanels[i];
                 if (panel == null) continue;
 
-                // スロット番号に対応する位置を検索
-                var mapping = playerSlotPositionMappings.Find(m => m.slotIndex == i);
-                if (mapping == null)
+                if (i >= positions.Count)
                 {
-                    Debug.LogWarning($"PlayerUIPanelManager: SlotIndex={i} の位置マッピングが見つかりません");
+                    Debug.LogWarning($"PlayerUIPanelManager: SlotIndex={i} の位置設定が不足しています");
                     continue;
                 }
                 
@@ -277,16 +305,11 @@ namespace Tetrage.UI
                 panelRect.anchorMin = new Vector2(0.5f, 0.5f);
                 panelRect.anchorMax = new Vector2(0.5f, 0.5f);
                 panelRect.pivot = new Vector2(0.5f, 0.5f);
-                panelRect.anchoredPosition = mapping.rect.position;
-                if (mapping.rect.width > 0f && mapping.rect.height > 0f)
-                {
-                    // Rectのサイズ指定がある場合のみUIサイズを上書きする
-                    panelRect.sizeDelta = new Vector2(mapping.rect.width, mapping.rect.height);
-                }
+                panelRect.anchoredPosition = new Vector2(positions[i].x, positions[i].y);
                 panelRect.localScale = Vector3.one;
                 panelRect.localRotation = Quaternion.identity;
                 
-                Debug.Log($"PlayerUIPanelManager: SlotIndex={i} を Rect {mapping.rect} に配置しました");
+                Debug.Log($"PlayerUIPanelManager: SlotIndex={i} を Position {positions[i]} に配置しました");
             }
         }
 
@@ -370,22 +393,20 @@ namespace Tetrage.UI
         {
             if (!drawDebugPositions || !useFixedPositions) return;
             if (panelParent == null) return;
-            if (playerSlotPositionMappings == null) return;
+            if (PlayerSlotPositionsConfig?.Position == null) return;
 
             // UIローカル空間で描画
             Gizmos.matrix = panelParent.localToWorldMatrix;
-            for (int i = 0; i < playerSlotPositionMappings.Count; i++)
+            var positions = PlayerSlotPositionsConfig.Position;
+            for (int i = 0; i < positions.Count; i++)
             {
-                var mapping = playerSlotPositionMappings[i];
                 var col = debugColors != null && debugColors.Count > 0 ? debugColors[i % debugColors.Count] : Color.yellow;
                 Gizmos.color = col;
-                var debugWidth = mapping.rect.width > 0f ? mapping.rect.width : debugGizmoSize;
-                var debugHeight = mapping.rect.height > 0f ? mapping.rect.height : debugGizmoSize * 0.6f;
-                var center = new Vector3(mapping.rect.x + debugWidth * 0.5f, mapping.rect.y + debugHeight * 0.5f, 0f);
-                Gizmos.DrawWireCube(center, new Vector3(debugWidth, debugHeight, 1f));
+                var center = new Vector3(positions[i].x, positions[i].y, 0f);
+                Gizmos.DrawWireCube(center, new Vector3(debugGizmoSize, debugGizmoSize * 0.6f, 1f));
 #if UNITY_EDITOR
                 UnityEditor.Handles.color = col;
-                UnityEditor.Handles.Label(center, $"S{mapping.slotIndex}");
+                UnityEditor.Handles.Label(center, $"S{i}");
 #endif
             }
         }
@@ -404,18 +425,5 @@ namespace Tetrage.UI
             }
         }
         #endregion
-    }
-    
-    /// <summary>
-    /// スロット番号と位置のマッピング（インスペクター編集用）
-    /// </summary>
-    [System.Serializable]
-    public class PlayerSlotPositionMapping
-    {
-        [Tooltip("スロット番号（0始まり）")]
-        public int slotIndex = 0;
-        
-        [Tooltip("Rect(x,y,width,height): x,yはanchoredPosition、width,heightは0より大きい時のみsizeDeltaに反映")]
-        public Rect rect = new Rect(0f, 0f, 0f, 0f);
     }
 }

@@ -5,6 +5,7 @@ using Tetrage.Core.DTO;
 using Tetrage.Components;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "FieldSetupPrefabConfig", menuName = "Scriptable Objects/FieldSetupPrefabConfig")]
 public class FieldSetupPrefabConfig : ScriptableObject
@@ -26,7 +27,8 @@ public class FieldSetupPrefabConfig : ScriptableObject
     public StageView StageViewPrefab;
 
     [Header("Card Pile Views")]
-    public BasicCardPileView BasicCardPileViewPrefab;
+    [FormerlySerializedAs("BasicCardPileViewPrefab")]
+    public BasicCardPileView TargetSyncUIPileViewPrefab;
     public BasicCardPileView HandsCardPileViewPrefab;
     public BasicCardPileView TmpCardPileViewPrefab;
     public BasicCardPileView StackCardPileViewPrefab;

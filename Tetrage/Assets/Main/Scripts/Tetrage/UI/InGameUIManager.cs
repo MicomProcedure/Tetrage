@@ -25,13 +25,13 @@ namespace Tetrage.Managers
 		[Header("UI Controllers")]
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
-		[SerializeField] private GameStartAnimation _gameStartAnimation;
 		[SerializeField] private ScanPhaseUI _ScanUIController;
 		[SerializeField] private ResultUI _resultUI;
 		[SerializeField] private InGameNavigation _inGameNavigation;
 		[SerializeField] private InGameLoadingUI _loadingUI;
 		[Header("Animations")]
 		[SerializeField] private CutInAnimationController _TetrageSoloCutInAnimCtl;
+		[SerializeField] private GameStartAnimation _gameStartAnimation;
 
 		#endregion
 		#region Private Fields
@@ -166,12 +166,26 @@ namespace Tetrage.Managers
 		private void OnGameStarted(DomainEvents.GameStartedEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnGameStarted");
-			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
+			if (_playerUIPanelManager == null)
 			{
-				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
-				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
+				Debug.LogError("InGameUIManager: PlayerUIPanelManager が未設定のため GameStarted 時の PlayerUI 更新をスキップします。");
+				return;
 			}
 
+			if (_gameContext?.Players == null)
+			{
+				Debug.LogError("InGameUIManager: Players が未設定のため GameStarted 時の PlayerUI 更新をスキップします。");
+				return;
+			}
+
+			_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));	// PlayerUIパネルを初期化する。
+
+			if (_gameContext?.CurrentPlayer != null)
+			{
+				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId); // 現在のプレイヤーをハイライトする。
+			}
+
+			RefreshTargetPileViews();	// Targetへカードが配られる前に表示位置を確定する。
 		}
 
 		private void OnTurnStarted(DomainEvents.TurnStartedEvent e)
@@ -227,6 +241,7 @@ namespace Tetrage.Managers
 		private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)	
 		{
 			Debug.Log("InGameUIManager: OnScanPhaseStarted");
+			RefreshTargetPileViews();	// スキャン開始前にTargetカード山ビューの表示位置を再同期する。
 			SetScanUIActive(true);	// スキャンUIを表示
 			SetLoadingUIActive(false);	// ローディングUIを非表示
 			SetInGameNavigationActive(false);
@@ -268,6 +283,8 @@ namespace Tetrage.Managers
 			SetInGameNavigationActive(false);
 
 			SetLoadingUIActive(true);	// ローディングUIを表示
+
+			Debug.Log("InGameUIManager: ApplyInitialHudVisibility");
 		}
 
 		private static void SetUIRootActive(MonoBehaviour component, bool active)
@@ -287,6 +304,23 @@ namespace Tetrage.Managers
 		private void SetInGameNavigationActive(bool active) => SetUIRootActive(_inGameNavigation, active);
 		private void SetResultUIActive(bool active) => SetUIRootActive(_resultUI, active);
 		private void SetLoadingUIActive(bool active) => SetUIRootActive(_loadingUI, active);
+
+		/// <summary>
+		/// PlayerUI側の配置確定後にTargetカード山ビューの表示位置を再同期する。
+		/// </summary>
+		private void RefreshTargetPileViews()
+		{
+			var targetPileViews = FindObjectsByType<TargetSyncUIPileView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+			if (targetPileViews == null || targetPileViews.Length == 0)
+			{
+				return;
+			}
+
+			for (int i = 0; i < targetPileViews.Length; i++)
+			{
+				targetPileViews[i].RefreshBindingAndPosition();
+			}
+		}
 
 		#endregion
 
@@ -417,6 +451,7 @@ namespace Tetrage.Managers
 
 			Debug.Log($"InGameUIManager: Initialize時にPlayerUIパネルをセットアップします（プレイヤー数: {_gameContext.Players.Count}）");
 			_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
+			RefreshTargetPileViews();	// 初回カード移動前にTargetカード山ビューをPlayerUIマーカーへ合わせる。
 		}
 		#endregion
 

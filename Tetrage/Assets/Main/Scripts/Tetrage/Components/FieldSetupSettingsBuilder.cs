@@ -73,7 +73,7 @@ namespace Tetrage.Components
             {
                 { CardPileType.Hands, prefabConfig.HandsCardPileViewPrefab },
                 { CardPileType.Tmp, prefabConfig.TmpCardPileViewPrefab },
-                { CardPileType.Target, prefabConfig.BasicCardPileViewPrefab },
+                { CardPileType.Target, prefabConfig.TargetSyncUIPileViewPrefab },
                 { CardPileType.Trash, prefabConfig.TrashCardPileViewPrefab },
                 { CardPileType.Stack, prefabConfig.StackCardPileViewPrefab }
             };

@@ -15,6 +15,7 @@ namespace Tetrage.UI
         [Header("Optional")]
         [SerializeField] private TextMeshProUGUI playerNumberText;
         [SerializeField] private GameObject turnMarker;
+        [SerializeField] private RectTransform targetPileMarker;
         
         #endregion
         
@@ -30,6 +31,7 @@ namespace Tetrage.UI
         private void Awake()
         {
             EnsureProfileDisplayView();
+            CacheTurnMarkerText();
 
             // UI参照の検証
             if (profileDisplayView == null)
@@ -94,8 +96,22 @@ namespace Tetrage.UI
             return _playerId;
         }
 
+        /// <summary>
+        /// Targetカード山の同期に使用するマーカーを取得
+        /// </summary>
+        public bool TryGetTargetPileMarker(out RectTransform marker)
+        {
+            marker = targetPileMarker;
+            return marker != null;
+        }
+
         public void HideAllTurnMarker()
         {
+            if (turnMarker == null)
+            {
+                return;
+            }
+
             turnMarker.SetActive(false);
         }
 
@@ -120,15 +136,50 @@ namespace Tetrage.UI
         }
         
 
-        private void EnableTurnMarker(){
+        private void EnableTurnMarker()
+        {
+            if (turnMarker == null)
+            {
+                Debug.LogWarning("PlayerUI: turnMarker が未設定です。", this);
+                return;
+            }
 
             turnMarker.SetActive(true);
-            _turnMarkerText.text = "Now";
+            if (_turnMarkerText != null)
+            {
+                _turnMarkerText.text = "Now";
+            }
         }
 
-        private void DisableTurnMarker(){
+        private void DisableTurnMarker()
+        {
+            if (turnMarker == null)
+            {
+                return;
+            }
+
             turnMarker.SetActive(false);
-            _turnMarkerText.text = "";
+            if (_turnMarkerText != null)
+            {
+                _turnMarkerText.text = "";
+            }
+        }
+
+        /// <summary>
+        /// TurnMarker配下のテキスト参照をキャッシュする
+        /// </summary>
+        private void CacheTurnMarkerText()
+        {
+            if (turnMarker == null)
+            {
+                return;
+            }
+
+            _turnMarkerText = turnMarker.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (_turnMarkerText == null)
+            {
+                Debug.LogWarning("PlayerUI: turnMarker 配下に TextMeshProUGUI が見つかりません。", this);
+            }
         }
 
 

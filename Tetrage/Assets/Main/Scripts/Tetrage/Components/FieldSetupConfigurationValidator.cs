@@ -151,9 +151,9 @@ namespace Tetrage.Components
             }
 
             // Card Pile View Prefabs
-            if (prefabConfig.BasicCardPileViewPrefab == null)
+            if (prefabConfig.TargetSyncUIPileViewPrefab == null)
             {
-                Debug.LogError("PrefabConfig.BasicCardPileViewPrefabが設定されていません", context);
+                Debug.LogError("PrefabConfig.TargetSyncUIPileViewPrefabが設定されていません", context);
                 isValid = false;
             }
 

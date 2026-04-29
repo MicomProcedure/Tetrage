@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using R3;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Tetrage.Core.Contracts;
@@ -169,13 +170,16 @@ namespace Tetrage.Factories
                 playerView = Object.Instantiate(_viewPrefab, _viewSpawnPosition, Quaternion.identity, _viewParent); // Quaternion.identityは回転なしの意味
 
                 // View付きでカードパイルを生成
-                target = cardPileBuilder
-                    .WithName(CardPileType.Target.ToString())
-                    .WithMaxCount(_targetCapacity)
-                    .UseView(_cardPileViewsDict[CardPileType.Target], playerView.TargetRoot)
-                    .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Target])
-                    .WithPileId(PileIds.PlayerTarget(_id.Value))
-                    .Build();
+                using (cardPileBuilder.ViewCreated.Subscribe(HandleTargetPileViewCreated))
+                {
+                    target = cardPileBuilder
+                        .WithName(CardPileType.Target.ToString())
+                        .WithMaxCount(_targetCapacity)
+                        .UseView(_cardPileViewsDict[CardPileType.Target], playerView.TargetRoot)
+                        .WithLayout(_cardPileLayoutSettingsDict[CardPileType.Target])
+                        .WithPileId(PileIds.PlayerTarget(_id.Value))
+                        .Build();
+                }
 
                 hands = cardPileBuilder
                     .WithName(CardPileType.Hands.ToString())
@@ -258,6 +262,18 @@ namespace Tetrage.Factories
                 var cardPileView = cardPileViewsDict[requiredType];
                 Assert.IsNotNull(cardPileView,
                     $"cardPileViewsDict のキー '{requiredType}' に対応する値が null です");
+            }
+        }
+
+        /// <summary>
+        /// Target用CardPileView生成時にPlayerIdを注入する。
+        /// </summary>
+        private void HandleTargetPileViewCreated(ICardPileView view)
+        {
+            if (view is TargetSyncUIPileView targetSyncUIPileView)
+            {
+                targetSyncUIPileView.SetOwnerPlayerId(_id);
+                targetSyncUIPileView.RefreshBindingAndPosition();
             }
         }
     }

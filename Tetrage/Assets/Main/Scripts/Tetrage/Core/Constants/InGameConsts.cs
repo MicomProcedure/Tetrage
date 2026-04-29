@@ -5,6 +5,12 @@ namespace Tetrage.Core.Constants
 {
     public static class InGameConsts
     {
+        /// <summary>Unity組み込みタグ（シーン解決用）。マジック文字列を避ける。</summary>
+        public static class UnityBuiltInTags
+        {
+            public const string MainCamera = "MainCamera";
+        }
+
         public const float DEFAULT_CARD_PILE_WIDTH = 10f;   // カード表示用Viewを置いておく幅
         public const float DEFAULT_CARD_VIEW_MIN_SPACING = 0f; // カード表示用Viewの最小間隔
         public const float DEFAULT_CARD_VIEW_MAX_SPACING = float.MaxValue; // カード表示用Viewの最大間隔
