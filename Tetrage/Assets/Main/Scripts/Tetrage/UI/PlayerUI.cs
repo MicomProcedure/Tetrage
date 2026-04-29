@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Contracts;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.UI
 {
@@ -21,9 +23,10 @@ namespace Tetrage.UI
         
         #region Private Fields
         
-        private int _playerId;
+        private PlayerId _playerId;
+        private int _iconIndex;
         private TextMeshProUGUI _turnMarkerText;
-        
+        private int _playerNumber;
         #endregion
         
         #region Unity Lifecycle
@@ -44,12 +47,24 @@ namespace Tetrage.UI
 
         #region Public Methods
 
-        public void SetPlayerInfo(PlayerInfo playerInfo)
+        /// <summary>
+        /// プレイヤーのプロファイルデータを設定
+        /// </summary>
+        /// <param name="id">プレイヤーのID</param>
+        /// <param name="iconIndex">プレイヤーのアイコンのインデックス</param>
+        /// <param name="playerNumber">プレイヤー番号（ターン順）</param>
+        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber)
         {
-            Debug.Log($"[PlayerUI] ===== SetPlayerInfo開始 ===== GameObject={gameObject.name}");
-            Debug.Log($"[PlayerUI] SetPlayerInfo呼び出し: PlayerId={playerInfo.Id.Value}, UserId={playerInfo.UserId}, IconIndex={playerInfo.PlayerIconIndex}");
+            Debug.Log($"[PlayerUI] SetPlayerInfo呼び出し: PlayerId={id}, IconIndex={iconIndex}");
             
-            _playerId = playerInfo.Id.Value;
+            _playerId = id;
+            _iconIndex = iconIndex;
+            _playerNumber = playerNumber;
+
+            if (playerNumberText != null)
+            {
+                playerNumberText.text = playerNumber.ToString()+"P";    // プレイヤー番号を設定する。
+            }
             EnsureProfileDisplayView();
             
             if (profileDisplayView == null)
@@ -58,12 +73,30 @@ namespace Tetrage.UI
             }
             else
             {
-                profileDisplayView.SetProfile(playerInfo.PlayerIconIndex, playerInfo.UserId);
+                profileDisplayView.SetProfile(_iconIndex, _playerId.ToString());
                 Debug.Log("[PlayerUI] ✅ ProfileDisplayView へ反映しました");
             }
             
-            Debug.Log($"[PlayerUI] ===== SetPlayerInfo完了 =====");
         }
+
+        /// <summary>
+        /// プレイヤーのプロファイルデータを設定
+        /// </summary>
+        /// <param name="playerInfo">プレイヤーの情報</param>
+        public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber){
+            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber);
+        }
+
+        /// <summary>
+        /// プレイヤーのプロファイルデータを設定
+        /// </summary>
+        /// <param name="player">プレイヤー</param>
+        public void SetPlayerProfileData(IPlayer player, int playerNumber){
+            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber);
+        }
+
+
+        /// <summary>
         public void SetCurrentPlayer(bool isCurrentPlayer)
         {
             if (isCurrentPlayer)

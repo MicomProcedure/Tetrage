@@ -28,5 +28,14 @@ namespace Tetrage.Core.Constants
         public const int DEFAULT_GAME_PLAYER_COUNT = 4; // デフォルトのゲームのプレイヤー数
 
         public const int DEFAULT_DECK_ID = 1; // デフォルトのデッキのID
+
+        /// <summary>ScanPhase中にInGameNavigationへ表示する文言。</summary>
+        public static class ScanPhaseNavigationText
+        {
+            public const string SelectOpponentTarget = "次に、他の人のターゲットをスキャンします。好きな人のカードをタッチしてください";
+            public const string ConfirmOpponentTargetSuitFormat = "{0}Pのターゲットのスートを確認しますか？";
+            public const string OpponentTargetSuitRevealedFormat = "{0}Pのターゲットは{1}です。ターゲットを覚えて、そのまま「Next」を押してください";
+            public const string WaitingOtherPlayers = "他のプレイヤーを待っています……";
+        }
     }
 }

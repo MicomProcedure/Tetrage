@@ -1,5 +1,6 @@
 using UnityEngine;
 using Tetrage.Core;
+using Tetrage.Core.Constants;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
@@ -42,8 +43,10 @@ namespace Tetrage.Managers
 		private IGameplayNetworkController _gameplayNetwork;
 		private bool _scanOwnTargetConfirmed;
 		private bool _scanOpponentSelected;
+		private bool _scanOpponentSuitRevealed;
 		private bool _scanSelectionSent;
 		private PlayerId _scanSelectedTargetPlayerId;
+		private Suit _scanSelectedTargetSuit;
 		#endregion
 
 		#region Public API
@@ -178,7 +181,7 @@ namespace Tetrage.Managers
 				return;
 			}
 
-			_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));	// PlayerUIパネルを初期化する。
+			_playerUIPanelManager.SetupPanels();	// PlayerUIパネルを初期化する。
 
 			if (_gameContext?.CurrentPlayer != null)
 			{
@@ -325,15 +328,7 @@ namespace Tetrage.Managers
 		#endregion
 
 		#region ヘルパー
-		private List<PlayerInfo> CreatePlayerInfoList(IReadOnlyList<IPlayer> players)
-		{
-			var playerInfoList = new List<PlayerInfo>();
-			foreach (var player in players)
-			{
-				playerInfoList.Add(new PlayerInfo { Id = player.Id, UserId = player.UserId, PlayerType = PlayerType.Local, PlayerIconIndex = player.IconIndex });
-			}
-			return playerInfoList;
-		}
+
 
 		#endregion
 
@@ -436,6 +431,7 @@ namespace Tetrage.Managers
 				.AddTo(_disposables);
 			_actionPanelController.Initialize(_gameContext);
 			InitializePlayerUIPanels();
+			_playerUIPanelManager.Initialize(_gameContext);
 		}
 
 				/// <summary>
@@ -449,8 +445,6 @@ namespace Tetrage.Managers
 				return;
 			}
 
-			Debug.Log($"InGameUIManager: Initialize時にPlayerUIパネルをセットアップします（プレイヤー数: {_gameContext.Players.Count}）");
-			_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
 			RefreshTargetPileViews();	// 初回カード移動前にTargetカード山ビューをPlayerUIマーカーへ合わせる。
 		}
 		#endregion
@@ -476,6 +470,12 @@ namespace Tetrage.Managers
 				return;
 			}
 
+			if (!_scanOpponentSuitRevealed)
+			{
+				RevealSelectedOpponentTargetSuit();
+				return;
+			}
+
 			if (!TrySendScanTargetSelected())
 			{
 				return;
@@ -484,8 +484,9 @@ namespace Tetrage.Managers
 			_scanSelectionSent = true;
 			if (_inGameNavigation != null)
 			{
-				_inGameNavigation.SetNavigationText("他のプレイヤーを待っています...");
+				_inGameNavigation.SetNavigationText(InGameConsts.ScanPhaseNavigationText.WaitingOtherPlayers);
 			}
+			_ScanUIController?.SetNextButtonVisible(false);
 		}
 
 		private void EnterOpponentScanStep()
@@ -494,7 +495,7 @@ namespace Tetrage.Managers
 			SetInGameNavigationActive(true);
 			if (_inGameNavigation != null)
 			{
-				_inGameNavigation.SetNavigationText("次に、他の人のターゲットをスキャンします。好きな人のカードをタッチしてください");
+				_inGameNavigation.SetNavigationText(InGameConsts.ScanPhaseNavigationText.SelectOpponentTarget);
 			}
 			SubscribeOpponentTargetCardClicks();
 		}
@@ -537,13 +538,41 @@ namespace Tetrage.Managers
 
 		private void OnOpponentTargetSelected(PlayerId playerId, Suit suit)
 		{
+			if (_scanOpponentSuitRevealed || _scanSelectionSent)
+			{
+				return;
+			}
+
 			_scanSelectedTargetPlayerId = playerId;
+			_scanSelectedTargetSuit = suit;
 			_scanOpponentSelected = true;
 
 			if (_inGameNavigation != null)
 			{
-				_inGameNavigation.SetNavigationText($"{playerId.Value}Pのターゲットは{suit.GetKatakanaName()}です。ターゲットを覚えて、そのまま「Next」を押してください。");
+				_inGameNavigation.SetNavigationText(string.Format(
+					InGameConsts.ScanPhaseNavigationText.ConfirmOpponentTargetSuitFormat,
+					playerId.Value));
 			}
+		}
+
+		/// <summary>
+		/// 選択済みターゲットのスートをNext操作で初めて表示し、以降の再選択を受け付けない。
+		/// </summary>
+		private void RevealSelectedOpponentTargetSuit()
+		{
+			_scanOpponentSuitRevealed = true;
+			_scanTargetCardClickDisposables.Dispose();
+			_scanTargetCardClickDisposables = new();
+
+			if (_inGameNavigation == null)
+			{
+				return;
+			}
+
+			_inGameNavigation.SetNavigationText(string.Format(
+				InGameConsts.ScanPhaseNavigationText.OpponentTargetSuitRevealedFormat,
+				_scanSelectedTargetPlayerId.Value,
+				_scanSelectedTargetSuit.GetKatakanaName()));
 		}
 
 		private bool TrySendScanTargetSelected()
@@ -582,11 +611,14 @@ namespace Tetrage.Managers
 		{
 			_scanOwnTargetConfirmed = false;
 			_scanOpponentSelected = false;
+			_scanOpponentSuitRevealed = false;
 			_scanSelectionSent = false;
 			_scanSelectedTargetPlayerId = default;
+			_scanSelectedTargetSuit = default;
 			_scanTargetCardClickDisposables.Dispose();
 			_scanTargetCardClickDisposables = new();
 			_ScanUIController?.SetTargetConfirmationPanelVisible(true);
+			_ScanUIController?.SetNextButtonVisible(true);
 		}
 
 

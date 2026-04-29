@@ -2,8 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using Tetrage.Components;
 using Tetrage.Core.Contracts;
-using Tetrage.Core.DTO;
-using Tetrage.Core.Enums;
+using Tetrage.Extentions;
+using System.Linq;
 
 namespace Tetrage.UI
 {
@@ -39,9 +39,11 @@ namespace Tetrage.UI
         #region Private Fields
         
         private List<PlayerUI> _activePanels = new List<PlayerUI>();
-        private List<PlayerInfo> _playerInfoList = new List<PlayerInfo>();
-        private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();
+        private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();  // PlayerIdをキーにしたパネル席順の辞書
         private IPositionConfig PlayerSlotPositionsConfig => playerSlotPositionsPrefab;
+
+        private IGameContext _gameContext;
+        private bool _isInitialized = false;
         #endregion
 
         #region Unity Lifecycle
@@ -54,41 +56,57 @@ namespace Tetrage.UI
         }
 
         #endregion
+
+        #region Initialization
+
+        public void Initialize(IGameContext gameContext)
+        {
+            _gameContext = gameContext;
+            _isInitialized = true;
+        }
+
+        #endregion
         
         #region Public Methods
         
         /// <summary>
         /// PlayerInfoリストからパネルを生成
         /// </summary>
-        public void SetupPanels(List<PlayerInfo> playerInfoList)
+        public void SetupPanels()
         {
-            if (!ValidateSetupPanels(playerInfoList))
+            if (!_isInitialized)
+            {
+                Debug.LogError("PlayerUIPanelManager: 初期化されていないためパネルのセットアップをスキップします");
+                return;
+            }
+
+            if (!ValidateSetupPanels())
             {
                 return;
             }
 
             ClearPanels();
 
-            // 渡されたPlayerInfoの内容をログ出力
-            for (int i = 0; i < playerInfoList.Count; i++)
+            // GameContextから渡されたPlayerの内容をログ出力
+            for (int i = 0; i < _gameContext.Players.Count; i++)
             {
-                var info = playerInfoList[i];
-                Debug.Log($"[PlayerUIPanelManager] PlayerInfo[{i}]: Id={info.Id.Value}, UserId={info.UserId}, IconIndex={info.PlayerIconIndex}");
+                var player = _gameContext.Players[i];
+                Debug.Log($"[PlayerUIPanelManager] Player[{i}]: Id={player.Id}, UserId={player.UserId}, IconIndex={player.IconIndex}");
             }
 
-            _playerInfoList = new List<PlayerInfo>(playerInfoList);
-            
-            var displaySeatOrderedPlayers = BuildDisplaySeatOrderedPlayers(playerInfoList);
-            foreach (var playerInfo in displaySeatOrderedPlayers)
+            var displaySeatOrderedPlayers = BuildDisplaySeatOrderedPlayers(); // UserPlayerを先頭にし、それ以外は元順序を維持する。
+            for (int i = 0; i < displaySeatOrderedPlayers.Count; i++)   // displaySeatOrderedPlayersはUserPlayerを先頭にし、それ以外は元順序を維持する。
             {
-                var panel = CreatePanel(playerInfo.Id.Value);
+                var player = displaySeatOrderedPlayers[i];
+                var playerNumber = _gameContext.Players.IndexOf(player)+1;  // プレイヤー番号（ターン順）を取得する。UserPlayerは1番目なので+1する。
+                var panel = CreatePanel(playerNumber);
                 if (panel == null)
                 {
-                    Debug.LogError($"PlayerUIPanelManager: パネル生成に失敗しました (PlayerId={playerInfo.Id.Value})");
+                    Debug.LogError($"PlayerUIPanelManager: パネル生成に失敗しました (player={player})");
                     continue;
                 }
-                panel.SetPlayerInfo(playerInfo);
-                _playerIdToPanel[playerInfo.Id.Value] = panel;
+                panel.SetPlayerProfileData(player, playerNumber);  // プレイヤー番号を設定する。
+                _playerIdToPanel[i] = panel;
             }
             
             if (useFixedPositions)
@@ -113,7 +131,6 @@ namespace Tetrage.UI
                 }
             }
             _activePanels.Clear();
-            _playerInfoList.Clear();
             _playerIdToPanel.Clear();
         }
 
@@ -223,19 +240,19 @@ namespace Tetrage.UI
         /// <summary>
         /// パネル生成に必要な入力と参照が揃っているか検証する。
         /// </summary>
-        private bool ValidateSetupPanels(List<PlayerInfo> playerInfoList)
+        private bool ValidateSetupPanels()
         {
-            if (playerInfoList == null || playerInfoList.Count == 0)
+            if (_gameContext.Players == null || _gameContext.Players.Count == 0)
             {
-                Debug.LogWarning("PlayerUIPanelManager: プレイヤー情報リストが空です");
+                Debug.LogWarning("PlayerUIPanelManager: プレイヤーが存在しません");
                 return false;
             }
 
-            for (int i = 0; i < playerInfoList.Count; i++)
+            for (int i = 0; i < _gameContext.Players.Count; i++)
             {
-                if (playerInfoList[i] == null)
+                if (_gameContext.Players[i] == null)
                 {
-                    Debug.LogError($"PlayerUIPanelManager: PlayerInfo[{i}] が null です");
+                    Debug.LogError($"PlayerUIPanelManager: Player[{i}] が null です");
                     return false;
                 }
             }
@@ -314,43 +331,29 @@ namespace Tetrage.UI
         }
 
         /// <summary>
-        /// 表示用の席順を構築する。ローカルプレイヤーを先頭にし、それ以外は元順序を維持する。
+        /// 表示用の席順を構築する。UserPlayerを先頭にし、それ以外は元順序を維持する。
         /// </summary>
-        private static List<PlayerInfo> BuildDisplaySeatOrderedPlayers(List<PlayerInfo> playerInfoList)
+        private List<IPlayer> BuildDisplaySeatOrderedPlayers()
         {
-            var orderedPlayers = new List<PlayerInfo>(playerInfoList.Count);
-            PlayerInfo localPlayer = null;
+            var orderedPlayers = new List<IPlayer>(_gameContext.Players.Count);
+            var userPlayer = _gameContext.UserPlayer;
 
-            for (int i = 0; i < playerInfoList.Count; i++)
-            {
-                var playerInfo = playerInfoList[i];
-                if (playerInfo != null && playerInfo.PlayerType == PlayerType.Local && localPlayer == null)
-                {
-                    localPlayer = playerInfo;
-                }
-            }
+            orderedPlayers.Add(userPlayer); // UserPlayerを先頭に追加
 
-            if (localPlayer != null)
+            // userPlayerの次のindexから始めて順に追加。indexがmaxなら0に戻る
+            int userPlayerIndex = _gameContext.Players.ToList().FindIndex(x => ReferenceEquals(x, userPlayer));
+            int count = _gameContext.Players.Count;
+            for (int offset = 1; offset < count; offset++)
             {
-                orderedPlayers.Add(localPlayer);
-            }
-
-            for (int i = 0; i < playerInfoList.Count; i++)
-            {
-                var playerInfo = playerInfoList[i];
-                if (playerInfo == null)
+                int index = (userPlayerIndex + offset) % count; // indexがmax(count-1)なら0に戻る
+                var player = _gameContext.Players[index];
+                if (player == null || ReferenceEquals(player, userPlayer))  // nullまたはUserPlayerは追加しない
                 {
                     continue;
                 }
-
-                if (ReferenceEquals(playerInfo, localPlayer))
-                {
-                    continue;
-                }
-
-                orderedPlayers.Add(playerInfo);
+                orderedPlayers.Add(player);
             }
-
+    
             return orderedPlayers;
         }
         
@@ -366,7 +369,7 @@ namespace Tetrage.UI
         /// <summary>
         /// パネルを生成
         /// </summary>
-        private PlayerUI CreatePanel(int playerId)
+        private PlayerUI CreatePanel(int playerNumber)
         {
             if (!ValidateSerializedReferences())
             {
@@ -382,7 +385,7 @@ namespace Tetrage.UI
                 return null;
             }
 
-            panelInstance.name = $"PlayerUI_P{playerId}";
+            panelInstance.name = $"PlayerUI_P{playerNumber}";
             panelInstance.gameObject.SetActive(true);
             _activePanels.Add(panelInstance);
             

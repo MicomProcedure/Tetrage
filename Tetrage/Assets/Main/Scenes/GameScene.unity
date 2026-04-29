@@ -1033,6 +1033,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
+      propertyPath: _debugPlayerInfos.Array.data[0].TargetCard.Suit
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
       propertyPath: _debugPlayerInfos.Array.data[1].TargetCard.Suit
       value: 1
       objectReference: {fileID: 0}
@@ -1042,7 +1046,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
       propertyPath: _debugPlayerInfos.Array.data[3].TargetCard.Suit
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6262279904972623621, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
       propertyPath: _debugPlayerInfos.Array.data[0].TargetCard.Number
@@ -1134,7 +1138,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8129540638083541530, guid: b2710224760dafc41bd6c42d8496146e, type: 3}
       propertyPath: _realPhotonRequiredPlayerCount
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

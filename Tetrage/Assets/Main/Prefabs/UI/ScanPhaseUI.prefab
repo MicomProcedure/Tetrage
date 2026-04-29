@@ -25,7 +25,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7767233981341406712}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: -421, y: 129}
-  m_SizeDelta: {x: 320, y: 140}
+  m_SizeDelta: {x: 315, y: 135}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5817049462647459088
 CanvasRenderer:
@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.1792453, g: 0.1792453, b: 0.1792453, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -139,8 +139,8 @@ MonoBehaviour:
   - Id: 0
     Template: 
   _nextButton: {fileID: 5360807517763707171}
+  _buttonFrame: {fileID: 7767233981341406712}
   _trumpBackImage: {fileID: 1718900366689313575}
-  _inactiveStateObject: {fileID: 0}
   _cardImageMapper: {fileID: 11400000, guid: 20701fb78b4bb6344a17ab19d071e3af, type: 2}
 --- !u!1001 &7230197382346959503
 PrefabInstance:
@@ -479,8 +479,20 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 4086842559811004398}
     - target: {fileID: 1076021193386596576, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
+      propertyPath: frameColor.b
+      value: 0.1792453
+      objectReference: {fileID: 0}
+    - target: {fileID: 1076021193386596576, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
+      propertyPath: frameColor.g
+      value: 0.1792453
+      objectReference: {fileID: 0}
+    - target: {fileID: 1076021193386596576, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
+      propertyPath: frameColor.r
+      value: 0.1792453
+      objectReference: {fileID: 0}
+    - target: {fileID: 1076021193386596576, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: frameThickness
-      value: 20
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 2395539775604896638, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_Pivot.x

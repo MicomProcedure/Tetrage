@@ -13,6 +13,7 @@ using Tetrage.Core.DTO;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
 using Tetrage.Network.Gameplay;
+using Tetrage.Tests.Data;
 using Photon.Pun;
 using Photon.Realtime;
 #endif
@@ -88,6 +89,8 @@ namespace Tetrage.Tests
         [SerializeField] private bool _mppmShareInspectorSnapshotAcrossProcesses = true;
 
         private GameManager _gameManager;
+        private List<DebugPlayerInfo> _mppmSyncedDebugPlayerInfos;
+        private bool _hasMppmSyncedDebugPlayerInfos;
 
         /// <summary>
         /// ApplicationManager 不在の直接 GameScene 起動時のみ、RealPhoton デバッグ中に PUN のシーン同期を一時的に無効化する。
@@ -135,7 +138,10 @@ namespace Tetrage.Tests
                 return;
             }
 
-            _localPlayerIndex = Mathf.Clamp(_localPlayerIndex, 0, _playerCount - 1);
+            _localPlayerIndex = ResolveVirtualDebugPlayerIndex(
+                _localPlayerIndex,
+                _playerCount,
+                TryGetMultiplayerPlayModePlayerName(out var mppmPlayerName) ? mppmPlayerName : null);
             Debug.Log($"<color=cyan>GameSceneDebugEntrySimple: Debug環境でGameSceneを初期化します (Players: {_playerCount}, Mode: {_networkMode}, LocalPlayer: Player{_localPlayerIndex + 1})</color>");
 
             await InitializeDebugEnvironment();
@@ -160,7 +166,7 @@ namespace Tetrage.Tests
                 {
                     if (_playerDebugSettings != null && _playerDebugSettings.DebugPlayerInfos.Count > 0)
                     {
-                        Debug.LogWarning("GameSceneDebugEntrySimple: RealPhotonモードではGameScenePlayerDebugSettingsを無視します");
+                        Debug.Log("GameSceneDebugEntrySimple: RealPhotonモードではPlayer名/IDはPhotonを使用し、初期カード指定のみGameScenePlayerDebugSettingsを使用します");
                     }
 
                     await EnsureRealPhotonReadyAsync();
@@ -171,12 +177,22 @@ namespace Tetrage.Tests
                 else
                 {
                     int? userPlayerIndex = null;
-                    if (_playerDebugSettings != null && _playerDebugSettings.DebugPlayerInfos.Count > 0)
+                    var debugPlayerInfos = GetActiveDebugPlayerInfos();
+                    if (debugPlayerInfos.Count > 0)
                     {
                         Debug.Log("GameSceneDebugEntrySimple: GameScenePlayerDebugSettingsを使用してプレイヤーを作成します");
 
-                        // IsUserPlayerが設定されている場合はそれを使用、なければ_localPlayerIndexを使用
-                        userPlayerIndex = _playerDebugSettings.GetUserPlayerIndex(_playerCount);
+                        // MPPMではプロセスごとのPlayer名を優先し、InspectorのIsUserPlayer固定で全員同じプレイヤーになるのを防ぐ。
+                        if (TryGetRuntimeMppmPlayerIndex(out var mppmIndex))
+                        {
+                            userPlayerIndex = mppmIndex;
+                            Debug.Log($"GameSceneDebugEntrySimple: MPPM Player名からUserPlayerインデックスを決定します: {userPlayerIndex}");
+                        }
+                        else
+                        {
+                            userPlayerIndex = GetUserPlayerIndex(debugPlayerInfos, _playerCount);
+                        }
+
                         if (userPlayerIndex == null)
                         {
                             userPlayerIndex = _localPlayerIndex;
@@ -184,7 +200,7 @@ namespace Tetrage.Tests
                         }
                         else
                         {
-                            int userPlayerCount = _playerDebugSettings.GetUserPlayerCount(_playerCount);
+                            int userPlayerCount = GetUserPlayerCount(debugPlayerInfos, _playerCount);
                             if (userPlayerCount > 1)
                             {
                                 Debug.LogWarning($"GameSceneDebugEntrySimple: {userPlayerCount}人のプレイヤーがUserPlayerに設定されています。最初の一人（インデックス: {userPlayerIndex}）を使用します。");
@@ -192,7 +208,7 @@ namespace Tetrage.Tests
                             Debug.Log($"GameSceneDebugEntrySimple: UserPlayerインデックス: {userPlayerIndex}");
                         }
 
-                        players = _playerDebugSettings.CreatePlayerInfos(_playerCount, userPlayerIndex);
+                        players = CreatePlayerInfos(debugPlayerInfos, _playerCount, userPlayerIndex);
                     }
                     else
                     {
@@ -206,7 +222,7 @@ namespace Tetrage.Tests
                         _networkMode,
                         localActorNumber: localActorNumber,
                         playerCount: _playerCount,
-                        isHost: true
+                        isHost: IsVirtualDebugHostInstance()
                     );
 
                     // PlayerIdMapper生成
@@ -226,6 +242,7 @@ namespace Tetrage.Tests
                 // GameManager初期化
                 _gameManager = PlayModeTestHelper.FindGameManager();
                 _gameManager.Initialize(players, userInfo, networkContext, _networkMode, mapper, gameRule);
+                ConfigureDebugInitialCardPlanner();
 
                 // NetworkEventDebuggerのセットアップ
                 if (_networkDebugger != null)
@@ -276,6 +293,27 @@ namespace Tetrage.Tests
             public float realPhotonWaitPlayersTimeoutSec;
             public bool autoStartGame;
             public int randomSeed;
+            public List<SerializableDebugPlayerInfo> debugPlayerInfos;
+        }
+
+        [Serializable]
+        private sealed class SerializableDebugPlayerInfo
+        {
+            public string playerName;
+            public int playerId;
+            public int playerType;
+            public bool isUserPlayer;
+            public int iconIndex;
+            public bool setInitialCards;
+            public SerializableCardSpec targetCard;
+            public List<SerializableCardSpec> handCards;
+        }
+
+        [Serializable]
+        private sealed class SerializableCardSpec
+        {
+            public int suit;
+            public int number;
         }
 
         private const string MppmSnapshotFormatVersion = "1";
@@ -349,7 +387,8 @@ namespace Tetrage.Tests
                 realPhotonJoinRoomTimeoutSec = _realPhotonJoinRoomTimeoutSec,
                 realPhotonWaitPlayersTimeoutSec = _realPhotonWaitPlayersTimeoutSec,
                 autoStartGame = _autoStartGame,
-                randomSeed = _randomSeed
+                randomSeed = _randomSeed,
+                debugPlayerInfos = BuildSerializableDebugPlayerInfos(GetActiveDebugPlayerInfos())
             };
         }
 
@@ -437,6 +476,8 @@ namespace Tetrage.Tests
             _realPhotonWaitPlayersTimeoutSec = Mathf.Max(1f, s.realPhotonWaitPlayersTimeoutSec);
             _autoStartGame = s.autoStartGame;
             _randomSeed = s.randomSeed;
+            _mppmSyncedDebugPlayerInfos = BuildDebugPlayerInfos(s.debugPlayerInfos);
+            _hasMppmSyncedDebugPlayerInfos = true;
             OnValidate();
         }
 
@@ -455,6 +496,305 @@ namespace Tetrage.Tests
                     return;
                 }
             }
+        }
+
+        /// <summary>
+        /// MPPMのPlayer名から0始まりのプレイヤーインデックスを解決する。
+        /// </summary>
+        public static bool TryResolveMppmPlayerIndex(string playerName, out int playerIndex)
+        {
+            playerIndex = -1;
+            if (string.IsNullOrWhiteSpace(playerName))
+            {
+                return false;
+            }
+
+            const string prefix = "Player";
+            if (!playerName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string numberText = playerName.Substring(prefix.Length);
+            if (!int.TryParse(numberText, out var playerNumber))
+            {
+                return false;
+            }
+
+            if (playerNumber < 1 || playerNumber > SettingConsts.MAX_PLAYER_COUNT)
+            {
+                return false;
+            }
+
+            playerIndex = playerNumber - 1;
+            return true;
+        }
+
+        /// <summary>
+        /// VirtualTransport系のローカルプレイヤー番号を決定する。
+        /// </summary>
+        public static int ResolveVirtualDebugPlayerIndex(int inspectorLocalPlayerIndex, int playerCount, string mppmPlayerName)
+        {
+            int clampedPlayerCount = Mathf.Clamp(playerCount, SettingConsts.MIN_PLAYER_COUNT, SettingConsts.MAX_PLAYER_COUNT);
+            if (TryResolveMppmPlayerIndex(mppmPlayerName, out var mppmIndex) && mppmIndex < clampedPlayerCount)
+            {
+                return mppmIndex;
+            }
+
+            return Mathf.Clamp(inspectorLocalPlayerIndex, 0, clampedPlayerCount - 1);
+        }
+
+        private bool TryGetRuntimeMppmPlayerIndex(out int playerIndex)
+        {
+            playerIndex = -1;
+            return TryGetMultiplayerPlayModePlayerName(out var playerName)
+                && TryResolveMppmPlayerIndex(playerName, out playerIndex)
+                && playerIndex < _playerCount;
+        }
+
+        private bool IsVirtualDebugHostInstance()
+        {
+            return !TryGetRuntimeMppmPlayerIndex(out var playerIndex) || playerIndex == 0;
+        }
+
+        private List<DebugPlayerInfo> GetActiveDebugPlayerInfos()
+        {
+            if (_hasMppmSyncedDebugPlayerInfos)
+            {
+                return _mppmSyncedDebugPlayerInfos ?? new List<DebugPlayerInfo>();
+            }
+
+            return _playerDebugSettings != null
+                ? _playerDebugSettings.DebugPlayerInfos
+                : new List<DebugPlayerInfo>();
+        }
+
+        private static int? GetUserPlayerIndex(IReadOnlyList<DebugPlayerInfo> debugPlayerInfos, int playerCount)
+        {
+            for (int i = 0; i < playerCount && i < debugPlayerInfos.Count; i++)
+            {
+                if (debugPlayerInfos[i].IsUserPlayer)
+                {
+                    return i;
+                }
+            }
+
+            return null;
+        }
+
+        private static int GetUserPlayerCount(IReadOnlyList<DebugPlayerInfo> debugPlayerInfos, int playerCount)
+        {
+            int count = 0;
+            for (int i = 0; i < playerCount && i < debugPlayerInfos.Count; i++)
+            {
+                if (debugPlayerInfos[i].IsUserPlayer)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static List<PlayerInfo> CreatePlayerInfos(IReadOnlyList<DebugPlayerInfo> debugPlayerInfos, int playerCount, int? userPlayerIndex)
+        {
+            var playerInfos = new List<PlayerInfo>();
+            var usedPlayerIds = new HashSet<int>();
+
+            for (int i = 0; i < playerCount; i++)
+            {
+                DebugPlayerInfo debugInfo = i < debugPlayerInfos.Count ? debugPlayerInfos[i] : null;
+                int playerIdValue = ResolvePlayerId(debugInfo, usedPlayerIds, playerCount, i);
+                usedPlayerIds.Add(playerIdValue);
+
+                var playerType = debugInfo?.PlayerType ?? PlayerType.Remote;
+                if (i == userPlayerIndex)
+                {
+                    playerType = PlayerType.Local;
+                }
+
+                playerInfos.Add(new PlayerInfo
+                {
+                    Id = new PlayerId(playerIdValue),
+                    UserId = debugInfo?.PlayerName ?? $"Player {i + 1}",
+                    PlayerType = playerType,
+                    PlayerIconIndex = debugInfo?.IconIndex ?? (i % 4)
+                });
+            }
+
+            return playerInfos;
+        }
+
+        private static int ResolvePlayerId(DebugPlayerInfo debugInfo, HashSet<int> usedPlayerIds, int playerCount, int playerIndex)
+        {
+            if (debugInfo != null && debugInfo.PlayerId > 0 && !usedPlayerIds.Contains(debugInfo.PlayerId))
+            {
+                return debugInfo.PlayerId;
+            }
+
+            if (debugInfo != null && debugInfo.PlayerId > 0)
+            {
+                Debug.LogWarning($"GameSceneDebugEntrySimple: PlayerId {debugInfo.PlayerId} が重複しています。自動生成に切り替えます。");
+            }
+
+            int candidateValue = playerIndex + 1;
+            return usedPlayerIds.Contains(candidateValue)
+                ? FindNextAvailablePlayerId(usedPlayerIds, playerCount)
+                : candidateValue;
+        }
+
+        private static int FindNextAvailablePlayerId(HashSet<int> usedIds, int playerCount)
+        {
+            for (int candidate = 1; candidate <= playerCount; candidate++)
+            {
+                if (!usedIds.Contains(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            int nextId = playerCount + 1;
+            while (usedIds.Contains(nextId))
+            {
+                nextId++;
+            }
+
+            return nextId;
+        }
+
+        private static List<SerializableDebugPlayerInfo> BuildSerializableDebugPlayerInfos(IReadOnlyList<DebugPlayerInfo> debugPlayerInfos)
+        {
+            var result = new List<SerializableDebugPlayerInfo>();
+            if (debugPlayerInfos == null)
+            {
+                return result;
+            }
+
+            foreach (var info in debugPlayerInfos)
+            {
+                if (info == null)
+                {
+                    continue;
+                }
+
+                result.Add(new SerializableDebugPlayerInfo
+                {
+                    playerName = info.PlayerName,
+                    playerId = info.PlayerId,
+                    playerType = (int)info.PlayerType,
+                    isUserPlayer = info.IsUserPlayer,
+                    iconIndex = info.IconIndex,
+                    setInitialCards = info.SetInitialCards,
+                    targetCard = BuildSerializableCardSpec(info.TargetCard),
+                    handCards = BuildSerializableCardSpecs(info.HandCards)
+                });
+            }
+
+            return result;
+        }
+
+        private static SerializableCardSpec BuildSerializableCardSpec(CardSpec spec)
+        {
+            if (spec == null)
+            {
+                return null;
+            }
+
+            return new SerializableCardSpec
+            {
+                suit = (int)spec.Suit,
+                number = spec.Number
+            };
+        }
+
+        private static List<SerializableCardSpec> BuildSerializableCardSpecs(IReadOnlyList<CardSpec> specs)
+        {
+            var result = new List<SerializableCardSpec>();
+            if (specs == null)
+            {
+                return result;
+            }
+
+            foreach (var spec in specs)
+            {
+                result.Add(BuildSerializableCardSpec(spec));
+            }
+
+            return result;
+        }
+
+        private static List<DebugPlayerInfo> BuildDebugPlayerInfos(IReadOnlyList<SerializableDebugPlayerInfo> serializedInfos)
+        {
+            var result = new List<DebugPlayerInfo>();
+            if (serializedInfos == null)
+            {
+                return result;
+            }
+
+            foreach (var info in serializedInfos)
+            {
+                if (info == null)
+                {
+                    continue;
+                }
+
+                result.Add(new DebugPlayerInfo
+                {
+                    PlayerName = info.playerName,
+                    PlayerId = info.playerId,
+                    PlayerType = Enum.IsDefined(typeof(PlayerType), info.playerType) ? (PlayerType)info.playerType : PlayerType.Remote,
+                    IsUserPlayer = info.isUserPlayer,
+                    IconIndex = info.iconIndex,
+                    SetInitialCards = info.setInitialCards,
+                    TargetCard = BuildCardSpec(info.targetCard),
+                    HandCards = BuildCardSpecs(info.handCards)
+                });
+            }
+
+            return result;
+        }
+
+        private static CardSpec BuildCardSpec(SerializableCardSpec spec)
+        {
+            if (spec == null)
+            {
+                return new CardSpec();
+            }
+
+            return new CardSpec
+            {
+                Suit = Enum.IsDefined(typeof(Suit), spec.suit) ? (Suit)spec.suit : Suit.Spade,
+                Number = spec.number
+            };
+        }
+
+        private static List<CardSpec> BuildCardSpecs(IReadOnlyList<SerializableCardSpec> specs)
+        {
+            var result = new List<CardSpec>();
+            if (specs == null)
+            {
+                return result;
+            }
+
+            foreach (var spec in specs)
+            {
+                result.Add(BuildCardSpec(spec));
+            }
+
+            return result;
+        }
+
+        private void ConfigureDebugInitialCardPlanner()
+        {
+            var debugPlayerInfos = GetActiveDebugPlayerInfos();
+            if (_gameManager == null || debugPlayerInfos == null || !debugPlayerInfos.Any(info => info != null && info.SetInitialCards))
+            {
+                return;
+            }
+
+            var dealer = _gameManager.Dealer;
+            dealer.DealerPlanner = new GameSceneDebugInitialCardDealerPlanner(debugPlayerInfos, dealer.DealerPlanner);
+            Debug.Log("GameSceneDebugEntrySimple: GameScenePlayerDebugSettingsの初期カード指定をDealerPlannerへ適用しました");
         }
 
         #endregion

@@ -838,10 +838,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: ScanPhaseUI
       objectReference: {fileID: 0}
-    - target: {fileID: 8795110092826687046, guid: b72145350c22641f28c2c48fd9cae5f3, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

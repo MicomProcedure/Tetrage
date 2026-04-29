@@ -61,10 +61,10 @@ namespace Tetrage.UI
 
         [Header("Button")]
         [SerializeField] private Button _nextButton;
+        [SerializeField] private GameObject _buttonFrame;
 
         [Header("State Objects")]
         [SerializeField] private Image _trumpBackImage;
-        [SerializeField] private GameObject _inactiveStateObject;
         [SerializeField] private CardImageMapper _cardImageMapper;
 
         #endregion
@@ -160,6 +160,7 @@ namespace Tetrage.UI
             _scanPhaseActive = false;
             _isScanned = false;
             SetTargetConfirmationPanelVisible(true);
+            SetNextButtonVisible(true);
         }
 
         #endregion
@@ -172,6 +173,7 @@ namespace Tetrage.UI
             _scanPhaseActive = true;
             _isScanned = false;
             SetTargetConfirmationPanelVisible(true);
+            SetNextButtonVisible(true);
 
             SetNaviText(ScanNaviTextId.ScanPhaseAskOwnTarget, _playerName, _playerId.Value);
         }
@@ -181,6 +183,7 @@ namespace Tetrage.UI
         {
             _scanPhaseActive = false;
             SetTargetConfirmationPanelVisible(true);
+            SetNextButtonVisible(true);
         }
 
         /// <summary>ScanResultReceived 受信時の結果表示。</summary>
@@ -455,6 +458,21 @@ namespace Tetrage.UI
             if (_targetPanel != null)
             {
                 _targetPanel.SetActive(visible);
+            }
+        }
+
+        /// <summary>
+        /// ScanPhaseの進行用Nextボタンの表示を切り替える。
+        /// </summary>
+        public void SetNextButtonVisible(bool visible)
+        {
+            if (_nextButton == null) { return; }
+
+            _nextButton.gameObject.SetActive(visible);
+
+            if (_buttonFrame != null)   // ボタンの枠線も表示/非表示を切り替える
+            {
+                _buttonFrame.SetActive(visible);
             }
         }
 
