@@ -122,7 +122,7 @@ namespace Tetrage.Core.Actions
                 throw new ArgumentNullException(nameof(factory));
 
             _actionFactories[actionType] = factory;
-            Debug.Log($"アクションファクトリを登録しました: {actionType}");
+            // Debug.Log($"アクションファクトリを登録しました: {actionType}");
         }
 
         /// <summary>

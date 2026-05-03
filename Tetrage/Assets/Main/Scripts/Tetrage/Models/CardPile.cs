@@ -77,7 +77,7 @@ namespace Tetrage.Models
 
         internal void NotifyCardsInitialized()
         {
-            UnityEngine.Debug.Log($"CardPile: NotifyCardsInitialized {Name}");
+            // UnityEngine.Debug.Log($"CardPile: NotifyCardsInitialized {Name}");
             CardsInitialized?.Invoke(_cards);
         }
         /*

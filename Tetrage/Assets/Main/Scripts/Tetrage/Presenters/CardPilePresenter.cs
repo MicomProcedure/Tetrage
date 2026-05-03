@@ -66,7 +66,7 @@ namespace Tetrage.Presenters
         /// </summary>
         private void OnCardsInitialized(IEnumerable<Card> cards)
         {
-            UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {_model.Name}");
+            // UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {_model.Name}");
 
             foreach (var card in cards)
             {
