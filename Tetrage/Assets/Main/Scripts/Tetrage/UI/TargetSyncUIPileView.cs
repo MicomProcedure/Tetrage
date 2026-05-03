@@ -14,9 +14,10 @@ namespace Tetrage.UI
 
         #endregion
 
-        void FixedUpdate(){
-            Debug.Log($"TargetSyncUIPileView(Id={OwnerPlayerId}): FixedUpdate: transform.position=" + transform.position);
-        }
+        // 自身の位置をログ出力
+        // void FixedUpdate(){
+        //     Debug.Log($"TargetSyncUIPileView(Id={OwnerPlayerId}): FixedUpdate: transform.position=" + transform.position);
+        // }
 
         #region Public API
 
