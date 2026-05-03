@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Tetrage.Core.Enums
 {
@@ -15,10 +16,10 @@ namespace Tetrage.Core.Enums
         /// </summary>
         private static readonly Dictionary<Suit, int> CustomOrder = new Dictionary<Suit, int>
         {
-            { Suit.Spade, 0 },
-            { Suit.Heart, 1 },
-            { Suit.Diamond, 2 },
-            { Suit.Club, 3 }
+            { Suit.Spade, 3 },
+            { Suit.Heart, 2 },
+            { Suit.Diamond, 1 },
+            { Suit.Club, 0 }
         };
 
         #endregion
@@ -38,7 +39,7 @@ namespace Tetrage.Core.Enums
 
         /// <summary>
         /// トランプの一般的な順序でSuitを比較する
-        /// スペード < ハート < ダイヤ < クラブ
+        /// スペード > ハート > ダイヤ > クラブ
         /// </summary>
         /// <param name="suit">比較元のスート</param>
         /// <param name="other">比較先のスート</param>
@@ -78,6 +79,14 @@ namespace Tetrage.Core.Enums
             Suit.Club => "クラブ",
             _ => "?"
         };
+
+        /// <summary>
+        /// カスタム順序でスートを取得する
+        /// </summary>
+        /// <param name="suit">対象のスート</param>
+        /// <returns>カスタム順序</returns>
+        public static int GetCustomOrder(this Suit suit) => CustomOrder[suit];
+        public static Suit GetSuitByCustomOrder(int customOrder) => CustomOrder.First(x => x.Value == customOrder).Key;
 
         /// <summary>
         /// スートの色を取得する

@@ -33,7 +33,7 @@ namespace Tetrage.Core.Constants
         public static class ScanPhaseNavigationText
         {
             public const string SelectOpponentTarget = "次に、他の人のターゲットをスキャンします。好きな人のカードをタッチしてください";
-            public const string ConfirmOpponentTargetSuitFormat = "{0}Pのターゲットのスートを確認しますか？";
+            public const string ConfirmOpponentTargetSuitFormat = "「Next」を押すと{0}Pのターゲットのスートを確認できます。";
             public const string OpponentTargetSuitRevealedFormat = "{0}Pのターゲットは{1}です。ターゲットを覚えて、そのまま「Next」を押してください";
             public const string WaitingOtherPlayers = "他のプレイヤーを待っています……";
         }

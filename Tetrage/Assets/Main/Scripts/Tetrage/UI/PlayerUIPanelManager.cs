@@ -6,6 +6,7 @@ using Tetrage.Extentions;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Ids;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.UI
 {
@@ -41,7 +42,7 @@ namespace Tetrage.UI
         #region Private Fields
         
         private List<PlayerUI> _activePanels = new List<PlayerUI>();
-        private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();  // PlayerIdをキーにしたパネル席順の辞書
+        private readonly Dictionary<PlayerId, PlayerUI> _playerIdToPanel = new Dictionary<PlayerId, PlayerUI>();  // PlayerIdをキーにしたパネル席順の辞書
         private readonly Dictionary<PlayerId, TargetSyncUIPileView> _playerIdToTargetPileView = new Dictionary<PlayerId, TargetSyncUIPileView>();
         private IPositionConfig PlayerSlotPositionsConfig => playerSlotPositionsPrefab;
 
@@ -109,7 +110,7 @@ namespace Tetrage.UI
                     continue;
                 }
                 panel.SetPlayerProfileData(player, playerNumber);  // プレイヤー番号を設定する。
-                _playerIdToPanel[player.Id.Value] = panel;
+                _playerIdToPanel[player.Id] = panel;
             }
             
             if (useFixedPositions)
@@ -181,7 +182,8 @@ namespace Tetrage.UI
         /// <summary>
         /// 指定したPlayerIdのパネルをハイライト
         /// </summary>
-        public void SetCurrentPlayer(int playerId)
+        /// <param name="playerId">ハイライトするプレイヤーのPlayerId</param>
+        public void SetCurrentPlayer(PlayerId playerId)
         {
             // まず全パネルのハイライトをオフ
             for (int i = 0; i < _activePanels.Count; i++)
@@ -202,12 +204,27 @@ namespace Tetrage.UI
             {
                 Debug.LogWarning($"PlayerUIPanelManager: 指定のPlayerIdに対応するパネルが見つかりませんでした (PlayerId={playerId})");
             }
+        }   
+
+        /// <summary>
+        /// 指定したPlayerIdのパネルのTargetSuitを表示
+        /// </summary>
+        /// <param name="playerId">表示するプレイヤーのPlayerId</param>
+        /// <param name="suit">表示するスート</param>
+        public void ShowPlayerTargetSuit(PlayerId playerId, Suit suit){
+            if (!TryGetPlayerUI(playerId, out var playerUI))
+            {
+                Debug.LogWarning($"PlayerUIPanelManager: 指定のPlayerIdに対応するパネルが見つかりませんでした (PlayerId={playerId})");
+                return;
+            }
+            playerUI.HideTargetSuit();  // 既存のスートを非表示にする
+            playerUI.ShowTargetSuit(suit);
         }
 
         /// <summary>
         /// PlayerIdに対応するPlayerUIを取得する
         /// </summary>
-        public bool TryGetPlayerUI(int playerId, out PlayerUI playerUI)
+        public bool TryGetPlayerUI(PlayerId playerId, out PlayerUI playerUI)
         {
             return _playerIdToPanel.TryGetValue(playerId, out playerUI) && playerUI != null;
         }

@@ -190,7 +190,7 @@ namespace Tetrage.Managers
 
 			if (_gameContext?.CurrentPlayer != null)
 			{
-				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId); // 現在のプレイヤーをハイライトする。
+				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.Id); // 現在のプレイヤーをハイライトする。
 			}
 
 		}
@@ -200,7 +200,7 @@ namespace Tetrage.Managers
 			Debug.Log($"InGameUIManager: OnTurnStarted, currentPlayerId: {e.CurrentPlayerId}");
 			if (_playerUIPanelManager == null) return;
 			// DomainEventのCurrentPlayerIdを使ってハイライト（intに変換）
-			_playerUIPanelManager.SetCurrentPlayer(e.CurrentPlayerId.Value);
+			_playerUIPanelManager.SetCurrentPlayer(e.CurrentPlayerId);
 
 			// ScanPhase あり: OnScanPhaseEnded で既に有効化済み。スキップ時は ScanPhaseEnded が来ないためここで有効化する
 			SetActionPanelActive(true);
@@ -613,6 +613,9 @@ namespace Tetrage.Managers
 				InGameConsts.ScanPhaseNavigationText.OpponentTargetSuitRevealedFormat,
 				_scanSelectedTargetPlayerId.Value,
 				_scanSelectedTargetSuit.GetKatakanaName()));
+
+			// 選択したプレイヤーのパネルのTargetSuitをUI上で表示
+			_playerUIPanelManager.ShowPlayerTargetSuit(_scanSelectedTargetPlayerId, _scanSelectedTargetSuit);
 		}
 
 		private bool TrySendScanTargetSelected()

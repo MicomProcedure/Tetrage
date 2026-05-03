@@ -834,22 +834,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3931762379131216860, guid: b72145350c22641f28c2c48fd9cae5f3, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -200
-      objectReference: {fileID: 0}
-    - target: {fileID: 3931762379131216860, guid: b72145350c22641f28c2c48fd9cae5f3, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 126
-      objectReference: {fileID: 0}
-    - target: {fileID: 5324844130276327950, guid: b72145350c22641f28c2c48fd9cae5f3, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -200
-      objectReference: {fileID: 0}
-    - target: {fileID: 5324844130276327950, guid: b72145350c22641f28c2c48fd9cae5f3, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 126
-      objectReference: {fileID: 0}
     - target: {fileID: 8795110092826687046, guid: b72145350c22641f28c2c48fd9cae5f3, type: 3}
       propertyPath: m_Name
       value: ScanPhaseUI
