@@ -254,7 +254,6 @@ namespace Tetrage.Managers
 			ResetScanSelectionState();
 			_playerUIPanelManager.SetupPanels();	// PlayerUIパネルを初期化する。
 			// Instantiate 直後・Photon の FixedUpdate 内では Canvas / PlayerUI.Start より先にここへ来るため、レイアウト確定後に同期する。
-			RefreshTargetPileViewsAfterUILayoutAsync().Forget();
 			_ScanUIController?.ApplyScanPhaseStarted(e);
 		}
 
@@ -321,7 +320,10 @@ namespace Tetrage.Managers
 		private void SetLoadingUIActive(bool active) => SetUIRootActive(_loadingUI, active);
 
 		/// <summary>
-		/// RectTransform の最終座標が確定した後に Target 山を PlayerUI マーカーへ再同期する。
+		/// PlayerUI側の配置確定後にTargetカード山ビューの表示位置を再同期する。
+		/// </summary>
+		/// <summary>
+		/// RectTransform の最終座標が確定した後に Target 山とマーカーを同期する。
 		/// </summary>
 		private async UniTaskVoid RefreshTargetPileViewsAfterUILayoutAsync()
 		{
