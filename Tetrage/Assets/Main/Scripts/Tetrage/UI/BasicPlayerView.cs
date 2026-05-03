@@ -16,9 +16,9 @@ namespace Tetrage.UI
         public Transform TmpRoot => _tmpRoot;
         public Transform PlayerUIRoot => _playerUIRoot;
 
-        public void SetPlayer(IPlayer player)
-        {
-            throw new System.NotImplementedException();
-        }
+    public void SetPosition(Vector3 position){
+        transform.position = position;
+    }
+    
     }
 }

@@ -3,6 +3,7 @@ using TMPro;
 using Tetrage.Core.DTO;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Ids;
+using Tetrage.Services;
 
 namespace Tetrage.UI
 {
@@ -17,6 +18,7 @@ namespace Tetrage.UI
         [Header("Optional")]
         [SerializeField] private TextMeshProUGUI playerNumberText;
         [SerializeField] private GameObject turnMarker;
+        [SerializeField] private Transform targetMarkerTransform;
         [SerializeField] private RectTransform targetPileMarker;
         
         #endregion
@@ -41,8 +43,19 @@ namespace Tetrage.UI
             {
                 Debug.LogError("[PlayerUI] profileDisplayViewが設定されていません！Inspectorで設定してください。", this);
             }
+
         }
-        
+
+        private void Start()
+        {
+
+            if (TryAlignTargetMarkerTransform(Camera.main, transform.position, -Camera.main.transform.forward))
+            {
+                Debug.Log("<color=red>PlayerUI: Start: TargetMarkerの座標は" + targetMarkerTransform.position);
+            }
+
+        }
+
         #endregion
 
         #region Public Methods
@@ -55,7 +68,7 @@ namespace Tetrage.UI
         /// <param name="playerNumber">プレイヤー番号（ターン順）</param>
         public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber)
         {
-            Debug.Log($"[PlayerUI] SetPlayerInfo呼び出し: PlayerId={id}, IconIndex={iconIndex}");
+            // Debug.Log($"[PlayerUI] SetPlayerProfileData呼び出し: PlayerId={id}, IconIndex={iconIndex}");
             
             _playerId = id;
             _iconIndex = iconIndex;
@@ -74,7 +87,7 @@ namespace Tetrage.UI
             else
             {
                 profileDisplayView.SetProfile(_iconIndex, _playerId.ToString());
-                Debug.Log("[PlayerUI] ✅ ProfileDisplayView へ反映しました");
+                Debug.Log("[PlayerUI] ✅ ProfileDisplayView へ反映しました: PlayerId=" + _playerId + ", IconIndex=" + _iconIndex);
             }
             
         }
@@ -130,12 +143,55 @@ namespace Tetrage.UI
         }
 
         /// <summary>
-        /// Targetカード山の同期に使用するマーカーを取得
+        /// Targetカード山の同期に使用するマーカーを取得（targetPileMarker から targetMarkerTransform を再射影してから返す）
         /// </summary>
-        public bool TryGetTargetPileMarker(out RectTransform marker)
+        public bool TryGetTargetPileMarker(out Transform markerTransform)
         {
-            marker = targetPileMarker;
-            return marker != null;
+            markerTransform = targetMarkerTransform;
+            return TryAlignTargetMarkerTransform(Camera.main, transform.position, -Camera.main.transform.forward);
+        }
+
+        /// <summary>
+        /// 再射影しないで targetMarkerTransform を返す。呼び出し側でワールド位置が既に正しいときに TargetSyncUIPileView へ複製する用途。
+        /// </summary>
+        public bool TryGetTargetPileMarkerTransform(out Transform markerTransform)
+        {
+            markerTransform = targetMarkerTransform;
+            return markerTransform != null;
+        }
+
+        /// <summary>
+        /// targetPileMarker のUI座標をワールド平面へ射影し、targetMarkerTransform の位置を同期する。
+        /// </summary>
+        public bool TryAlignTargetMarkerTransform(Camera worldCamera, Vector3 planePoint, Vector3 planeNormal)
+        {
+            if (targetMarkerTransform == null)
+            {
+                Debug.LogWarning("PlayerUI: targetMarkerTransform が未設定です。", this);
+                return false;
+            }
+
+            if (targetPileMarker == null)
+            {
+                Debug.LogWarning("PlayerUI: targetPileMarker が未設定です。", this);
+                return false;
+            }
+
+            if (!RectTransformWorldProjectionService.TryProjectMarkerToWorldOnPlane(
+                    targetPileMarker,
+                    worldCamera,
+                    planePoint,
+                    planeNormal,
+                    out var worldPosition))
+            {
+                Debug.LogWarning("PlayerUI: targetPileMarker のワールド座標変換に失敗しました。", this);
+                return false;
+            }
+
+            targetMarkerTransform.position = worldPosition;
+
+            Debug.Log("<color=yellow>PlayerUI: TryAlignTargetMarkerTransform: targetMarkerTransform.position=" + targetMarkerTransform.position);
+            return true;
         }
 
         public void HideAllTurnMarker()

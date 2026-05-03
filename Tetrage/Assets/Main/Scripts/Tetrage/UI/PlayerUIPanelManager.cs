@@ -4,6 +4,8 @@ using Tetrage.Components;
 using Tetrage.Core.Contracts;
 using Tetrage.Extentions;
 using System.Linq;
+using Cysharp.Threading.Tasks;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.UI
 {
@@ -40,6 +42,7 @@ namespace Tetrage.UI
         
         private List<PlayerUI> _activePanels = new List<PlayerUI>();
         private readonly Dictionary<int, PlayerUI> _playerIdToPanel = new Dictionary<int, PlayerUI>();  // PlayerIdをキーにしたパネル席順の辞書
+        private readonly Dictionary<PlayerId, TargetSyncUIPileView> _playerIdToTargetPileView = new Dictionary<PlayerId, TargetSyncUIPileView>();
         private IPositionConfig PlayerSlotPositionsConfig => playerSlotPositionsPrefab;
 
         private IGameContext _gameContext;
@@ -106,13 +109,21 @@ namespace Tetrage.UI
                     continue;
                 }
                 panel.SetPlayerProfileData(player, playerNumber);  // プレイヤー番号を設定する。
-                _playerIdToPanel[i] = panel;
+                _playerIdToPanel[player.Id.Value] = panel;
             }
             
             if (useFixedPositions)
             {
                 ApplyFixedPositions();
-                StartCoroutine(ApplyFixedPositionsDelayed());
+            }
+
+            // パネルの位置に合わせてTargetMarkerを同期する。
+            foreach (var playerUI in _playerIdToPanel.Values)
+            {
+                if (playerUI != null)
+                {
+                    playerUI.TryAlignTargetMarkerTransform(Camera.main, playerUI.transform.position, -Camera.main.transform.forward);
+                }
             }
 
             HideAllTurnMarker();    // 初期化時は全パネルのTurnMarkerを非表示にする
@@ -132,6 +143,7 @@ namespace Tetrage.UI
             }
             _activePanels.Clear();
             _playerIdToPanel.Clear();
+            _playerIdToTargetPileView.Clear();
         }
 
         #region Visibility
@@ -203,7 +215,7 @@ namespace Tetrage.UI
         /// <summary>
         /// PlayerIdに対応するTargetPile同期用マーカーを取得する
         /// </summary>
-        public bool TryGetTargetPileMarker(int playerId, out RectTransform marker)
+        public bool TryGetTargetPileMarker(PlayerId playerId, out Transform marker)
         {
             marker = null;
             if (!TryGetPlayerUI(playerId, out var playerUI))
@@ -212,6 +224,51 @@ namespace Tetrage.UI
             }
 
             return playerUI.TryGetTargetPileMarker(out marker);
+        }
+
+        /// <summary>
+        /// PlayerIdに対応するTargetSyncUIPileViewを登録する
+        /// </summary>
+        public void RegisterTargetPileView(PlayerId playerId, TargetSyncUIPileView targetSyncUIPileView)
+        {
+            if (targetSyncUIPileView == null)
+            {
+                Debug.LogWarning($"PlayerUIPanelManager: 登録対象のTargetSyncUIPileViewがnullです (PlayerId={playerId})");
+                return;
+            }
+
+            _playerIdToTargetPileView[playerId] = targetSyncUIPileView;
+        }
+
+        /// <summary>
+        /// 指定PlayerIdのTargetPileビュー位置を同期する
+        /// </summary>
+        public void RefreshTargetPileViewPosition(PlayerId playerId)
+        {
+            if (!_playerIdToTargetPileView.TryGetValue(playerId, out var targetSyncUIPileView) || targetSyncUIPileView == null)
+            {
+                return;
+            }
+
+            // PlayerUI: Rect → targetMarkerTransform を更新。山側はワールド座標の複製のみ（TargetSyncUIPileView.RefreshPosition）。
+            if (!TryGetTargetPileMarker(playerId, out var marker))
+            {
+                return;
+            }
+
+            targetSyncUIPileView.RefreshPosition(marker);
+        }
+
+        /// <summary>
+        /// 登録済みTargetPileビュー位置を一括同期する
+        /// </summary>
+        public void RefreshAllTargetPileViewPositions()
+        {
+            foreach (var playerId in _playerIdToTargetPileView.Keys.ToList())
+            {
+                RefreshTargetPileViewPosition(playerId);
+                Debug.Log("<color=red>PlayerUIPanelManager: playerId=" + playerId + " targetPileView=" + _playerIdToTargetPileView[playerId] + " ownerPlayerId=" + _playerIdToTargetPileView[playerId].OwnerPlayerId);
+            }
         }
         
         /// <summary>
@@ -357,14 +414,6 @@ namespace Tetrage.UI
             return orderedPlayers;
         }
         
-        /// <summary>
-        /// 次のフレームで位置を再適用
-        /// </summary>
-        private System.Collections.IEnumerator ApplyFixedPositionsDelayed()
-        {
-            yield return null;
-            ApplyFixedPositions();
-        }
         
         /// <summary>
         /// パネルを生成

@@ -8,6 +8,9 @@ using Tetrage.Network.Gameplay;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
 using Tetrage.Core.Contracts;
+using Tetrage.Extentions;
+using Cysharp.Threading.Tasks;
+
 namespace Tetrage.Core
 {
     /// <summary>
@@ -84,6 +87,11 @@ namespace Tetrage.Core
 
             eventBus.ListOrderDeclared
                 .Subscribe(OnListOrderDeclared)
+                .AddTo(_disposables);
+
+            eventBus.ListOrderDeclared
+                .Select(e => e as DomainEvents.ListOrderDeclaredEvent<PlayerId>)
+                .Subscribe(PlayerViewPositionUpdate)
                 .AddTo(_disposables);
 
             eventBus.ActionResult
@@ -178,7 +186,7 @@ namespace Tetrage.Core
 
         private void OnCardMoved(DomainEvents.CardMovedEvent e)
         {
-            Debug.Log($"GameplayDomainEventHandler: OnCardMoved呼び出し - CardId={e.CardId}, FromPileId={e.FromPileId}, ToPileId={e.ToPileId}, Sequence={e.Sequence}");
+            // Debug.Log($"GameplayDomainEventHandler: OnCardMoved呼び出し - CardId={e.CardId}, FromPileId={e.FromPileId}, ToPileId={e.ToPileId}, Sequence={e.Sequence}");
 
             // カードとパイルを取得
             if (!_cardRegistry.TryGet(e.CardId, out var card))
@@ -217,10 +225,10 @@ namespace Tetrage.Core
                 return;
             }
 
-            Debug.Log($"GameplayDomainEventHandler: カード移動を実行 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
+            // Debug.Log($"GameplayDomainEventHandler: カード移動を実行 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
             // カード移動を実行
             CardPile.TransferService.Transfer(fromPile, toPile, card);
-            Debug.Log($"GameplayDomainEventHandler: カード移動完了 - FromPile.Cards.Count={fromPile.Cards.Count}, ToPile.Cards.Count={toPile.Cards.Count}");
+            // Debug.Log($"GameplayDomainEventHandler: カード移動完了 - FromPile.Cards.Count={fromPile.Cards.Count}, ToPile.Cards.Count={toPile.Cards.Count}");
         }
 
         private void OnCardVisibilityChanged(DomainEvents.CardVisibilityChangedEvent e)
@@ -253,15 +261,18 @@ namespace Tetrage.Core
         private void OnListOrderDeclared(DomainEvents.ListOrderDeclaredEvent e)
         {
             // プレイヤー手番の宣言であれば、OrderedPlayersを更新
-            if (e.IdKind == ListOrderIdKind.PlayerId && e.ListKey == ListOrderKey.TurnOrder)
+            if (e.ListKey == ListOrderKey.TurnOrder && e is DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent)
             {
-                var ordered = new List<Player>(e.OrderedIds.Count);
-                foreach (var id in e.OrderedIds)
+                var ordered = new List<Player>(playerOrderEvent.OrderedIds.Count);
+                foreach (var playerId in playerOrderEvent.OrderedIds)
                 {
-                    var playerId = new PlayerId(id);
                     if (_playerRegistry.TryGet(playerId, out var player))
                     {
                         ordered.Add(player);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"GameplayDomainEventHandler: ListOrderDeclaredでPlayerId {playerId} が見つかりません");
                     }
                 }
 
@@ -270,6 +281,72 @@ namespace Tetrage.Core
                     OrderedPlayers = ordered;
                     _gameContext?.SetPlayersInternal(ordered);
                 }
+            }
+
+            // 
+            
+        }
+
+        /// <summary>
+        /// ターン順序決定時にUserPlayerを中心にプレイヤーのビュー位置を更新する
+        /// </summary>
+        /// <param name="e">ListOrderDeclaredEvent</param>
+        private async void PlayerViewPositionUpdate(DomainEvents.ListOrderDeclaredEvent e)
+        {
+            if (e is not DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent) return;
+            Debug.Log($"<color=green>GameplayDomainEventHandler: PlayerViewPositionUpdate呼び出し - ListOrderDeclaredEvent={e}</color>");
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);  // 1F待つ
+
+            var orderedPlayerIds = playerOrderEvent.OrderedIds;
+            if (orderedPlayerIds == null || orderedPlayerIds.Count == 0) return;
+
+            var userPlayerId = _gameContext.UserPlayer.Id;
+            var rotatedPlayerIds = orderedPlayerIds.RotateFrom(userPlayerId);
+
+            var playerViewsByPlayerId = new Dictionary<PlayerId, GameObject>();
+            foreach (var playerId in orderedPlayerIds)
+            {
+                if (_playerRegistry.TryGet(playerId, out var player))
+                {
+                    var playerView = GameObject.Find($"PlayerView_{playerId.Value}");
+                    if (playerView != null)
+                    {
+                        playerViewsByPlayerId[playerId] = playerView;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"GameplayDomainEventHandler: PlayerView_{playerId.Value} が見つかりません");
+                    }
+                }
+            }
+
+            // 現在のターン順の座標をスナップショット保存
+            var positionsByTurnOrder = new List<Vector3>();
+            for (int i = 0; i < orderedPlayerIds.Count; i++)
+            {
+                var sourcePlayerId = orderedPlayerIds[i];
+                if (!playerViewsByPlayerId.TryGetValue(sourcePlayerId, out var sourceView))
+                {
+                    continue;
+                }
+
+                positionsByTurnOrder.Add(sourceView.transform.position);
+            }
+
+            // ordered の i 番目の座標を rotated の i 番目プレイヤーへ割り当てる
+            for (int i = 0; i < orderedPlayerIds.Count; i++)
+            {
+                if (i >= positionsByTurnOrder.Count)
+                {
+                    break;
+                }
+
+                var targetPlayerId = rotatedPlayerIds[i];
+                if (!playerViewsByPlayerId.TryGetValue(targetPlayerId, out var targetView))
+                {
+                    continue;
+                }
+                targetView.GetComponent<IPlayerView>().SetPosition(positionsByTurnOrder[i]);    // IPlayerViewのSetPositionメソッドを呼び出して位置を設定
             }
         }
 

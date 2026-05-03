@@ -11,6 +11,7 @@ using Tetrage.Core.Actions;
 using R3;
 using Tetrage.Services;
 using Tetrage.Core.Ids;
+using Cysharp.Threading.Tasks;
 using DomainEvents = Tetrage.Core.Events;
 using NetworkDto = Tetrage.Network.Gameplay;
 
@@ -135,6 +136,11 @@ namespace Tetrage.Managers
 				.Subscribe(OnTurnStarted)
 				.AddTo(_disposables);
 
+            _events.ListOrderDeclared
+                .Select(e => e as DomainEvents.ListOrderDeclaredEvent<PlayerId>)
+                .Subscribe(OnListOrderDeclared)
+                .AddTo(_disposables);
+
 			_events.FinishingGame
 				.Subscribe(OnFinishingGame)
 				.AddTo(_disposables);
@@ -181,14 +187,12 @@ namespace Tetrage.Managers
 				return;
 			}
 
-			_playerUIPanelManager.SetupPanels();	// PlayerUIパネルを初期化する。
 
 			if (_gameContext?.CurrentPlayer != null)
 			{
 				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId); // 現在のプレイヤーをハイライトする。
 			}
 
-			RefreshTargetPileViews();	// Targetへカードが配られる前に表示位置を確定する。
 		}
 
 		private void OnTurnStarted(DomainEvents.TurnStartedEvent e)
@@ -244,12 +248,20 @@ namespace Tetrage.Managers
 		private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)	
 		{
 			Debug.Log("InGameUIManager: OnScanPhaseStarted");
-			RefreshTargetPileViews();	// スキャン開始前にTargetカード山ビューの表示位置を再同期する。
 			SetScanUIActive(true);	// スキャンUIを表示
 			SetLoadingUIActive(false);	// ローディングUIを非表示
 			SetInGameNavigationActive(false);
 			ResetScanSelectionState();
+			_playerUIPanelManager.SetupPanels();	// PlayerUIパネルを初期化する。
+			// Instantiate 直後・Photon の FixedUpdate 内では Canvas / PlayerUI.Start より先にここへ来るため、レイアウト確定後に同期する。
+			RefreshTargetPileViewsAfterUILayoutAsync().Forget();
 			_ScanUIController?.ApplyScanPhaseStarted(e);
+		}
+
+		private async void OnListOrderDeclared(DomainEvents.ListOrderDeclaredEvent e){
+			await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+			await UniTask.Delay(100);
+			RefreshTargetPileViewsAfterUILayoutAsync().Forget();	// ターン順序決定時にTargetカード山ビューの表示位置を再同期する。
 		}
 
 		private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
@@ -309,20 +321,46 @@ namespace Tetrage.Managers
 		private void SetLoadingUIActive(bool active) => SetUIRootActive(_loadingUI, active);
 
 		/// <summary>
-		/// PlayerUI側の配置確定後にTargetカード山ビューの表示位置を再同期する。
+		/// RectTransform の最終座標が確定した後に Target 山を PlayerUI マーカーへ再同期する。
 		/// </summary>
+		private async UniTaskVoid RefreshTargetPileViewsAfterUILayoutAsync()
+		{
+			Canvas.ForceUpdateCanvases();
+			// SetupPanels 直後は同一フレーム内で PlayerUI.Start やレイアウトより先に実行されることがあるため、少なくとも 1 フレーム待つ。
+			await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate, cancellationToken: this.GetCancellationTokenOnDestroy());
+			Canvas.ForceUpdateCanvases();
+			RefreshTargetPileViews();
+		}
+
 		private void RefreshTargetPileViews()
 		{
-			var targetPileViews = FindObjectsByType<TargetSyncUIPileView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-			if (targetPileViews == null || targetPileViews.Length == 0)
+			if (_playerUIPanelManager == null)
 			{
+				Debug.LogWarning("InGameUIManager: _playerUIPanelManager is null");
 				return;
 			}
 
+			var targetPileViews = FindObjectsByType<TargetSyncUIPileView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 			for (int i = 0; i < targetPileViews.Length; i++)
 			{
-				targetPileViews[i].RefreshBindingAndPosition();
+				// TargetSyncUIPileViewに保持したPlayerIdを使って、Manager側へ登録する。
+				if (!targetPileViews[i].TryGetOwnerPlayerId(out PlayerId? playerId))
+				{
+					Debug.LogWarning("InGameUIManager: targetPileViews[i].TryGetOwnerPlayerId failed");
+					continue;
+				}
+
+				if (playerId == null)
+				{
+					Debug.LogWarning("InGameUIManager: playerId is null");
+					continue;
+				}
+
+				_playerUIPanelManager.RegisterTargetPileView((PlayerId)playerId, targetPileViews[i]);	// ここではPlayerIdはnullではないことが保証されているため、キャストは安全。
 			}
+
+			_playerUIPanelManager.RefreshAllTargetPileViewPositions();
+		
 		}
 
 		#endregion
@@ -445,7 +483,7 @@ namespace Tetrage.Managers
 				return;
 			}
 
-			RefreshTargetPileViews();	// 初回カード移動前にTargetカード山ビューをPlayerUIマーカーへ合わせる。
+			// PlayerUI は GameStarted / ScanPhaseStarted で SetupPanels される。この時点ではパネルが無く Refresh は無意味なため行わない。
 		}
 		#endregion
 

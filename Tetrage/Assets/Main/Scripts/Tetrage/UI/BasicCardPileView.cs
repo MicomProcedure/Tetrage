@@ -46,7 +46,7 @@ namespace Tetrage.UI
 
         #region Public API（非override）
         /// <summary>カード表示用ViewをこのPileViewの子に設定します。</summary>
-        public async void AddCardView(CardView cardView, bool animate = true)
+        public virtual async void AddCardView(CardView cardView, bool animate = true)
         {
             #if UNITY_EDITOR
             // UnityEngine.Debug.Log($"<color=red>[CardAnimation] AddCardView開始: PileView={gameObject.name}, CardView={cardView?.gameObject.name}, ActiveInHierarchy={gameObject.activeInHierarchy}</color>");

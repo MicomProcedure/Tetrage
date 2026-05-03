@@ -168,6 +168,7 @@ namespace Tetrage.Factories
             {
                 // プレイヤー View を生成
                 playerView = Object.Instantiate(_viewPrefab, _viewSpawnPosition, Quaternion.identity, _viewParent); // Quaternion.identityは回転なしの意味
+                playerView.name = $"PlayerView_{_id.Value}";
 
                 // View付きでカードパイルを生成
                 using (cardPileBuilder.ViewCreated.Subscribe(HandleTargetPileViewCreated))
@@ -273,7 +274,6 @@ namespace Tetrage.Factories
             if (view is TargetSyncUIPileView targetSyncUIPileView)
             {
                 targetSyncUIPileView.SetOwnerPlayerId(_id);
-                targetSyncUIPileView.RefreshBindingAndPosition();
             }
         }
     }
