@@ -409,26 +409,23 @@ namespace Tetrage.UI
         /// </summary>
         private List<IPlayer> BuildDisplaySeatOrderedPlayers()
         {
-            var orderedPlayers = new List<IPlayer>(_gameContext.Players.Count);
-            var userPlayer = _gameContext.UserPlayer;
+            var players = _gameContext?.Players;
+            var userPlayer = _gameContext?.UserPlayer;
 
-            orderedPlayers.Add(userPlayer); // UserPlayerを先頭に追加
-
-            // userPlayerの次のindexから始めて順に追加。indexがmaxなら0に戻る
-            int userPlayerIndex = _gameContext.Players.ToList().FindIndex(x => ReferenceEquals(x, userPlayer));
-            int count = _gameContext.Players.Count;
-            for (int offset = 1; offset < count; offset++)
+            if (players == null || players.Count == 0 || userPlayer == null)
             {
-                int index = (userPlayerIndex + offset) % count; // indexがmax(count-1)なら0に戻る
-                var player = _gameContext.Players[index];
-                if (player == null || ReferenceEquals(player, userPlayer))  // nullまたはUserPlayerは追加しない
-                {
-                    continue;
-                }
-                orderedPlayers.Add(player);
+                return new List<IPlayer>();
             }
-    
-            return orderedPlayers;
+
+            // 参照不一致に備えて Id で位置を取る
+            var index = players.ToList().FindIndex(p => p != null && p.Id.Equals(userPlayer.Id));
+            if (index < 0)
+            {
+                Debug.LogWarning("PlayerUIPanelManager: UserPlayer が Players に存在しないため、元順序を使用します。");
+                return players.ToList();
+            }
+
+            return players.RotateFromIndex(index);
         }
         
         

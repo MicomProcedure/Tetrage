@@ -10,6 +10,7 @@ using DomainEvents = Tetrage.Core.Events;
 using Tetrage.Core.Contracts;
 using Tetrage.Extentions;
 using Cysharp.Threading.Tasks;
+using Tetrage.Services;
 
 namespace Tetrage.Core
 {
@@ -86,12 +87,8 @@ namespace Tetrage.Core
                 .AddTo(_disposables);
 
             eventBus.ListOrderDeclared
-                .Subscribe(OnListOrderDeclared)
-                .AddTo(_disposables);
-
-            eventBus.ListOrderDeclared
                 .Select(e => e as DomainEvents.ListOrderDeclaredEvent<PlayerId>)
-                .Subscribe(PlayerViewPositionUpdate)
+                .Subscribe(PlayerOrderUpdate)
                 .AddTo(_disposables);
 
             eventBus.ActionResult
@@ -135,30 +132,30 @@ namespace Tetrage.Core
 
         private void OnGameStarted(DomainEvents.GameStartedEvent e)
         {
-            // GameContextのターンインデックスをリセット
-            _gameContext?.ResetTurnIndexInternal();
+            // // GameContextのターンインデックスをリセット
+            // _gameContext?.ResetTurnIndexInternal();
 
-            if (e.PlayerIds == null || e.PlayerIds.Count == 0)
-            {
-                return;
-            }
+            // if (e.PlayerIds == null || e.PlayerIds.Count == 0)
+            // {
+            //     return;
+            // }
 
-            // プレイヤー順序を確定
-            var ordered = new List<Player>(e.PlayerIds.Count);
-            foreach (var playerId in e.PlayerIds)
-            {
-                if (_playerRegistry.TryGet(playerId, out var player))
-                {
-                    ordered.Add(player);
-                }
-                else
-                {
-                    Debug.LogWarning($"GameplayDomainEventHandler: PlayerId {playerId} が見つかりません");
-                }
-            }
+            // // プレイヤー順序を確定
+            // var ordered = new List<Player>(e.PlayerIds.Count);
+            // foreach (var playerId in e.PlayerIds)
+            // {
+            //     if (_playerRegistry.TryGet(playerId, out var player))
+            //     {
+            //         ordered.Add(player);
+            //     }
+            //     else
+            //     {
+            //         Debug.LogWarning($"GameplayDomainEventHandler: PlayerId {playerId} が見つかりません");
+            //     }
+            // }
 
-            OrderedPlayers = ordered;
-            _gameContext?.SetPlayersInternal(ordered);
+            // OrderedPlayers = ordered;
+            // _gameContext?.SetPlayersInternal(ordered);
         }
 
         private void OnTurnStarted(DomainEvents.TurnStartedEvent e)
@@ -258,7 +255,7 @@ namespace Tetrage.Core
             pile.RandomShuffle(e.Seed);
         }
 
-        private void OnListOrderDeclared(DomainEvents.ListOrderDeclaredEvent e)
+        private void PlayerOrderUpdate(DomainEvents.ListOrderDeclaredEvent e)
         {
             // プレイヤー手番の宣言であれば、OrderedPlayersを更新
             if (e.ListKey == ListOrderKey.TurnOrder && e is DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent)
@@ -283,7 +280,8 @@ namespace Tetrage.Core
                 }
             }
 
-            // 
+            // プレイヤー順序が更新されたら、プレイヤーのビュー位置を更新する
+            PlayerViewPositionUpdate(e);
             
         }
 
@@ -291,62 +289,91 @@ namespace Tetrage.Core
         /// ターン順序決定時にUserPlayerを中心にプレイヤーのビュー位置を更新する
         /// </summary>
         /// <param name="e">ListOrderDeclaredEvent</param>
-        private async void PlayerViewPositionUpdate(DomainEvents.ListOrderDeclaredEvent e)
+        private void PlayerViewPositionUpdate(DomainEvents.ListOrderDeclaredEvent e)
         {
-            if (e is not DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent) return;
+            if (e is not DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent)
+            {
+                Debug.LogError($"GameplayDomainEventHandler: ListOrderDeclaredEvent が PlayerId ではありません");
+                return;
+            }
+
             Debug.Log($"<color=green>GameplayDomainEventHandler: PlayerViewPositionUpdate呼び出し - ListOrderDeclaredEvent={e}</color>");
-            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);  // 1F待つ
 
             var orderedPlayerIds = playerOrderEvent.OrderedIds;
-            if (orderedPlayerIds == null || orderedPlayerIds.Count == 0) return;
+            if (orderedPlayerIds == null || orderedPlayerIds.Count == 0)
+            {
+                Debug.LogError($"GameplayDomainEventHandler: OrderedPlayerIds が null または空です");
+                return;
+            }
 
             var userPlayerId = _gameContext.UserPlayer.Id;
+            if (!orderedPlayerIds.Contains(userPlayerId))
+            {
+                Debug.LogError($"GameplayDomainEventHandler: UserPlayerId {userPlayerId} が ListOrderDeclaredEvent に含まれていません");
+                return;
+            }
+
+            // orderedPlayerIds を userPlayerId を中心に回転させる（ユーザーがindex 0 になるように）
             var rotatedPlayerIds = orderedPlayerIds.RotateFrom(userPlayerId);
+            Debug.Log(
+                $"<color=green>GameplayDomainEventHandler: TurnOrder解析 ordered=[{string.Join(",", orderedPlayerIds.Select(id => id.Value))}] " +
+                $"rotated=[{string.Join(",", rotatedPlayerIds.Select(id => id.Value))}] user={userPlayerId.Value}</color>");
 
-            var playerViewsByPlayerId = new Dictionary<PlayerId, GameObject>();
-            foreach (var playerId in orderedPlayerIds)
-            {
-                if (_playerRegistry.TryGet(playerId, out var player))
-                {
-                    var playerView = GameObject.Find($"PlayerView_{playerId.Value}");
-                    if (playerView != null)
-                    {
-                        playerViewsByPlayerId[playerId] = playerView;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"GameplayDomainEventHandler: PlayerView_{playerId.Value} が見つかりません");
-                    }
-                }
-            }
-
-            // 現在のターン順の座標をスナップショット保存
-            var positionsByTurnOrder = new List<Vector3>();
+            var playerViewsByPlayerId = new Dictionary<PlayerId, GameObject>(orderedPlayerIds.Count);
             for (int i = 0; i < orderedPlayerIds.Count; i++)
             {
-                var sourcePlayerId = orderedPlayerIds[i];
-                if (!playerViewsByPlayerId.TryGetValue(sourcePlayerId, out var sourceView))
+                var playerId = orderedPlayerIds[i];
+                var playerView = GameObject.Find($"PlayerView_{playerId.Value}");
+                if (playerView == null)
                 {
-                    continue;
+                    Debug.LogWarning($"GameplayDomainEventHandler: PlayerView_{playerId.Value} がシーンから見つかりません");
+                    return;
                 }
 
-                positionsByTurnOrder.Add(sourceView.transform.position);
+                playerViewsByPlayerId[playerId] = playerView;
             }
 
-            // ordered の i 番目の座標を rotated の i 番目プレイヤーへ割り当てる
+            // 再配置前の各PlayerViewの位置・兄弟順を記録する（UIとの突き合わせ用）。
+            var beforeStates = new List<string>(orderedPlayerIds.Count);
             for (int i = 0; i < orderedPlayerIds.Count; i++)
             {
-                if (i >= positionsByTurnOrder.Count)
-                {
-                    break;
-                }
+                var playerId = orderedPlayerIds[i];
+                var transform = playerViewsByPlayerId[playerId].transform;
+                beforeStates.Add(
+                    $"P{playerId.Value}:sib={transform.GetSiblingIndex()},local={transform.localPosition},world={transform.position}");
+            }
+            Debug.Log($"GameplayDomainEventHandler: PlayerView再配置前 {string.Join(" | ", beforeStates)}");
 
+            var reorderedPlayerViews = new List<GameObject>(rotatedPlayerIds.Count);
+            for (int i = 0; i < rotatedPlayerIds.Count; i++)
+            {
                 var targetPlayerId = rotatedPlayerIds[i];
                 if (!playerViewsByPlayerId.TryGetValue(targetPlayerId, out var targetView))
                 {
-                    continue;
+                    Debug.LogError($"GameplayDomainEventHandler: PlayerView_{targetPlayerId.Value} の対応が見つかりません");
+                    return;
                 }
-                targetView.GetComponent<IPlayerView>().SetPosition(positionsByTurnOrder[i]);    // IPlayerViewのSetPositionメソッドを呼び出して位置を設定
+
+                reorderedPlayerViews.Add(targetView);
+            }
+
+            // 兄弟順スロットのローカル配置を、rotated順のPlayerViewへ再割り当てする。
+            if (!TransformReorderPlacementService.TryReassignLocalPlacementsBySiblingOrder(reorderedPlayerViews))
+            {
+                Debug.LogError("GameplayDomainEventHandler: PlayerView位置の再割り当てに失敗しました");
+            }
+            else
+            {
+                var afterStates = new List<string>(orderedPlayerIds.Count);
+                for (int i = 0; i < orderedPlayerIds.Count; i++)
+                {
+                    var playerId = orderedPlayerIds[i];
+                    var transform = playerViewsByPlayerId[playerId].transform;
+                    afterStates.Add(
+                        $"P{playerId.Value}:sib={transform.GetSiblingIndex()},local={transform.localPosition},world={transform.position}");
+                }
+
+                Debug.Log($"GameplayDomainEventHandler: PlayerView再配置後 {string.Join(" | ", afterStates)}");
             }
         }
 
