@@ -315,6 +315,8 @@ namespace Tetrage.Models
                     return false;
                 }
                 // 移動完了通知
+                // 移動元/移動先の両方に通知し、View側の入出場処理（親付け替え・復元）を整合させる。
+                from.NotifyCardTransferred(card, from, to);
                 to.NotifyCardTransferred(card, from, to);
                 return true;
             }

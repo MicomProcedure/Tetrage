@@ -86,6 +86,8 @@ namespace Tetrage.UI
         #region Animation
 
         public void PlayFlipAnimation() => animator.SetTrigger("FlipSuccess");
+        public void ScaleUpAnimation() => animator.SetBool("IsInTmpPile", true);
+        public void ScaleDownAnimation() => animator.SetBool("IsInTmpPile", false);
 
         // アニメーションイベントから呼び出されるメソッド
         public void OnFlipAnimationHalfway()

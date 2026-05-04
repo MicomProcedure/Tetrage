@@ -58,9 +58,7 @@ namespace Tetrage.UI
             // 親を変更（worldPositionStaysをtrueにして位置を保持）
             cardView.transform.SetParent(transform, worldPositionStays: true);
             
-            // レイアウト更新（最終位置を計算）
-            RefreshView();
-            
+                        
             // 1フレーム待機してレイアウトが確定するのを待つ
             await UniTask.Yield();
             Vector3 endPosition = cardView.transform.localPosition;
@@ -92,7 +90,7 @@ namespace Tetrage.UI
         }
 
         /// <summary>カード表示用ViewをこのPileViewから外します。</summary>
-        public void RemoveCardView(CardView cardView)
+        public virtual void RemoveCardView(CardView cardView)
         {
             cardView.transform.SetParent(null);
             // 子オブジェクトが減ったのでレイアウト更新
@@ -200,6 +198,7 @@ namespace Tetrage.UI
             // カード表示用ViewのTransformリストをこのCardPileViewの子オブジェクトから取得
             foreach (Transform child in transform)
             {
+                if (child.GetComponent<CardView>() == null) continue;   // CardViewでないオブジェクトは除外
                 _cardViewObjects.Add(child);
             }
         }
