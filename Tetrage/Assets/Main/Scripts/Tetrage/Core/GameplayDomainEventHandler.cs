@@ -29,7 +29,6 @@ namespace Tetrage.Core
         private readonly SequenceService _sequence;
         private readonly bool _isHost;
         private CompositeDisposable _disposables = new();
-        private bool _isScanPhaseActive;
         private IReadOnlyList<PlayerId> _pendingWinnerPlayerIds = new List<PlayerId>();
 
         // 受信したプレイヤーの並び順（GameStartedで確定）
@@ -429,13 +428,11 @@ namespace Tetrage.Core
 
         private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)
         {
-            _isScanPhaseActive = true;
             Debug.Log($"GameplayDomainEventHandler: ScanPhase開始（Host={_isHost}）。対象選択は ScanPhaseUI から ScanTargetSelected を送信する。");
         }
 
         private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
         {
-            _isScanPhaseActive = false;
             Debug.Log("GameplayDomainEventHandler: ScanPhase終了");
         }
 
@@ -460,7 +457,6 @@ namespace Tetrage.Core
 
         private void OnGameEnded(DomainEvents.GameEndedEvent e)
         {
-            _isScanPhaseActive = false;
             _pendingWinnerPlayerIds = e.WinnerPlayerIds ?? _pendingWinnerPlayerIds;
             Debug.Log($"GameplayDomainEventHandler: GameEnded受信 勝者数={_pendingWinnerPlayerIds?.Count ?? 0}");
             // 結果UIは InGameUIManager（FinishingGame）→ ResultUI。タイトルへは ResultUI から ApplicationManager.GoToTitle。

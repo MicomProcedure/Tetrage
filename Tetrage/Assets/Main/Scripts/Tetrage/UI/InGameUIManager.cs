@@ -589,9 +589,10 @@ namespace Tetrage.Managers
 
 			if (_inGameNavigation != null)
 			{
+				int turnOrderNumber = _gameContext?.GetTurnOrderNumber(playerId) ?? 0;
 				_inGameNavigation.SetNavigationText(string.Format(
 					InGameConsts.ScanPhaseNavigationText.ConfirmOpponentTargetSuitFormat,
-					playerId.Value));
+					turnOrderNumber));
 			}
 		}
 
@@ -611,7 +612,7 @@ namespace Tetrage.Managers
 
 			_inGameNavigation.SetNavigationText(string.Format(
 				InGameConsts.ScanPhaseNavigationText.OpponentTargetSuitRevealedFormat,
-				_scanSelectedTargetPlayerId.Value,
+				_gameContext?.GetTurnOrderNumber(_scanSelectedTargetPlayerId) ?? 0,
 				_scanSelectedTargetSuit.GetKatakanaName()));
 
 			// 選択したプレイヤーのパネルのTargetSuitをUI上で表示

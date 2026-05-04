@@ -140,13 +140,11 @@ namespace Tetrage.UI
             _playerIconIndex = user.IconIndex;
             _playerName = user.UserId ?? string.Empty;
 
-            int seatNumber = user.Id.Value;
-            string seatLabel = $"{seatNumber}P";
+            int seatNumber = ResolveTurnOrderNumber(_playerId);
 
             _naviText.richText = true;
             SetNaviText(ScanNaviTextId.InitializeBoot, _playerName, seatNumber);
 
-            _playerLabelText.text = seatLabel;
             _profileDisplayView.SetProfile(user.IconIndex, user.UserId);
 
             ResetScanPhaseUIState();
@@ -175,7 +173,9 @@ namespace Tetrage.UI
             SetTargetConfirmationPanelVisible(true);
             SetNextButtonVisible(true);
 
-            SetNaviText(ScanNaviTextId.ScanPhaseAskOwnTarget, _playerName, _playerId.Value);
+            int userTurnOrder = ResolveTurnOrderNumber(_playerId);
+            _playerLabelText.text = $"{userTurnOrder}P";
+            SetNaviText(ScanNaviTextId.ScanPhaseAskOwnTarget, _playerName, userTurnOrder);
         }
 
         /// <summary>ScanPhaseEnded 受信時の見た目リセット。</summary>
@@ -197,7 +197,8 @@ namespace Tetrage.UI
             string suitLabel = e.TargetSuit.GetKatakanaName();
             string suitColorHex = GetSuitTextColorHex(e.TargetSuit);
             string suitColored = BuildColoredSuitRichText(suitLabel, suitColorHex);
-            SetNaviText(ScanNaviTextId.ScanPhaseResult, e.TargetPlayerId.Value, suitColored);
+            int targetTurnOrder = ResolveTurnOrderNumber(e.TargetPlayerId);
+            SetNaviText(ScanNaviTextId.ScanPhaseResult, targetTurnOrder, suitColored);
 
             if (_cardImageMapper != null && _trumpBackImage != null)
             {
@@ -442,6 +443,28 @@ namespace Tetrage.UI
         private bool ValidateScanResultContext()
         {
             return _gameContext?.UserPlayer != null;
+        }
+
+        /// <summary>
+        /// PlayerId を現在のターン順（Players の index + 1）へ変換する。
+        /// 見つからない場合はフォールバックとして PlayerId.Value を返す。
+        /// </summary>
+        private int ResolveTurnOrderNumber(PlayerId playerId)
+        {
+            if (_gameContext == null)
+            {
+                Debug.LogWarning("ScanPhaseUI: gameContext が null です。");
+                return 0;
+            }
+
+            int turnOrderNumber = _gameContext.GetTurnOrderNumber(playerId);
+            if (turnOrderNumber <= 0)
+            {
+                Debug.LogWarning($"ScanPhaseUI: PlayerId {playerId.Value} のターン順が取得できません。");
+                return 0;
+            }
+
+            return turnOrderNumber;
         }
         
         /// <summary>

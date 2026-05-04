@@ -42,6 +42,43 @@ namespace Tetrage.Tests.Editor
             {
                 Players = players;
             }
+
+            public int GetTurnOrderNumber(PlayerId playerId)
+            {
+                if (Players == null)
+                {
+                    return 0;
+                }
+
+                for (int i = 0; i < Players.Count; i++)
+                {
+                    var player = Players[i];
+                    if (player != null && player.Id == playerId)
+                    {
+                        return i + 1;
+                    }
+                }
+
+                return 0;
+            }
+
+            public int GetTurnOrderNumber(IPlayer player)
+            {
+                if (Players == null || player == null)
+                {
+                    return 0;
+                }
+
+                for (int i = 0; i < Players.Count; i++)
+                {
+                    if (ReferenceEquals(Players[i], player))
+                    {
+                        return i + 1;
+                    }
+                }
+
+                return 0;
+            }
         }
 
         private sealed class FakeController : IGameplayNetworkController

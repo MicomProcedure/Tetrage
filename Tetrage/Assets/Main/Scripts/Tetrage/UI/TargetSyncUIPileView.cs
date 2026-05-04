@@ -66,7 +66,7 @@ namespace Tetrage.UI
 
         #region Override Methods
 
-        public override async void AddCardView(CardView cardView, bool animate = true){
+        public override void AddCardView(CardView cardView, bool animate = true){
             base.AddCardView(cardView, false);
             Debug.Log($"<color=green>TargetSyncUIPileView(Id={OwnerPlayerId}): AddCardView: transform.position=" + transform.position);
         }

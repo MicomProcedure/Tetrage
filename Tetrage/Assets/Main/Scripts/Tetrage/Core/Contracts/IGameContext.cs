@@ -2,6 +2,7 @@ using UnityEngine;
 using Tetrage.Models;
 using System.Collections.Generic;
 using Tetrage.Network.Gameplay;
+using Tetrage.Core.Ids;
 
 namespace Tetrage.Core.Contracts
 {
@@ -18,6 +19,13 @@ namespace Tetrage.Core.Contracts
 
         /// <summary>参加している全プレイヤーを取得</summary>
         IReadOnlyList<IPlayer> Players { get; }
+
+        /// <summary>
+        /// 指定したプレイヤーのターン順（Players の index + 1）を取得します。
+        /// 見つからない場合は 0 を返します。
+        /// </summary>
+        int GetTurnOrderNumber(PlayerId playerId);
+        int GetTurnOrderNumber(IPlayer player);
 
         /// <summary>
         /// ステージを取得
