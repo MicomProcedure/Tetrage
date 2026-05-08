@@ -67,6 +67,7 @@ namespace Tetrage.Presenters
             Debug.Log("CardPresenter: OnFlipAnimationHalfway called");
             // アニメーションの途中でカードの状態を変更
             _model.Flip();
+            InGameSE.PlayCardMoveSE();
         }
 
         private void RefreshView()
