@@ -68,7 +68,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1817916994509665066, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_fontSize
-      value: 60
+      value: 55
       objectReference: {fileID: 0}
     - target: {fileID: 1817916994509665066, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_lineSpacing
@@ -76,7 +76,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1817916994509665066, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_fontSizeBase
-      value: 60
+      value: 55
       objectReference: {fileID: 0}
     - target: {fileID: 1817916994509665066, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_enableAutoSizing
@@ -120,7 +120,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6149226547182260436, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 1500
+      value: 960
       objectReference: {fileID: 0}
     - target: {fileID: 6149226547182260436, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_SizeDelta.y
@@ -156,7 +156,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6149226547182260436, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 790
+      value: 529
       objectReference: {fileID: 0}
     - target: {fileID: 6149226547182260436, guid: 986ceb7eb519ee147ab6fe306db59bc8, type: 3}
       propertyPath: m_AnchoredPosition.y
