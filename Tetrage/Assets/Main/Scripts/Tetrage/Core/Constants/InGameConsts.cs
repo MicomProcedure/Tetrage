@@ -29,6 +29,12 @@ namespace Tetrage.Core.Constants
 
         public const int DEFAULT_DECK_ID = 1; // デフォルトのデッキのID
 
+        /// <summary>通常表示時の CardView の sortingOrder（SpriteRenderer）。</summary>
+        public const int CARD_VIEW_DEFAULT_SORTING_ORDER = 0;
+
+        /// <summary>Tmp パイル配下に置いたときの CardView の sortingOrder。他の山より手前に出す。</summary>
+        public const int CARD_VIEW_TMP_PILE_SORTING_ORDER = 10;
+
         /// <summary>ScanPhase中にInGameNavigationへ表示する文言。</summary>
         public static class ScanPhaseNavigationText
         {

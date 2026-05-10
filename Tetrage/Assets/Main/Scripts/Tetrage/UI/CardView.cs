@@ -235,6 +235,15 @@ namespace Tetrage.UI
             ShowBack();
         }
 
+        /// <summary>
+        /// カードのレイヤー順を設定する
+        /// </summary>
+        /// <param name="order"></param>
+        public void SetOrderInLayer(int order)
+        {
+            spriteRenderer.sortingOrder = order;
+        }
+
         #endregion
 
         #region Highlight

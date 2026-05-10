@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Tetrage.Animations;
 using Tetrage.Components;
+using Tetrage.Core.Constants;
 using Tetrage.Core.Contracts;
 using UnityEngine;
 
@@ -49,6 +50,9 @@ namespace Tetrage.UI
             // TmpCardPileView配下へ移動しつつワールド位置を維持します。
             cardView.transform.SetParent(transform, worldPositionStays: true);
 
+            // Tmp 配下では他の山より手前に描画する
+            cardView.SetOrderInLayer(InGameConsts.CARD_VIEW_TMP_PILE_SORTING_ORDER);
+
             // Tmp配下での基準スケールを保存します（親スケール差の影響を排除）。
             if (!_defaultCardScaleMap.ContainsKey(cardView))
             {
@@ -89,6 +93,9 @@ namespace Tetrage.UI
                 return;
             }
             cardView.ScaleDownAnimation();  // 元のサイズに戻すアニメーションを再生
+
+            // Tmp から外すので通常の描画順に戻す
+            cardView.SetOrderInLayer(InGameConsts.CARD_VIEW_DEFAULT_SORTING_ORDER);
 
             cardView.transform.SetParent(null);
             RefreshView();

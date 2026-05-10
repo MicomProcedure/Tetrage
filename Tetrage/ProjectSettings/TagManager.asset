@@ -53,5 +53,8 @@ TagManager:
   - name: CardView
     uniqueID: 388312617
     locked: 0
+  - name: CardViewInTmp
+    uniqueID: 1335831415
+    locked: 0
   m_RenderingLayers:
   - Default
