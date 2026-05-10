@@ -79,8 +79,6 @@ namespace Tetrage.UI
             {
                 cardView.transform.position = endWorldPosition;
             }
-            FlipCardView(cardView);
-
         }
 
         /// <summary>Tmpから出るカードは元サイズへ戻します。</summary>
@@ -90,8 +88,6 @@ namespace Tetrage.UI
             {
                 return;
             }
-            FlipCardView(cardView);
-
             cardView.ScaleDownAnimation();  // 元のサイズに戻すアニメーションを再生
 
             cardView.transform.SetParent(null);
@@ -133,10 +129,6 @@ namespace Tetrage.UI
             // TmpCardPileViewのワールド座標を引いて、TmpCardPositionConfigのローカル座標を取得し、それをワールド座標として代入
             worldPosition = TmpCardPositionConfig.Position[index] - transform.position;
             return true;
-        }
-
-        private void FlipCardView(CardView cardView){
-            cardView.PlayFlipAnimation();
         }
 
         #endregion

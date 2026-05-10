@@ -27,7 +27,7 @@ namespace Tetrage.Core.Actions
             
             // 相手プレイヤーの手札に裏向きのカードが存在するかチェック
             var hasHiddenCards = context.OtherPlayers
-                .Any(player => player.Hands.Any(card => !card.IsVisible));
+                .Any(player => player.Hands.Any(card => !card.IsFaceUp));
             
             if (!hasHiddenCards)
             {

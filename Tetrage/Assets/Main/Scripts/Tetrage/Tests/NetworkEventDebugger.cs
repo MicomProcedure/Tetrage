@@ -190,7 +190,7 @@ namespace Tetrage.Tests
                     bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardMovedEvent)dtoPayload));
                     break;
                 case EventCode.CardVisibilityChanged:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardVisibilityChangedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardSideChangedEvent)dtoPayload));
                     break;
                 case EventCode.StartScanPhase:
                     bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.StartScanPhaseEvent)dtoPayload));
@@ -232,7 +232,7 @@ namespace Tetrage.Tests
                 EventCode.TurnEnded => typeof(Tetrage.Network.Gameplay.TurnEndedEvent),
                 EventCode.ListOrderDeclared => typeof(Tetrage.Network.Gameplay.ListOrderDeclaredEvent),
                 EventCode.CardMoved => typeof(Tetrage.Network.Gameplay.CardMovedEvent),
-                EventCode.CardVisibilityChanged => typeof(Tetrage.Network.Gameplay.CardVisibilityChangedEvent),
+                EventCode.CardVisibilityChanged => typeof(Tetrage.Network.Gameplay.CardSideChangedEvent),
                 EventCode.StartScanPhase => typeof(Tetrage.Network.Gameplay.StartScanPhaseEvent),
                 EventCode.EndScanPhase => typeof(Tetrage.Network.Gameplay.EndScanPhaseEvent),
                 EventCode.FinishingGame => typeof(Tetrage.Network.Gameplay.FinishingGameEvent),

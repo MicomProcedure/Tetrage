@@ -16,7 +16,7 @@ namespace Tetrage.Factories
         public CardPile CreatePile(PileId id, string name, int maxCount)
         {
             // カード山(Pile)モデル生成
-            var pileModel = new CardPile(id, name, maxCount);
+            var pileModel = new CardPile(id, name, maxCount: maxCount);
 
             return pileModel;
         }
@@ -30,7 +30,7 @@ namespace Tetrage.Factories
         public CardPile CreatePile(PileId id, string name, IEnumerable<Card> initialCards, int maxCount)
         {
             // 初期カード付きの CardPile を生成
-            var pileModel = new CardPile(id, name, initialCards, maxCount);
+            var pileModel = new CardPile(id, name, initialCards, maxCount: maxCount);
             return pileModel;
         }
     }

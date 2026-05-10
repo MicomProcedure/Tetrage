@@ -74,12 +74,12 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct CardVisibilityChangedEvent
+    public struct CardSideChangedEvent
     {
         public int sequence;
         public int stateVersion;
         public int cardId;
-        public bool isVisible;
+        public bool isFaceUp;
     }
 
     [Serializable]

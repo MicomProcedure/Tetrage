@@ -5,6 +5,7 @@ using System;
 using Tetrage.Core.Enums;
 using Tetrage.Data;
 using R3;
+using System.Collections.Generic;
 
 namespace Tetrage.UI
 {
@@ -14,31 +15,39 @@ namespace Tetrage.UI
         /// このビューが破棄されたときに発行されるイベント。
         /// Presenter はここを購読して Dispose などの後片付けを行います。
         /// </summary>
-        public event Action Destroyed;
+        public Observable<Unit> Destroyed => _destroyed;
+        private readonly Subject<Unit> _destroyed = new();
         private readonly Subject<Unit> _clicked = new();
+        private readonly Subject<Unit> _flipAnimationHalfway = new();
+        private readonly Subject<Unit> _flipAnimationCompleted = new();
+        private CompositeDisposable _disposables = new();
 
         private void OnDestroy()
         {
-            Destroyed?.Invoke();
-            _clicked.Dispose();
+            _destroyed.OnNext(Unit.Default);
+
+            _flipAnimationCompleted.OnCompleted();
+            _flipAnimationHalfway.OnCompleted();
+            _clicked.OnCompleted();
+            _destroyed.OnCompleted();
+
+            _disposables.Dispose();
         }
 
         #region Serialized Fields
 
         [Header("Visual Components")]
         [SerializeField] private SpriteRenderer spriteRenderer;
-        [SerializeField] private TextMeshProUGUI suitText;
-        [SerializeField] private TextMeshProUGUI numberText;
         [SerializeField] private Animator animator;
 
         [Header("Card Data")]
         [SerializeField] private CardImageMapper cardImageMapper;
 
-        [Header("Suit Back Sprites (Player Only)")]
-        [SerializeField] private Sprite spadeBackSprite;
-        [SerializeField] private Sprite heartBackSprite;
-        [SerializeField] private Sprite diamondBackSprite;
-        [SerializeField] private Sprite clubBackSprite;
+        [Header("Suit Back Images (Player Only)")]
+        [SerializeField] private GameObject spadeBackSprite;
+        [SerializeField] private GameObject heartBackSprite;
+        [SerializeField] private GameObject diamondBackSprite;
+        [SerializeField] private GameObject clubBackSprite;
 
         [Header("Highlight Settings")]
         [SerializeField] private Color highlightColor = new Color(1f, 1f, 0.5f, 1f); // 黄色っぽい色
@@ -52,24 +61,48 @@ namespace Tetrage.UI
         private bool _isHighlighted = false;
         private Suit _currentSuit;
         private int _currentNumber;
-        private bool _isFaceUp = false;
-        private bool _showSuitOnBack = false;
-
+        private List<GameObject> _suitBackImages = new List<GameObject>();
+        private bool _isFlipAnimationInProgress = false;
+        public bool IsFlipAnimationInProgress => _isFlipAnimationInProgress;
         #endregion
 
         #region Unity Lifecycle
 
         private void Awake()
         {
+            if (!ValidateSerializedFields())
+            {
+                enabled = false;
+                return;
+            }
+
             _originalColor = spriteRenderer.color;
+
+            _suitBackImages.Add(spadeBackSprite);
+            _suitBackImages.Add(heartBackSprite);
+            _suitBackImages.Add(diamondBackSprite);
+            _suitBackImages.Add(clubBackSprite);
+
         }
+
+        void Start(){
+            DisableSuitBackUI();
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            ValidateSerializedFields();
+        }
+#endif
 
         #endregion
 
         #region Events
 
         public Observable<Unit> Clicked => _clicked;
-        public event Action FlipAnimationHalfway;
+        public Observable<Unit> FlipAnimationHalfway => _flipAnimationHalfway;
+        public Observable<Unit> FlipAnimationCompleted => _flipAnimationCompleted;
 
         #endregion
 
@@ -85,51 +118,29 @@ namespace Tetrage.UI
 
         #region Animation
 
-        public void PlayFlipAnimation() => animator.SetTrigger("FlipSuccess");
+        public void PlayFlipAnimation()
+        {
+            _isFlipAnimationInProgress = true;
+            animator.SetTrigger("FlipSuccess");
+        }
         public void ScaleUpAnimation() => animator.SetBool("IsInTmpPile", true);
         public void ScaleDownAnimation() => animator.SetBool("IsInTmpPile", false);
 
         // アニメーションイベントから呼び出されるメソッド
         public void OnFlipAnimationHalfway()
         {
-            Debug.Log("OnFlipAnimationHalfway called");
-            FlipAnimationHalfway?.Invoke();
+            _flipAnimationHalfway.OnNext(Unit.Default);
+        }
+
+        public void OnFlipAnimationCompleted()
+        {
+            _isFlipAnimationInProgress = false;
+            _flipAnimationCompleted.OnNext(Unit.Default);
         }
 
         #endregion
 
         #region Card Display (Presenterから呼び出される)
-
-        /// <summary>
-        /// スートシンボルを設定（CardPresenter互換用）
-        /// テキストから逆推定してSuit情報を保持
-        /// </summary>
-        public void SetSuitSymbol(string symbol)
-        {
-            suitText.text = symbol;
-            
-            // シンボル文字列からSuitを推定
-            if (symbol.Contains("♠"))
-                _currentSuit = Suit.Spade;
-            else if (symbol.Contains("♥"))
-                _currentSuit = Suit.Heart;
-            else if (symbol.Contains("♦"))
-                _currentSuit = Suit.Diamond;
-            else if (symbol.Contains("♣"))
-                _currentSuit = Suit.Club;
-            
-            UpdateCardSprite();
-        }
-
-        /// <summary>
-        /// 数字を設定してカード画像を更新
-        /// </summary>
-        public void SetNumber(int number)
-        {
-            _currentNumber = number;
-            numberText.text = number.ToString();
-            UpdateCardSprite();
-        }
 
         /// <summary>
         /// カード情報を直接設定（推奨メソッド）
@@ -139,33 +150,78 @@ namespace Tetrage.UI
         {
             _currentSuit = suit;
             _currentNumber = number;
-            
-            // テキスト表示も更新
-            if (cardImageMapper != null)
-            {
-                suitText.text = GetSuitSymbolWithColor(suit);
-            }
-            numberText.text = number.ToString();
+        
             
             UpdateCardSprite();
         }
 
         /// <summary>
-        /// カードを表向きにする
+        /// 引数の状態に応じてカードの表示状態を更新する
         /// </summary>
-        public void ShowFace()
+        /// <param name="isFaceUp"></param>
+        /// <param name="isSuitVisible"></param>
+        public void SetFlip(bool isFaceUp, bool isSuitVisible = false)
         {
-            _isFaceUp = true;
-            UpdateCardDisplay();
+            if (isFaceUp)
+            {
+                ShowFace();
+            }
+            else
+            {
+                ShowBack();
+            }
+
+            // カードが裏向きかつスート可視状態の場合はスート別裏面UIを表示
+            if (!isFaceUp && isSuitVisible)
+            {
+                EnableSuitBackUI(_currentSuit);
+            }
+            else
+            {
+                DisableSuitBackUI();
+            }
         }
 
         /// <summary>
-        /// カードを裏向きにする
+        /// 裏面スートUIの表示状態のみを更新する
+        /// </summary>
+        public void SetBackSuitUI(bool isVisible)
+        {
+            if (isVisible)
+            {
+                EnableSuitBackUI(_currentSuit);
+                return;
+            }
+
+            DisableSuitBackUI();
+        }
+
+        /// <summary>
+        /// カードを表向き表示にする
+        /// </summary>
+        public void ShowFace()
+        {
+            // 表向き：カード画像を表示
+            DisableSuitBackUI();
+            UpdateCardSprite();
+            spriteRenderer.color = _isHighlighted ? highlightColor : Color.white;
+        }
+
+        /// <summary>
+        /// カードを裏向き表示にする
         /// </summary>
         public void ShowBack()
-        {
-            _isFaceUp = false;
-            UpdateCardDisplay();
+        {                
+            if (cardImageMapper != null)
+            {
+                // 裏面スプライトを表示
+                var backSuitSprite = cardImageMapper.GetCardBackSprite();
+                if (backSuitSprite != null)
+                {
+                    spriteRenderer.sprite = backSuitSprite;
+                }
+            }
+            spriteRenderer.color = _isHighlighted ? highlightColor * 0.3f : Color.white;
         }
 
         /// <summary>
@@ -173,10 +229,10 @@ namespace Tetrage.UI
         /// </summary>
         public void ShowBackWithSuit(Suit suit)
         {
-            _isFaceUp = false;
             _currentSuit = suit;
-            _showSuitOnBack = true; // スート付き裏面モード
-            UpdateCardDisplay();
+            DisableSuitBackUI();
+            EnableSuitBackUI(suit);
+            ShowBack();
         }
 
         #endregion
@@ -189,7 +245,6 @@ namespace Tetrage.UI
         public void Highlight()
         {
             _isHighlighted = true;
-            UpdateCardDisplay();
         }
 
         /// <summary>
@@ -198,7 +253,6 @@ namespace Tetrage.UI
         public void Unhighlight()
         {
             _isHighlighted = false;
-            UpdateCardDisplay();
         }
 
         #endregion
@@ -206,64 +260,36 @@ namespace Tetrage.UI
         #region Private Methods
 
         /// <summary>
-        /// カード画像の表示を更新（表/裏、ハイライト状態を反映）
+        /// スート別裏面画像を無効にする
         /// </summary>
-        private void UpdateCardDisplay()
+        private void DisableSuitBackUI()
         {
-            if (_isFaceUp)
-            {
-                // 表向き：カード画像を表示
-                UpdateCardSprite();
-                spriteRenderer.color = _isHighlighted ? highlightColor : Color.white;
-                //suitText.enabled = true;
-                //numberText.enabled = true;
-            }
-            else
-            {
-                // 裏向き：裏面画像を表示
-                if (cardImageMapper != null)
-                {
-                    Sprite backSprite;
-                    
-                    // ▼ 追加: スート付き裏面モードの場合はスート別画像を使用
-                    if (_showSuitOnBack)
-                    {
-                        backSprite = GetSuitBackSpriteLocal(_currentSuit);
-                        // スート別画像が未設定の場合は通常の裏面にフォールバック
-                        if (backSprite == null)
-                        {
-                            backSprite = cardImageMapper.GetCardBackSprite();
-                        }
-                    }
-                    else
-                    {
-                        // 通常モード：Mapperからデフォルトの裏面を取得
-                        backSprite = cardImageMapper.GetCardBackSprite();
-                    }
-                    
-                    if (backSprite != null)
-                    {
-                        spriteRenderer.sprite = backSprite;
-                    }
-                }
-                spriteRenderer.color = _isHighlighted ? highlightColor * 0.3f : Color.white;
-                suitText.enabled = false;
-                numberText.enabled = false;
+            foreach (var suitBackImage in _suitBackImages){
+                suitBackImage.SetActive(false);
             }
         }
 
         /// <summary>
+        /// スート別裏面画像を有効にする
+        /// </summary>
+        /// <param name="suit"></param>
+        private void EnableSuitBackUI(Suit suit)
+        {
+            GetSuitBackImageLocal(suit).SetActive(true);
+        }
+
+  
+
+        /// <summary>
         /// CardImageMapperから適切なカード画像を取得して設定
         /// </summary>
-        private void UpdateCardSprite()
+        public void UpdateCardSprite()
         {
             if (cardImageMapper == null)
             {
                 Debug.LogWarning("CardImageMapper is not assigned to CardView.");
                 return;
             }
-
-            if (!_isFaceUp) return;
 
             var sprite = cardImageMapper.GetCardSprite(_currentSuit, _currentNumber);
             if (sprite != null)
@@ -278,7 +304,7 @@ namespace Tetrage.UI
         /// <summary>
         /// CardViewに直接設定されたスート別裏面スプライトを取得
         /// </summary>
-        private Sprite GetSuitBackSpriteLocal(Suit suit)
+        private GameObject GetSuitBackImageLocal(Suit suit)
         {
             return suit switch
             {
@@ -290,20 +316,39 @@ namespace Tetrage.UI
             };
         }
 
-        /// <summary>
-        /// スートのシンボルと色を含むリッチテキスト文字列を取得
-        /// </summary>
-        private string GetSuitSymbolWithColor(Suit suit)
+        #region Validation
+        private bool ValidateSerializedFields()
         {
-            return suit switch
+            var isValid = true;
+
+            if (spriteRenderer == null)
             {
-                Suit.Spade => "<color=black>♠</color>",
-                Suit.Heart => "<color=red>♥</color>",
-                Suit.Diamond => "<color=red>♦</color>",
-                Suit.Club => "<color=black>♣</color>",
-                _ => "?"
-            };
+                Debug.LogError($"{name}: SpriteRenderer が設定されていません。", this);
+                isValid = false;
+            }
+
+            if (animator == null)
+            {
+                Debug.LogError($"{name}: Animator が設定されていません。", this);
+                isValid = false;
+            }
+
+            if (cardImageMapper == null)
+            {
+                Debug.LogError($"{name}: CardImageMapper が設定されていません。", this);
+                isValid = false;
+            }
+
+            // Player Only とありますが、現状は裏表示時にスート別裏面を使うため必須です。
+            if (spadeBackSprite == null || heartBackSprite == null || diamondBackSprite == null || clubBackSprite == null)
+            {
+                Debug.LogError($"{name}: SuitBackImages（Spade/Heart/Diamond/Club）が設定されていません。", this);
+                isValid = false;
+            }
+
+            return isValid;
         }
+        #endregion
 
         #endregion
     }

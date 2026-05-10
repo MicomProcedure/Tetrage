@@ -8,6 +8,7 @@ using Tetrage.Core.Ids;
 using System.Collections.Generic;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Enums;
+using DomainEvents = Tetrage.Core.Events;
 namespace Tetrage.Core.Actions
 {
     /// <summary>
@@ -59,15 +60,22 @@ namespace Tetrage.Core.Actions
         private async UniTask<ActionResult> MoveCardsFromStackToTmp(IActionContext context)
         {
             var stage = context.CurrentStage;
+            var stack = stage.Stack;
             var tmp = context.RequesterPlayer.Tmp;
 
-            // Stage.DrawFromStackメソッドを使用して2回実行
+            // CardMovedEvent経由で2回移動（責務をDomainEventHandlerへ統一）
             for (int i = 0; i < 2; i++)
             {
-                bool success = stage.DrawFromStack(tmp);
+                if (stack.Count == 0)
+                {
+                    return ActionResult.Failure($"カードの移動に失敗しました: {i + 1}枚目（Stackが空です）");
+                }
+
+                var card = stack.Peek(1)[0];
+                bool success = MoveCardViaEvent(context, card, stack, tmp);
                 if (!success)
                 {
-                    return ActionResult.Failure($"カードの移動に失敗しました: {i + 1}枚目");
+                    return ActionResult.Failure($"カードの移動に失敗しました: {i + 1}枚目（CardMoved適用失敗）");
                 }
             }
 
@@ -88,7 +96,7 @@ namespace Tetrage.Core.Actions
             CardId movedToTrashCardId = new CardId(0);
 
             // 1. 選択されたカードをHandsに移動
-            bool toHandsSuccess = CardPile.TransferService.Transfer(tmp, hands, selectedCard);
+            bool toHandsSuccess = MoveCardViaEvent(context, selectedCard, tmp, hands);
 
             // 選択されたカードをHandsに移動できなかった場合はエラー
             if (!toHandsSuccess)
@@ -101,7 +109,7 @@ namespace Tetrage.Core.Actions
             var remainingCards = tmp.ToList(); // ToList()でコピーを作成
             foreach (var card in remainingCards)
             {
-                bool toTrashSuccess = CardPile.TransferService.Transfer(tmp, stack, card);
+                bool toTrashSuccess = MoveCardViaEvent(context, card, tmp, stack);
                 if (!toTrashSuccess)
                 {
                     return ActionResult.Failure($"選択されなかったカード {card} をStackの1番上に戻すことができませんでした");
@@ -122,7 +130,10 @@ namespace Tetrage.Core.Actions
                 }
 
                 // 選択されたカードをTrashへ移動
-                context.CurrentStage.Discard(hands, discard);
+                if (!MoveCardViaEvent(context, discard, hands, context.CurrentStage.Trash))
+                {
+                    return ActionResult.Failure($"手札超過カード {discard} をTrashに移動できませんでした");
+                }
                 Debug.Log($"手札超過により {discard} を捨て札へ移動しました");
                 movedToTrashCardId = discard.Id;
             }
@@ -146,6 +157,30 @@ namespace Tetrage.Core.Actions
             Debug.Log($"DrawExecutor: ActionRequestDescriptor: ActorPlayerId: {context.RequesterPlayer.PlayerId}, TargetCardIds: {string.Join(", ", cardIds.Select(id => id.Value))}");
             return ActionResult.Success(descriptor);
         }
+
+        #region Private Methods
+        /// <summary>
+        /// CardMovedEventを発行し、DomainEventHandlerでの適用結果を検証する。
+        /// </summary>
+        private bool MoveCardViaEvent(IActionContext context, Card card, CardPile from, CardPile to)
+        {
+            if (context?.GameContext?.Events == null || card == null || from == null || to == null)
+            {
+                return false;
+            }
+
+            context.GameContext.Events.Publish(
+                new DomainEvents.CardMovedEvent(
+                    sequence: 0,
+                    cardId: card.Id,
+                    fromPileId: from.Id,
+                    toPileId: to.Id,
+                    stateVersion: 0));
+
+            // DomainEventHandler適用後の整合性確認
+            return !from.Contains(card) && to.Contains(card);
+        }
+        #endregion
 
         /// <summary>
         /// 指定のCardPileから1枚選択を待機。外部キャンセル時はフォールバック選択を返し、必ず購読解除する。

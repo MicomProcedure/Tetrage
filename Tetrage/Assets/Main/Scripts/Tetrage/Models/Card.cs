@@ -3,6 +3,7 @@ using System;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Ids;
+using R3;
 
 namespace Tetrage.Models
 {
@@ -27,19 +28,34 @@ namespace Tetrage.Models
             }
         }
 
-        private bool _isVisible = true;
-        public bool IsVisible
+        private bool _isSuitVisible = false;
+        /// <summary>
+        /// カードが可視状態かどうか
+        /// </summary>
+        public bool IsSuitVisible
         {
-            get => _isVisible;
+            get => _isSuitVisible;
             private set
             {
-                if (_isVisible != value)
+                if (_isSuitVisible != value)
                 {
-                    _isVisible = value;
+                    _isSuitVisible = value;
                     OnCardChanged(this); // カードの表示状態が変更されたことをPresenterに通知
                 }
             }
         }
+
+        private readonly ReactiveProperty<bool> _isFaceUp = new(false);
+        /// <summary>
+        /// カードが表向きかどうか
+        /// </summary>
+        public bool IsFaceUp
+        {
+            get => _isFaceUp.Value;
+            private set => _isFaceUp.Value = value;
+        }
+
+        public Observable<bool> IsFaceUpChanged => _isFaceUp;
 
         private bool _isHighlighted = false;
         public bool IsHighlighted
@@ -71,28 +87,48 @@ namespace Tetrage.Models
         }
 
         public bool CanFlip { get; set; } = false;
+        private readonly Subject<Card> _cardChanged = new();
 
-        public event Action<Card> CardChanged;
+        public Observable<Card> CardChanged => _cardChanged;
 
         private void OnCardChanged(Card card)
         {
-            CardChanged?.Invoke(this);
+            _cardChanged.OnNext(this);
         }
 
         /// <summary>
         /// カードを初期化するコンストラクタ（推奨）
         /// </summary>
-        public Card(CardId id, Suit suit, int number, bool isVisible)
+        public Card(CardId id, Suit suit, int number, bool isFaceUp)
         {
             Id = id;
             _suit = suit;
             _number = Mathf.Max(1, number);
-            _isVisible = isVisible;
+            _isFaceUp.Value = isFaceUp;
         }
 
         public void Flip()
         {
-            IsVisible = !IsVisible;
+            IsFaceUp = !IsFaceUp;
+        }
+
+        /// <summary>
+        /// スート可視状態を更新する
+        /// </summary>
+        public void SetSuitVisible(bool isVisible)
+        {
+            IsSuitVisible = isVisible;
+        }
+
+        /// <summary>
+        /// パイル移動時のカード状態をログ出力する(Debug用)
+        /// </summary>
+        public void LogStateOnPileTransfer(PileId fromPileId, PileId toPileId)
+        {
+            Debug.Log(
+                $"[Card] Transfer Id={Id.Value} From={fromPileId.Value} To={toPileId.Value} " +
+                $"Suit={Suit} Number={Number} IsFaceUp={IsFaceUp} IsSuitVisible={IsSuitVisible} " +
+                $"IsHighlighted={IsHighlighted} CanFlip={CanFlip}");
         }
 
         /// <summary>
@@ -113,7 +149,7 @@ namespace Tetrage.Models
 
         public override string ToString()
         {
-            return $"{Suit} {Number}";
+            return  $"[Card] Suit={Suit} Number={Number} IsFaceUp={IsFaceUp} IsSuitVisible={IsSuitVisible}IsHighlighted={IsHighlighted} CanFlip={CanFlip}";
         }
     }
 }

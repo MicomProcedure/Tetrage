@@ -58,7 +58,7 @@ namespace Tetrage.Core.Actions
 
             foreach (var player in context.OtherPlayers)
             {
-                var playerHiddenCards = player.Hands.Where(card => !card.IsVisible).ToList();
+                var playerHiddenCards = player.Hands.Where(card => !card.IsFaceUp).ToList();
                 hiddenCards.AddRange(playerHiddenCards);
             }
 

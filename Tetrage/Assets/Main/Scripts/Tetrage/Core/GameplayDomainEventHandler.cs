@@ -1,4 +1,5 @@
 using R3;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Enums;
@@ -18,7 +19,7 @@ namespace Tetrage.Core
     /// DomainEventを購読し、ドメインロジック（モデル更新）を実行するハンドラ。
     /// NetworkEventApplierから責務を分離。
     /// </summary>
-    public sealed class GameplayDomainEventHandler
+    public sealed class GameplayDomainEventHandler : IDisposable
     {
         private readonly IdRegistry<CardId, Card> _cardRegistry;
         private readonly IdRegistry<PileId, CardPile> _pileRegistry;
@@ -222,12 +223,37 @@ namespace Tetrage.Core
             }
 
             // Debug.Log($"GameplayDomainEventHandler: カード移動を実行 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
-            // カード移動を実行
-            CardPile.TransferService.Transfer(fromPile, toPile, card);
-            // Debug.Log($"GameplayDomainEventHandler: カード移動完了 - FromPile.Cards.Count={fromPile.Cards.Count}, ToPile.Cards.Count={toPile.Cards.Count}");
+            // カード移動が失敗した場合は、以降の表示状態更新も行わない。
+            if (!CardPile.TransferService.Transfer(fromPile, toPile, card))
+            {
+                return;
+            }
+
+            UpdateFaceUpStateForTmpTransition(fromPile, toPile, card);
+
+            if (_gameContext.UserPlayer != null)
+            {
+                var userTmpPileId = PileIds.PlayerTmp(_gameContext.UserPlayer.Id);
+                var userHandsPileId = PileIds.PlayerHands(_gameContext.UserPlayer.Id);
+
+                // UserPlayerのHandsに入ったときはスート可視を有効化
+                if (toPile.Id.Equals(userHandsPileId))
+                {
+                    card.SetSuitVisible(true);
+                }
+
+                // UserPlayerのHandsから出るときはスート可視を無効化
+                if (fromPile.Id.Equals(userHandsPileId) && !toPile.Id.Equals(userHandsPileId))
+                {
+                    card.SetSuitVisible(false);
+                }
+
+                Debug.Log(
+                    $"<color=red>GameplayDomainEventHandler: カード移動完了 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}, UserPlayerTmp={userTmpPileId}, UserPlayerHands={userHandsPileId}");
+            }
         }
 
-        private void OnCardVisibilityChanged(DomainEvents.CardVisibilityChangedEvent e)
+        private void OnCardVisibilityChanged(DomainEvents.CardSideChangedEvent e)
         {
             if (!_cardRegistry.TryGet(e.CardId, out var card))
             {
@@ -236,11 +262,55 @@ namespace Tetrage.Core
             }
 
             // 可視性が変更されていればFlip
-            if (card.IsVisible != e.IsVisible)
+            if (card.IsFaceUp != e.IsFaceUp)
             {
                 card.Flip();
             }
         }
+
+        #region Tmp FaceUp Control
+        /// <summary>
+        /// Tmp 入退場時の表裏状態を更新します。
+        /// </summary>
+        private static void UpdateFaceUpStateForTmpTransition(CardPile from, CardPile to, Card card)
+        {
+            var isMovingIntoTmp = !IsTmpPile(from) && IsTmpPile(to);
+            if (isMovingIntoTmp)
+            {
+                // Tmp に入るカードは常に表向きにする。
+                SetFaceUp(card, isFaceUp: true);
+                return;
+            }
+
+            var isMovingOutFromTmp = IsTmpPile(from) && !IsTmpPile(to);
+            if (isMovingOutFromTmp)
+            {
+                // Tmp から出るカードは常に裏向きにする。
+                SetFaceUp(card, isFaceUp: false);
+            }
+        }
+
+        /// <summary>
+        /// カードの表裏が指定値と異なる場合だけ反転します。
+        /// </summary>
+        private static void SetFaceUp(Card card, bool isFaceUp)
+        {
+            if (card.IsFaceUp == isFaceUp)
+            {
+                return;
+            }
+
+            card.Flip();
+        }
+
+        /// <summary>
+        /// 指定したパイルが Tmp かどうかを判定します。
+        /// </summary>
+        private static bool IsTmpPile(CardPile pile)
+        {
+            return pile != null && pile.Type == CardPileType.Tmp;
+        }
+        #endregion
 
         private void OnPileShuffled(DomainEvents.PileShuffledEvent e)
         {
@@ -388,7 +458,7 @@ namespace Tetrage.Core
                         {
                             if (_cardRegistry.TryGet(cardId, out var card))
                             {
-                                if (!card.IsVisible)
+                                if (!card.IsFaceUp)
                                 {
                                     card.Flip();
                                 }

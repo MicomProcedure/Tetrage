@@ -17,6 +17,7 @@ namespace Tetrage.Presenters
         private readonly Card _model;
         private readonly CardView _view;
         private readonly CompositeDisposable _disposables = new();
+        private bool _lastIsFaceUp = false;
 
         public CardPresenter(Card model, CardView view)
         {
@@ -27,19 +28,33 @@ namespace Tetrage.Presenters
             CardViewRegistry.Register(_model, _view);
 
             // Viewの破棄を監視し、破棄時にDisposeを呼び出す
-            _view.Destroyed += OnViewDestroyed;
+            _view.Destroyed.Subscribe(_ => OnViewDestroyed())
+                .AddTo(_disposables);
+
+            // カードデータを設定
+            _view.SetCardData(_model.Suit, _model.Number);
 
             // Subscribe to model changes
-            _model.CardChanged += OnModelChanged;
+            _model.CardChanged.Subscribe(_ => OnModelChanged(_))
+                .AddTo(_disposables);
+                
+            _model.IsFaceUpChanged.Subscribe(isFaceUp => OnModelIsFaceUpChanged(isFaceUp))
+                .AddTo(_disposables);
+
             // Subscribe to view clicks
             _view.Clicked
                 .Subscribe(_ => OnViewClicked())
                 .AddTo(_disposables);
             // Subscribe to animation events
-            _view.FlipAnimationHalfway += OnFlipAnimationHalfway;
+            _view.FlipAnimationHalfway.Subscribe(_ => OnFlipAnimationHalfway())
+                .AddTo(_disposables);
+            _view.FlipAnimationCompleted.Subscribe(_ => OnFlipAnimationCompleted())
+                .AddTo(_disposables);
+
 
             // Initial sync
             RefreshView();
+            _lastIsFaceUp = _model.IsFaceUp;
         }
 
         private void OnModelChanged(Card updatedCard)
@@ -47,39 +62,47 @@ namespace Tetrage.Presenters
             RefreshView();
         }
 
+        private void OnModelIsFaceUpChanged(bool isFaceUp)
+        {
+            if (_lastIsFaceUp != isFaceUp)
+            {
+                _view.PlayFlipAnimation();
+            }
+
+        }
+
         private void OnViewClicked()
         {
             // クリックされたカードをCardClickDispatcherに通知。Actionの実行に使われる。
             CardClickDispatcher.Invoke(_model);
 
-            // クリックされた際にカードを裏返す
-            if (_model.CanFlip)
-            {
-                // アニメーションを開始
-                _view.PlayFlipAnimation();
-                // 実際のFlipはアニメーションの途中で行う
-            }
-            // TODO: dispatch click to application logic if needed
+            // 反転アニメーションはモデル状態の変化時のみ実行する
         }
 
         private void OnFlipAnimationHalfway()
         {
             Debug.Log("CardPresenter: OnFlipAnimationHalfway called");
-            // アニメーションの途中でカードの状態を変更
-            _model.Flip();
+            RefreshView();
+            _view.SetFlip(_model.IsFaceUp, _model.IsSuitVisible);
+        }
+
+        private void OnFlipAnimationCompleted(){
+            RefreshView();
+            _view.SetFlip(_model.IsFaceUp, _model.IsSuitVisible);
+            _lastIsFaceUp = _model.IsFaceUp;
         }
 
         private void RefreshView()
         {
-            if (_model.IsVisible)
+            _view.SetCardData(_model.Suit, _model.Number);
+
+            if (!_view.IsFlipAnimationInProgress)
             {
-                _view.ShowFace();
-                _view.SetSuitSymbol(GetSuitSymbol(_model.Suit));
-                _view.SetNumber(_model.Number);
+                _view.SetFlip(_model.IsFaceUp, _model.IsSuitVisible);
             }
             else
             {
-                _view.ShowBack();
+
             }
 
             // ハイライト状態の更新
@@ -93,15 +116,6 @@ namespace Tetrage.Presenters
             }
         }
 
-        private string GetSuitSymbol(Suit suit) => suit switch
-        {
-            Suit.Spade => "<color=black>♠</color>",
-            Suit.Heart => "<color=red>♥</color>",
-            Suit.Diamond => "<color=red>♦</color>",
-            Suit.Club => "<color=black>♣</color>",
-            _ => "?"
-        };
-
         private void OnViewDestroyed()
         {
             Dispose();
@@ -112,10 +126,7 @@ namespace Tetrage.Presenters
             // カードモデルとビューの対応をグローバルな辞書から削除
             CardViewRegistry.Unregister(_model);
 
-            // イベント購読解除
-            _model.CardChanged -= OnModelChanged;
-            _view.Destroyed -= OnViewDestroyed;
-            _view.FlipAnimationHalfway -= OnFlipAnimationHalfway;
+            // 購読解除
             _disposables.Dispose();
         }
     }

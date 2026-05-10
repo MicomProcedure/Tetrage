@@ -20,7 +20,7 @@ namespace Tetrage.Factories
         {
             // CardId を DeckId×suitIndex×number で決定論的に合成して生成
             var cardId = CardIdComposer.Compose(DefaultDeckId, (int)suit, number);
-            return new Card(cardId, suit, number, isVisible: false);
+            return new Card(cardId, suit, number, isFaceUp: false);
         }
 
         /// <inheritdoc/>

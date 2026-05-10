@@ -55,7 +55,7 @@ namespace Tetrage.Network.Gameplay
                     _eventBus.Publish(e);
                     Debug.Log($"VirtualLogicFeeder: CardMovedEvent注入 (Seq: {e.Sequence}, Card: {e.CardId}, From: {e.FromPileId} -> To: {e.ToPileId})");
                     break;
-                case DomainEvents.CardVisibilityChangedEvent e:
+                case DomainEvents.CardSideChangedEvent e:
                     _eventBus.Publish(e);
                     Debug.Log($"VirtualLogicFeeder: CardVisibilityChangedEvent注入 (Seq: {e.Sequence})");
                     break;
