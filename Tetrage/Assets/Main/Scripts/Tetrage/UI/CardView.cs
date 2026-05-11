@@ -61,7 +61,6 @@ namespace Tetrage.UI
         private Suit _currentSuit;
         private int _currentNumber;
         private List<GameObject> _suitBackImages = new List<GameObject>();
-        private EventTrigger _eventTrigger;
         private bool _isFlipAnimationInProgress = false;
         public bool IsFlipAnimationInProgress => _isFlipAnimationInProgress;
         #endregion

@@ -6,6 +6,8 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Constants;
 using System.Collections.Generic;
+using Tetrage.Core.Ids;
+using Mono.Cecil.Cil;
 
 namespace Tetrage.Audio{
     /// <summary>
@@ -37,6 +39,8 @@ namespace Tetrage.Audio{
         private bool _isValid = false;
         private Dictionary<AudioClip, bool> _SEPlaybackGate = new(); // SE再生ゲートを表す変数Dictionary        
         private CompositeDisposable _disposables = new();
+
+        private readonly List<PileId> _targetPiles = new();
    
 
         #region Unity Lifecycle
@@ -55,8 +59,18 @@ namespace Tetrage.Audio{
         {
             _gameContext = gameContext;
 
-            SubscribeToEvents();
+            // Subscribeの前に実行する必要あり
+            // CardMovedEventのToPileIdがPlayerTargetのPileIdであるかを判定するために、PlayerTargetのPileIdをリストに追加する。
+            _targetPiles.Clear();
+            foreach (var player in _gameContext.Players){
+                _targetPiles.Add(PileIds.PlayerTarget(player.Id));
+            }
+
             InitializeSEPlaybackGate();
+            SubscribeToEvents();
+
+
+
 
             _isInitialized = true;
         }
@@ -157,14 +171,14 @@ namespace Tetrage.Audio{
 
         private void SubscribeToEvents()
         {
-            // if (cardFlipSE != null){
-            //     _gameContext.Events.CardStateChanged
-            //                                 .Where(e => e.StateType == CardStateType.FaceUp)
-            //                                 .Subscribe(_ => PlayCardFlipSE());
-            // }
 
+            // Card移動時に音声を鳴らす
+            // ただし、移動先がPlayerTargetのPileIdである場合は音声を鳴らさない（フィールド初期化時は音を無らしたくない）。
             if (cardMoveSE != null){
-                _gameContext.Events.CardMoved.Subscribe(_ => PlayCardMoveSE());
+                _gameContext.Events.CardMoved
+                    .Where(e => !_targetPiles.Contains(e.ToPileId))
+                    .Subscribe(_ => PlayCardMoveSE())
+                    .AddTo(_disposables);
             }
 
         }
@@ -176,6 +190,15 @@ namespace Tetrage.Audio{
             _SEPlaybackGate.TryAdd(buttonClickSE, true);
             
         }       
+
+        private void OnDestroy()
+        {
+            _disposables.Dispose();
+        }
+
+        #endregion
+
+        #region Helper Methods
 
         #endregion
     }
