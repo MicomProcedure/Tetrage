@@ -5,6 +5,7 @@ using Tetrage.Models;
 using Tetrage.UI;
 using Tetrage.Core.Contracts;
 using Tetrage.Services;
+using Tetrage.Audio;
 
 namespace Tetrage.Presenters
 {
@@ -63,7 +64,6 @@ namespace Tetrage.Presenters
             // ここでは単一Viewを担当する場合、_viewがselfモデルの場合のみ処理
             if (to == _model)
             {
-                InGameSE.PlayCardMoveSE();
                 _view.AddCardView(cardView);
             }
 

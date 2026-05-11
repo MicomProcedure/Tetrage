@@ -123,7 +123,6 @@ namespace Tetrage.UI
             _isFlipAnimationInProgress = true;
             animator.SetTrigger("FlipSuccess");
 
-            InGameSE.PlayCardMoveSE();
         }
         public void ScaleUpAnimation() => animator.SetBool("IsInTmpPile", true);
         public void ScaleDownAnimation() => animator.SetBool("IsInTmpPile", false);

@@ -209,6 +209,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23b35f18eb00740ca87f84e2ef9afe95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &405945256 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6484903071619592276, guid: aae787e82973c594a82557445e8386e5, type: 3}
+  m_PrefabInstance: {fileID: 4387976868271044973}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec4eb3b7ce8757e4bbd220a7fbfa6546, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &416057288 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2989693357154518040, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
@@ -964,6 +975,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1573055951}
     - target: {fileID: 8812332185808416593, guid: 40b3e0f28729eff4f8aecdfefe7c3234, type: 3}
+      propertyPath: _inGameAudioManager
+      value: 
+      objectReference: {fileID: 405945256}
+    - target: {fileID: 8812332185808416593, guid: 40b3e0f28729eff4f8aecdfefe7c3234, type: 3}
       propertyPath: _fieldSetupComponent
       value: 
       objectReference: {fileID: 200115843}
@@ -1324,6 +1339,67 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
+--- !u!1001 &4387976868271044973
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1324110817506646709, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2428759343258611888, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_PlayOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6817867006761344513, guid: aae787e82973c594a82557445e8386e5, type: 3}
+      propertyPath: m_Name
+      value: InGameAudioManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: aae787e82973c594a82557445e8386e5, type: 3}
 --- !u!114 &7194526978573096486 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8371681590788915517, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
@@ -1347,3 +1423,4 @@ SceneRoots:
   - {fileID: 2481798701942548761}
   - {fileID: 536511622602693465}
   - {fileID: 254711814740574796}
+  - {fileID: 4387976868271044973}
