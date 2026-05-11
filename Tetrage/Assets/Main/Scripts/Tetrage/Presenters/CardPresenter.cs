@@ -74,7 +74,7 @@ namespace Tetrage.Presenters
         private void OnViewClicked()
         {
             // クリックされたカードをCardClickDispatcherに通知。Actionの実行に使われる。
-            CardClickDispatcher.Invoke(_model);
+            CardClickDispatcher.Publish(_model);
 
             // 反転アニメーションはモデル状態の変化時のみ実行する
         }
