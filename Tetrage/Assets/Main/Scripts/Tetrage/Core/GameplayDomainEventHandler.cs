@@ -78,8 +78,8 @@ namespace Tetrage.Core
                 .Subscribe(OnCardMoved)
                 .AddTo(_disposables);
 
-            eventBus.CardVisibilityChanged
-                .Subscribe(OnCardVisibilityChanged)
+            eventBus.CardStateChanged
+                .Subscribe(OnCardStateChanged)
                 .AddTo(_disposables);
 
             eventBus.PileShuffled
@@ -253,7 +253,7 @@ namespace Tetrage.Core
             }
         }
 
-        private void OnCardVisibilityChanged(DomainEvents.CardSideChangedEvent e)
+        private void OnCardStateChanged(DomainEvents.CardStateChangedEvent e)
         {
             if (!_cardRegistry.TryGet(e.CardId, out var card))
             {
@@ -261,10 +261,41 @@ namespace Tetrage.Core
                 return;
             }
 
-            // 可視性が変更されていればFlip
-            if (card.IsFaceUp != e.IsFaceUp)
+            switch (e.StateType)
             {
-                card.Flip();
+                case DomainEvents.CardStateType.FaceUp:
+                    // 表裏変更は現在値との差分があるときだけ反転する。
+                    var isFaceUp = e.StateValue;
+                    if (card.IsFaceUp != isFaceUp)
+                    {
+                        card.Flip();
+                    }
+                    break;
+
+                case DomainEvents.CardStateType.IsSuitVisible:
+                    // スート表示状態を同期する。
+                    card.SetSuitVisible(e.StateValue);
+                    break;
+
+                case DomainEvents.CardStateType.IsHighlighted:
+                    // ハイライト状態を同期する。
+                    if (e.StateValue)
+                    {
+                        card.Highlight();
+                    }
+                    else
+                    {
+                        card.Unhighlight();
+                    }
+                    break;
+
+                default:
+                    // 旧イベント互換: stateType未設定時は IsFaceUp を適用する。
+                    if (card.IsFaceUp != e.IsFaceUp)
+                    {
+                        card.Flip();
+                    }
+                    break;
             }
         }
 

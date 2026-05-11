@@ -159,12 +159,13 @@ namespace Tetrage.Network.Gameplay
             {
                 foreach (var v in plan.Visibility)
                 {
-                    var dto = new CardSideChangedEvent
+                    var dto = new CardStateChangedEvent
                     {
                         sequence = _seq.NextSequence(),
                         stateVersion = _seq.NextStateVersion(),
                         cardId = v.CardId.Value,
-                        isFaceUp = v.IsVisible,
+                        stateCode = CardStateCode.FaceUp,
+                        stateValue = v.IsVisible,
                     };
                     _broadcaster.Raise(EventCode.CardVisibilityChanged, dto);
                 }

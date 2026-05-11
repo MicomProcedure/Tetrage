@@ -109,12 +109,26 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// CardVisibilityChangedEvent (DTO) → CardVisibilityChangedEvent (Domain)
         /// </summary>
-        public CardSideChangedEvent ToDomain(Tetrage.Network.Gameplay.CardSideChangedEvent dto)
+        public CardStateChangedEvent ToDomain(Tetrage.Network.Gameplay.CardStateChangedEvent dto)
         {
-            return new CardSideChangedEvent(
+            var stateType = dto.stateCode switch
+            {
+                Tetrage.Network.Gameplay.CardStateCode.FaceUp => CardStateType.FaceUp,
+                Tetrage.Network.Gameplay.CardStateCode.IsSuitVisible => CardStateType.IsSuitVisible,
+                Tetrage.Network.Gameplay.CardStateCode.IsHighlighted => CardStateType.IsHighlighted,
+                _ => CardStateType.Unknown,
+            };
+
+            var isFaceUp = dto.stateCode == Tetrage.Network.Gameplay.CardStateCode.FaceUp
+                ? dto.stateValue
+                : false;
+
+            return new CardStateChangedEvent(
                 sequence: dto.sequence,
                 cardId: new CardId(dto.cardId),
-                isFaceUp: dto.isFaceUp,
+                isFaceUp: isFaceUp,
+                stateType: stateType,
+                stateValue: dto.stateValue,
                 stateVersion: dto.stateVersion
             );
         }

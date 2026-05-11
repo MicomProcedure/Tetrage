@@ -4,6 +4,7 @@ using Tetrage.Core.Constants;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Events;
 using Tetrage.UI;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
@@ -615,8 +616,50 @@ namespace Tetrage.Managers
 				_gameContext?.GetTurnOrderNumber(_scanSelectedTargetPlayerId) ?? 0,
 				_scanSelectedTargetSuit.GetKatakanaName()));
 
-			// 選択したプレイヤーのパネルのTargetSuitをUI上で表示
-			_playerUIPanelManager.ShowPlayerTargetSuit(_scanSelectedTargetPlayerId, _scanSelectedTargetSuit);
+			// 選択したプレイヤーのTargetカードだけ、スート可視を有効化する。
+			if (!TryGetFirstTargetCardId(_scanSelectedTargetPlayerId, out var targetCardId))
+			{
+				Debug.LogWarning($"InGameUIManager: 対象プレイヤーのTargetカードを取得できませんでした (PlayerId={_scanSelectedTargetPlayerId})");
+				return;
+			}
+
+			_gameContext.Events.Publish(new DomainEvents.CardStateChangedEvent(
+				sequence: 0,
+				cardId: targetCardId,
+				isFaceUp: false,
+				stateType: CardStateType.IsSuitVisible,
+				stateValue: true));
+		}
+
+		/// <summary>
+		/// 指定プレイヤーのTarget山の先頭カードIdを取得する。TODO: 後でリファクタ
+		/// </summary>
+		private bool TryGetFirstTargetCardId(PlayerId playerId, out CardId cardId)
+		{
+			cardId = default;
+			if (_gameContext?.Players == null)
+			{
+				return false;
+			}
+
+			for (int i = 0; i < _gameContext.Players.Count; i++)
+			{
+				var player = _gameContext.Players[i];
+				if (player == null || player.Id != playerId)
+				{
+					continue;
+				}
+
+				if (player.Target?.Cards == null || player.Target.Cards.Count == 0)
+				{
+					return false;
+				}
+
+				cardId = player.Target.Cards[0].Id;
+				return true;
+			}
+
+			return false;
 		}
 
 		private bool TrySendScanTargetSelected()

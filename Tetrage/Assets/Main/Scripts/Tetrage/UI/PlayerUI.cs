@@ -22,8 +22,7 @@ namespace Tetrage.UI
         [SerializeField] private TextMeshProUGUI playerNumberText;
         [SerializeField] private GameObject turnMarker;
         [SerializeField] private Transform targetMarkerTransform;
-        [SerializeField] private RectTransform targetPileMarker;
-        [SerializeField] private List<Image> targetSuitImages = new List<Image>();        
+        [SerializeField] private RectTransform targetPileMarker;    
         #endregion
         
         #region Private Fields
@@ -46,13 +45,6 @@ namespace Tetrage.UI
             {
                 Debug.LogError("[PlayerUI] profileDisplayViewが設定されていません！Inspectorで設定してください。", this);
             }
-
-            if (targetSuitImages == null)    // ターゲットのスートを表示するためのImageの検証
-            {
-                Debug.LogError("[PlayerUI] targetSuitImageが設定されていません！Inspectorで設定してください。", this);
-            }
-
-            HideTargetSuit();    
 
         }
 
@@ -142,31 +134,6 @@ namespace Tetrage.UI
             }
             
             profileDisplayView.SetIcon(iconIndex);
-        }
-
-        /// <summary>
-        /// 引数のスート(suit)の情報に基づいて、targetSuitImagesに格納されているスート画像の表示・非表示を切り替える
-        /// </summary>
-        /// <param name="suit">表示対象のスート</param>
-        public void ShowTargetSuit(Suit suit){
-            // targetSuitImagesリスト内の各要素をループ
-            for (int i = 0; i < targetSuitImages.Count; i++)
-            {
-                // 要素がnullでない場合のみ処理
-                if (targetSuitImages[i] != null)
-                {
-                    // suit.CompareToCustom(i) が true のとき、そのスート画像を表示
-                    // そうでなければ非表示
-                    targetSuitImages[i].gameObject.SetActive(i == suit.GetCustomOrder());
-                }
-            }
-        }
-
-        public void HideTargetSuit(){
-            foreach (var targetSuitImage in targetSuitImages)
-            {
-                targetSuitImage.gameObject.SetActive(false);
-            }
         }
 
         /// <summary>
