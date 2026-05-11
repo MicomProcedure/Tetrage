@@ -58,9 +58,6 @@ namespace Tetrage.UI
             // 親を変更（worldPositionStaysをtrueにして位置を保持）
             cardView.transform.SetParent(transform, worldPositionStays: true);
             
-                        
-            // 1フレーム待機してレイアウトが確定するのを待つ
-            await UniTask.Yield();
             Vector3 endPosition = cardView.transform.localPosition;
             Vector3 endWorldPosition = cardView.transform.parent.TransformPoint(endPosition);
             
