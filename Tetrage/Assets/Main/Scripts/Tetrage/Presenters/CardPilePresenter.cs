@@ -63,6 +63,7 @@ namespace Tetrage.Presenters
             // ここでは単一Viewを担当する場合、_viewがselfモデルの場合のみ処理
             if (to == _model)
             {
+                InGameSE.PlayCardMoveSE();
                 _view.AddCardView(cardView);
             }
 
