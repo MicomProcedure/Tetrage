@@ -6,7 +6,7 @@ using Tetrage.Core.Enums;
 using Tetrage.Data;
 using R3;
 using System.Collections.Generic;
-
+using Tetrage.Audio;
 namespace Tetrage.UI
 {
     public class CardView : MonoBehaviour, IPointerClickHandler
@@ -122,6 +122,8 @@ namespace Tetrage.UI
         {
             _isFlipAnimationInProgress = true;
             animator.SetTrigger("FlipSuccess");
+
+            InGameSE.PlayCardMoveSE();
         }
         public void ScaleUpAnimation() => animator.SetBool("IsInTmpPile", true);
         public void ScaleDownAnimation() => animator.SetBool("IsInTmpPile", false);
