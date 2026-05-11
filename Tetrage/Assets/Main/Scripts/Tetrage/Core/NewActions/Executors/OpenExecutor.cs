@@ -5,6 +5,7 @@ using Tetrage.Models;
 using System.Collections.Generic;
 using Tetrage.UI; // CardClickDispatcherを使用するために追加
 using System.Threading; // CancellationTokenを追加
+using R3;
 
 namespace Tetrage.Core.Actions
 {
@@ -82,16 +83,9 @@ namespace Tetrage.Core.Actions
 
             var tcs = new UniTaskCompletionSource<Card>();
 
-            System.Action<Card> cardClickedHandler = null;
-            cardClickedHandler = (clickedCard) =>
-            {
-                if (hiddenCards.Contains(clickedCard))
-                {
-                    tcs.TrySetResult(clickedCard);
-                }
-            };
-
-            CardClickDispatcher.OnCardClicked += cardClickedHandler;
+            var cardClickdisposable = CardClickDispatcher.CardClicked
+                .Where(c => hiddenCards.Contains(c))
+                .Subscribe(c => tcs.TrySetResult(c));
 
             try
             {
@@ -106,7 +100,7 @@ namespace Tetrage.Core.Actions
             }
             finally
             {
-                CardClickDispatcher.OnCardClicked -= cardClickedHandler;
+                cardClickdisposable.Dispose();
             }
         }
     }
