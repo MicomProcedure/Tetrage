@@ -89,6 +89,9 @@ namespace Tetrage.Network.Gameplay
                 case ActionType.Draw:
                     ProcessDraw(e, actorPlayerId, seq);
                     break;
+                case ActionType.Check:
+                    ProcessCheck(e, seq);
+                    break;
                 case ActionType.TetrageSolo:
                     ProcessTetrageSolo(e, seq);
                     break;
@@ -159,6 +162,41 @@ namespace Tetrage.Network.Gameplay
                 reason = string.Empty,
                 targetCardIds = e.targetCardIds,
                 actionStatusInt = 0,
+            };
+            _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
+        }
+
+        private void ProcessCheck(ActionRequestedEvent e, SequenceService seq)
+        {
+            var isMatch = e.actionStatusInt == 1;
+
+            // Checkに成功した場合は、相手のTargetカードを表示する。
+            if (isMatch && e.targetCardIds != null && e.targetCardIds.Length > 0)
+            {
+                var targetCardStateChanged = new CardStateChangedEvent
+                {
+                    sequence = seq.NextSequence(),
+                    stateVersion = seq.NextStateVersion(),
+                    cardId = e.targetCardIds[0],
+                    stateCode = CardStateCode.IsSuitVisible,
+                    stateValue = true,
+                };
+                _netCtl.Broadcaster.Raise(EventCode.CardVisibilityChanged, targetCardStateChanged);
+            }
+            else{
+                // TODO: Checkに失敗した場合はそのSuitではないという情報をCardModelに反映させるイベントを発行させる
+            }
+
+            var res = new ActionResultEvent
+            {
+                sequence = seq.NextSequence(),
+                clientSequence = e.clientSequence,
+                actorPlayerId = e.actorPlayerId,
+                actionType = e.actionType,
+                accepted = true,
+                reason = string.Empty,
+                targetCardIds = e.targetCardIds,
+                actionStatusInt = e.actionStatusInt,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }

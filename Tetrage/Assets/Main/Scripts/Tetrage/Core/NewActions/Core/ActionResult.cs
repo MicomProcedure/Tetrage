@@ -52,6 +52,7 @@ namespace Tetrage.Core.Actions
         /// <param name="prefix">ログメッセージの接頭辞（任意）</param>
         public void Log(string prefix = "")
         {
+            #if UNITY_EDITOR
             var head = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}: ";
 
             if (IsSuccess)
@@ -62,6 +63,7 @@ namespace Tetrage.Core.Actions
             {
                 Debug.LogWarning($"{head}Action 失敗 - エラー: {ErrorMessage ?? "不明"}, 追加情報: {AdditionalData ?? "なし"}");
             }
+            #endif
         }
         #endregion
     }

@@ -1,4 +1,5 @@
 using System.Linq;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Core.Actions
 {
@@ -23,13 +24,13 @@ namespace Tetrage.Core.Actions
             // TODO: プレイヤーが自分のスートと同じスートを手札に揃えているかどうかの判定
             var hands = context.RequesterPlayer.Hands;
             
-            // 手札が空でないかチェック
-            if (!hands.Any())
+            // 手札が満杯（3枚）であることをチェック
+            if (hands.Count != InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY)
             {
-                return ValidationResult.Invalid("手札にカードがありません");
+                return ValidationResult.Invalid("手札が満杯（3枚）ではありません");
             }
-            
-            // 全てのカードのスートが一致していて、そのスートと自分のターゲットスートが一致しているかチェック
+
+            // 全てのHandsのカードのスートが一致していて、そのスートと自分のターゲットスートが一致しているかチェック
             var firstSuit = hands.First().Suit;
             var allSuitsSame = hands.All(card => card.Suit == firstSuit);
             var targetSuit = context.RequesterPlayer.Target.First().Suit;

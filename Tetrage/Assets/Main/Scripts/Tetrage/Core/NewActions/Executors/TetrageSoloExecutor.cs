@@ -29,7 +29,7 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure("自分のTargetカードが見つかりません");
                 }
 
-                // 2. 他のプレイヤー全員の取得
+                // 2. 他のプレイヤー全員Targetの取得
                 var otherPlayers = context.OtherPlayers?.ToList();
                 if (otherPlayers == null || !otherPlayers.Any())
                 {

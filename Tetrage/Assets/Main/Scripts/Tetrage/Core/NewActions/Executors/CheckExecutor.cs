@@ -6,6 +6,7 @@ using System.Threading;
 using Tetrage.Core.Contracts;
 using Tetrage.Models;
 using Tetrage.UI;
+using Tetrage.Core.Enums;
 using R3;
 
 namespace Tetrage.Core.Actions
@@ -38,11 +39,13 @@ namespace Tetrage.Core.Actions
 
                 Debug.Log($"Check アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が {targetPlayer.UserId} をチェック");
 
+                // isMatchの結果をActionRequestDescriptorに詰めて返す。これによって結果が全員に通知され、各々でUIの処理がされる
                 var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
                 {
-                    actionType = Tetrage.Core.Enums.ActionType.Check,
+                    actionType = ActionType.Check,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
-                    targetCardIds = new[] { targetCard.Id }
+                    targetCardIds = new[] { targetCard.Id },
+                    actionStatusInt = isMatch ? 1 : 0
                 };
                 return ActionResult.Success(descriptor);
             }
@@ -68,13 +71,11 @@ namespace Tetrage.Core.Actions
             var actionAwaiter = context.ActionAwaiter;
             var cancellationToken = actionAwaiter?.CurrentCancellationToken ?? CancellationToken.None;
             var tcs = new UniTaskCompletionSource<IPlayer>();
-            var originalHighlightStates = CaptureHighlightStates(selectableTargets.Keys);
 
             var cardClickDisposable = CardClickDispatcher.CardClicked
                 // Checkでは相手Targetカードだけを有効な入力として扱う。
                 .Where(clickedCard => clickedCard != null && selectableTargets.ContainsKey(clickedCard))
                 .Subscribe(clickedCard => tcs.TrySetResult(selectableTargets[clickedCard]));
-            SetTargetHighlight(selectableTargets.Keys, true);
 
             try
             {
@@ -90,7 +91,6 @@ namespace Tetrage.Core.Actions
             finally
             {
                 cardClickDisposable.Dispose();
-                RestoreTargetHighlight(originalHighlightStates);
             }
         }
 
@@ -116,59 +116,9 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// 選択可能なTargetカードのハイライト状態を切り替える。
-        /// </summary>
-        private void SetTargetHighlight(IEnumerable<Card> targetCards, bool isHighlighted)
-        {
-            foreach (var targetCard in targetCards)
-            {
-                // 選択待機中であることを表すため、候補Targetカードのみをハイライトする。
-                if (isHighlighted)
-                {
-                    targetCard.Highlight();
-                    continue;
-                }
-
-                targetCard.Unhighlight();
-            }
-        }
-
-        /// <summary>
-        /// 選択待機前のTargetカードハイライト状態を保存する。
-        /// </summary>
-        private Dictionary<Card, bool> CaptureHighlightStates(IEnumerable<Card> targetCards)
-        {
-            var highlightStates = new Dictionary<Card, bool>();
-            foreach (var targetCard in targetCards)
-            {
-                highlightStates[targetCard] = targetCard.IsHighlighted;
-            }
-
-            return highlightStates;
-        }
-
-        /// <summary>
-        /// 選択待機前のTargetカードハイライト状態へ戻す。
-        /// </summary>
-        private void RestoreTargetHighlight(IReadOnlyDictionary<Card, bool> highlightStates)
-        {
-            foreach (var pair in highlightStates)
-            {
-                // 選択待機開始前からハイライトされていたカードは、その状態を維持する。
-                if (pair.Value)
-                {
-                    pair.Key.Highlight();
-                    continue;
-                }
-
-                pair.Key.Unhighlight();
-            }
-        }
-
-        /// <summary>
         /// 指定されたプレイヤーのTargetカードを取得
         /// </summary>
-        private Models.Card GetTargetCard(IPlayer player)
+        private Card GetTargetCard(IPlayer player)
         {
             return player.Target.FirstOrDefault();
         }
@@ -176,7 +126,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// 自分の手札のスートと対象のTargetカードのスートが一致するかチェック
         /// </summary>
-        private bool CheckSuitMatch(IActionContext context, Models.Card targetCard)
+        private bool CheckSuitMatch(IActionContext context, Card targetCard)
         {
             var myHands = context.RequesterPlayer.Hands;
 
