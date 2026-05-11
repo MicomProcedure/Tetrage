@@ -3,6 +3,9 @@ using Tetrage.Core.Contracts;
 using Tetrage.Core.Events;
 using R3;
 using System.Linq;
+using Cysharp.Threading.Tasks;
+using Tetrage.Core.Constants;
+using System.Collections.Generic;
 
 namespace Tetrage.Audio{
     /// <summary>
@@ -32,13 +35,16 @@ namespace Tetrage.Audio{
         private bool _isInitialized = false;
         public bool IsInitialized => _isInitialized;
         private bool _isValid = false;
+        private Dictionary<AudioClip, bool> _SEPlaybackGate = new(); // SE再生ゲートを表す変数Dictionary        
         private CompositeDisposable _disposables = new();
+   
 
         #region Unity Lifecycle
 
         private void Awake()
         {
             ValidateAudioReferences();
+
         }
 
         #endregion
@@ -50,6 +56,7 @@ namespace Tetrage.Audio{
             _gameContext = gameContext;
 
             SubscribeToEvents();
+            InitializeSEPlaybackGate();
 
             _isInitialized = true;
         }
@@ -59,7 +66,14 @@ namespace Tetrage.Audio{
         /// </summary>
         public void PlayCardMoveSE()
         {
+            if (!_SEPlaybackGate[cardMoveSE])
+            {
+                return;
+            }           
             PlaySE(cardMoveSE);
+            _SEPlaybackGate[cardMoveSE] = false;    // 同時再生を防ぐためにゲートを閉じる
+            // 指定した時間後にゲートを開く
+            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME).ContinueWith(() => _SEPlaybackGate[cardMoveSE] = true).Forget();
         }
 
         /// <summary>
@@ -67,7 +81,13 @@ namespace Tetrage.Audio{
         /// </summary>
         public void PlayCardFlipSE()
         {
+            if (!_SEPlaybackGate[cardFlipSE])
+            {
+                return;
+            }
             PlaySE(cardFlipSE);
+            _SEPlaybackGate[cardFlipSE] = false;    // 同時再生を防ぐためにゲートを閉じる
+            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME).ContinueWith(() => _SEPlaybackGate[cardFlipSE] = true).Forget();
         }
 
         /// <summary>
@@ -75,7 +95,13 @@ namespace Tetrage.Audio{
         /// </summary>
         public void PlayButtonClickSE()
         {
+            if (!_SEPlaybackGate[buttonClickSE])
+            {
+                return;
+            }
             PlaySE(buttonClickSE);
+            _SEPlaybackGate[buttonClickSE] = false;    // 同時再生を防ぐためにゲートを閉じる
+            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME).ContinueWith(() => _SEPlaybackGate[buttonClickSE] = true).Forget();
         }
 
 
@@ -131,17 +157,25 @@ namespace Tetrage.Audio{
 
         private void SubscribeToEvents()
         {
-            if (cardFlipSE != null){
-                _gameContext.Events.CardStateChanged
-                                            .Where(e => e.StateType == CardStateType.FaceUp)
-                                            .Subscribe(_ => PlayCardFlipSE());
-            }
+            // if (cardFlipSE != null){
+            //     _gameContext.Events.CardStateChanged
+            //                                 .Where(e => e.StateType == CardStateType.FaceUp)
+            //                                 .Subscribe(_ => PlayCardFlipSE());
+            // }
 
             if (cardMoveSE != null){
                 _gameContext.Events.CardMoved.Subscribe(_ => PlayCardMoveSE());
             }
 
         }
+
+        private void InitializeSEPlaybackGate()
+        {
+            _SEPlaybackGate.TryAdd(cardMoveSE, true);
+            _SEPlaybackGate.TryAdd(cardFlipSE, true);
+            _SEPlaybackGate.TryAdd(buttonClickSE, true);
+            
+        }       
 
         #endregion
     }

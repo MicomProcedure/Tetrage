@@ -35,6 +35,8 @@ namespace Tetrage.Core.Constants
         /// <summary>Tmp パイル配下に置いたときの CardView の sortingOrder。他の山より手前に出す。</summary>
         public const int CARD_VIEW_TMP_PILE_SORTING_ORDER = 10;
 
+        public const int DEFAULT_SE_PLAYBACK_GATE_TIME = 100; // SE再生ゲートの時間(ミリ秒)
+
         /// <summary>ScanPhase中にInGameNavigationへ表示する文言。</summary>
         public static class ScanPhaseNavigationText
         {
