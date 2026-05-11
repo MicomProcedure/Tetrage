@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using Tetrage.Audio;
 namespace Tetrage.UI
 {
-    public class CardView : MonoBehaviour, IPointerClickHandler
+    public class CardView : MonoBehaviour
     {
         /// <summary>
         /// このビューが破棄されたときに発行されるイベント。
@@ -17,7 +17,6 @@ namespace Tetrage.UI
         /// </summary>
         public Observable<Unit> Destroyed => _destroyed;
         private readonly Subject<Unit> _destroyed = new();
-        private readonly Subject<Unit> _clicked = new();
         private readonly Subject<Unit> _flipAnimationHalfway = new();
         private readonly Subject<Unit> _flipAnimationCompleted = new();
         private CompositeDisposable _disposables = new();
@@ -28,7 +27,6 @@ namespace Tetrage.UI
 
             _flipAnimationCompleted.OnCompleted();
             _flipAnimationHalfway.OnCompleted();
-            _clicked.OnCompleted();
             _destroyed.OnCompleted();
 
             _disposables.Dispose();
@@ -39,6 +37,7 @@ namespace Tetrage.UI
         [Header("Visual Components")]
         [SerializeField] private SpriteRenderer spriteRenderer;
         [SerializeField] private Animator animator;
+        [SerializeField] private ClickableMB cardClickableMB;
 
         [Header("Card Data")]
         [SerializeField] private CardImageMapper cardImageMapper;
@@ -62,6 +61,7 @@ namespace Tetrage.UI
         private Suit _currentSuit;
         private int _currentNumber;
         private List<GameObject> _suitBackImages = new List<GameObject>();
+        private EventTrigger _eventTrigger;
         private bool _isFlipAnimationInProgress = false;
         public bool IsFlipAnimationInProgress => _isFlipAnimationInProgress;
         #endregion
@@ -100,19 +100,9 @@ namespace Tetrage.UI
 
         #region Events
 
-        public Observable<Unit> Clicked => _clicked;
+        public Observable<Unit> Clicked => cardClickableMB.Clicked;
         public Observable<Unit> FlipAnimationHalfway => _flipAnimationHalfway;
         public Observable<Unit> FlipAnimationCompleted => _flipAnimationCompleted;
-
-        #endregion
-
-        #region Click Handling
-
-        public void OnPointerClick(PointerEventData e)
-        {
-            Debug.Log($"CardView: OnPointerClick {e.pointerId}");
-            _clicked.OnNext(Unit.Default);
-        }
 
         #endregion
 
@@ -353,6 +343,12 @@ namespace Tetrage.UI
             if (spadeBackSprite == null || heartBackSprite == null || diamondBackSprite == null || clubBackSprite == null)
             {
                 Debug.LogError($"{name}: SuitBackImages（Spade/Heart/Diamond/Club）が設定されていません。", this);
+                isValid = false;
+            }
+
+            if (cardClickableMB == null)
+            {
+                Debug.LogError($"{name}: CardClickableMB が設定されていません。", this);
                 isValid = false;
             }
 
