@@ -6,6 +6,7 @@ using System.Linq;
 using System;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Ids;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Models
 {
@@ -28,6 +29,11 @@ namespace Tetrage.Models
 
         // 束の名称
         public string Name { get; }
+
+        /// <summary>
+        /// カードパイルの種類
+        /// </summary>
+        public CardPileType Type { get; private set;} = CardPileType.Basic;
 
 
         // IEnumerableを実装するためのメンバその１：IEnumerator<T> を返す GetEnumerator()
@@ -77,7 +83,7 @@ namespace Tetrage.Models
 
         internal void NotifyCardsInitialized()
         {
-            UnityEngine.Debug.Log($"CardPile: NotifyCardsInitialized {Name}");
+            // UnityEngine.Debug.Log($"CardPile: NotifyCardsInitialized {Name}");
             CardsInitialized?.Invoke(_cards);
         }
         /*
@@ -101,10 +107,11 @@ namespace Tetrage.Models
         /// </summary>
         /// <param name="id">束のID（未設定相当は PileId(0) を使用可）</param>
         /// <param name="name">束の名前（デバッグ用）</param>
+        /// <param name="type">束の種類</param>
         /// <param name="initialCards">初期に含めるカードのコレクション</param>
         /// <param name="maxCount">この束の最大枚数</param>
-        public CardPile(PileId id, string name, IEnumerable<Card> initialCards, int maxCount = int.MaxValue)
-            : this(id, name, maxCount)
+        public CardPile(PileId id, string name, IEnumerable<Card> initialCards, CardPileType type = CardPileType.Basic, int maxCount = int.MaxValue)
+            : this(id, name, type, maxCount)
         {
             if (initialCards == null) return;
 
@@ -122,15 +129,14 @@ namespace Tetrage.Models
         }
 
 
-        // 旧: ID省略コンストラクタは廃止（ID必須化）
-
         /// <summary>
-        /// ID付きコンストラクタ（推奨）
+        /// 初期カードなしのカードパイルを生成
         /// </summary>
-        public CardPile(PileId id, string name, int maxCount = int.MaxValue)
+        public CardPile(PileId id, string name, CardPileType type = CardPileType.Basic, int maxCount = int.MaxValue)
         {
             Id = id;
             Name = name;
+            Type = ResolveCardPileType(type, id);
             // カードの束の上限が負だった場合、規定値に設定
             if (maxCount < 0)
             {
@@ -143,6 +149,50 @@ namespace Tetrage.Models
             }
             _cards = new List<Card>(); // ここで実際にカードの束が代入される
         }
+
+        #region Type Resolution
+        /// <summary>
+        /// TypeがBasicのまま渡された場合、PileId規約から実際の種類を補完します。
+        /// </summary>
+        private static CardPileType ResolveCardPileType(CardPileType type, PileId id)
+        {
+            if (type != CardPileType.Basic)
+            {
+                return type;
+            }
+
+            if (id.Equals(PileIds.Stack))
+            {
+                return CardPileType.Stack;
+            }
+
+            if (id.Equals(PileIds.Trash))
+            {
+                return CardPileType.Trash;
+            }
+
+            int pileIdValue = id.Value;
+            int offset = SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET;
+
+            // プレイヤー固有ID帯: Hands(1000+id), Target(2000+id), Tmp(3000+id)
+            if (pileIdValue >= offset + 2000 && pileIdValue < offset + 3000)
+            {
+                return CardPileType.Tmp;
+            }
+
+            if (pileIdValue >= offset + 1000 && pileIdValue < offset + 2000)
+            {
+                return CardPileType.Target;
+            }
+
+            if (pileIdValue >= offset && pileIdValue < offset + 1000)
+            {
+                return CardPileType.Hands;
+            }
+
+            return CardPileType.Basic;
+        }
+        #endregion
 
 
 
@@ -314,7 +364,13 @@ namespace Tetrage.Models
                     from.Add(card);
                     return false;
                 }
+
+                // 移動後のカード状態をログ出力する(Debug用)
+                card.LogStateOnPileTransfer(from.Id, to.Id);
+
                 // 移動完了通知
+                // 移動元/移動先の両方に通知し、View側の入出場処理（親付け替え・復元）を整合させる。
+                from.NotifyCardTransferred(card, from, to);
                 to.NotifyCardTransferred(card, from, to);
                 return true;
             }

@@ -59,7 +59,7 @@ namespace Tetrage.Tests.Editor
 
         private static IPlayer CreatePlayer(Suit targetSuit)
         {
-            var targetCard = new Card(new CardId(1), targetSuit, 1, isVisible: false);
+            var targetCard = new Card(new CardId(1), targetSuit, 1, isFaceUp: false);
             var targetPile = new CardPile(
                 PileIds.PlayerTarget(1),
                 "Target-1",

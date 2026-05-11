@@ -49,7 +49,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(CardVisibilityChangedEvent e)
+        public void Apply(CardSideChangedEvent e)
         {
             if (!ShouldApply(e.sequence)) return;
 

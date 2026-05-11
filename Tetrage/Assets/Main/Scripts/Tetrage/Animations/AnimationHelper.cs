@@ -43,6 +43,7 @@ namespace Tetrage.Animations
             }
         }
 
+
         /// <summary>
         /// 指定されたGameObjectをA地点からB地点までイージングをかけて移動させます
         /// Time.timeScaleに依存しない実装（unscaledDeltaTimeを使用）
@@ -78,6 +79,32 @@ namespace Tetrage.Animations
             if (target != null)
             {
                 target.transform.position = endPosition;
+            }
+        }
+
+        public static async UniTask ScaleTo(GameObject target, Vector3 startScale, Vector3 endScale, float duration = 1.0f){
+            if (target == null) return;
+
+            float elapsedTime = 0f;
+            target.transform.localScale = startScale;
+
+            while (elapsedTime < duration)
+            {
+                if (target == null) return;
+
+                elapsedTime += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsedTime / duration);
+
+                // 補間でサイズを計算
+                target.transform.localScale = Vector3.Lerp(startScale, endScale, t);
+
+                await UniTask.Yield();
+            }
+
+            // 確実に終了スケールを適用
+            if (target != null)
+            {
+                target.transform.localScale = endScale;
             }
         }
     }

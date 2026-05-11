@@ -22,6 +22,10 @@ namespace Tetrage.Core.Ids
         public static PileId PlayerTarget(int playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 1000 + playerId);
         /// <summary>各プレイヤーの一時置き場</summary>
         public static PileId PlayerTmp(int playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 2000 + playerId);
+
+        public static PileId PlayerHands(PlayerId playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + playerId.Value);
+        public static PileId PlayerTarget(PlayerId playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 1000 + playerId.Value);
+        public static PileId PlayerTmp(PlayerId playerId) => new PileId(SettingConsts.DEFAULT_CARD_PILE_ID_OFFSET + 2000 + playerId.Value);
         #endregion
     }
 }

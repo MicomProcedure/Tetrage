@@ -31,7 +31,7 @@ namespace Tetrage.Tests.Editor
             Assert.NotNull(card);
             Assert.AreEqual(suit, card.Suit);
             Assert.AreEqual(number, card.Number);
-            Assert.IsFalse(card.IsVisible, "初期表示は裏向き(false)であるべき");
+            Assert.IsFalse(card.IsFaceUp, "初期表示は裏向き(false)であるべき");
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace Tetrage.Tests.Editor
             {
                 Assert.AreEqual(expected[i].suit, cards[i].Suit);
                 Assert.AreEqual(expected[i].number, cards[i].Number);
-                Assert.IsFalse(cards[i].IsVisible, "生成されたカードはすべて裏向き(false)であるべき");
+                Assert.IsFalse(cards[i].IsFaceUp, "生成されたカードはすべて裏向き(false)であるべき");
             }
         }
 

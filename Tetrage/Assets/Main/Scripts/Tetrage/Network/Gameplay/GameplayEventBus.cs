@@ -17,7 +17,7 @@ namespace Tetrage.Network.Gameplay
         Observable<DomainEvents.TurnEndedEvent> TurnEnded { get; }
         Observable<DomainEvents.ListOrderDeclaredEvent> ListOrderDeclared { get; }
         Observable<DomainEvents.CardMovedEvent> CardMoved { get; }
-        Observable<DomainEvents.CardVisibilityChangedEvent> CardVisibilityChanged { get; }
+        Observable<DomainEvents.CardSideChangedEvent> CardVisibilityChanged { get; }
         Observable<DomainEvents.PileShuffledEvent> PileShuffled { get; }
         Observable<DomainEvents.ActionRequestedEvent> ActionRequested { get; }
         Observable<DomainEvents.ActionResultEvent> ActionResult { get; }
@@ -33,7 +33,7 @@ namespace Tetrage.Network.Gameplay
         void Publish(DomainEvents.TurnEndedEvent e);
         void Publish(DomainEvents.ListOrderDeclaredEvent e);
         void Publish(DomainEvents.CardMovedEvent e);
-        void Publish(DomainEvents.CardVisibilityChangedEvent e);
+        void Publish(DomainEvents.CardSideChangedEvent e);
         void Publish(DomainEvents.PileShuffledEvent e);
         void Publish(DomainEvents.ActionRequestedEvent e);
         void Publish(DomainEvents.ActionResultEvent e);
@@ -58,7 +58,7 @@ namespace Tetrage.Network.Gameplay
         private readonly Subject<DomainEvents.TurnEndedEvent> _turnEnded = new();
         private readonly Subject<DomainEvents.ListOrderDeclaredEvent> _listOrderDeclared = new();
         private readonly Subject<DomainEvents.CardMovedEvent> _cardMoved = new();
-        private readonly Subject<DomainEvents.CardVisibilityChangedEvent> _cardVisibilityChanged = new();
+        private readonly Subject<DomainEvents.CardSideChangedEvent> _cardVisibilityChanged = new();
         private readonly Subject<DomainEvents.PileShuffledEvent> _pileShuffled = new();
         private readonly Subject<DomainEvents.ActionRequestedEvent> _actionRequested = new();
         private readonly Subject<DomainEvents.ActionResultEvent> _actionResult = new();
@@ -74,7 +74,7 @@ namespace Tetrage.Network.Gameplay
         public Observable<DomainEvents.TurnEndedEvent> TurnEnded => _turnEnded;
         public Observable<DomainEvents.ListOrderDeclaredEvent> ListOrderDeclared => _listOrderDeclared;
         public Observable<DomainEvents.CardMovedEvent> CardMoved => _cardMoved;
-        public Observable<DomainEvents.CardVisibilityChangedEvent> CardVisibilityChanged => _cardVisibilityChanged;
+        public Observable<DomainEvents.CardSideChangedEvent> CardVisibilityChanged => _cardVisibilityChanged;
         public Observable<DomainEvents.PileShuffledEvent> PileShuffled => _pileShuffled;
         public Observable<DomainEvents.ActionRequestedEvent> ActionRequested => _actionRequested;
         public Observable<DomainEvents.ActionResultEvent> ActionResult => _actionResult;
@@ -135,10 +135,10 @@ namespace Tetrage.Network.Gameplay
             LogPublish($"R3EventBus: CardMoved published, Sequence={e.Sequence}, CardId={e.CardId}, From={e.FromPileId}, To={e.ToPileId}");
         }
 
-        public void Publish(DomainEvents.CardVisibilityChangedEvent e)
+        public void Publish(DomainEvents.CardSideChangedEvent e)
         {
             _cardVisibilityChanged.OnNext(e);
-            LogPublish($"R3EventBus: CardVisibilityChanged published, Sequence={e.Sequence}, CardId={e.CardId}, IsVisible={e.IsVisible}");
+            LogPublish($"R3EventBus: CardVisibilityChanged published, Sequence={e.Sequence}, CardId={e.CardId}, IsVisible={e.IsFaceUp}");
         }
 
         public void Publish(DomainEvents.PileShuffledEvent e)

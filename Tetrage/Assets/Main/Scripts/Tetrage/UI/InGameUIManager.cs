@@ -1,5 +1,6 @@
 using UnityEngine;
 using Tetrage.Core;
+using Tetrage.Core.Constants;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
@@ -10,6 +11,7 @@ using Tetrage.Core.Actions;
 using R3;
 using Tetrage.Services;
 using Tetrage.Core.Ids;
+using Cysharp.Threading.Tasks;
 using DomainEvents = Tetrage.Core.Events;
 using NetworkDto = Tetrage.Network.Gameplay;
 
@@ -25,13 +27,13 @@ namespace Tetrage.Managers
 		[Header("UI Controllers")]
 		[SerializeField] private PlayerUIPanelManager _playerUIPanelManager;
 		[SerializeField] private ActionPanelController _actionPanelController;
-		[SerializeField] private GameStartAnimation _gameStartAnimation;
 		[SerializeField] private ScanPhaseUI _ScanUIController;
 		[SerializeField] private ResultUI _resultUI;
 		[SerializeField] private InGameNavigation _inGameNavigation;
 		[SerializeField] private InGameLoadingUI _loadingUI;
 		[Header("Animations")]
 		[SerializeField] private CutInAnimationController _TetrageSoloCutInAnimCtl;
+		[SerializeField] private GameStartAnimation _gameStartAnimation;
 
 		#endregion
 		#region Private Fields
@@ -42,8 +44,10 @@ namespace Tetrage.Managers
 		private IGameplayNetworkController _gameplayNetwork;
 		private bool _scanOwnTargetConfirmed;
 		private bool _scanOpponentSelected;
+		private bool _scanOpponentSuitRevealed;
 		private bool _scanSelectionSent;
 		private PlayerId _scanSelectedTargetPlayerId;
+		private Suit _scanSelectedTargetSuit;
 		#endregion
 
 		#region Public API
@@ -132,6 +136,11 @@ namespace Tetrage.Managers
 				.Subscribe(OnTurnStarted)
 				.AddTo(_disposables);
 
+            _events.ListOrderDeclared
+                .Select(e => e as DomainEvents.ListOrderDeclaredEvent<PlayerId>)
+                .Subscribe(OnListOrderDeclared)
+                .AddTo(_disposables);
+
 			_events.FinishingGame
 				.Subscribe(OnFinishingGame)
 				.AddTo(_disposables);
@@ -166,10 +175,22 @@ namespace Tetrage.Managers
 		private void OnGameStarted(DomainEvents.GameStartedEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnGameStarted");
-			if (_playerUIPanelManager != null && _gameContext?.CurrentPlayer != null)
+			if (_playerUIPanelManager == null)
 			{
-				_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
-				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.PlayerId);
+				Debug.LogError("InGameUIManager: PlayerUIPanelManager が未設定のため GameStarted 時の PlayerUI 更新をスキップします。");
+				return;
+			}
+
+			if (_gameContext?.Players == null)
+			{
+				Debug.LogError("InGameUIManager: Players が未設定のため GameStarted 時の PlayerUI 更新をスキップします。");
+				return;
+			}
+
+
+			if (_gameContext?.CurrentPlayer != null)
+			{
+				_playerUIPanelManager.SetCurrentPlayer(_gameContext.CurrentPlayer.Id); // 現在のプレイヤーをハイライトする。
 			}
 
 		}
@@ -179,7 +200,7 @@ namespace Tetrage.Managers
 			Debug.Log($"InGameUIManager: OnTurnStarted, currentPlayerId: {e.CurrentPlayerId}");
 			if (_playerUIPanelManager == null) return;
 			// DomainEventのCurrentPlayerIdを使ってハイライト（intに変換）
-			_playerUIPanelManager.SetCurrentPlayer(e.CurrentPlayerId.Value);
+			_playerUIPanelManager.SetCurrentPlayer(e.CurrentPlayerId);
 
 			// ScanPhase あり: OnScanPhaseEnded で既に有効化済み。スキップ時は ScanPhaseEnded が来ないためここで有効化する
 			SetActionPanelActive(true);
@@ -231,7 +252,15 @@ namespace Tetrage.Managers
 			SetLoadingUIActive(false);	// ローディングUIを非表示
 			SetInGameNavigationActive(false);
 			ResetScanSelectionState();
+			_playerUIPanelManager.SetupPanels();	// PlayerUIパネルを初期化する。
+			// Instantiate 直後・Photon の FixedUpdate 内では Canvas / PlayerUI.Start より先にここへ来るため、レイアウト確定後に同期する。
 			_ScanUIController?.ApplyScanPhaseStarted(e);
+		}
+
+		private async void OnListOrderDeclared(DomainEvents.ListOrderDeclaredEvent e){
+			await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+			await UniTask.Delay(100);
+			RefreshTargetPileViewsAfterUILayoutAsync().Forget();	// ターン順序決定時にTargetカード山ビューの表示位置を再同期する。
 		}
 
 		private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
@@ -268,6 +297,8 @@ namespace Tetrage.Managers
 			SetInGameNavigationActive(false);
 
 			SetLoadingUIActive(true);	// ローディングUIを表示
+
+			Debug.Log("InGameUIManager: ApplyInitialHudVisibility");
 		}
 
 		private static void SetUIRootActive(MonoBehaviour component, bool active)
@@ -288,18 +319,56 @@ namespace Tetrage.Managers
 		private void SetResultUIActive(bool active) => SetUIRootActive(_resultUI, active);
 		private void SetLoadingUIActive(bool active) => SetUIRootActive(_loadingUI, active);
 
+		/// <summary>
+		/// PlayerUI側の配置確定後にTargetカード山ビューの表示位置を再同期する。
+		/// </summary>
+		/// <summary>
+		/// RectTransform の最終座標が確定した後に Target 山とマーカーを同期する。
+		/// </summary>
+		private async UniTaskVoid RefreshTargetPileViewsAfterUILayoutAsync()
+		{
+			Canvas.ForceUpdateCanvases();
+			// SetupPanels 直後は同一フレーム内で PlayerUI.Start やレイアウトより先に実行されることがあるため、少なくとも 1 フレーム待つ。
+			await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate, cancellationToken: this.GetCancellationTokenOnDestroy());
+			Canvas.ForceUpdateCanvases();
+			RefreshTargetPileViews();
+		}
+
+		private void RefreshTargetPileViews()
+		{
+			if (_playerUIPanelManager == null)
+			{
+				Debug.LogWarning("InGameUIManager: _playerUIPanelManager is null");
+				return;
+			}
+
+			var targetPileViews = FindObjectsByType<TargetSyncUIPileView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+			for (int i = 0; i < targetPileViews.Length; i++)
+			{
+				// TargetSyncUIPileViewに保持したPlayerIdを使って、Manager側へ登録する。
+				if (!targetPileViews[i].TryGetOwnerPlayerId(out PlayerId? playerId))
+				{
+					Debug.LogWarning("InGameUIManager: targetPileViews[i].TryGetOwnerPlayerId failed");
+					continue;
+				}
+
+				if (playerId == null)
+				{
+					Debug.LogWarning("InGameUIManager: playerId is null");
+					continue;
+				}
+
+				_playerUIPanelManager.RegisterTargetPileView((PlayerId)playerId, targetPileViews[i]);	// ここではPlayerIdはnullではないことが保証されているため、キャストは安全。
+			}
+
+			_playerUIPanelManager.RefreshAllTargetPileViewPositions();
+		
+		}
+
 		#endregion
 
 		#region ヘルパー
-		private List<PlayerInfo> CreatePlayerInfoList(IReadOnlyList<IPlayer> players)
-		{
-			var playerInfoList = new List<PlayerInfo>();
-			foreach (var player in players)
-			{
-				playerInfoList.Add(new PlayerInfo { Id = player.Id, UserId = player.UserId, PlayerType = PlayerType.Local, PlayerIconIndex = player.IconIndex });
-			}
-			return playerInfoList;
-		}
+
 
 		#endregion
 
@@ -402,6 +471,7 @@ namespace Tetrage.Managers
 				.AddTo(_disposables);
 			_actionPanelController.Initialize(_gameContext);
 			InitializePlayerUIPanels();
+			_playerUIPanelManager.Initialize(_gameContext);
 		}
 
 				/// <summary>
@@ -415,8 +485,7 @@ namespace Tetrage.Managers
 				return;
 			}
 
-			Debug.Log($"InGameUIManager: Initialize時にPlayerUIパネルをセットアップします（プレイヤー数: {_gameContext.Players.Count}）");
-			_playerUIPanelManager.SetupPanels(CreatePlayerInfoList(_gameContext.Players));
+			// PlayerUI は GameStarted / ScanPhaseStarted で SetupPanels される。この時点ではパネルが無く Refresh は無意味なため行わない。
 		}
 		#endregion
 
@@ -441,6 +510,12 @@ namespace Tetrage.Managers
 				return;
 			}
 
+			if (!_scanOpponentSuitRevealed)
+			{
+				RevealSelectedOpponentTargetSuit();
+				return;
+			}
+
 			if (!TrySendScanTargetSelected())
 			{
 				return;
@@ -449,8 +524,9 @@ namespace Tetrage.Managers
 			_scanSelectionSent = true;
 			if (_inGameNavigation != null)
 			{
-				_inGameNavigation.SetNavigationText("他のプレイヤーを待っています...");
+				_inGameNavigation.SetNavigationText(InGameConsts.ScanPhaseNavigationText.WaitingOtherPlayers);
 			}
+			_ScanUIController?.SetNextButtonVisible(false);
 		}
 
 		private void EnterOpponentScanStep()
@@ -459,7 +535,7 @@ namespace Tetrage.Managers
 			SetInGameNavigationActive(true);
 			if (_inGameNavigation != null)
 			{
-				_inGameNavigation.SetNavigationText("次に、他の人のターゲットをスキャンします。好きな人のカードをタッチしてください");
+				_inGameNavigation.SetNavigationText(InGameConsts.ScanPhaseNavigationText.SelectOpponentTarget);
 			}
 			SubscribeOpponentTargetCardClicks();
 		}
@@ -502,13 +578,45 @@ namespace Tetrage.Managers
 
 		private void OnOpponentTargetSelected(PlayerId playerId, Suit suit)
 		{
+			if (_scanOpponentSuitRevealed || _scanSelectionSent)
+			{
+				return;
+			}
+
 			_scanSelectedTargetPlayerId = playerId;
+			_scanSelectedTargetSuit = suit;
 			_scanOpponentSelected = true;
 
 			if (_inGameNavigation != null)
 			{
-				_inGameNavigation.SetNavigationText($"{playerId.Value}Pのターゲットは{suit.GetKatakanaName()}です。ターゲットを覚えて、そのまま「Next」を押してください。");
+				int turnOrderNumber = _gameContext?.GetTurnOrderNumber(playerId) ?? 0;
+				_inGameNavigation.SetNavigationText(string.Format(
+					InGameConsts.ScanPhaseNavigationText.ConfirmOpponentTargetSuitFormat,
+					turnOrderNumber));
 			}
+		}
+
+		/// <summary>
+		/// 選択済みターゲットのスートをNext操作で初めて表示し、以降の再選択を受け付けない。
+		/// </summary>
+		private void RevealSelectedOpponentTargetSuit()
+		{
+			_scanOpponentSuitRevealed = true;
+			_scanTargetCardClickDisposables.Dispose();
+			_scanTargetCardClickDisposables = new();
+
+			if (_inGameNavigation == null)
+			{
+				return;
+			}
+
+			_inGameNavigation.SetNavigationText(string.Format(
+				InGameConsts.ScanPhaseNavigationText.OpponentTargetSuitRevealedFormat,
+				_gameContext?.GetTurnOrderNumber(_scanSelectedTargetPlayerId) ?? 0,
+				_scanSelectedTargetSuit.GetKatakanaName()));
+
+			// 選択したプレイヤーのパネルのTargetSuitをUI上で表示
+			_playerUIPanelManager.ShowPlayerTargetSuit(_scanSelectedTargetPlayerId, _scanSelectedTargetSuit);
 		}
 
 		private bool TrySendScanTargetSelected()
@@ -547,11 +655,14 @@ namespace Tetrage.Managers
 		{
 			_scanOwnTargetConfirmed = false;
 			_scanOpponentSelected = false;
+			_scanOpponentSuitRevealed = false;
 			_scanSelectionSent = false;
 			_scanSelectedTargetPlayerId = default;
+			_scanSelectedTargetSuit = default;
 			_scanTargetCardClickDisposables.Dispose();
 			_scanTargetCardClickDisposables = new();
 			_ScanUIController?.SetTargetConfirmationPanelVisible(true);
+			_ScanUIController?.SetNextButtonVisible(true);
 		}
 
 

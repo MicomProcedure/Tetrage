@@ -1,4 +1,5 @@
 using R3;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Core.Enums;
@@ -8,13 +9,17 @@ using Tetrage.Network.Gameplay;
 using UnityEngine;
 using DomainEvents = Tetrage.Core.Events;
 using Tetrage.Core.Contracts;
+using Tetrage.Extentions;
+using Cysharp.Threading.Tasks;
+using Tetrage.Services;
+
 namespace Tetrage.Core
 {
     /// <summary>
     /// DomainEventを購読し、ドメインロジック（モデル更新）を実行するハンドラ。
     /// NetworkEventApplierから責務を分離。
     /// </summary>
-    public sealed class GameplayDomainEventHandler
+    public sealed class GameplayDomainEventHandler : IDisposable
     {
         private readonly IdRegistry<CardId, Card> _cardRegistry;
         private readonly IdRegistry<PileId, CardPile> _pileRegistry;
@@ -25,7 +30,6 @@ namespace Tetrage.Core
         private readonly SequenceService _sequence;
         private readonly bool _isHost;
         private CompositeDisposable _disposables = new();
-        private bool _isScanPhaseActive;
         private IReadOnlyList<PlayerId> _pendingWinnerPlayerIds = new List<PlayerId>();
 
         // 受信したプレイヤーの並び順（GameStartedで確定）
@@ -83,7 +87,8 @@ namespace Tetrage.Core
                 .AddTo(_disposables);
 
             eventBus.ListOrderDeclared
-                .Subscribe(OnListOrderDeclared)
+                .Select(e => e as DomainEvents.ListOrderDeclaredEvent<PlayerId>)
+                .Subscribe(PlayerOrderUpdate)
                 .AddTo(_disposables);
 
             eventBus.ActionResult
@@ -127,30 +132,30 @@ namespace Tetrage.Core
 
         private void OnGameStarted(DomainEvents.GameStartedEvent e)
         {
-            // GameContextのターンインデックスをリセット
-            _gameContext?.ResetTurnIndexInternal();
+            // // GameContextのターンインデックスをリセット
+            // _gameContext?.ResetTurnIndexInternal();
 
-            if (e.PlayerIds == null || e.PlayerIds.Count == 0)
-            {
-                return;
-            }
+            // if (e.PlayerIds == null || e.PlayerIds.Count == 0)
+            // {
+            //     return;
+            // }
 
-            // プレイヤー順序を確定
-            var ordered = new List<Player>(e.PlayerIds.Count);
-            foreach (var playerId in e.PlayerIds)
-            {
-                if (_playerRegistry.TryGet(playerId, out var player))
-                {
-                    ordered.Add(player);
-                }
-                else
-                {
-                    Debug.LogWarning($"GameplayDomainEventHandler: PlayerId {playerId} が見つかりません");
-                }
-            }
+            // // プレイヤー順序を確定
+            // var ordered = new List<Player>(e.PlayerIds.Count);
+            // foreach (var playerId in e.PlayerIds)
+            // {
+            //     if (_playerRegistry.TryGet(playerId, out var player))
+            //     {
+            //         ordered.Add(player);
+            //     }
+            //     else
+            //     {
+            //         Debug.LogWarning($"GameplayDomainEventHandler: PlayerId {playerId} が見つかりません");
+            //     }
+            // }
 
-            OrderedPlayers = ordered;
-            _gameContext?.SetPlayersInternal(ordered);
+            // OrderedPlayers = ordered;
+            // _gameContext?.SetPlayersInternal(ordered);
         }
 
         private void OnTurnStarted(DomainEvents.TurnStartedEvent e)
@@ -178,7 +183,7 @@ namespace Tetrage.Core
 
         private void OnCardMoved(DomainEvents.CardMovedEvent e)
         {
-            Debug.Log($"GameplayDomainEventHandler: OnCardMoved呼び出し - CardId={e.CardId}, FromPileId={e.FromPileId}, ToPileId={e.ToPileId}, Sequence={e.Sequence}");
+            // Debug.Log($"GameplayDomainEventHandler: OnCardMoved呼び出し - CardId={e.CardId}, FromPileId={e.FromPileId}, ToPileId={e.ToPileId}, Sequence={e.Sequence}");
 
             // カードとパイルを取得
             if (!_cardRegistry.TryGet(e.CardId, out var card))
@@ -217,13 +222,38 @@ namespace Tetrage.Core
                 return;
             }
 
-            Debug.Log($"GameplayDomainEventHandler: カード移動を実行 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
-            // カード移動を実行
-            CardPile.TransferService.Transfer(fromPile, toPile, card);
-            Debug.Log($"GameplayDomainEventHandler: カード移動完了 - FromPile.Cards.Count={fromPile.Cards.Count}, ToPile.Cards.Count={toPile.Cards.Count}");
+            // Debug.Log($"GameplayDomainEventHandler: カード移動を実行 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
+            // カード移動が失敗した場合は、以降の表示状態更新も行わない。
+            if (!CardPile.TransferService.Transfer(fromPile, toPile, card))
+            {
+                return;
+            }
+
+            UpdateFaceUpStateForTmpTransition(fromPile, toPile, card);
+
+            if (_gameContext.UserPlayer != null)
+            {
+                var userTmpPileId = PileIds.PlayerTmp(_gameContext.UserPlayer.Id);
+                var userHandsPileId = PileIds.PlayerHands(_gameContext.UserPlayer.Id);
+
+                // UserPlayerのHandsに入ったときはスート可視を有効化
+                if (toPile.Id.Equals(userHandsPileId))
+                {
+                    card.SetSuitVisible(true);
+                }
+
+                // UserPlayerのHandsから出るときはスート可視を無効化
+                if (fromPile.Id.Equals(userHandsPileId) && !toPile.Id.Equals(userHandsPileId))
+                {
+                    card.SetSuitVisible(false);
+                }
+
+                Debug.Log(
+                    $"<color=red>GameplayDomainEventHandler: カード移動完了 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}, UserPlayerTmp={userTmpPileId}, UserPlayerHands={userHandsPileId}");
+            }
         }
 
-        private void OnCardVisibilityChanged(DomainEvents.CardVisibilityChangedEvent e)
+        private void OnCardVisibilityChanged(DomainEvents.CardSideChangedEvent e)
         {
             if (!_cardRegistry.TryGet(e.CardId, out var card))
             {
@@ -232,11 +262,55 @@ namespace Tetrage.Core
             }
 
             // 可視性が変更されていればFlip
-            if (card.IsVisible != e.IsVisible)
+            if (card.IsFaceUp != e.IsFaceUp)
             {
                 card.Flip();
             }
         }
+
+        #region Tmp FaceUp Control
+        /// <summary>
+        /// Tmp 入退場時の表裏状態を更新します。
+        /// </summary>
+        private static void UpdateFaceUpStateForTmpTransition(CardPile from, CardPile to, Card card)
+        {
+            var isMovingIntoTmp = !IsTmpPile(from) && IsTmpPile(to);
+            if (isMovingIntoTmp)
+            {
+                // Tmp に入るカードは常に表向きにする。
+                SetFaceUp(card, isFaceUp: true);
+                return;
+            }
+
+            var isMovingOutFromTmp = IsTmpPile(from) && !IsTmpPile(to);
+            if (isMovingOutFromTmp)
+            {
+                // Tmp から出るカードは常に裏向きにする。
+                SetFaceUp(card, isFaceUp: false);
+            }
+        }
+
+        /// <summary>
+        /// カードの表裏が指定値と異なる場合だけ反転します。
+        /// </summary>
+        private static void SetFaceUp(Card card, bool isFaceUp)
+        {
+            if (card.IsFaceUp == isFaceUp)
+            {
+                return;
+            }
+
+            card.Flip();
+        }
+
+        /// <summary>
+        /// 指定したパイルが Tmp かどうかを判定します。
+        /// </summary>
+        private static bool IsTmpPile(CardPile pile)
+        {
+            return pile != null && pile.Type == CardPileType.Tmp;
+        }
+        #endregion
 
         private void OnPileShuffled(DomainEvents.PileShuffledEvent e)
         {
@@ -250,18 +324,21 @@ namespace Tetrage.Core
             pile.RandomShuffle(e.Seed);
         }
 
-        private void OnListOrderDeclared(DomainEvents.ListOrderDeclaredEvent e)
+        private void PlayerOrderUpdate(DomainEvents.ListOrderDeclaredEvent e)
         {
             // プレイヤー手番の宣言であれば、OrderedPlayersを更新
-            if (e.IdKind == ListOrderIdKind.PlayerId && e.ListKey == ListOrderKey.TurnOrder)
+            if (e.ListKey == ListOrderKey.TurnOrder && e is DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent)
             {
-                var ordered = new List<Player>(e.OrderedIds.Count);
-                foreach (var id in e.OrderedIds)
+                var ordered = new List<Player>(playerOrderEvent.OrderedIds.Count);
+                foreach (var playerId in playerOrderEvent.OrderedIds)
                 {
-                    var playerId = new PlayerId(id);
                     if (_playerRegistry.TryGet(playerId, out var player))
                     {
                         ordered.Add(player);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"GameplayDomainEventHandler: ListOrderDeclaredでPlayerId {playerId} が見つかりません");
                     }
                 }
 
@@ -270,6 +347,102 @@ namespace Tetrage.Core
                     OrderedPlayers = ordered;
                     _gameContext?.SetPlayersInternal(ordered);
                 }
+            }
+
+            // プレイヤー順序が更新されたら、プレイヤーのビュー位置を更新する
+            PlayerViewPositionUpdate(e);
+            
+        }
+
+        /// <summary>
+        /// ターン順序決定時にUserPlayerを中心にプレイヤーのビュー位置を更新する
+        /// </summary>
+        /// <param name="e">ListOrderDeclaredEvent</param>
+        private void PlayerViewPositionUpdate(DomainEvents.ListOrderDeclaredEvent e)
+        {
+            if (e is not DomainEvents.ListOrderDeclaredEvent<PlayerId> playerOrderEvent)
+            {
+                Debug.LogError($"GameplayDomainEventHandler: ListOrderDeclaredEvent が PlayerId ではありません");
+                return;
+            }
+
+            Debug.Log($"<color=green>GameplayDomainEventHandler: PlayerViewPositionUpdate呼び出し - ListOrderDeclaredEvent={e}</color>");
+
+            var orderedPlayerIds = playerOrderEvent.OrderedIds;
+            if (orderedPlayerIds == null || orderedPlayerIds.Count == 0)
+            {
+                Debug.LogError($"GameplayDomainEventHandler: OrderedPlayerIds が null または空です");
+                return;
+            }
+
+            var userPlayerId = _gameContext.UserPlayer.Id;
+            if (!orderedPlayerIds.Contains(userPlayerId))
+            {
+                Debug.LogError($"GameplayDomainEventHandler: UserPlayerId {userPlayerId} が ListOrderDeclaredEvent に含まれていません");
+                return;
+            }
+
+            // orderedPlayerIds を userPlayerId を中心に回転させる（ユーザーがindex 0 になるように）
+            var rotatedPlayerIds = orderedPlayerIds.RotateFrom(userPlayerId);
+            Debug.Log(
+                $"<color=green>GameplayDomainEventHandler: TurnOrder解析 ordered=[{string.Join(",", orderedPlayerIds.Select(id => id.Value))}] " +
+                $"rotated=[{string.Join(",", rotatedPlayerIds.Select(id => id.Value))}] user={userPlayerId.Value}</color>");
+
+            var playerViewsByPlayerId = new Dictionary<PlayerId, GameObject>(orderedPlayerIds.Count);
+            for (int i = 0; i < orderedPlayerIds.Count; i++)
+            {
+                var playerId = orderedPlayerIds[i];
+                var playerView = GameObject.Find($"PlayerView_{playerId.Value}");
+                if (playerView == null)
+                {
+                    Debug.LogWarning($"GameplayDomainEventHandler: PlayerView_{playerId.Value} がシーンから見つかりません");
+                    return;
+                }
+
+                playerViewsByPlayerId[playerId] = playerView;
+            }
+
+            // 再配置前の各PlayerViewの位置・兄弟順を記録する（UIとの突き合わせ用）。
+            var beforeStates = new List<string>(orderedPlayerIds.Count);
+            for (int i = 0; i < orderedPlayerIds.Count; i++)
+            {
+                var playerId = orderedPlayerIds[i];
+                var transform = playerViewsByPlayerId[playerId].transform;
+                beforeStates.Add(
+                    $"P{playerId.Value}:sib={transform.GetSiblingIndex()},local={transform.localPosition},world={transform.position}");
+            }
+            Debug.Log($"GameplayDomainEventHandler: PlayerView再配置前 {string.Join(" | ", beforeStates)}");
+
+            var reorderedPlayerViews = new List<GameObject>(rotatedPlayerIds.Count);
+            for (int i = 0; i < rotatedPlayerIds.Count; i++)
+            {
+                var targetPlayerId = rotatedPlayerIds[i];
+                if (!playerViewsByPlayerId.TryGetValue(targetPlayerId, out var targetView))
+                {
+                    Debug.LogError($"GameplayDomainEventHandler: PlayerView_{targetPlayerId.Value} の対応が見つかりません");
+                    return;
+                }
+
+                reorderedPlayerViews.Add(targetView);
+            }
+
+            // 兄弟順スロットのローカル配置を、rotated順のPlayerViewへ再割り当てする。
+            if (!TransformReorderPlacementService.TryReassignLocalPlacementsBySiblingOrder(reorderedPlayerViews))
+            {
+                Debug.LogError("GameplayDomainEventHandler: PlayerView位置の再割り当てに失敗しました");
+            }
+            else
+            {
+                var afterStates = new List<string>(orderedPlayerIds.Count);
+                for (int i = 0; i < orderedPlayerIds.Count; i++)
+                {
+                    var playerId = orderedPlayerIds[i];
+                    var transform = playerViewsByPlayerId[playerId].transform;
+                    afterStates.Add(
+                        $"P{playerId.Value}:sib={transform.GetSiblingIndex()},local={transform.localPosition},world={transform.position}");
+                }
+
+                Debug.Log($"GameplayDomainEventHandler: PlayerView再配置後 {string.Join(" | ", afterStates)}");
             }
         }
 
@@ -285,7 +458,7 @@ namespace Tetrage.Core
                         {
                             if (_cardRegistry.TryGet(cardId, out var card))
                             {
-                                if (!card.IsVisible)
+                                if (!card.IsFaceUp)
                                 {
                                     card.Flip();
                                 }
@@ -325,13 +498,11 @@ namespace Tetrage.Core
 
         private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)
         {
-            _isScanPhaseActive = true;
             Debug.Log($"GameplayDomainEventHandler: ScanPhase開始（Host={_isHost}）。対象選択は ScanPhaseUI から ScanTargetSelected を送信する。");
         }
 
         private void OnScanPhaseEnded(DomainEvents.ScanPhaseEndedEvent e)
         {
-            _isScanPhaseActive = false;
             Debug.Log("GameplayDomainEventHandler: ScanPhase終了");
         }
 
@@ -356,7 +527,6 @@ namespace Tetrage.Core
 
         private void OnGameEnded(DomainEvents.GameEndedEvent e)
         {
-            _isScanPhaseActive = false;
             _pendingWinnerPlayerIds = e.WinnerPlayerIds ?? _pendingWinnerPlayerIds;
             Debug.Log($"GameplayDomainEventHandler: GameEnded受信 勝者数={_pendingWinnerPlayerIds?.Count ?? 0}");
             // 結果UIは InGameUIManager（FinishingGame）→ ResultUI。タイトルへは ResultUI から ApplicationManager.GoToTitle。

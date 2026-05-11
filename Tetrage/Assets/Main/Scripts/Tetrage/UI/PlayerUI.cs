@@ -1,260 +1,312 @@
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using TMPro;
 using Tetrage.Core.DTO;
+using Tetrage.Core.Contracts;
+using Tetrage.Core.Ids;
+using Tetrage.Services;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using Tetrage.Core.Enums;
 
 namespace Tetrage.UI
 {
     [RequireComponent(typeof(RectTransform))]
-    public class PlayerUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class PlayerUI : MonoBehaviour
     {
         #region Serialized Fields
         
         [Header("UI References")]
-        [SerializeField] private Image iconImage;
-        [SerializeField] private TextMeshProUGUI playerNameText;
-        [SerializeField] private Sprite[] availableIcons;
+        [SerializeField] private ProfileDisplayView profileDisplayView;
         
         [Header("Optional")]
         [SerializeField] private TextMeshProUGUI playerNumberText;
-        [SerializeField] private TextMeshProUGUI currentplayerText;
-        
-        [Header("Drag Settings")]
-        [SerializeField] private bool isDraggable = false;  // ドラッグ可能かどうか
-        [SerializeField] private bool savePositionOnDrag = true;  // ドラッグ後の位置を保存するか
-        
+        [SerializeField] private GameObject turnMarker;
+        [SerializeField] private Transform targetMarkerTransform;
+        [SerializeField] private RectTransform targetPileMarker;
+        [SerializeField] private List<Image> targetSuitImages = new List<Image>();        
         #endregion
         
         #region Private Fields
         
-        private RectTransform _rectTransform;
-        private Canvas _canvas;
-        private Vector2 _originalPosition;
-        private Vector2 _dragOffset;
-        private int _playerId;
-        private PlayerUIPanelManager _manager;
-        
+        private PlayerId _playerId;
+        private int _iconIndex;
+        private TextMeshProUGUI _turnMarkerText;
+        private int _playerNumber;
         #endregion
         
         #region Unity Lifecycle
         
         private void Awake()
         {
-            _rectTransform = GetComponent<RectTransform>();
-            _canvas = GetComponentInParent<Canvas>();
-            _originalPosition = _rectTransform.anchoredPosition;
-            
+            EnsureProfileDisplayView();
+            CacheTurnMarkerText();
+
             // UI参照の検証
-            if (playerNameText == null)
+            if (profileDisplayView == null)
             {
-                Debug.LogError("[PlayerUI] playerNameTextが設定されていません！Inspectorで設定してください。", this);
+                Debug.LogError("[PlayerUI] profileDisplayViewが設定されていません！Inspectorで設定してください。", this);
             }
-            
-            if (iconImage == null)
+
+            if (targetSuitImages == null)    // ターゲットのスートを表示するためのImageの検証
             {
-                Debug.LogError("[PlayerUI] iconImageが設定されていません！Inspectorで設定してください。", this);
+                Debug.LogError("[PlayerUI] targetSuitImageが設定されていません！Inspectorで設定してください。", this);
             }
-            
-            if (availableIcons == null || availableIcons.Length == 0)
-            {
-                Debug.LogError("[PlayerUI] availableIconsが設定されていません！Inspectorで設定してください。", this);
-            }
-            else
-            {
-                Debug.Log($"[PlayerUI] 利用可能なアイコン数: {availableIcons.Length}");
-            }
+
+            HideTargetSuit();    
+
         }
-        
-        #endregion
-        public void SetPlayerInfo(PlayerInfo playerInfo)
+
+        private void Start()
         {
-            Debug.Log($"[PlayerUI] ===== SetPlayerInfo開始 ===== GameObject={gameObject.name}");
-            Debug.Log($"[PlayerUI] SetPlayerInfo呼び出し: PlayerId={playerInfo.Id.Value}, UserId={playerInfo.UserId}, IconIndex={playerInfo.PlayerIconIndex}");
-            
-            _playerId = playerInfo.Id.Value;
-            
-            // playerNameTextの確認
-            if (playerNameText == null)
+
+            if (TryAlignTargetMarkerTransform(Camera.main, transform.position, -Camera.main.transform.forward))
             {
-                Debug.LogError($"[PlayerUI] playerNameTextがnullです (PlayerId={_playerId})");
+                Debug.Log("<color=red>PlayerUI: Start: TargetMarkerの座標は" + targetMarkerTransform.position);
             }
-            else
-            {
-                Debug.Log($"[PlayerUI] 変更前: playerNameText.text = '{playerNameText.text}'");
-                playerNameText.text = playerInfo.UserId;
-                Debug.Log($"[PlayerUI] 変更後: playerNameText.text = '{playerNameText.text}'");
-                
-                // 本当に変更されたか確認
-                if (playerNameText.text == playerInfo.UserId)
-                {
-                    Debug.Log($"[PlayerUI] ✅ テキスト変更成功");
-                }
-                else
-                {
-                    Debug.LogError($"[PlayerUI] ❌ テキスト変更失敗！期待値='{playerInfo.UserId}', 実際='{playerNameText.text}'");
-                }
-            }
-            
-            // iconImageとavailableIconsの確認
-            if (iconImage == null)
-            {
-                Debug.LogError($"[PlayerUI] iconImageがnullです (PlayerId={_playerId})");
-            }
-            else if (availableIcons == null || availableIcons.Length == 0)
-            {
-                Debug.LogError($"[PlayerUI] availableIconsが設定されていません (PlayerId={_playerId})");
-            }
-            else if (playerInfo.PlayerIconIndex < 0 || playerInfo.PlayerIconIndex >= availableIcons.Length)
-            {
-                Debug.LogError($"[PlayerUI] IconIndex={playerInfo.PlayerIconIndex}が範囲外です。利用可能: 0-{availableIcons.Length - 1} (PlayerId={_playerId})");
-            }
-            else
-            {
-                var oldSprite = iconImage.sprite;
-                Debug.Log($"[PlayerUI] 変更前: iconImage.sprite = {oldSprite?.name}");
-                
-                iconImage.sprite = availableIcons[playerInfo.PlayerIconIndex];
-                
-                Debug.Log($"[PlayerUI] 変更後: iconImage.sprite = {iconImage.sprite?.name}");
-                
-                if (iconImage.sprite == availableIcons[playerInfo.PlayerIconIndex])
-                {
-                    Debug.Log($"[PlayerUI] ✅ アイコン変更成功");
-                }
-                else
-                {
-                    Debug.LogError($"[PlayerUI] ❌ アイコン変更失敗！");
-                }
-            }
-            
-            Debug.Log($"[PlayerUI] ===== SetPlayerInfo完了 =====");
+
         }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// プレイヤーのプロファイルデータを設定
+        /// </summary>
+        /// <param name="id">プレイヤーのID</param>
+        /// <param name="iconIndex">プレイヤーのアイコンのインデックス</param>
+        /// <param name="playerNumber">プレイヤー番号（ターン順）</param>
+        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber)
+        {
+            // Debug.Log($"[PlayerUI] SetPlayerProfileData呼び出し: PlayerId={id}, IconIndex={iconIndex}");
+            
+            _playerId = id;
+            _iconIndex = iconIndex;
+            _playerNumber = playerNumber;
+
+            if (playerNumberText != null)
+            {
+                playerNumberText.text = playerNumber.ToString()+"P";    // プレイヤー番号を設定する。
+            }
+            EnsureProfileDisplayView();
+            
+            if (profileDisplayView == null)
+            {
+                Debug.LogError($"[PlayerUI] profileDisplayViewがnullです (PlayerId={_playerId})");
+            }
+            else
+            {
+                profileDisplayView.SetProfile(_iconIndex, _playerId.ToString());
+                Debug.Log("[PlayerUI] ✅ ProfileDisplayView へ反映しました: PlayerId=" + _playerId + ", IconIndex=" + _iconIndex);
+            }
+            
+        }
+
+        /// <summary>
+        /// プレイヤーのプロファイルデータを設定
+        /// </summary>
+        /// <param name="playerInfo">プレイヤーの情報</param>
+        public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber){
+            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber);
+        }
+
+        /// <summary>
+        /// プレイヤーのプロファイルデータを設定
+        /// </summary>
+        /// <param name="player">プレイヤー</param>
+        public void SetPlayerProfileData(IPlayer player, int playerNumber){
+            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber);
+        }
+
+
+        /// <summary>
         public void SetCurrentPlayer(bool isCurrentPlayer)
         {
-            currentplayerText.text = isCurrentPlayer ? "Now" : "";
+            if (isCurrentPlayer)
+            {
+                EnableTurnMarker();
+            }
+            else
+            {
+                DisableTurnMarker();
+            }
         }
 
         public void SetPlayerIcon(int iconIndex)
         {
-            // アイコンを設定
-            if (iconImage != null && availableIcons != null && 
-                iconIndex >= 0 && iconIndex < availableIcons.Length)
+            EnsureProfileDisplayView();
+            if (profileDisplayView == null)
             {
-                iconImage.sprite = availableIcons[iconIndex];
+                Debug.LogWarning("PlayerUI: profileDisplayView が未設定です");
+                return;
             }
-            else if (iconIndex < 0 || iconIndex >= (availableIcons?.Length ?? 0))
-            {
-                Debug.LogWarning($"PlayerUI: IconIndex={iconIndex} が範囲外です (利用可能: 0-{availableIcons?.Length - 1 ?? 0})");
-            }
-
+            
+            profileDisplayView.SetIcon(iconIndex);
         }
 
-            
-        #region Drag Handlers
-        
-        public void OnBeginDrag(PointerEventData eventData)
-        {
-            if (!isDraggable) return;
-            
-            // ドラッグ開始時のオフセットを計算
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _rectTransform.parent as RectTransform,
-                eventData.position,
-                eventData.pressEventCamera,
-                out Vector2 localPoint
-            );
-            _dragOffset = _rectTransform.anchoredPosition - localPoint;
-        }
-        
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (!isDraggable) return;
-            
-            // ドラッグ中の位置を更新
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _rectTransform.parent as RectTransform,
-                eventData.position,
-                eventData.pressEventCamera,
-                out Vector2 localPoint))
+        /// <summary>
+        /// 引数のスート(suit)の情報に基づいて、targetSuitImagesに格納されているスート画像の表示・非表示を切り替える
+        /// </summary>
+        /// <param name="suit">表示対象のスート</param>
+        public void ShowTargetSuit(Suit suit){
+            // targetSuitImagesリスト内の各要素をループ
+            for (int i = 0; i < targetSuitImages.Count; i++)
             {
-                _rectTransform.anchoredPosition = localPoint + _dragOffset;
-            }
-        }
-        
-        public void OnEndDrag(PointerEventData eventData)
-        {
-            if (!isDraggable) return;
-            
-            if (savePositionOnDrag)
-            {
-                Vector2 newPosition = _rectTransform.anchoredPosition;
-                Debug.Log($"PlayerUI: PlayerId={_playerId} の新しい位置 = {newPosition}");
-                
-                // PlayerUIPanelManagerに位置を通知
-                if (_manager != null)
+                // 要素がnullでない場合のみ処理
+                if (targetSuitImages[i] != null)
                 {
-                    _manager.UpdatePlayerPosition(_playerId, newPosition);
-                }
-                else
-                {
-                    Debug.LogWarning("PlayerUI: PlayerUIPanelManagerへの参照が設定されていません");
+                    // suit.CompareToCustom(i) が true のとき、そのスート画像を表示
+                    // そうでなければ非表示
+                    targetSuitImages[i].gameObject.SetActive(i == suit.GetCustomOrder());
                 }
             }
         }
-        
-        #endregion
-        
-        #region Public Methods
-        
-        /// <summary>
-        /// ドラッグ可能状態を設定
-        /// </summary>
-        public void SetDraggable(bool draggable)
-        {
-            isDraggable = draggable;
+
+        public void HideTargetSuit(){
+            foreach (var targetSuitImage in targetSuitImages)
+            {
+                targetSuitImage.gameObject.SetActive(false);
+            }
         }
-        
-        /// <summary>
-        /// 元の位置にリセット
-        /// </summary>
-        public void ResetPosition()
-        {
-            _rectTransform.anchoredPosition = _originalPosition;
-        }
-        
-        /// <summary>
-        /// 現在の位置を取得
-        /// </summary>
-        public Vector2 GetCurrentPosition()
-        {
-            return _rectTransform.anchoredPosition;
-        }
-        
-        /// <summary>
-        /// 位置を設定
-        /// </summary>
-        public void SetPosition(Vector2 position)
-        {
-            _rectTransform.anchoredPosition = position;
-        }
-        
-        /// <summary>
-        /// PlayerUIPanelManagerへの参照を設定
-        /// </summary>
-        public void SetManager(PlayerUIPanelManager manager)
-        {
-            _manager = manager;
-        }
-        
+
         /// <summary>
         /// PlayerIdを取得
         /// </summary>
-        public int GetPlayerId()
+        public PlayerId GetPlayerId()
         {
             return _playerId;
         }
+
+        /// <summary>
+        /// Targetカード山の同期に使用するマーカーを取得（targetPileMarker から targetMarkerTransform を再射影してから返す）
+        /// </summary>
+        public bool TryGetTargetPileMarker(out Transform markerTransform)
+        {
+            markerTransform = targetMarkerTransform;
+            return TryAlignTargetMarkerTransform(Camera.main, transform.position, -Camera.main.transform.forward);
+        }
+
+        /// <summary>
+        /// 再射影しないで targetMarkerTransform を返す。呼び出し側でワールド位置が既に正しいときに TargetSyncUIPileView へ複製する用途。
+        /// </summary>
+        public bool TryGetTargetPileMarkerTransform(out Transform markerTransform)
+        {
+            markerTransform = targetMarkerTransform;
+            return markerTransform != null;
+        }
+
+        /// <summary>
+        /// targetPileMarker のUI座標をワールド平面へ射影し、targetMarkerTransform の位置を同期する。
+        /// </summary>
+        public bool TryAlignTargetMarkerTransform(Camera worldCamera, Vector3 planePoint, Vector3 planeNormal)
+        {
+            if (targetMarkerTransform == null)
+            {
+                Debug.LogWarning("PlayerUI: targetMarkerTransform が未設定です。", this);
+                return false;
+            }
+
+            if (targetPileMarker == null)
+            {
+                Debug.LogWarning("PlayerUI: targetPileMarker が未設定です。", this);
+                return false;
+            }
+
+            if (!RectTransformWorldProjectionService.TryProjectMarkerToWorldOnPlane(
+                    targetPileMarker,
+                    worldCamera,
+                    planePoint,
+                    planeNormal,
+                    out var worldPosition))
+            {
+                Debug.LogWarning("PlayerUI: targetPileMarker のワールド座標変換に失敗しました。", this);
+                return false;
+            }
+
+            targetMarkerTransform.position = worldPosition;
+
+            Debug.Log("<color=yellow>PlayerUI: TryAlignTargetMarkerTransform: targetMarkerTransform.position=" + targetMarkerTransform.position);
+            return true;
+        }
+
+        public void HideAllTurnMarker()
+        {
+            if (turnMarker == null)
+            {
+                return;
+            }
+
+            turnMarker.SetActive(false);
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        /// <summary>
+        /// ProfileDisplayViewが設定されているか確認して、設定されていない場合は自動でProfileDisplayViewを取得する
+        /// </summary>
+        private void EnsureProfileDisplayView()
+        {
+            if (profileDisplayView == null)
+            {
+                profileDisplayView = GetComponent<ProfileDisplayView>();
+            }
+
+            if (profileDisplayView == null)
+            {
+                Debug.LogWarning("PlayerUI: ProfileDisplayView が見つかりません。");
+            }
+        }
         
+
+        private void EnableTurnMarker()
+        {
+            if (turnMarker == null)
+            {
+                Debug.LogWarning("PlayerUI: turnMarker が未設定です。", this);
+                return;
+            }
+
+            turnMarker.SetActive(true);
+            if (_turnMarkerText != null)
+            {
+                _turnMarkerText.text = "Now";
+            }
+        }
+
+        private void DisableTurnMarker()
+        {
+            if (turnMarker == null)
+            {
+                return;
+            }
+
+            turnMarker.SetActive(false);
+            if (_turnMarkerText != null)
+            {
+                _turnMarkerText.text = "";
+            }
+        }
+
+        /// <summary>
+        /// TurnMarker配下のテキスト参照をキャッシュする
+        /// </summary>
+        private void CacheTurnMarkerText()
+        {
+            if (turnMarker == null)
+            {
+                return;
+            }
+
+            _turnMarkerText = turnMarker.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (_turnMarkerText == null)
+            {
+                Debug.LogWarning("PlayerUI: turnMarker 配下に TextMeshProUGUI が見つかりません。", this);
+            }
+        }
+
+
         #endregion
     }
 }

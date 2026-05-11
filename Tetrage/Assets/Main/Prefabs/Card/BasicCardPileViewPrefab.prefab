@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2413723258024373799}
-  - component: {fileID: 3340305892033893497}
+  - component: {fileID: -5931672875143984353}
   m_Layer: 0
   m_Name: BasicCardPileViewPrefab
   m_TagString: Untagged
@@ -32,7 +32,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3340305892033893497
+--- !u!114 &-5931672875143984353
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,3 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c217c77e3ef3554db306b6a8b71b734, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _cardPileWidth: 10
+  _cardViewMinSpacing: 0
+  _cardViewMaxSpacing: 3.4028235e+38
+  _cardViewPositionOffset: {x: 0, y: 0, z: 0}

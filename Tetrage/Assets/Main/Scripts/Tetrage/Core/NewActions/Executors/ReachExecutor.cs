@@ -19,7 +19,7 @@ namespace Tetrage.Core.Actions
                 var cardsRevealed = 0;
                 foreach (var card in hands)
                 {
-                    if (!card.IsVisible)
+                    if (!card.IsFaceUp)
                     {
                         card.Flip();
                         cardsRevealed++;

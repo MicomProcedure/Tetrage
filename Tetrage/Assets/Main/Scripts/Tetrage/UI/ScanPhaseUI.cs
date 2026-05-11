@@ -53,7 +53,7 @@ namespace Tetrage.UI
         [SerializeField] private GameObject _targetPanel;
         [SerializeField] private TextMeshProUGUI _naviText;
         [SerializeField] private TextMeshProUGUI _playerLabelText;
-        [SerializeField] private ProfileDisplayUI _profileDisplayUI;
+        [SerializeField] private ProfileDisplayView _profileDisplayView;
 
         [Header("Navi text templates")]
         [Tooltip("未設定の Id はコード内のデフォルト文言を使う。同一 Id が複数ある場合は先頭を採用。")]
@@ -61,10 +61,10 @@ namespace Tetrage.UI
 
         [Header("Button")]
         [SerializeField] private Button _nextButton;
+        [SerializeField] private GameObject _buttonFrame;
 
         [Header("State Objects")]
         [SerializeField] private Image _trumpBackImage;
-        [SerializeField] private GameObject _inactiveStateObject;
         [SerializeField] private CardImageMapper _cardImageMapper;
 
         #endregion
@@ -140,14 +140,12 @@ namespace Tetrage.UI
             _playerIconIndex = user.IconIndex;
             _playerName = user.UserId ?? string.Empty;
 
-            int seatNumber = user.Id.Value;
-            string seatLabel = $"{seatNumber}P";
+            int seatNumber = ResolveTurnOrderNumber(_playerId);
 
             _naviText.richText = true;
             SetNaviText(ScanNaviTextId.InitializeBoot, _playerName, seatNumber);
 
-            _playerLabelText.text = seatLabel;
-            _profileDisplayUI.SetManualInputData(user.IconIndex, user.UserId);
+            _profileDisplayView.SetProfile(user.IconIndex, user.UserId);
 
             ResetScanPhaseUIState();
         }
@@ -160,6 +158,7 @@ namespace Tetrage.UI
             _scanPhaseActive = false;
             _isScanned = false;
             SetTargetConfirmationPanelVisible(true);
+            SetNextButtonVisible(true);
         }
 
         #endregion
@@ -172,8 +171,11 @@ namespace Tetrage.UI
             _scanPhaseActive = true;
             _isScanned = false;
             SetTargetConfirmationPanelVisible(true);
+            SetNextButtonVisible(true);
 
-            SetNaviText(ScanNaviTextId.ScanPhaseAskOwnTarget, _playerName, _playerId.Value);
+            int userTurnOrder = ResolveTurnOrderNumber(_playerId);
+            _playerLabelText.text = $"{userTurnOrder}P";
+            SetNaviText(ScanNaviTextId.ScanPhaseAskOwnTarget, _playerName, userTurnOrder);
         }
 
         /// <summary>ScanPhaseEnded 受信時の見た目リセット。</summary>
@@ -181,6 +183,7 @@ namespace Tetrage.UI
         {
             _scanPhaseActive = false;
             SetTargetConfirmationPanelVisible(true);
+            SetNextButtonVisible(true);
         }
 
         /// <summary>ScanResultReceived 受信時の結果表示。</summary>
@@ -194,7 +197,8 @@ namespace Tetrage.UI
             string suitLabel = e.TargetSuit.GetKatakanaName();
             string suitColorHex = GetSuitTextColorHex(e.TargetSuit);
             string suitColored = BuildColoredSuitRichText(suitLabel, suitColorHex);
-            SetNaviText(ScanNaviTextId.ScanPhaseResult, e.TargetPlayerId.Value, suitColored);
+            int targetTurnOrder = ResolveTurnOrderNumber(e.TargetPlayerId);
+            SetNaviText(ScanNaviTextId.ScanPhaseResult, targetTurnOrder, suitColored);
 
             if (_cardImageMapper != null && _trumpBackImage != null)
             {
@@ -427,7 +431,7 @@ namespace Tetrage.UI
                 ok = false;
             }
 
-            if (_profileDisplayUI == null)
+            if (_profileDisplayView == null)
             {
                 Debug.LogError("ScanPhaseUI.Initialize: _profileDisplayUI が未設定です。Inspector で割り当ててください。");
                 ok = false;
@@ -439,6 +443,28 @@ namespace Tetrage.UI
         private bool ValidateScanResultContext()
         {
             return _gameContext?.UserPlayer != null;
+        }
+
+        /// <summary>
+        /// PlayerId を現在のターン順（Players の index + 1）へ変換する。
+        /// 見つからない場合はフォールバックとして PlayerId.Value を返す。
+        /// </summary>
+        private int ResolveTurnOrderNumber(PlayerId playerId)
+        {
+            if (_gameContext == null)
+            {
+                Debug.LogWarning("ScanPhaseUI: gameContext が null です。");
+                return 0;
+            }
+
+            int turnOrderNumber = _gameContext.GetTurnOrderNumber(playerId);
+            if (turnOrderNumber <= 0)
+            {
+                Debug.LogWarning($"ScanPhaseUI: PlayerId {playerId.Value} のターン順が取得できません。");
+                return 0;
+            }
+
+            return turnOrderNumber;
         }
         
         /// <summary>
@@ -455,6 +481,21 @@ namespace Tetrage.UI
             if (_targetPanel != null)
             {
                 _targetPanel.SetActive(visible);
+            }
+        }
+
+        /// <summary>
+        /// ScanPhaseの進行用Nextボタンの表示を切り替える。
+        /// </summary>
+        public void SetNextButtonVisible(bool visible)
+        {
+            if (_nextButton == null) { return; }
+
+            _nextButton.gameObject.SetActive(visible);
+
+            if (_buttonFrame != null)   // ボタンの枠線も表示/非表示を切り替える
+            {
+                _buttonFrame.SetActive(visible);
             }
         }
 

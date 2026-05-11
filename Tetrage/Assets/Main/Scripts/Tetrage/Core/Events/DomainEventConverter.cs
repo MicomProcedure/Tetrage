@@ -109,12 +109,12 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// CardVisibilityChangedEvent (DTO) → CardVisibilityChangedEvent (Domain)
         /// </summary>
-        public CardVisibilityChangedEvent ToDomain(Tetrage.Network.Gameplay.CardVisibilityChangedEvent dto)
+        public CardSideChangedEvent ToDomain(Tetrage.Network.Gameplay.CardSideChangedEvent dto)
         {
-            return new CardVisibilityChangedEvent(
+            return new CardSideChangedEvent(
                 sequence: dto.sequence,
                 cardId: new CardId(dto.cardId),
-                isVisible: dto.isVisible,
+                isFaceUp: dto.isFaceUp,
                 stateVersion: dto.stateVersion
             );
         }
@@ -335,16 +335,59 @@ namespace Tetrage.Core.Events
         /// </summary>
         public ListOrderDeclaredEvent ToDomain(Tetrage.Network.Gameplay.ListOrderDeclaredEvent dto)
         {
-            // orderedIdsはIDラッパーの実体値なので、そのまま渡す
-            var orderedIds = dto.orderedIds?.ToList() ?? new List<int>();
+            var orderedIds = dto.orderedIds ?? Array.Empty<int>();
 
-            return new ListOrderDeclaredEvent(
-                sequence: dto.sequence,
-                idKind: dto.idKind,
-                listKey: dto.listKey,
-                orderedIds: orderedIds,
-                stateVersion: dto.stateVersion
-            );
+            switch (dto.idKind)
+            {
+                // ListKind に対応した ID 型へ境界で変換する
+                case ListOrderIdKind.PlayerId:
+                    return new ListOrderDeclaredEvent<PlayerId>(
+                        sequence: dto.sequence,
+                        idKind: dto.idKind,
+                        listKey: dto.listKey,
+                        orderedIds: orderedIds.Select(id => new PlayerId(id)).ToList(),
+                        stateVersion: dto.stateVersion
+                    );
+
+                case ListOrderIdKind.CardId:
+                    return new ListOrderDeclaredEvent<CardId>(
+                        sequence: dto.sequence,
+                        idKind: dto.idKind,
+                        listKey: dto.listKey,
+                        orderedIds: orderedIds.Select(id => new CardId(id)).ToList(),
+                        stateVersion: dto.stateVersion
+                    );
+
+                case ListOrderIdKind.PileId:
+                    return new ListOrderDeclaredEvent<PileId>(
+                        sequence: dto.sequence,
+                        idKind: dto.idKind,
+                        listKey: dto.listKey,
+                        orderedIds: orderedIds.Select(id => new PileId(id)).ToList(),
+                        stateVersion: dto.stateVersion
+                    );
+
+                case ListOrderIdKind.DeckId:
+                    return new ListOrderDeclaredEvent<DeckId>(
+                        sequence: dto.sequence,
+                        idKind: dto.idKind,
+                        listKey: dto.listKey,
+                        orderedIds: orderedIds.Select(id => new DeckId(id)).ToList(),
+                        stateVersion: dto.stateVersion
+                    );
+
+                case ListOrderIdKind.Int:
+                    return new ListOrderDeclaredEvent<int>(
+                        sequence: dto.sequence,
+                        idKind: dto.idKind,
+                        listKey: dto.listKey,
+                        orderedIds: orderedIds.ToList(),
+                        stateVersion: dto.stateVersion
+                    );
+
+                default:
+                    throw new InvalidOperationException($"DomainEventConverter: 未対応のListOrderIdKindです: {dto.idKind}");
+            }
         }
 
         #endregion

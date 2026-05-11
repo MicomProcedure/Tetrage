@@ -111,7 +111,7 @@ namespace Tetrage.Network.Gameplay
             });
             _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => _applier.Apply(e));
             _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => _applier.Apply(e));
-            _receiver.On<CardVisibilityChangedEvent>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
+            _receiver.On<CardSideChangedEvent>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
             _receiver.On<StartScanPhaseEvent>(EventCode.StartScanPhase, e => _applier.Apply(e));
             _receiver.On<EndScanPhaseEvent>(EventCode.EndScanPhase, e => _applier.Apply(e));
             _receiver.On<ScanTargetSelectedEvent>(EventCode.ScanTargetSelected, e => _applier.Apply(e));

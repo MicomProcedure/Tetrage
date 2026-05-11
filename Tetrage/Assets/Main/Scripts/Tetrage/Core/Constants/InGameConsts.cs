@@ -5,6 +5,12 @@ namespace Tetrage.Core.Constants
 {
     public static class InGameConsts
     {
+        /// <summary>Unity組み込みタグ（シーン解決用）。マジック文字列を避ける。</summary>
+        public static class UnityBuiltInTags
+        {
+            public const string MainCamera = "MainCamera";
+        }
+
         public const float DEFAULT_CARD_PILE_WIDTH = 10f;   // カード表示用Viewを置いておく幅
         public const float DEFAULT_CARD_VIEW_MIN_SPACING = 0f; // カード表示用Viewの最小間隔
         public const float DEFAULT_CARD_VIEW_MAX_SPACING = float.MaxValue; // カード表示用Viewの最大間隔
@@ -22,5 +28,20 @@ namespace Tetrage.Core.Constants
         public const int DEFAULT_GAME_PLAYER_COUNT = 4; // デフォルトのゲームのプレイヤー数
 
         public const int DEFAULT_DECK_ID = 1; // デフォルトのデッキのID
+
+        /// <summary>通常表示時の CardView の sortingOrder（SpriteRenderer）。</summary>
+        public const int CARD_VIEW_DEFAULT_SORTING_ORDER = 0;
+
+        /// <summary>Tmp パイル配下に置いたときの CardView の sortingOrder。他の山より手前に出す。</summary>
+        public const int CARD_VIEW_TMP_PILE_SORTING_ORDER = 10;
+
+        /// <summary>ScanPhase中にInGameNavigationへ表示する文言。</summary>
+        public static class ScanPhaseNavigationText
+        {
+            public const string SelectOpponentTarget = "次に、他の人のターゲットをスキャンします。好きな人のカードをタッチしてください";
+            public const string ConfirmOpponentTargetSuitFormat = "「Next」を押すと{0}Pのターゲットのスートを確認できます。";
+            public const string OpponentTargetSuitRevealedFormat = "{0}Pのターゲットは{1}です。ターゲットを覚えて、そのまま「Next」を押してください";
+            public const string WaitingOtherPlayers = "他のプレイヤーを待っています……";
+        }
     }
 }

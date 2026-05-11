@@ -50,6 +50,13 @@ namespace Tetrage.Presenters
                 return;
             }
 
+            // このPresenterが担当するPileから出る場合は、必ずView側の除去処理を行う。
+            // TmpCardPileViewではここでサイズ復元とキャッシュ掃除を実施する。
+            if (from == _model)
+            {
+                _view.RemoveCardView(cardView);
+            }
+
 
             // 目的のPileViewを取得して移動
             // 通常は外部でPileViewとモデルの対応が管理されている前提
@@ -67,7 +74,7 @@ namespace Tetrage.Presenters
         /// </summary>
         private void OnCardsInitialized(IEnumerable<Card> cards)
         {
-            UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {_model.Name}");
+            // UnityEngine.Debug.Log($"CardPilePresenter: OnCardsInitialized {_model.Name}");
 
             foreach (var card in cards)
             {

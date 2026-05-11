@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using R3;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Tetrage.Core.Contracts;
@@ -28,9 +29,15 @@ namespace Tetrage.Factories
         private bool _useInitialCards;                     // 初期カード生成フラグ
         private Suit[] _initialSuits;                      // 初期カード生成スート
         private int _initialCountPerSuit;                  // 初期カード生成枚数
+        private readonly Subject<ICardPileView> _viewCreated = new(); // View生成通知
         
         // パラメータ変更検知用フラグ
         private bool _hasParametersChanged;                // パラメータが初期値から変更されたかどうか
+
+        /// <summary>
+        /// View生成通知のObservable
+        /// </summary>
+        public Observable<ICardPileView> ViewCreated => _viewCreated;
 
 
 
@@ -172,7 +179,6 @@ namespace Tetrage.Factories
             return this;
         }
 
-
         /// <summary>山札を生成する（初期カード指定なし）</summary>
         /// <returns>生成された CardPile のインスタンス</returns>
         public CardPile Build()
@@ -210,13 +216,15 @@ namespace Tetrage.Factories
                 ICardPileView view = Object.Instantiate(_viewPrefab, _viewParent);
                 // レイアウト設定を反映
                 view.SetCardViewLayoutInfo(_layoutSettings);
+                // R3でView生成を通知
+                _viewCreated.OnNext(view);
                 // Presenter を生成
                 var presenter = new CardPilePresenter(pile, view);
             }
 
             ResetParameters();
 
-            Debug.Log($"CardPileBuilder: Build, PileId: {pile.Id}, Name: {pile.Name}, MaxCount: {pile.MaxCount}, Count: {pile.Count}");
+            // Debug.Log($"CardPileBuilder: Build, PileId: {pile.Id}, Name: {pile.Name}, MaxCount: {pile.MaxCount}, Count: {pile.Count}");
 
             return pile;
         }

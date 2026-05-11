@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Tetrage.Core.Contracts;
 using Tetrage.Models;
 using Tetrage.Network.Gameplay;
+using System.Linq;
+using Tetrage.Extentions;
 
 namespace Tetrage.Core
 {
@@ -30,6 +32,27 @@ namespace Tetrage.Core
         public Stage Stage => _stage;
         public IGameplayEventBus Events => _events;
         public int TurnIndex => _turnIndex;
+
+        public int GetTurnOrderNumber(Tetrage.Core.Ids.PlayerId playerId)
+        {
+            var player = _players.FirstOrDefault(p => p.Id == playerId);
+            if (player == null)
+            {
+                return 0;
+            }
+
+            return GetTurnOrderNumber(player);
+        }
+
+        public int GetTurnOrderNumber(IPlayer player){
+
+            if (_players == null)
+            {
+                return 0;
+            }
+
+            return _players.IndexOf(player)+1;
+        }
 
         // 以下は Applier からのみ呼ばれる setter（公開しない）
         public void SetCurrentPlayerInternal(IPlayer player) { _currentPlayer = player; }

@@ -1,7 +1,6 @@
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using Photon.Realtime;
+using Tetrage.UI;
 
 namespace Tetrage.Title
 {
@@ -20,7 +19,6 @@ namespace Tetrage.Title
         {
             LocalProfile,   // ローカルプロファイルを表示
             PhotonPlayer, // Photonプレイヤーを表示
-            ManualInput,    // 手動入力で表示
         }
         
         #endregion
@@ -28,9 +26,7 @@ namespace Tetrage.Title
         #region Serialized Fields
         
         [Header("UI References")]
-        [SerializeField] private Image iconImage;                 // アイコン表示用
-        [SerializeField] private TextMeshProUGUI nameText;        // 名前表示用
-        [SerializeField] private Sprite[] availableIcons;         // 使用可能なアイコン一覧
+        [SerializeField] private ProfileDisplayView profileDisplayView;
 
         [Header("Display Settings")]
         [SerializeField] private DisplayMode displayMode = DisplayMode.LocalProfile;  // 表示モード
@@ -52,6 +48,7 @@ namespace Tetrage.Title
         
         void Start()
         {
+            EnsureProfileDisplayView();
             InitializeDisplay();
         }
         
@@ -73,9 +70,6 @@ namespace Tetrage.Title
                     break;
                 case DisplayMode.PhotonPlayer:
                     // Photonプレイヤーが設定されるまで待機
-                    break;
-                case DisplayMode.ManualInput:
-                    UpdateFromManualInput();
                     break;
             }
             
@@ -101,9 +95,6 @@ namespace Tetrage.Title
                         UpdateFromPhotonPlayer(currentPhotonPlayer);
                     }
                     break;
-                case DisplayMode.ManualInput:
-                    UpdateFromManualInput();
-                    break;
             }
         }
         
@@ -116,6 +107,8 @@ namespace Tetrage.Title
         /// </summary>
         public void UpdateFromLocalProfile()
         {
+            EnsureProfileDisplayView();
+
             // プロフィールマネージャーの参照が無ければ自動検索
             if (profileManager == null)
             {
@@ -160,6 +153,8 @@ namespace Tetrage.Title
         /// <param name="player">表示するプレイヤー</param>
         public void UpdateFromPhotonPlayer(Player player)
         {
+            EnsureProfileDisplayView();
+
             if (player == null)
             {
                 Debug.LogWarning("Playerがnullです");
@@ -191,19 +186,6 @@ namespace Tetrage.Title
         }
         
         #endregion
-        #region Manual Input Methods
-
-        public void UpdateFromManualInput()
-        {
-            Debug.Log("ProfileDisplayUI: ManualInputModeで表示しています。");
-            UpdateDisplay(0, "");
-        }
-
-        public void SetManualInputData(int iconIndex, string playerName)
-        {
-            UpdateDisplay(iconIndex, playerName);
-        }
-        #endregion
 
         #region Private Methods
         
@@ -214,28 +196,29 @@ namespace Tetrage.Title
         /// <param name="playerName">プレイヤー名</param>
         private void UpdateDisplay(int iconIndex, string playerName)
         {
-            // アイコン設定
-            if (iconImage != null && availableIcons != null && iconIndex >= 0 && iconIndex < availableIcons.Length)
+            if (profileDisplayView == null)
             {
-                iconImage.sprite = availableIcons[iconIndex];
-                if (enableDebugLog)
-                {
-                    Debug.Log($"アイコンを設定: Index={iconIndex}");
-                }
-            }
-            else if (iconIndex < 0 || iconIndex >= (availableIcons?.Length ?? 0))
-            {
-                Debug.LogWarning($"IconIndex={iconIndex} が範囲外です (利用可能範囲: 0-{availableIcons?.Length - 1 ?? 0})");
+                Debug.LogWarning("ProfileDisplayUI: ProfileDisplayView が未設定です。");
+                return;
             }
 
-            // 名前設定
-            if (nameText != null)
+            profileDisplayView.SetProfile(iconIndex, playerName);
+            if (enableDebugLog)
             {
-                nameText.text = playerName ?? "Unknown Player";
-                if (enableDebugLog)
-                {
-                    Debug.Log($"プレイヤー名を設定: {playerName}");
-                }
+                Debug.Log($"ProfileDisplayUI: 表示を更新しました icon={iconIndex}, name={playerName}");
+            }
+        }
+
+        private void EnsureProfileDisplayView()
+        {
+            if (profileDisplayView == null)
+            {
+                profileDisplayView = GetComponent<ProfileDisplayView>();
+            }
+
+            if (profileDisplayView == null)
+            {
+                Debug.LogWarning("ProfileDisplayUI: ProfileDisplayView が見つかりません。");
             }
         }
         

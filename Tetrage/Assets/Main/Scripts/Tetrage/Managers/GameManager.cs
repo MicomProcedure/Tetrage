@@ -215,7 +215,9 @@ namespace Tetrage.Managers
 
             return new FieldSetupManager(settings, dependencies, _gameRuleDTO);
         }
+        #endregion
 
+        #region イベント購読
         private void EventSubscribe()
         {
             _disposables ??= new CompositeDisposable();
@@ -306,6 +308,7 @@ namespace Tetrage.Managers
         #endregion
 
         #region イベントハンドラ
+
 
         private void OnGameEnd(Tetrage.Core.Events.GameEndedEvent _)
         {
