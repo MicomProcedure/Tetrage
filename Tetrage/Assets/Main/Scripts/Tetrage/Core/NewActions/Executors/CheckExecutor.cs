@@ -1,7 +1,13 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System.Linq;
+using System.Collections.Generic;
+using System.Threading;
 using Tetrage.Core.Contracts;
+using Tetrage.Models;
+using Tetrage.UI;
+using Tetrage.Core.Enums;
+using R3;
 
 namespace Tetrage.Core.Actions
 {
@@ -31,16 +37,15 @@ namespace Tetrage.Core.Actions
                 // 3. 自分の手札のスートと比較
                 var isMatch = CheckSuitMatch(context, targetCard);
 
-                // 4. 結果の返答（はい/いいえ）
-                var resultMessage = isMatch ? "はい" : "いいえ";
-
                 Debug.Log($"Check アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が {targetPlayer.UserId} をチェック");
 
-                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+                // isMatchの結果をActionRequestDescriptorに詰めて返す。これによって結果が全員に通知され、各々でUIの処理がされる
+                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptorPacket
                 {
-                    actionType = Tetrage.Core.Enums.ActionType.Check,
+                    actionType = ActionType.Check,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
-                    targetCardIds = new[] { targetCard.Id }
+                    targetCardIds = new[] { targetCard.Id },
+                    actionStatusInt = isMatch ? 1 : 0
                 };
                 return ActionResult.Success(descriptor);
             }
@@ -52,30 +57,68 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
-        /// 対象プレイヤーを選択（現在は仮実装：最初の他プレイヤー）
+        /// 相手プレイヤーのTargetカードクリックを待機し、選択されたカードの所有プレイヤーを返す。
         /// </summary>
         private async UniTask<IPlayer> SelectTargetPlayer(IActionContext context)
         {
-            // TODO: 実際のUI選択処理を実装
-            // プレイヤーが相手を選択するUI
-
-            await UniTask.Delay(100); // UI表示の仮の時間
-
-            // 仮実装：最初の他プレイヤーを選択
-            var targetPlayer = context.OtherPlayers.FirstOrDefault();
-
-            if (targetPlayer != null)
+            var selectableTargets = CreateSelectableTargetMap(context);
+            if (selectableTargets.Count == 0)
             {
-                Debug.Log($"仮実装：対象プレイヤー選択 - {targetPlayer.UserId}");
+                Debug.LogWarning("Check対象として選択可能なTargetカードがありません。");
+                return null;
             }
 
-            return targetPlayer;
+            var actionAwaiter = context.ActionAwaiter;
+            var cancellationToken = actionAwaiter?.CurrentCancellationToken ?? CancellationToken.None;
+            var tcs = new UniTaskCompletionSource<IPlayer>();
+
+            var cardClickDisposable = CardClickDispatcher.CardClicked
+                // Checkでは相手Targetカードだけを有効な入力として扱う。
+                .Where(clickedCard => clickedCard != null && selectableTargets.ContainsKey(clickedCard))
+                .Subscribe(clickedCard => tcs.TrySetResult(selectableTargets[clickedCard]));
+
+            try
+            {
+                Debug.Log("Check対象のTargetカード選択を待機中...");
+                return await tcs.Task.AttachExternalCancellation(cancellationToken);
+            }
+            catch (System.OperationCanceledException)
+            {
+                var fallbackPlayer = selectableTargets.Values.FirstOrDefault();
+                Debug.LogWarning($"Check対象選択がキャンセルされました。フォールバックとして {fallbackPlayer?.UserId} を選択します。");
+                return fallbackPlayer;
+            }
+            finally
+            {
+                cardClickDisposable.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Checkで選択可能な相手Targetカードと所有プレイヤーの対応を作成する。
+        /// </summary>
+        private Dictionary<Card, IPlayer> CreateSelectableTargetMap(IActionContext context)
+        {
+            var selectableTargets = new Dictionary<Card, IPlayer>();
+
+            foreach (var player in context.OtherPlayers)
+            {
+                var targetCard = GetTargetCard(player);
+                if (targetCard == null)
+                {
+                    continue;
+                }
+
+                selectableTargets[targetCard] = player;
+            }
+
+            return selectableTargets;
         }
 
         /// <summary>
         /// 指定されたプレイヤーのTargetカードを取得
         /// </summary>
-        private Models.Card GetTargetCard(IPlayer player)
+        private Card GetTargetCard(IPlayer player)
         {
             return player.Target.FirstOrDefault();
         }
@@ -83,7 +126,7 @@ namespace Tetrage.Core.Actions
         /// <summary>
         /// 自分の手札のスートと対象のTargetカードのスートが一致するかチェック
         /// </summary>
-        private bool CheckSuitMatch(IActionContext context, Models.Card targetCard)
+        private bool CheckSuitMatch(IActionContext context, Card targetCard)
         {
             var myHands = context.RequesterPlayer.Hands;
 

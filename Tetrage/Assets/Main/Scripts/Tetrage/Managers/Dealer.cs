@@ -280,6 +280,7 @@ namespace Tetrage.Managers
                 _isGameFinished = true; // 強制終了
             }
 
+            // TetrageSoloかTetrageMultiの場合のみゲーム終了を判定し、ループを抜ける
             if (HandleGameEndingByAction(actionResult))
             {
                 return;
@@ -324,10 +325,13 @@ namespace Tetrage.Managers
             {
                 // R3のObservableで該当プレイヤーのActionResultを待機
                 // FirstAsync()はTask<T>を返すので、直接awaitする
+                // ResponseRequested は参加応答収集の中間通知のため除外し、最終結果のみを受け取る
                 var result = await _gameContext.Events.ActionResult
-                    .FirstAsync(e => e.ActorPlayerId == waitingPlayer.PlayerId, token);
+                    .FirstAsync(e => e.ActorPlayerId    == waitingPlayer.PlayerId
+                                  && e.ActionStatusInt  != Core.Constants.InGameConsts.TetrageMultiStatus.ResponseRequested,
+                                token);
 
-                var descriptor = new ActionRequestDescriptor
+                var descriptor = new ActionRequestDescriptorPacket
                 {
                     actionType = result.ActionType,
                     actorPlayerId = result.ActorPlayerId.Value,
@@ -458,6 +462,7 @@ namespace Tetrage.Managers
                 return false;
             }
 
+            // TetrageSoloかTetrageMultiの場合のみゲーム終了を判定する
             if (descriptor.actionType != ActionType.TetrageSolo && descriptor.actionType != ActionType.TetrageMulti)
             {
                 return false;
@@ -469,9 +474,9 @@ namespace Tetrage.Managers
             return true;
         }
 
-        private bool TryGetActionDescriptor(ActionResult actionResult, out ActionRequestDescriptor descriptor)
+        private bool TryGetActionDescriptor(ActionResult actionResult, out ActionRequestDescriptorPacket descriptor)
         {
-            if (actionResult?.AdditionalData is ActionRequestDescriptor typed)
+            if (actionResult?.AdditionalData is ActionRequestDescriptorPacket typed)
             {
                 descriptor = typed;
                 return true;
@@ -481,7 +486,7 @@ namespace Tetrage.Managers
             return false;
         }
 
-        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptor descriptor)
+        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptorPacket descriptor)
         {
             if (descriptor.actionType == ActionType.TetrageSolo)
             {
@@ -490,7 +495,7 @@ namespace Tetrage.Managers
 
             if (descriptor.actionType == ActionType.TetrageMulti)
             {
-                return EvaluateMultiWinners(descriptor.actorPlayerId, descriptor.targetCardIds);
+                return EvaluateMultiWinners(descriptor.actorPlayerId, descriptor.targetCardIds, descriptor.actionStatusInt);
             }
 
             return new List<PlayerId>();
@@ -532,42 +537,71 @@ namespace Tetrage.Managers
                 .ToList();
         }
 
-        private List<PlayerId> EvaluateMultiWinners(int actorPlayerId, CardId[] selectedTargetCardIds)
+        /// <summary>
+        /// TetrageMulti の勝者を判定する。
+        /// openedTargetCardIds: Host が最終 ActionResult に載せた「出した参加者」の Target カード ID。
+        /// actionStatusInt 1 = 成功（参加者全員同スート）、0 = 失敗。
+        /// </summary>
+        private List<PlayerId> EvaluateMultiWinners(int actorPlayerId, CardId[] openedTargetCardIds, int actionStatusInt)
         {
             var actorId = new PlayerId(actorPlayerId);
             if (!TryResolvePlayerById(actorId, out var actorPlayer))
-            {
                 return new List<PlayerId>();
-            }
 
             var actorCard = actorPlayer.Target.FirstOrDefault();
             if (actorCard == null)
-            {
                 return new List<PlayerId>();
-            }
 
-            if (selectedTargetCardIds != null && selectedTargetCardIds.Length > 0)
-            {
-                var selectedCardId = selectedTargetCardIds[0];
-                var selectedPlayer = _gameContext.Players
-                    .FirstOrDefault(player =>
-                    {
-                        if (player.Id == actorId) return false;
-                        var card = player.Target.FirstOrDefault();
-                        return card != null && card.Id == selectedCardId;
-                    });
-
-                var selectedCard = selectedPlayer?.Target.FirstOrDefault();
-                if (selectedPlayer != null && selectedCard != null && selectedCard.Suit == actorCard.Suit)
+            // 「出した参加者」を cardId セットで解決する
+            var openCardIdSet  = openedTargetCardIds != null ? new HashSet<CardId>(openedTargetCardIds) : new HashSet<CardId>();
+            var openPlayerIds  = _gameContext.Players
+                .Where(p => p.Id != actorId)
+                .Where(p =>
                 {
-                    return new List<PlayerId> { actorId, selectedPlayer.Id };
-                }
+                    var c = p.Target.FirstOrDefault();
+                    return c != null && openCardIdSet.Contains(c.Id);
+                })
+                .Select(p => p.Id)
+                .ToHashSet();
+
+            // 成功: 参加者（宣言者 + 出したプレイヤー）全員が勝者
+            if (actionStatusInt == 1)
+            {
+                var winners = new List<PlayerId> { actorId };
+                winners.AddRange(openPlayerIds);
+                return winners;
             }
 
-            return _gameContext.Players
-                .Where(player => player.Id != actorId)
-                .Select(player => player.Id)
-                .ToList();
+            // 失敗時の勝者判定
+            var openSuits = _gameContext.Players
+                .Where(p => openPlayerIds.Contains(p.Id) || p.Id == actorId)
+                .Select(p => p.Target.FirstOrDefault()?.Suit)
+                .Where(s => s.HasValue)
+                .Select(s => s.Value)
+                .ToHashSet();
+
+            var result = new List<PlayerId>();
+            foreach (var player in _gameContext.Players)
+            {
+                var card = player.Target.FirstOrDefault();
+                if (card == null) continue;
+
+                if (openPlayerIds.Contains(player.Id))
+                {
+                    // 出した参加者: 宣言者とスートが違う場合のみ勝者
+                    if (card.Suit != actorCard.Suit)
+                        result.Add(player.Id);
+                }
+                else if (player.Id != actorId)
+                {
+                    // 出さなかったプレイヤー: 全 open 参加者のスートと異なる場合のみ勝者
+                    if (!openSuits.Contains(card.Suit))
+                        result.Add(player.Id);
+                }
+                // 宣言者は失敗時には勝者にならない
+            }
+
+            return result.Distinct().ToList();
         }
 
         #endregion

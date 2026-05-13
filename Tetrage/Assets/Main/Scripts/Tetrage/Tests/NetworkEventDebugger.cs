@@ -175,43 +175,43 @@ namespace Tetrage.Tests
             switch (code)
             {
                 case EventCode.GameStarted:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.GameStartedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.GameStartedEventPacket)dtoPayload));
                     break;
                 case EventCode.TurnStarted:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.TurnStartedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.TurnStartedEventPacket)dtoPayload));
                     break;
                 case EventCode.TurnEnded:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.TurnEndedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.TurnEndedEventPacket)dtoPayload));
                     break;
                 case EventCode.ListOrderDeclared:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.ListOrderDeclaredEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.ListOrderDeclaredEventPacket)dtoPayload));
                     break;
                 case EventCode.CardMoved:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardMovedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardMovedEventPacket)dtoPayload));
                     break;
                 case EventCode.CardVisibilityChanged:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardSideChangedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.CardStateChangedEventPacket)dtoPayload));
                     break;
                 case EventCode.StartScanPhase:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.StartScanPhaseEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.StartScanPhaseEventPacket)dtoPayload));
                     break;
                 case EventCode.EndScanPhase:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.EndScanPhaseEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.EndScanPhaseEventPacket)dtoPayload));
                     break;
                 case EventCode.FinishingGame:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.FinishingGameEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.FinishingGameEventPacket)dtoPayload));
                     break;
                 case EventCode.GameEnded:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.GameEndedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.GameEndedEventPacket)dtoPayload));
                     break;
                 case EventCode.PileShuffledWithSeed:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.PileShuffledWithSeedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.PileShuffledWithSeedPacket)dtoPayload));
                     break;
                 case EventCode.ActionRequested:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.ActionRequestedEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.ActionRequestedEventPacket)dtoPayload));
                     break;
                 case EventCode.ActionResult:
-                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.ActionResultEvent)dtoPayload));
+                    bus.Publish(_converter.ToDomain((Tetrage.Network.Gameplay.ActionResultEventPacket)dtoPayload));
                     break;
                 default:
                     Debug.LogWarning($"[NetworkEventDebugger] Local publish not implemented for {code}");
@@ -227,19 +227,19 @@ namespace Tetrage.Tests
         {
             return code switch
             {
-                EventCode.GameStarted => typeof(Tetrage.Network.Gameplay.GameStartedEvent),
-                EventCode.TurnStarted => typeof(Tetrage.Network.Gameplay.TurnStartedEvent),
-                EventCode.TurnEnded => typeof(Tetrage.Network.Gameplay.TurnEndedEvent),
-                EventCode.ListOrderDeclared => typeof(Tetrage.Network.Gameplay.ListOrderDeclaredEvent),
-                EventCode.CardMoved => typeof(Tetrage.Network.Gameplay.CardMovedEvent),
-                EventCode.CardVisibilityChanged => typeof(Tetrage.Network.Gameplay.CardSideChangedEvent),
-                EventCode.StartScanPhase => typeof(Tetrage.Network.Gameplay.StartScanPhaseEvent),
-                EventCode.EndScanPhase => typeof(Tetrage.Network.Gameplay.EndScanPhaseEvent),
-                EventCode.FinishingGame => typeof(Tetrage.Network.Gameplay.FinishingGameEvent),
-                EventCode.GameEnded => typeof(Tetrage.Network.Gameplay.GameEndedEvent),
-                EventCode.PileShuffledWithSeed => typeof(Tetrage.Network.Gameplay.PileShuffledWithSeedEvent),
-                EventCode.ActionRequested => typeof(Tetrage.Network.Gameplay.ActionRequestedEvent),
-                EventCode.ActionResult => typeof(Tetrage.Network.Gameplay.ActionResultEvent),
+                EventCode.GameStarted => typeof(Tetrage.Network.Gameplay.GameStartedEventPacket),
+                EventCode.TurnStarted => typeof(Tetrage.Network.Gameplay.TurnStartedEventPacket),
+                EventCode.TurnEnded => typeof(Tetrage.Network.Gameplay.TurnEndedEventPacket),
+                EventCode.ListOrderDeclared => typeof(Tetrage.Network.Gameplay.ListOrderDeclaredEventPacket),
+                EventCode.CardMoved => typeof(Tetrage.Network.Gameplay.CardMovedEventPacket),
+                EventCode.CardVisibilityChanged => typeof(Tetrage.Network.Gameplay.CardStateChangedEventPacket),
+                EventCode.StartScanPhase => typeof(Tetrage.Network.Gameplay.StartScanPhaseEventPacket),
+                EventCode.EndScanPhase => typeof(Tetrage.Network.Gameplay.EndScanPhaseEventPacket),
+                EventCode.FinishingGame => typeof(Tetrage.Network.Gameplay.FinishingGameEventPacket),
+                EventCode.GameEnded => typeof(Tetrage.Network.Gameplay.GameEndedEventPacket),
+                EventCode.PileShuffledWithSeed => typeof(Tetrage.Network.Gameplay.PileShuffledWithSeedPacket),
+                EventCode.ActionRequested => typeof(Tetrage.Network.Gameplay.ActionRequestedEventPacket),
+                EventCode.ActionResult => typeof(Tetrage.Network.Gameplay.ActionResultEventPacket),
                 _ => null
             };
         }

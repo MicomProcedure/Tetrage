@@ -38,7 +38,7 @@ namespace Tetrage.Tests.Editor
 
             Assert.AreEqual(1, spy.Calls.Count);
             Assert.AreEqual(EventCode.TurnStarted, spy.Calls[0].code);
-            var dto = (TurnStartedEvent)spy.Calls[0].payload;
+            var dto = (TurnStartedEventPacket)spy.Calls[0].payload;
             Assert.AreEqual(10, dto.currentPlayerActorNumber);
         }
 

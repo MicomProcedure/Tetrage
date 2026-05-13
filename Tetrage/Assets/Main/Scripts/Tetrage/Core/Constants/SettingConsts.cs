@@ -7,5 +7,8 @@ namespace Tetrage.Core.Constants
         public const int MIN_PLAYER_COUNT = 3;
 
         public const float SCAN_SELECTION_TIMEOUT_SECONDS = 300f;
+
+        /// <summary>TetrageMulti の参加応答タイムアウト（秒）。未応答は「出す」扱い。</summary>
+        public const float TETRAGE_MULTI_RESPONSE_TIMEOUT_SECONDS = 60f;
     }
 }

@@ -6,10 +6,11 @@ using Tetrage.Core.Enums;
 using Tetrage.Data;
 using R3;
 using System.Collections.Generic;
-
+using Tetrage.Audio;
+using Tetrage.Core.Constants;
 namespace Tetrage.UI
 {
-    public class CardView : MonoBehaviour, IPointerClickHandler
+    public class CardView : MonoBehaviour
     {
         /// <summary>
         /// このビューが破棄されたときに発行されるイベント。
@@ -17,7 +18,6 @@ namespace Tetrage.UI
         /// </summary>
         public Observable<Unit> Destroyed => _destroyed;
         private readonly Subject<Unit> _destroyed = new();
-        private readonly Subject<Unit> _clicked = new();
         private readonly Subject<Unit> _flipAnimationHalfway = new();
         private readonly Subject<Unit> _flipAnimationCompleted = new();
         private CompositeDisposable _disposables = new();
@@ -28,7 +28,6 @@ namespace Tetrage.UI
 
             _flipAnimationCompleted.OnCompleted();
             _flipAnimationHalfway.OnCompleted();
-            _clicked.OnCompleted();
             _destroyed.OnCompleted();
 
             _disposables.Dispose();
@@ -39,6 +38,7 @@ namespace Tetrage.UI
         [Header("Visual Components")]
         [SerializeField] private SpriteRenderer spriteRenderer;
         [SerializeField] private Animator animator;
+        [SerializeField] private ClickableMB cardClickableMB;
 
         [Header("Card Data")]
         [SerializeField] private CardImageMapper cardImageMapper;
@@ -59,6 +59,8 @@ namespace Tetrage.UI
 
         private Color _originalColor;
         private bool _isHighlighted = false;
+        /// <summary>直近の表向き表示か（SetFlip スキップ時もハイライト色を合わせるため保持）</summary>
+        private bool _isDisplayedFaceUp = false;
         private Suit _currentSuit;
         private int _currentNumber;
         private List<GameObject> _suitBackImages = new List<GameObject>();
@@ -100,19 +102,9 @@ namespace Tetrage.UI
 
         #region Events
 
-        public Observable<Unit> Clicked => _clicked;
+        public Observable<Unit> Clicked => cardClickableMB.Clicked;
         public Observable<Unit> FlipAnimationHalfway => _flipAnimationHalfway;
         public Observable<Unit> FlipAnimationCompleted => _flipAnimationCompleted;
-
-        #endregion
-
-        #region Click Handling
-
-        public void OnPointerClick(PointerEventData e)
-        {
-            Debug.Log($"CardView: OnPointerClick {e.pointerId}");
-            _clicked.OnNext(Unit.Default);
-        }
 
         #endregion
 
@@ -122,6 +114,7 @@ namespace Tetrage.UI
         {
             _isFlipAnimationInProgress = true;
             animator.SetTrigger("FlipSuccess");
+
         }
         public void ScaleUpAnimation() => animator.SetBool("IsInTmpPile", true);
         public void ScaleDownAnimation() => animator.SetBool("IsInTmpPile", false);
@@ -204,7 +197,8 @@ namespace Tetrage.UI
             // 表向き：カード画像を表示
             DisableSuitBackUI();
             UpdateCardSprite();
-            spriteRenderer.color = _isHighlighted ? highlightColor : Color.white;
+            _isDisplayedFaceUp = true;
+            ApplyHighlightTint();
         }
 
         /// <summary>
@@ -221,7 +215,8 @@ namespace Tetrage.UI
                     spriteRenderer.sprite = backSuitSprite;
                 }
             }
-            spriteRenderer.color = _isHighlighted ? highlightColor * 0.3f : Color.white;
+            _isDisplayedFaceUp = false;
+            ApplyHighlightTint();
         }
 
         /// <summary>
@@ -254,6 +249,8 @@ namespace Tetrage.UI
         public void Highlight()
         {
             _isHighlighted = true;
+            // 反転アニメ中は SetFlip が呼ばれないため、ここで色を追随させる
+            ApplyHighlightTint();
         }
 
         /// <summary>
@@ -262,11 +259,37 @@ namespace Tetrage.UI
         public void Unhighlight()
         {
             _isHighlighted = false;
+            ApplyHighlightTint();
         }
+
+
 
         #endregion
 
         #region Private Methods
+        
+        /// <summary>
+        /// 表裏とハイライト状態に応じて SpriteRenderer の色を設定する
+        /// </summary>
+        private void ApplyHighlightTint()
+        {
+            if (_isDisplayedFaceUp)
+            {
+                spriteRenderer.color = _isHighlighted ? highlightColor : Color.white;
+                return;
+            }
+
+            // 裏向きは全面ハイライトだと眩しすぎるため RGB のみ係数で抑える（A は highlightColor を維持）
+            if (!_isHighlighted)
+            {
+                spriteRenderer.color = Color.white;
+                return;
+            }
+
+            var c = highlightColor;
+            var m = InGameConsts.CARD_VIEW_BACK_HIGHLIGHT_COLOR_MULTIPLIER;
+            spriteRenderer.color = new Color(c.r * m, c.g * m, c.b * m, c.a);
+        }
 
         /// <summary>
         /// スート別裏面画像を無効にする
@@ -352,6 +375,12 @@ namespace Tetrage.UI
             if (spadeBackSprite == null || heartBackSprite == null || diamondBackSprite == null || clubBackSprite == null)
             {
                 Debug.LogError($"{name}: SuitBackImages（Spade/Heart/Diamond/Club）が設定されていません。", this);
+                isValid = false;
+            }
+
+            if (cardClickableMB == null)
+            {
+                Debug.LogError($"{name}: CardClickableMB が設定されていません。", this);
                 isValid = false;
             }
 

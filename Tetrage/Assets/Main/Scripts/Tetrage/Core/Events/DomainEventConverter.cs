@@ -26,7 +26,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// GameStartedEvent (DTO) → GameStartedEvent (Domain)
         /// </summary>
-        public GameStartedEvent ToDomain(Tetrage.Network.Gameplay.GameStartedEvent dto)
+        public GameStartedEvent ToDomain(Tetrage.Network.Gameplay.GameStartedEventPacket dto)
         {
             var playerIds = new List<PlayerId>();
             if (dto.playerActorNumbers != null)
@@ -59,7 +59,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// TurnStartedEvent (DTO) → TurnStartedEvent (Domain)
         /// </summary>
-        public TurnStartedEvent ToDomain(Tetrage.Network.Gameplay.TurnStartedEvent dto)
+        public TurnStartedEvent ToDomain(Tetrage.Network.Gameplay.TurnStartedEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.currentPlayerActorNumber, out var playerId))
             {
@@ -77,7 +77,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// TurnEndedEvent (DTO) → TurnEndedEvent (Domain)
         /// </summary>
-        public TurnEndedEvent ToDomain(Tetrage.Network.Gameplay.TurnEndedEvent dto)
+        public TurnEndedEvent ToDomain(Tetrage.Network.Gameplay.TurnEndedEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.previousPlayerActorNumber, out var playerId))
             {
@@ -95,7 +95,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// CardMovedEvent (DTO) → CardMovedEvent (Domain)
         /// </summary>
-        public CardMovedEvent ToDomain(Tetrage.Network.Gameplay.CardMovedEvent dto)
+        public CardMovedEvent ToDomain(Tetrage.Network.Gameplay.CardMovedEventPacket dto)
         {
             return new CardMovedEvent(
                 sequence: dto.sequence,
@@ -109,12 +109,26 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// CardVisibilityChangedEvent (DTO) → CardVisibilityChangedEvent (Domain)
         /// </summary>
-        public CardSideChangedEvent ToDomain(Tetrage.Network.Gameplay.CardSideChangedEvent dto)
+        public CardStateChangedEvent ToDomain(Tetrage.Network.Gameplay.CardStateChangedEventPacket dto)
         {
-            return new CardSideChangedEvent(
+            var stateType = dto.stateCode switch
+            {
+                Tetrage.Network.Gameplay.CardStateCode.FaceUp => CardStateType.FaceUp,
+                Tetrage.Network.Gameplay.CardStateCode.IsSuitVisible => CardStateType.IsSuitVisible,
+                Tetrage.Network.Gameplay.CardStateCode.IsHighlighted => CardStateType.IsHighlighted,
+                _ => CardStateType.Unknown,
+            };
+
+            var isFaceUp = dto.stateCode == Tetrage.Network.Gameplay.CardStateCode.FaceUp
+                ? dto.stateValue
+                : false;
+
+            return new CardStateChangedEvent(
                 sequence: dto.sequence,
                 cardId: new CardId(dto.cardId),
-                isFaceUp: dto.isFaceUp,
+                isFaceUp: isFaceUp,
+                stateType: stateType,
+                stateValue: dto.stateValue,
                 stateVersion: dto.stateVersion
             );
         }
@@ -122,7 +136,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// GameEndedEvent (DTO) → GameEndedEvent (Domain)
         /// </summary>
-        public GameEndedEvent ToDomain(Tetrage.Network.Gameplay.GameEndedEvent dto)
+        public GameEndedEvent ToDomain(Tetrage.Network.Gameplay.GameEndedEventPacket dto)
         {
             var winnerPlayerIds = new List<PlayerId>();
             if (dto.winnerActorNumbers != null)
@@ -151,7 +165,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// FinishingGameEvent (DTO) → FinishingGameEvent (Domain)
         /// </summary>
-        public FinishingGameEvent ToDomain(Tetrage.Network.Gameplay.FinishingGameEvent dto)
+        public FinishingGameEvent ToDomain(Tetrage.Network.Gameplay.FinishingGameEventPacket dto)
         {
             var winnerPlayerIds = new List<PlayerId>();
             if (dto.winnerActorNumbers != null)
@@ -180,7 +194,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// StartScanPhaseEvent (DTO) → ScanPhaseStartedEvent (Domain)
         /// </summary>
-        public ScanPhaseStartedEvent ToDomain(Tetrage.Network.Gameplay.StartScanPhaseEvent dto)
+        public ScanPhaseStartedEvent ToDomain(Tetrage.Network.Gameplay.StartScanPhaseEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.userPlayerActorNumber, out var userPlayerId))
             {
@@ -215,7 +229,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// EndScanPhaseEvent (DTO) → ScanPhaseEndedEvent (Domain)
         /// </summary>
-        public ScanPhaseEndedEvent ToDomain(Tetrage.Network.Gameplay.EndScanPhaseEvent dto)
+        public ScanPhaseEndedEvent ToDomain(Tetrage.Network.Gameplay.EndScanPhaseEventPacket dto)
         {
             return new ScanPhaseEndedEvent(
                 sequence: dto.sequence,
@@ -226,7 +240,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// ScanTargetSelectedEvent (DTO) → ScanTargetSelectedEvent (Domain)
         /// </summary>
-        public ScanTargetSelectedEvent ToDomain(Tetrage.Network.Gameplay.ScanTargetSelectedEvent dto)
+        public ScanTargetSelectedEvent ToDomain(Tetrage.Network.Gameplay.ScanTargetSelectedEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.actorPlayerId, out var actorPlayerId))
             {
@@ -251,7 +265,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// ScanResultEvent (DTO) → ScanResultReceivedEvent (Domain)
         /// </summary>
-        public ScanResultReceivedEvent ToDomain(Tetrage.Network.Gameplay.ScanResultEvent dto)
+        public ScanResultReceivedEvent ToDomain(Tetrage.Network.Gameplay.ScanResultEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.targetActorNumber, out var targetPlayerId))
             {
@@ -270,7 +284,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// PileShuffledWithSeedEvent (DTO) → PileShuffledEvent (Domain)
         /// </summary>
-        public PileShuffledEvent ToDomain(Tetrage.Network.Gameplay.PileShuffledWithSeedEvent dto)
+        public PileShuffledEvent ToDomain(Tetrage.Network.Gameplay.PileShuffledWithSeedPacket dto)
         {
             return new PileShuffledEvent(
                 sequence: dto.sequence,
@@ -283,7 +297,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// ActionRequestedEvent (DTO) → ActionRequestedEvent (Domain)
         /// </summary>
-        public ActionRequestedEvent ToDomain(Tetrage.Network.Gameplay.ActionRequestedEvent dto)
+        public ActionRequestedEvent ToDomain(Tetrage.Network.Gameplay.ActionRequestedEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.actorPlayerId, out var playerId))
             {
@@ -307,7 +321,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// ActionResultEvent (DTO) → ActionResultEvent (Domain)
         /// </summary>
-        public ActionResultEvent ToDomain(Tetrage.Network.Gameplay.ActionResultEvent dto)
+        public ActionResultEvent ToDomain(Tetrage.Network.Gameplay.ActionResultEventPacket dto)
         {
             if (!_playerIdMapper.TryGetPlayerId(dto.actorPlayerId, out var playerId))
             {
@@ -333,7 +347,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// ListOrderDeclaredEvent (DTO) → ListOrderDeclaredEvent (Domain)
         /// </summary>
-        public ListOrderDeclaredEvent ToDomain(Tetrage.Network.Gameplay.ListOrderDeclaredEvent dto)
+        public ListOrderDeclaredEvent ToDomain(Tetrage.Network.Gameplay.ListOrderDeclaredEventPacket dto)
         {
             var orderedIds = dto.orderedIds ?? Array.Empty<int>();
 
@@ -397,7 +411,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// TurnStartedEvent (Domain) → TurnStartedEvent (DTO)
         /// </summary>
-        public Tetrage.Network.Gameplay.TurnStartedEvent ToDto(TurnStartedEvent domainEvent)
+        public Tetrage.Network.Gameplay.TurnStartedEventPacket ToDto(TurnStartedEvent domainEvent)
         {
             if (!_playerIdMapper.TryGetActorNumber(domainEvent.CurrentPlayerId, out var actorNumber))
             {
@@ -405,7 +419,7 @@ namespace Tetrage.Core.Events
                     $"DomainEventConverter: PlayerId {domainEvent.CurrentPlayerId} のActorNumberマッピングが見つかりません（TurnStarted→DTO）");
             }
 
-            return new Tetrage.Network.Gameplay.TurnStartedEvent
+            return new Tetrage.Network.Gameplay.TurnStartedEventPacket
             {
                 sequence = domainEvent.Sequence,
                 stateVersion = domainEvent.StateVersion,
@@ -416,7 +430,7 @@ namespace Tetrage.Core.Events
         /// <summary>
         /// TurnEndedEvent (Domain) → TurnEndedEvent (DTO)
         /// </summary>
-        public Tetrage.Network.Gameplay.TurnEndedEvent ToDto(TurnEndedEvent domainEvent)
+        public Tetrage.Network.Gameplay.TurnEndedEventPacket ToDto(TurnEndedEvent domainEvent)
         {
             if (!_playerIdMapper.TryGetActorNumber(domainEvent.PreviousPlayerId, out var actorNumber))
             {
@@ -424,7 +438,7 @@ namespace Tetrage.Core.Events
                     $"DomainEventConverter: PlayerId {domainEvent.PreviousPlayerId} のActorNumberマッピングが見つかりません（TurnEnded→DTO）");
             }
 
-            return new Tetrage.Network.Gameplay.TurnEndedEvent
+            return new Tetrage.Network.Gameplay.TurnEndedEventPacket
             {
                 sequence = domainEvent.Sequence,
                 stateVersion = domainEvent.StateVersion,

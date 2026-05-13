@@ -15,7 +15,7 @@ namespace Tetrage.Tests.Editor
             var mapper = new PlayerIdMapper();
             mapper.Register(new PlayerId(1), 10);
             var converter = new CoreEvents.DomainEventConverter(mapper);
-            var dto = new NetworkDto.TurnStartedEvent
+            var dto = new NetworkDto.TurnStartedEventPacket
             {
                 sequence = 5,
                 stateVersion = 2,
@@ -33,7 +33,7 @@ namespace Tetrage.Tests.Editor
         public void ToDomain_TurnStarted_ThrowsWhenMappingMissing()
         {
             var converter = new CoreEvents.DomainEventConverter(new PlayerIdMapper());
-            var dto = new NetworkDto.TurnStartedEvent
+            var dto = new NetworkDto.TurnStartedEventPacket
             {
                 sequence = 1,
                 stateVersion = 1,
@@ -58,7 +58,7 @@ namespace Tetrage.Tests.Editor
             var mapper = new PlayerIdMapper();
             mapper.Register(new PlayerId(1), 10);
             var converter = new CoreEvents.DomainEventConverter(mapper);
-            var dto = new NetworkDto.ActionRequestedEvent
+            var dto = new NetworkDto.ActionRequestedEventPacket
             {
                 sequence = 11,
                 clientSequence = 22,
@@ -83,7 +83,7 @@ namespace Tetrage.Tests.Editor
             var mapper = new PlayerIdMapper();
             mapper.Register(new PlayerId(2), 20);
             var converter = new CoreEvents.DomainEventConverter(mapper);
-            var dto = new NetworkDto.ActionResultEvent
+            var dto = new NetworkDto.ActionResultEventPacket
             {
                 sequence = 33,
                 clientSequence = 44,

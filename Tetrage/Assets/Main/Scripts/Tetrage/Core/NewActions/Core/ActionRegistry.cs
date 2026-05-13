@@ -57,6 +57,31 @@ namespace Tetrage.Core.Actions
         }
 
         /// <summary>
+        /// アクションを登録する（カスタム Action ファクトリ付き版）。
+        /// GenericAction 以外の IAction 実装を使いたい場合に指定する。
+        /// </summary>
+        public void RegisterAction(
+            ActionType actionType,
+            Func<IActionValidator> validatorFactory,
+            Func<IActionExecutor> executorFactory,
+            Func<IPlayer, IActionValidator, IActionExecutor, IAction> actionFactory)
+        {
+            if (validatorFactory == null) throw new ArgumentNullException(nameof(validatorFactory));
+            if (executorFactory == null)  throw new ArgumentNullException(nameof(executorFactory));
+            if (actionFactory == null)    throw new ArgumentNullException(nameof(actionFactory));
+
+            _definitions[actionType] = new ActionDefinition
+            {
+                ActionType = actionType,
+                ValidatorFactory = validatorFactory,
+                ExecutorFactory = executorFactory,
+                ActionFactory = actionFactory
+            };
+
+            Debug.Log($"Action登録完了(カスタムFactory): {actionType}");
+        }
+
+        /// <summary>
         /// 指定されたActionTypeのActionを作成
         /// </summary>
         public IAction CreateAction(ActionType actionType, IPlayer requester)
@@ -71,6 +96,10 @@ namespace Tetrage.Core.Actions
             {
                 var validator = definition.ValidatorFactory();
                 var executor = definition.ExecutorFactory();
+
+                // カスタムファクトリが設定されていればそちらを優先する
+                if (definition.ActionFactory != null)
+                    return definition.ActionFactory(requester, validator, executor);
 
                 return new GenericAction(actionType, requester, validator, executor);
             }
@@ -124,6 +153,8 @@ namespace Tetrage.Core.Actions
         public ActionType ActionType { get; set; }
         public Func<IActionValidator> ValidatorFactory { get; set; }
         public Func<IActionExecutor> ExecutorFactory { get; set; }
+        /// <summary>null の場合は GenericAction を生成する。</summary>
+        public Func<IPlayer, IActionValidator, IActionExecutor, IAction> ActionFactory { get; set; }
 
         /// <summary>
         /// ActionIdプロパティ（ログ出力用）

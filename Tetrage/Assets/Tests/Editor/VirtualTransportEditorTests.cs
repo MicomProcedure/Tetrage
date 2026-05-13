@@ -14,10 +14,10 @@ namespace Tetrage.Tests.Editor
             var receiver = (VirtualReceiver)factory.CreateReceiver(serializer);
             var received = false;
 
-            receiver.On<TurnStartedEvent>(EventCode.TurnStarted, _ => received = true);
+            receiver.On<TurnStartedEventPacket>(EventCode.TurnStarted, _ => received = true);
             receiver.Start();
 
-            broadcaster.Raise(EventCode.TurnStarted, new TurnStartedEvent
+            broadcaster.Raise(EventCode.TurnStarted, new TurnStartedEventPacket
             {
                 sequence = 1,
                 stateVersion = 1,
@@ -35,12 +35,12 @@ namespace Tetrage.Tests.Editor
             var factoryA = new VirtualNetworkAdapterFactory();
             var receiverA = (VirtualReceiver)factoryA.CreateReceiver(serializer);
             var reachedA = false;
-            receiverA.On<TurnStartedEvent>(EventCode.TurnStarted, _ => reachedA = true);
+            receiverA.On<TurnStartedEventPacket>(EventCode.TurnStarted, _ => reachedA = true);
             receiverA.Start();
 
             var factoryB = new VirtualNetworkAdapterFactory();
             var broadcasterB = factoryB.CreateBroadcaster(serializer);
-            broadcasterB.Raise(EventCode.TurnStarted, new TurnStartedEvent
+            broadcasterB.Raise(EventCode.TurnStarted, new TurnStartedEventPacket
             {
                 sequence = 1,
                 stateVersion = 1,

@@ -22,8 +22,7 @@ namespace Tetrage.UI
         [SerializeField] private TextMeshProUGUI playerNumberText;
         [SerializeField] private GameObject turnMarker;
         [SerializeField] private Transform targetMarkerTransform;
-        [SerializeField] private RectTransform targetPileMarker;
-        [SerializeField] private List<Image> targetSuitImages = new List<Image>();        
+        [SerializeField] private RectTransform targetPileMarker;    
         #endregion
         
         #region Private Fields
@@ -47,13 +46,6 @@ namespace Tetrage.UI
                 Debug.LogError("[PlayerUI] profileDisplayViewが設定されていません！Inspectorで設定してください。", this);
             }
 
-            if (targetSuitImages == null)    // ターゲットのスートを表示するためのImageの検証
-            {
-                Debug.LogError("[PlayerUI] targetSuitImageが設定されていません！Inspectorで設定してください。", this);
-            }
-
-            HideTargetSuit();    
-
         }
 
         private void Start()
@@ -76,7 +68,7 @@ namespace Tetrage.UI
         /// <param name="id">プレイヤーのID</param>
         /// <param name="iconIndex">プレイヤーのアイコンのインデックス</param>
         /// <param name="playerNumber">プレイヤー番号（ターン順）</param>
-        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber)
+        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber, bool isUserPlayer = false)
         {
             // Debug.Log($"[PlayerUI] SetPlayerProfileData呼び出し: PlayerId={id}, IconIndex={iconIndex}");
             
@@ -86,7 +78,14 @@ namespace Tetrage.UI
 
             if (playerNumberText != null)
             {
+                if (isUserPlayer)
+                {
+                    playerNumberText.text = playerNumber.ToString()+"P (You)";    // プレイヤー番号を設定する。
+                }
+                else
+                {
                 playerNumberText.text = playerNumber.ToString()+"P";    // プレイヤー番号を設定する。
+                }
             }
             EnsureProfileDisplayView();
             
@@ -106,16 +105,16 @@ namespace Tetrage.UI
         /// プレイヤーのプロファイルデータを設定
         /// </summary>
         /// <param name="playerInfo">プレイヤーの情報</param>
-        public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber){
-            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber);
+        public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber, bool isUserPlayer = false){
+            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber, isUserPlayer);
         }
 
         /// <summary>
         /// プレイヤーのプロファイルデータを設定
         /// </summary>
         /// <param name="player">プレイヤー</param>
-        public void SetPlayerProfileData(IPlayer player, int playerNumber){
-            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber);
+        public void SetPlayerProfileData(IPlayer player, int playerNumber, bool isUserPlayer = false){
+            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber, isUserPlayer);
         }
 
 
@@ -142,31 +141,6 @@ namespace Tetrage.UI
             }
             
             profileDisplayView.SetIcon(iconIndex);
-        }
-
-        /// <summary>
-        /// 引数のスート(suit)の情報に基づいて、targetSuitImagesに格納されているスート画像の表示・非表示を切り替える
-        /// </summary>
-        /// <param name="suit">表示対象のスート</param>
-        public void ShowTargetSuit(Suit suit){
-            // targetSuitImagesリスト内の各要素をループ
-            for (int i = 0; i < targetSuitImages.Count; i++)
-            {
-                // 要素がnullでない場合のみ処理
-                if (targetSuitImages[i] != null)
-                {
-                    // suit.CompareToCustom(i) が true のとき、そのスート画像を表示
-                    // そうでなければ非表示
-                    targetSuitImages[i].gameObject.SetActive(i == suit.GetCustomOrder());
-                }
-            }
-        }
-
-        public void HideTargetSuit(){
-            foreach (var targetSuitImage in targetSuitImages)
-            {
-                targetSuitImage.gameObject.SetActive(false);
-            }
         }
 
         /// <summary>

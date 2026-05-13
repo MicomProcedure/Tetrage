@@ -1,12 +1,14 @@
 using UnityEngine;
 using Tetrage.Models;
+using R3;
 
 namespace Tetrage.UI
 {
 
     public static class CardClickDispatcher
     {
-        public static event System.Action<Card> OnCardClicked;
-        public static void Invoke(Card c) => OnCardClicked?.Invoke(c);
+        private static readonly Subject<Card> _cardClicked = new();
+        public static Observable<Card> CardClicked => _cardClicked;
+        public static void Publish(Card c) => _cardClicked.OnNext(c);
     }
 }

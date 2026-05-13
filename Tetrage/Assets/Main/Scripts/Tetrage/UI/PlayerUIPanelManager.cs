@@ -7,6 +7,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Tetrage.Core.Ids;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Events;
 
 namespace Tetrage.UI
 {
@@ -109,7 +110,16 @@ namespace Tetrage.UI
                     Debug.LogError($"PlayerUIPanelManager: パネル生成に失敗しました (player={player})");
                     continue;
                 }
-                panel.SetPlayerProfileData(player, playerNumber);  // プレイヤー番号を設定する。
+
+                // UserPlayerの場合はプレイヤー番号に(You)を付ける。それ以外は通常のプレイヤー番号を設定する。
+                if (player.Id == _gameContext.UserPlayer.Id)
+                {
+                    panel.SetPlayerProfileData(player, playerNumber, true);
+                }
+                else
+                {
+                    panel.SetPlayerProfileData(player, playerNumber, false);
+                }
                 _playerIdToPanel[player.Id] = panel;
             }
             
@@ -205,21 +215,6 @@ namespace Tetrage.UI
                 Debug.LogWarning($"PlayerUIPanelManager: 指定のPlayerIdに対応するパネルが見つかりませんでした (PlayerId={playerId})");
             }
         }   
-
-        /// <summary>
-        /// 指定したPlayerIdのパネルのTargetSuitを表示
-        /// </summary>
-        /// <param name="playerId">表示するプレイヤーのPlayerId</param>
-        /// <param name="suit">表示するスート</param>
-        public void ShowPlayerTargetSuit(PlayerId playerId, Suit suit){
-            if (!TryGetPlayerUI(playerId, out var playerUI))
-            {
-                Debug.LogWarning($"PlayerUIPanelManager: 指定のPlayerIdに対応するパネルが見つかりませんでした (PlayerId={playerId})");
-                return;
-            }
-            playerUI.HideTargetSuit();  // 既存のスートを非表示にする
-            playerUI.ShowTargetSuit(suit);
-        }
 
         /// <summary>
         /// PlayerIdに対応するPlayerUIを取得する

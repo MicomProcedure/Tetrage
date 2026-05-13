@@ -97,39 +97,45 @@ namespace Tetrage.Network.Gameplay
 
             _hostActionProcessor = new DefaultHostActionProcessor(this, _playerIdMapper);
 
-            _receiver.On<GameStartedEvent>(EventCode.GameStarted, e =>
+            _receiver.On<GameStartedEventPacket>(EventCode.GameStarted, e =>
             {
                 _applier.Apply(e);
             });
-            _receiver.On<TurnStartedEvent>(EventCode.TurnStarted, e =>
+            _receiver.On<TurnStartedEventPacket>(EventCode.TurnStarted, e =>
             {
                 _applier.Apply(e);
             });
-            _receiver.On<TurnEndedEvent>(EventCode.TurnEnded, e =>
+            _receiver.On<TurnEndedEventPacket>(EventCode.TurnEnded, e =>
             {
                 _applier.Apply(e);
             });
-            _receiver.On<ListOrderDeclaredEvent>(EventCode.ListOrderDeclared, e => _applier.Apply(e));
-            _receiver.On<CardMovedEvent>(EventCode.CardMoved, e => _applier.Apply(e));
-            _receiver.On<CardSideChangedEvent>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
-            _receiver.On<StartScanPhaseEvent>(EventCode.StartScanPhase, e => _applier.Apply(e));
-            _receiver.On<EndScanPhaseEvent>(EventCode.EndScanPhase, e => _applier.Apply(e));
-            _receiver.On<ScanTargetSelectedEvent>(EventCode.ScanTargetSelected, e => _applier.Apply(e));
-            _receiver.On<ScanResultEvent>(EventCode.ScanResult, e => _applier.Apply(e));
-            _receiver.On<FinishingGameEvent>(EventCode.FinishingGame, e => _applier.Apply(e));
-            _receiver.On<GameEndedEvent>(EventCode.GameEnded, e => _applier.Apply(e));
-            _receiver.On<PileShuffledWithSeedEvent>(EventCode.PileShuffledWithSeed, e => _applier.Apply(e));
-            _receiver.On<ActionResultEvent>(EventCode.ActionResult, e => _applier.Apply(e));
-            _receiver.On<ActionRequestedEvent>(EventCode.ActionRequested, e =>
+            _receiver.On<ListOrderDeclaredEventPacket>(EventCode.ListOrderDeclared, e => _applier.Apply(e));
+            _receiver.On<CardMovedEventPacket>(EventCode.CardMoved, e => _applier.Apply(e));
+            _receiver.On<CardStateChangedEventPacket>(EventCode.CardVisibilityChanged, e => _applier.Apply(e));
+            _receiver.On<StartScanPhaseEventPacket>(EventCode.StartScanPhase, e => _applier.Apply(e));
+            _receiver.On<EndScanPhaseEventPacket>(EventCode.EndScanPhase, e => _applier.Apply(e));
+            _receiver.On<ScanTargetSelectedEventPacket>(EventCode.ScanTargetSelected, e => _applier.Apply(e));
+            _receiver.On<ScanResultEventPacket>(EventCode.ScanResult, e => _applier.Apply(e));
+            _receiver.On<FinishingGameEventPacket>(EventCode.FinishingGame, e => _applier.Apply(e));
+            _receiver.On<GameEndedEventPacket>(EventCode.GameEnded, e => _applier.Apply(e));
+            _receiver.On<PileShuffledWithSeedPacket>(EventCode.PileShuffledWithSeed, e => _applier.Apply(e));
+            _receiver.On<ActionResultEventPacket>(EventCode.ActionResult, e => _applier.Apply(e));
+            _receiver.On<ActionRequestedEventPacket>(EventCode.ActionRequested, e =>
             {
                 if (_isHost)
                 {
-                    // まずは既定プロセッサで即時処理（後でDealer検証に差し替え可）
+                    // TetrageMulti 参加応答パケットは EventBus にも流す（HostActionProcessor の非同期収集用）
+                    if (e.actionType == Tetrage.Core.Enums.ActionType.TetrageMulti
+                        && (e.actionStatusInt == Tetrage.Core.Constants.InGameConsts.TetrageMultiStatus.ResponseOpen
+                         || e.actionStatusInt == Tetrage.Core.Constants.InGameConsts.TetrageMultiStatus.ResponseDecline))
+                    {
+                        _applier.Apply(e);
+                    }
                     _hostActionProcessor.Process(e);
                 }
                 else
                 {
-                    // ゲスト側は現状通知不要。必要になればUI通知デリゲートを追加する。
+                    // Guest 側: TetrageMulti の参加応答は自分の入力として EventBus へ流す必要はない（UI が直接送信する）
                 }
             });
         }

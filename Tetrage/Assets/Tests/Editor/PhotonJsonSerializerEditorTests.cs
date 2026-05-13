@@ -9,7 +9,7 @@ namespace Tetrage.Tests.Editor
         public void SerializeDeserialize_RoundTrip_MaintainsDtoFields()
         {
             var serializer = new PhotonJsonSerializer();
-            var dto = new TurnEndedEvent
+            var dto = new TurnEndedEventPacket
             {
                 sequence = 7,
                 stateVersion = 3,
@@ -17,7 +17,7 @@ namespace Tetrage.Tests.Editor
             };
 
             var bytes = serializer.Serialize(dto);
-            var restored = serializer.Deserialize<TurnEndedEvent>(bytes);
+            var restored = serializer.Deserialize<TurnEndedEventPacket>(bytes);
 
             Assert.AreEqual(7, restored.sequence);
             Assert.AreEqual(3, restored.stateVersion);
@@ -30,7 +30,7 @@ namespace Tetrage.Tests.Editor
             var serializer = new PhotonJsonSerializer();
             var bytes = System.Text.Encoding.UTF8.GetBytes("{}");
 
-            var restored = serializer.Deserialize<TurnEndedEvent>(bytes);
+            var restored = serializer.Deserialize<TurnEndedEventPacket>(bytes);
 
             Assert.AreEqual(0, restored.sequence);
             Assert.AreEqual(0, restored.stateVersion);

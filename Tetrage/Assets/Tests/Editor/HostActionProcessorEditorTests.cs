@@ -123,7 +123,7 @@ namespace Tetrage.Tests.Editor
             var controller = new FakeController(broadcaster, context, mapper);
             var processor = new DefaultHostActionProcessor(controller, mapper);
 
-            var request = new ActionRequestedEvent
+            var request = new ActionRequestedEventPacket
             {
                 actorPlayerId = 10,
                 actionType = ActionType.Draw,
@@ -134,8 +134,8 @@ namespace Tetrage.Tests.Editor
             processor.Process(request);
 
             Assert.AreEqual(2, broadcaster.RaiseToActorsCalls.Count);
-            var firstMove = (CardMovedEvent)broadcaster.RaiseToActorsCalls[0].payload;
-            var secondMove = (CardMovedEvent)broadcaster.RaiseToActorsCalls[1].payload;
+            var firstMove = (CardMovedEventPacket)broadcaster.RaiseToActorsCalls[0].payload;
+            var secondMove = (CardMovedEventPacket)broadcaster.RaiseToActorsCalls[1].payload;
             Assert.AreEqual(PileIds.PlayerHands(1).Value, firstMove.toPileId);
             Assert.AreEqual(PileIds.PlayerHands(1).Value, secondMove.fromPileId);
         }

@@ -33,7 +33,7 @@ namespace Tetrage.Tests.Editor
             var mapper = new PlayerIdMapper();
             mapper.Register(new PlayerId(1), 10);
             var ctx = new GeneralNetworkActionContext(spy, new SequenceService(), mapper);
-            var request = new ActionRequestedEvent
+            var request = new ActionRequestedEventPacket
             {
                 sequence = 1,
                 clientSequence = 2,
@@ -43,8 +43,8 @@ namespace Tetrage.Tests.Editor
             ctx.Request(request);
 
             Assert.AreEqual(EventCode.ActionRequested, spy.LastCode);
-            Assert.IsInstanceOf<ActionRequestedEvent>(spy.LastPayload);
-            var dto = (ActionRequestedEvent)spy.LastPayload;
+            Assert.IsInstanceOf<ActionRequestedEventPacket>(spy.LastPayload);
+            var dto = (ActionRequestedEventPacket)spy.LastPayload;
             Assert.AreEqual(10, dto.actorPlayerId);
         }
 

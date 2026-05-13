@@ -78,8 +78,8 @@ namespace Tetrage.Core
                 .Subscribe(OnCardMoved)
                 .AddTo(_disposables);
 
-            eventBus.CardVisibilityChanged
-                .Subscribe(OnCardVisibilityChanged)
+            eventBus.CardStateChanged
+                .Subscribe(OnCardStateChanged)
                 .AddTo(_disposables);
 
             eventBus.PileShuffled
@@ -226,18 +226,26 @@ namespace Tetrage.Core
             // カード移動が失敗した場合は、以降の表示状態更新も行わない。
             if (!CardPile.TransferService.Transfer(fromPile, toPile, card))
             {
+                Debug.LogError($"GameplayDomainEventHandler: カード移動が失敗しました: Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
                 return;
             }
 
             UpdateFaceUpStateForTmpTransition(fromPile, toPile, card);
 
+            // UserPlayerのHandsとTargetに入ったときはスート可視を有効化する
             if (_gameContext.UserPlayer != null)
             {
-                var userTmpPileId = PileIds.PlayerTmp(_gameContext.UserPlayer.Id);
+                var userTargetPileId = PileIds.PlayerTarget(_gameContext.UserPlayer.Id);
                 var userHandsPileId = PileIds.PlayerHands(_gameContext.UserPlayer.Id);
 
                 // UserPlayerのHandsに入ったときはスート可視を有効化
                 if (toPile.Id.Equals(userHandsPileId))
+                {
+                    card.SetSuitVisible(true);
+                }
+
+                // UserPlayerのTargetに入ったときはスート可視を有効化
+                if (toPile.Id.Equals(userTargetPileId))
                 {
                     card.SetSuitVisible(true);
                 }
@@ -249,11 +257,11 @@ namespace Tetrage.Core
                 }
 
                 Debug.Log(
-                    $"<color=red>GameplayDomainEventHandler: カード移動完了 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}, UserPlayerTmp={userTmpPileId}, UserPlayerHands={userHandsPileId}");
+                    $"<color=red>GameplayDomainEventHandler: カード移動完了 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}, UserPlayerTarget={userTargetPileId}, UserPlayerHands={userHandsPileId}");
             }
         }
 
-        private void OnCardVisibilityChanged(DomainEvents.CardSideChangedEvent e)
+        private void OnCardStateChanged(DomainEvents.CardStateChangedEvent e)
         {
             if (!_cardRegistry.TryGet(e.CardId, out var card))
             {
@@ -261,16 +269,47 @@ namespace Tetrage.Core
                 return;
             }
 
-            // 可視性が変更されていればFlip
-            if (card.IsFaceUp != e.IsFaceUp)
+            switch (e.StateType)
             {
-                card.Flip();
+                case DomainEvents.CardStateType.FaceUp:
+                    // 表裏変更は現在値との差分があるときだけ反転する。
+                    var isFaceUp = e.StateValue;
+                    if (card.IsFaceUp != isFaceUp)
+                    {
+                        card.Flip();
+                    }
+                    break;
+
+                case DomainEvents.CardStateType.IsSuitVisible:
+                    // スート表示状態を同期する。
+                    card.SetSuitVisible(e.StateValue);
+                    break;
+
+                case DomainEvents.CardStateType.IsHighlighted:
+                    // ハイライト状態を同期する。
+                    if (e.StateValue)
+                    {
+                        card.Highlight();
+                    }
+                    else
+                    {
+                        card.Unhighlight();
+                    }
+                    break;
+
+                default:
+                    // 旧イベント互換: stateType未設定時は IsFaceUp を適用する。
+                    if (card.IsFaceUp != e.IsFaceUp)
+                    {
+                        card.Flip();
+                    }
+                    break;
             }
         }
 
-        #region Tmp FaceUp Control
+        #region CardPile FaceUp Control
         /// <summary>
-        /// Tmp 入退場時の表裏状態を更新します。
+        /// CardPile 入退場時の表裏状態を更新します。
         /// </summary>
         private static void UpdateFaceUpStateForTmpTransition(CardPile from, CardPile to, Card card)
         {

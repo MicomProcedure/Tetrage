@@ -1,6 +1,16 @@
 namespace Tetrage.Network.Gameplay
 {
     /// <summary>
+    /// ネットワーク境界で扱うカード状態種別コード
+    /// </summary>
+    public enum CardStateCode : byte
+    {
+        FaceUp = 1,
+        IsSuitVisible = 2,
+        IsHighlighted = 3,
+    }
+
+    /// <summary>
     /// ネットワークイベントの種類（RaiseEvent の code）
     /// </summary>
     public enum EventCode : byte

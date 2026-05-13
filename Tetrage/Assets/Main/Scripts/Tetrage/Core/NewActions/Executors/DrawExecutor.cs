@@ -8,6 +8,7 @@ using Tetrage.Core.Ids;
 using System.Collections.Generic;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Enums;
+using R3;
 using DomainEvents = Tetrage.Core.Events;
 namespace Tetrage.Core.Actions
 {
@@ -148,7 +149,7 @@ namespace Tetrage.Core.Actions
             cardIds.Add(movedToStackCardId);
             cardIds.Add(movedToTrashCardId);
 
-            var descriptor = new ActionRequestDescriptor
+            var descriptor = new ActionRequestDescriptorPacket
             {
                 actionType = ActionType.Draw,
                 actorPlayerId = context.RequesterPlayer.PlayerId,
@@ -198,16 +199,9 @@ namespace Tetrage.Core.Actions
 
             var tcs = new UniTaskCompletionSource<Card>();
 
-            System.Action<Card> cardClickedHandler = null;
-            cardClickedHandler = (clickedCard) =>
-            {
-                if (pile.Contains(clickedCard))
-                {
-                    tcs.TrySetResult(clickedCard);
-                }
-            };
-
-            CardClickDispatcher.OnCardClicked += cardClickedHandler;
+            var cardClickDisposable = CardClickDispatcher.CardClicked
+                .Where(clickedCard => pile.Contains(clickedCard))
+                .Subscribe(clickedCard => tcs.TrySetResult(clickedCard));
 
             try
             {
@@ -222,7 +216,7 @@ namespace Tetrage.Core.Actions
             }
             finally
             {
-                CardClickDispatcher.OnCardClicked -= cardClickedHandler;
+                cardClickDisposable.Dispose();
             }
         }
     }

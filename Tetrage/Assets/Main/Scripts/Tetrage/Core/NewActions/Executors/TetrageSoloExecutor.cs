@@ -29,7 +29,7 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure("自分のTargetカードが見つかりません");
                 }
 
-                // 2. 他のプレイヤー全員の取得
+                // 2. 他のプレイヤー全員Targetの取得
                 var otherPlayers = context.OtherPlayers?.ToList();
                 if (otherPlayers == null || !otherPlayers.Any())
                 {
@@ -47,7 +47,7 @@ namespace Tetrage.Core.Actions
 
                 Debug.Log($"TetrageSolo アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} のスート {myTargetCard.Suit} - 結果: {resultMessage}");
 
-                var descriptor = new ActionRequestDescriptor
+                var descriptor = new ActionRequestDescriptorPacket
                 {
                     actionType = ActionType.TetrageSolo,
                     actorPlayerId = context.RequesterPlayer.PlayerId,

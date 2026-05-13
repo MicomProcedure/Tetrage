@@ -4,6 +4,7 @@ using Tetrage.Core.Constants;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
+using Tetrage.Core.Events;
 using Tetrage.UI;
 using Tetrage.Core.DTO;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using Tetrage.Core.Ids;
 using Cysharp.Threading.Tasks;
 using DomainEvents = Tetrage.Core.Events;
 using NetworkDto = Tetrage.Network.Gameplay;
+using UnityEngine.Serialization;
 
 namespace Tetrage.Managers
 {
@@ -32,8 +34,11 @@ namespace Tetrage.Managers
 		[SerializeField] private InGameNavigation _inGameNavigation;
 		[SerializeField] private InGameLoadingUI _loadingUI;
 		[Header("Animations")]
-		[SerializeField] private CutInAnimationController _TetrageSoloCutInAnimCtl;
-		[SerializeField] private GameStartAnimation _gameStartAnimation;
+		[FormerlySerializedAs("_TetrageSoloCutInAnimCtl")]
+		[SerializeField] private CutInAnimationController _cutInAnimationController;
+
+		[Header("TetrageMulti")]
+		[SerializeField] private TetrageMultiResponseUIController _tetrageMultiResponseUI;
 
 		#endregion
 		#region Private Fields
@@ -80,6 +85,10 @@ namespace Tetrage.Managers
 			{
 				_ScanUIController.ResetScanPhaseUIState();
 			}
+			if (_tetrageMultiResponseUI != null)
+			{
+				_tetrageMultiResponseUI.Teardown();
+			}
 			ResetScanSelectionState();
 			Unsubscribe();
 		}
@@ -105,9 +114,9 @@ namespace Tetrage.Managers
 				_ScanUIController.gameObject.SetActive(visible);
 			}
 
-			if (_TetrageSoloCutInAnimCtl != null)
+			if (_cutInAnimationController != null)
 			{
-				_TetrageSoloCutInAnimCtl.gameObject.SetActive(visible);
+				_cutInAnimationController.gameObject.SetActive(visible);
 			}
 
 			if (_inGameNavigation != null)
@@ -157,10 +166,15 @@ namespace Tetrage.Managers
 				.Subscribe(OnScanPhaseEnded)
 				.AddTo(_disposables);
 
-			_events.ScanResultReceived
-				.Subscribe(OnScanResultReceived)
-				.AddTo(_disposables);
-		}
+		_events.ScanResultReceived
+			.Subscribe(OnScanResultReceived)
+			.AddTo(_disposables);
+
+		// 宣言者: ボタン押下と同時に演出を開始（ネットワーク往復を待たない）
+		TetrageMultiDispatcher.SelectionStarted
+			.Subscribe(_ => PlayActionCutIn(ActionType.TetrageMulti))
+			.AddTo(_disposables);
+	}
 
 		private void Unsubscribe()
 		{
@@ -206,13 +220,47 @@ namespace Tetrage.Managers
 			SetActionPanelActive(true);
 		}
 
-		private void OnActionResult(DomainEvents.ActionResultEvent e)
+	private void OnActionResult(DomainEvents.ActionResultEvent e)
+	{
+		Debug.Log($"InGameUIManager: OnActionResult status={e.ActionStatusInt}");
+
+		if (e.ActionStatusInt == InGameConsts.TetrageMultiStatus.ResponseRequested)
 		{
-			Debug.Log($"InGameUIManager: OnActionResult");
-			if (_TetrageSoloCutInAnimCtl != null && e.ActionType == ActionType.TetrageSolo)
+			// 被選択者クライアント: ResponseRequested でカットインを再生
+			// 宣言者は SelectionStarted（ボタン押下時）に既に再生済みのためスキップ
+			var isLocalRequester = _gameContext?.UserPlayer != null
+				&& e.ActorPlayerId == _gameContext.UserPlayer.Id;
+			if (!isLocalRequester)
+				PlayActionCutIn(ActionType.TetrageMulti);
+			return;
+		}
+
+		PlayActionCutIn(e.ActionType);
+	}
+
+		/// <summary>
+		/// アクション種別に対応するカットイン演出を再生する。
+		/// </summary>
+		private void PlayActionCutIn(ActionType actionType)
+		{
+			if (_cutInAnimationController == null)
 			{
-				_TetrageSoloCutInAnimCtl.gameObject.SetActive(true);
-				_TetrageSoloCutInAnimCtl.PlayCutIn();
+				return;
+			}
+
+			_cutInAnimationController.gameObject.SetActive(true);
+
+			switch (actionType)
+			{
+				case ActionType.TetrageSolo:
+					_cutInAnimationController.PlayTetrageSoloCutIn();
+					break;
+				case ActionType.TetrageMulti:
+					_cutInAnimationController.PlayTetrageMultiCutIn();
+					break;
+				case ActionType.Reach:
+					_cutInAnimationController.PlayTetrageReachCutIn();
+					break;
 			}
 		}
 
@@ -272,7 +320,7 @@ namespace Tetrage.Managers
 			SetInGameNavigationActive(false);
 			SetActionPanelActive(true);
 
-			_gameStartAnimation?.PlayGameStartAnimation();	// ゲーム開始演出を再生
+			_cutInAnimationController?.PlayGameStartAnimation();	// ゲーム開始演出を再生
 		}
 
 		private void OnScanResultReceived(DomainEvents.ScanResultReceivedEvent e)
@@ -313,7 +361,7 @@ namespace Tetrage.Managers
 
 		private void SetActionPanelActive(bool active) => SetUIRootActive(_actionPanelController, active);
 
-		private void SetCutInActive(bool active) => SetUIRootActive(_TetrageSoloCutInAnimCtl, active);
+		private void SetCutInActive(bool active) => SetUIRootActive(_cutInAnimationController, active);
 
 		private void SetInGameNavigationActive(bool active) => SetUIRootActive(_inGameNavigation, active);
 		private void SetResultUIActive(bool active) => SetUIRootActive(_resultUI, active);
@@ -419,9 +467,9 @@ namespace Tetrage.Managers
 				ok = false;
 			}
 
-			if (_gameStartAnimation == null)
+			if (_cutInAnimationController == null)
 			{
-				Debug.LogError("InGameUIManager.Initialize: _gameStartAnimation が未設定です。Inspector で割り当ててください。");
+				Debug.LogError("InGameUIManager.Initialize: _cutInAnimationController が未設定です。Inspector で割り当ててください。");
 				ok = false;
 			}
 
@@ -448,11 +496,6 @@ namespace Tetrage.Managers
 				Debug.LogWarning("InGameUIManager.Initialize: _loadingUI が未設定です。LoadingUI の初期表示制御をスキップします。");
 			}
 
-			if (_TetrageSoloCutInAnimCtl == null)
-			{
-				Debug.LogWarning("InGameUIManager.Initialize: _TetrageSoloCutInAnimCtl が未設定です。カットイン演出の制御をスキップします。");
-			}
-
 			return ok;
 		}
 
@@ -472,6 +515,10 @@ namespace Tetrage.Managers
 			_actionPanelController.Initialize(_gameContext);
 			InitializePlayerUIPanels();
 			_playerUIPanelManager.Initialize(_gameContext);
+
+			// TetrageMulti 応答 UI（Inspector 未設定時はスキップ）
+			if (_tetrageMultiResponseUI != null)
+				_tetrageMultiResponseUI.Initialize(_gameContext, gameplayNetwork);
 		}
 
 				/// <summary>
@@ -615,8 +662,50 @@ namespace Tetrage.Managers
 				_gameContext?.GetTurnOrderNumber(_scanSelectedTargetPlayerId) ?? 0,
 				_scanSelectedTargetSuit.GetKatakanaName()));
 
-			// 選択したプレイヤーのパネルのTargetSuitをUI上で表示
-			_playerUIPanelManager.ShowPlayerTargetSuit(_scanSelectedTargetPlayerId, _scanSelectedTargetSuit);
+			// 選択したプレイヤーのTargetカードだけ、スート可視を有効化する。
+			if (!TryGetFirstTargetCardId(_scanSelectedTargetPlayerId, out var targetCardId))
+			{
+				Debug.LogWarning($"InGameUIManager: 対象プレイヤーのTargetカードを取得できませんでした (PlayerId={_scanSelectedTargetPlayerId})");
+				return;
+			}
+
+			_gameContext.Events.Publish(new DomainEvents.CardStateChangedEvent(
+				sequence: 0,
+				cardId: targetCardId,
+				isFaceUp: false,
+				stateType: CardStateType.IsSuitVisible,
+				stateValue: true));
+		}
+
+		/// <summary>
+		/// 指定プレイヤーのTarget山の先頭カードIdを取得する。TODO: 後でリファクタ
+		/// </summary>
+		private bool TryGetFirstTargetCardId(PlayerId playerId, out CardId cardId)
+		{
+			cardId = default;
+			if (_gameContext?.Players == null)
+			{
+				return false;
+			}
+
+			for (int i = 0; i < _gameContext.Players.Count; i++)
+			{
+				var player = _gameContext.Players[i];
+				if (player == null || player.Id != playerId)
+				{
+					continue;
+				}
+
+				if (player.Target?.Cards == null || player.Target.Cards.Count == 0)
+				{
+					return false;
+				}
+
+				cardId = player.Target.Cards[0].Id;
+				return true;
+			}
+
+			return false;
 		}
 
 		private bool TrySendScanTargetSelected()
@@ -640,7 +729,7 @@ namespace Tetrage.Managers
 				return false;
 			}
 
-			var payload = new NetworkDto.ScanTargetSelectedEvent
+			var payload = new NetworkDto.ScanTargetSelectedEventPacket
 			{
 				sequence = _gameplayNetwork.Sequence.NextSequence(),
 				actorPlayerId = selfActor,

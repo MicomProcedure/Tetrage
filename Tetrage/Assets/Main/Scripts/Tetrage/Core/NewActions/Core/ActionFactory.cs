@@ -39,7 +39,13 @@ namespace Tetrage.Core.Actions
             _registry.RegisterAction<CheckValidator, CheckExecutor>(ActionType.Check);
             _registry.RegisterAction<PassValidator, PassExecutor>(ActionType.Pass);
             _registry.RegisterAction<TetrageSoloValidator, TetrageSoloExecutor>(ActionType.TetrageSolo);
-            _registry.RegisterAction<TetrageMultiValidator, TetrageMultiExecutor>(ActionType.TetrageMulti);
+
+            // TetrageMulti は Executor がネットワーク送信を自身で行うため、専用 Action クラスを使用する
+            _registry.RegisterAction(
+                ActionType.TetrageMulti,
+                () => new TetrageMultiValidator(),
+                () => new TetrageMultiExecutor(),
+                (requester, validator, executor) => new TetrageMultiAction(requester, validator, executor));
 
             Debug.Log("デフォルトアクションの登録完了");
         }

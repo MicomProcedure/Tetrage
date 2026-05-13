@@ -1,4 +1,5 @@
 using System.Linq;
+using Tetrage.Core.Constants;
 
 namespace Tetrage.Core.Actions
 {
@@ -28,8 +29,7 @@ namespace Tetrage.Core.Actions
             var hands = context.RequesterPlayer.Hands;
             
             // 手札が満杯かチェック（容量は定数から取得する想定）
-            // TODO: プレイヤーの手札容量を定数から取得
-            var maxHandCapacity = 3; // 仮の値
+            var maxHandCapacity = InGameConsts.DEFAULT_PLAYER_HAND_CAPACITY; // 仮の値
             if (hands.Count < maxHandCapacity)
             {
                 return ValidationResult.Invalid("手札が満杯ではありません");

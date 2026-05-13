@@ -5,6 +5,7 @@ using Tetrage.Models;
 using System.Collections.Generic;
 using Tetrage.UI; // CardClickDispatcherを使用するために追加
 using System.Threading; // CancellationTokenを追加
+using R3;
 
 namespace Tetrage.Core.Actions
 {
@@ -34,7 +35,7 @@ namespace Tetrage.Core.Actions
                 // 3. 現段階ではローカルのFlipは実行せず（Host権威適用を待つ）
                 Debug.Log($"Open アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が表向き対象を選択");
 
-                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptorPacket
                 {
                     actionType = Tetrage.Core.Enums.ActionType.Open,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
@@ -82,16 +83,9 @@ namespace Tetrage.Core.Actions
 
             var tcs = new UniTaskCompletionSource<Card>();
 
-            System.Action<Card> cardClickedHandler = null;
-            cardClickedHandler = (clickedCard) =>
-            {
-                if (hiddenCards.Contains(clickedCard))
-                {
-                    tcs.TrySetResult(clickedCard);
-                }
-            };
-
-            CardClickDispatcher.OnCardClicked += cardClickedHandler;
+            var cardClickdisposable = CardClickDispatcher.CardClicked
+                .Where(c => hiddenCards.Contains(c))
+                .Subscribe(c => tcs.TrySetResult(c));
 
             try
             {
@@ -106,7 +100,7 @@ namespace Tetrage.Core.Actions
             }
             finally
             {
-                CardClickDispatcher.OnCardClicked -= cardClickedHandler;
+                cardClickdisposable.Dispose();
             }
         }
     }

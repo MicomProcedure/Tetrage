@@ -14,6 +14,7 @@ using Tetrage.Core.Constants;
 using Tetrage.Core;
 using Tetrage.Core.Actions;
 using R3;
+using Tetrage.Audio;
 
 namespace Tetrage.Managers
 {
@@ -25,6 +26,7 @@ namespace Tetrage.Managers
         #region 設定コンポーネント
         [Header("Field Setup Configuration")]
         [SerializeField] private FieldSetupComponent _fieldSetupComponent;
+        [SerializeField] private InGameAudioManager _inGameAudioManager;
         [SerializeField] private GameMode _gameMode = GameMode.Debug;
 
         #endregion
@@ -186,6 +188,12 @@ namespace Tetrage.Managers
                     _inGameUIManager.Initialize(_gameContext, _netCtl);
                 }
 
+                // 5.7 InGameAudioManager 初期化
+                if (_inGameAudioManager != null)
+                {
+                    _inGameAudioManager.Initialize(_gameContext);
+                }
+
 
                 _isInitialized = true;
 
@@ -293,7 +301,7 @@ namespace Tetrage.Managers
 
         private void PublishGameStarted()
         {
-            var started = new GameStartedEvent
+            var started = new GameStartedEventPacket
             {
                 // 一旦FieldSetupComponentの設定を使用するため実質使わない
                 // TODO: 将来的には設定されたルールに応じて適切な値を設定する
