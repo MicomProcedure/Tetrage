@@ -68,7 +68,7 @@ namespace Tetrage.UI
         /// <param name="id">プレイヤーのID</param>
         /// <param name="iconIndex">プレイヤーのアイコンのインデックス</param>
         /// <param name="playerNumber">プレイヤー番号（ターン順）</param>
-        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber)
+        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber, bool isUserPlayer = false)
         {
             // Debug.Log($"[PlayerUI] SetPlayerProfileData呼び出し: PlayerId={id}, IconIndex={iconIndex}");
             
@@ -78,7 +78,14 @@ namespace Tetrage.UI
 
             if (playerNumberText != null)
             {
+                if (isUserPlayer)
+                {
+                    playerNumberText.text = playerNumber.ToString()+"P (You)";    // プレイヤー番号を設定する。
+                }
+                else
+                {
                 playerNumberText.text = playerNumber.ToString()+"P";    // プレイヤー番号を設定する。
+                }
             }
             EnsureProfileDisplayView();
             
@@ -98,16 +105,16 @@ namespace Tetrage.UI
         /// プレイヤーのプロファイルデータを設定
         /// </summary>
         /// <param name="playerInfo">プレイヤーの情報</param>
-        public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber){
-            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber);
+        public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber, bool isUserPlayer = false){
+            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber, isUserPlayer);
         }
 
         /// <summary>
         /// プレイヤーのプロファイルデータを設定
         /// </summary>
         /// <param name="player">プレイヤー</param>
-        public void SetPlayerProfileData(IPlayer player, int playerNumber){
-            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber);
+        public void SetPlayerProfileData(IPlayer player, int playerNumber, bool isUserPlayer = false){
+            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber, isUserPlayer);
         }
 
 

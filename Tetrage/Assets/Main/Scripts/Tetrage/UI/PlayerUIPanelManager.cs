@@ -110,7 +110,16 @@ namespace Tetrage.UI
                     Debug.LogError($"PlayerUIPanelManager: パネル生成に失敗しました (player={player})");
                     continue;
                 }
-                panel.SetPlayerProfileData(player, playerNumber);  // プレイヤー番号を設定する。
+
+                // UserPlayerの場合はプレイヤー番号に(You)を付ける。それ以外は通常のプレイヤー番号を設定する。
+                if (player.Id == _gameContext.UserPlayer.Id)
+                {
+                    panel.SetPlayerProfileData(player, playerNumber, true);
+                }
+                else
+                {
+                    panel.SetPlayerProfileData(player, playerNumber, false);
+                }
                 _playerIdToPanel[player.Id] = panel;
             }
             
