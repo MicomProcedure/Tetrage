@@ -40,7 +40,7 @@ namespace Tetrage.Core.Actions
                 Debug.Log($"Check アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が {targetPlayer.UserId} をチェック");
 
                 // isMatchの結果をActionRequestDescriptorに詰めて返す。これによって結果が全員に通知され、各々でUIの処理がされる
-                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptorPacket
                 {
                     actionType = ActionType.Check,
                     actorPlayerId = context.RequesterPlayer.PlayerId,

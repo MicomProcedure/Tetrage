@@ -328,7 +328,7 @@ namespace Tetrage.Managers
                 var result = await _gameContext.Events.ActionResult
                     .FirstAsync(e => e.ActorPlayerId == waitingPlayer.PlayerId, token);
 
-                var descriptor = new ActionRequestDescriptor
+                var descriptor = new ActionRequestDescriptorPacket
                 {
                     actionType = result.ActionType,
                     actorPlayerId = result.ActorPlayerId.Value,
@@ -471,9 +471,9 @@ namespace Tetrage.Managers
             return true;
         }
 
-        private bool TryGetActionDescriptor(ActionResult actionResult, out ActionRequestDescriptor descriptor)
+        private bool TryGetActionDescriptor(ActionResult actionResult, out ActionRequestDescriptorPacket descriptor)
         {
-            if (actionResult?.AdditionalData is ActionRequestDescriptor typed)
+            if (actionResult?.AdditionalData is ActionRequestDescriptorPacket typed)
             {
                 descriptor = typed;
                 return true;
@@ -483,7 +483,7 @@ namespace Tetrage.Managers
             return false;
         }
 
-        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptor descriptor)
+        private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptorPacket descriptor)
         {
             if (descriptor.actionType == ActionType.TetrageSolo)
             {

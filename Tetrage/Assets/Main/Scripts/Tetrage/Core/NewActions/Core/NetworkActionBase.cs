@@ -22,9 +22,9 @@ namespace Tetrage.Core.Actions
         protected override async UniTask OnAfterExecute(IActionContext context, ActionResult result)
         {
             // AdditionalData から送信情報を取得して送信。
-            if (context?.Network != null && result?.AdditionalData is ActionRequestDescriptor desc)
+            if (context?.Network != null && result?.AdditionalData is ActionRequestDescriptorPacket desc)
             {
-                var request = new ActionRequestedEvent
+                var request = new ActionRequestedEventPacket
                 {
                     sequence = 0, // Host側で採番
                     clientSequence = context.Network.NextClientSequence(),

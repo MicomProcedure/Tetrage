@@ -9,7 +9,7 @@ namespace Tetrage.Network.Gameplay
 {
     public interface IHostActionProcessor
     {
-        void Process(ActionRequestedEvent e);
+        void Process(ActionRequestedEventPacket e);
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ namespace Tetrage.Network.Gameplay
             return true;
         }
 
-        public void Process(ActionRequestedEvent e)
+        public void Process(ActionRequestedEventPacket e)
         {
             var seq = _netCtl.Sequence;
             Debug.Log($"HostActionProcessor: Process {e.actionType}, ActorPlayerId: {e.actorPlayerId}, TargetCardIds: {string.Join(", ", e.targetCardIds ?? System.Array.Empty<int>())}");
@@ -113,7 +113,7 @@ namespace Tetrage.Network.Gameplay
         ///   [1]: Stackに戻したカード（戻した順）
         ///   [2]: Trashに送ったカード（送った順）
         /// </summary>
-        private void ProcessDraw(ActionRequestedEvent e, PlayerId actorPlayerId, SequenceService seq)
+        private void ProcessDraw(ActionRequestedEventPacket e, PlayerId actorPlayerId, SequenceService seq)
         {
             var othersInt = GetOtherActorNumbers(e.actorPlayerId);
             Debug.Log($"HostActionProcessor: Process Draw, ActorPlayerId: {e.actorPlayerId}, Others: [{string.Join(", ", othersInt)}]");
@@ -123,7 +123,7 @@ namespace Tetrage.Network.Gameplay
             {
                 // [0]: Handsへ（Stack -> Hands）
                 var selected = new CardId(validIds[0]);
-                var movedSelected = new CardMovedEvent
+                var movedSelected = new CardMovedEventPacket
                 {
                     sequence = seq.NextSequence(),
                     stateVersion = seq.NextStateVersion(),
@@ -140,7 +140,7 @@ namespace Tetrage.Network.Gameplay
                 {
                     var lastIdx = total - 1;
                     var trashCardId = new CardId(validIds[lastIdx]);
-                    var movedToTrash = new CardMovedEvent
+                    var movedToTrash = new CardMovedEventPacket
                     {
                         sequence = seq.NextSequence(),
                         stateVersion = seq.NextStateVersion(),
@@ -152,7 +152,7 @@ namespace Tetrage.Network.Gameplay
                 }
             }
 
-            var res = new ActionResultEvent
+            var res = new ActionResultEventPacket
             {
                 sequence = seq.NextSequence(),
                 clientSequence = e.clientSequence,
@@ -166,14 +166,14 @@ namespace Tetrage.Network.Gameplay
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
 
-        private void ProcessCheck(ActionRequestedEvent e, SequenceService seq)
+        private void ProcessCheck(ActionRequestedEventPacket e, SequenceService seq)
         {
             var isMatch = e.actionStatusInt == 1;
 
             // Checkに成功した場合は、相手のTargetカードを表示する。
             if (isMatch && e.targetCardIds != null && e.targetCardIds.Length > 0)
             {
-                var targetCardStateChanged = new CardStateChangedEvent
+                var targetCardStateChanged = new CardStateChangedEventPacket
                 {
                     sequence = seq.NextSequence(),
                     stateVersion = seq.NextStateVersion(),
@@ -187,7 +187,7 @@ namespace Tetrage.Network.Gameplay
                 // TODO: Checkに失敗した場合はそのSuitではないという情報をCardModelに反映させるイベントを発行させる
             }
 
-            var res = new ActionResultEvent
+            var res = new ActionResultEventPacket
             {
                 sequence = seq.NextSequence(),
                 clientSequence = e.clientSequence,
@@ -201,13 +201,13 @@ namespace Tetrage.Network.Gameplay
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
 
-        private void ProcessTetrageSolo(ActionRequestedEvent e, SequenceService seq)
+        private void ProcessTetrageSolo(ActionRequestedEventPacket e, SequenceService seq)
         {
             var requester = ResolvePlayer(e.actorPlayerId);
             var requesterCard = GetTargetCard(requester);
             if (requester == null || requesterCard == null)
             {
-                var fallback = new ActionResultEvent
+                var fallback = new ActionResultEventPacket
                 {
                     sequence = seq.NextSequence(),
                     clientSequence = e.clientSequence,
@@ -249,7 +249,7 @@ namespace Tetrage.Network.Gameplay
                 winnerActorNumbers.AddRange(_playerIdMapper.GetAllActorNumbers().Where(actor => !loserSet.Contains(actor)));
             }
 
-            var res = new ActionResultEvent
+            var res = new ActionResultEventPacket
             {
                 sequence = seq.NextSequence(),
                 clientSequence = e.clientSequence,
@@ -263,13 +263,13 @@ namespace Tetrage.Network.Gameplay
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
 
-        private void ProcessTetrageMulti(ActionRequestedEvent e, SequenceService seq)
+        private void ProcessTetrageMulti(ActionRequestedEventPacket e, SequenceService seq)
         {
             var requester = ResolvePlayer(e.actorPlayerId);
             var requesterCard = GetTargetCard(requester);
             if (requester == null || requesterCard == null)
             {
-                var fallback = new ActionResultEvent
+                var fallback = new ActionResultEventPacket
                 {
                     sequence = seq.NextSequence(),
                     clientSequence = e.clientSequence,
@@ -311,7 +311,7 @@ namespace Tetrage.Network.Gameplay
                 winnerActorNumbers.AddRange(GetOtherActorNumbers(e.actorPlayerId));
             }
 
-            var res = new ActionResultEvent
+            var res = new ActionResultEventPacket
             {
                 sequence = seq.NextSequence(),
                 clientSequence = e.clientSequence,
@@ -325,9 +325,9 @@ namespace Tetrage.Network.Gameplay
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
 
-        private void ProcessDefault(ActionRequestedEvent e, SequenceService seq)
+        private void ProcessDefault(ActionRequestedEventPacket e, SequenceService seq)
         {
-            var res = new ActionResultEvent
+            var res = new ActionResultEventPacket
             {
                 sequence = seq.NextSequence(),
                 clientSequence = e.clientSequence,

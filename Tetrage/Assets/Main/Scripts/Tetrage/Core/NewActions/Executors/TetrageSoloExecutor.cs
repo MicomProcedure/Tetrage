@@ -47,7 +47,7 @@ namespace Tetrage.Core.Actions
 
                 Debug.Log($"TetrageSolo アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} のスート {myTargetCard.Suit} - 結果: {resultMessage}");
 
-                var descriptor = new ActionRequestDescriptor
+                var descriptor = new ActionRequestDescriptorPacket
                 {
                     actionType = ActionType.TetrageSolo,
                     actorPlayerId = context.RequesterPlayer.PlayerId,

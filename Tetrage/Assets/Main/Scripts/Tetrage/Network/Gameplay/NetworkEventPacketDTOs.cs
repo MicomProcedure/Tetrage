@@ -26,7 +26,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct GameStartedEvent
+    public struct GameStartedEventPacket
     {
         public int deckId;
         public byte[] suitOrder;
@@ -36,7 +36,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct TurnStartedEvent
+    public struct TurnStartedEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -44,7 +44,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct TurnEndedEvent
+    public struct TurnEndedEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -53,7 +53,7 @@ namespace Tetrage.Network.Gameplay
 
 
     [Serializable]
-    public struct ListOrderDeclaredEvent
+    public struct ListOrderDeclaredEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -64,7 +64,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct CardMovedEvent
+    public struct CardMovedEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -74,7 +74,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct CardStateChangedEvent
+    public struct CardStateChangedEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -84,7 +84,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct StartScanPhaseEvent
+    public struct StartScanPhaseEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -93,14 +93,14 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct EndScanPhaseEvent
+    public struct EndScanPhaseEventPacket
     {
         public int sequence;
         public int stateVersion;
     }
 
     [Serializable]
-    public struct ScanTargetSelectedEvent
+    public struct ScanTargetSelectedEventPacket
     {
         public int sequence;
         public int actorPlayerId; // ActorNumber
@@ -108,7 +108,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct ScanResultEvent
+    public struct ScanResultEventPacket
     {
         public int sequence;
         public int targetActorNumber;
@@ -116,7 +116,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct FinishingGameEvent
+    public struct FinishingGameEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -124,7 +124,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct GameEndedEvent
+    public struct GameEndedEventPacket
     {
         public int sequence;
         public int stateVersion;
@@ -132,7 +132,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct PileShuffledWithSeedEvent
+    public struct PileShuffledWithSeedPacket
     {
         public int sequence;
         public int stateVersion;
@@ -141,7 +141,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct ActionRequestedEvent
+    public struct ActionRequestedEventPacket
     {
         public int sequence;
         public int clientSequence; // クライアント側の識別用
@@ -152,7 +152,7 @@ namespace Tetrage.Network.Gameplay
     }
 
     [Serializable]
-    public struct ActionResultEvent
+    public struct ActionResultEventPacket
     {
         public int sequence;
         public int clientSequence; // エコーバック（関連付け）
@@ -168,7 +168,7 @@ namespace Tetrage.Network.Gameplay
     /// ActionResult.AdditionalData に格納し、NetworkActionBase で取り出して送信するためのDTO
     /// </summary>
     [Serializable]
-    public struct ActionRequestDescriptor
+    public struct ActionRequestDescriptorPacket
     {
         public ActionType actionType;
         public int actorPlayerId; // PlayerId.Value（ドメイン内部の識別値）

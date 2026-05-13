@@ -230,7 +230,7 @@ namespace Tetrage.Tests.PlayMode
             yield return null; // WaitForGameEndAsyncに入るまで1フレーム待機
 
             // ネットワーク経路でGameEnded DTOを送信して終了させる
-            var gameEndedDto = new NetworkDto.GameEndedEvent
+            var gameEndedDto = new NetworkDto.GameEndedEventPacket
             {
                 sequence = 1,
                 stateVersion = 1,
@@ -268,7 +268,7 @@ namespace Tetrage.Tests.PlayMode
                 .AddTo(disposable);
 
             // Act: DTOをBroadcasterに流してネットワーク境界パイプラインを通す
-            var turnStartedDto = new NetworkDto.TurnStartedEvent
+            var turnStartedDto = new NetworkDto.TurnStartedEventPacket
             {
                 sequence = 1,
                 stateVersion = 1,

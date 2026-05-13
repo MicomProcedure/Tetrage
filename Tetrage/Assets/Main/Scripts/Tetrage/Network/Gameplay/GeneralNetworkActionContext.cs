@@ -16,7 +16,7 @@ namespace Tetrage.Network.Gameplay
             _playerIdMapper = playerIdMapper;
         }
 
-        public void Request(ActionRequestedEvent request)
+        public void Request(ActionRequestedEventPacket request)
         {
             // DescriptorのactorPlayerIdはPlayerId.Value前提。送信DTO境界ではActorNumberに変換する。
             if (!_playerIdMapper.TryGetActorNumber(new Core.Ids.PlayerId(request.actorPlayerId), out var actorNumber))

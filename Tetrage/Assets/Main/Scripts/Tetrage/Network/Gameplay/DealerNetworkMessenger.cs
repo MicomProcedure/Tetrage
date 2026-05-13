@@ -30,7 +30,7 @@ namespace Tetrage.Network.Gameplay
         {
             var currentPlayerActorNumber = GetActorNumber(currentPlayerId);
 
-            var e = new TurnStartedEvent
+            var e = new TurnStartedEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -43,7 +43,7 @@ namespace Tetrage.Network.Gameplay
         {
             var previousPlayerActorNumber = GetActorNumber(previousPlayerId);
 
-            var e = new TurnEndedEvent
+            var e = new TurnEndedEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -55,7 +55,7 @@ namespace Tetrage.Network.Gameplay
         public void PublishGameEnded(List<PlayerId> winnerPlayerIds)
         {
             var winnerActorNumbers = GetActorNumbers(winnerPlayerIds);
-            var e = new GameEndedEvent
+            var e = new GameEndedEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -68,7 +68,7 @@ namespace Tetrage.Network.Gameplay
         {
             var userPlayerActorNumber = GetActorNumber(userPlayerId);
             var playerActorNumbers = GetActorNumbers(playerIds);
-            var e = new StartScanPhaseEvent
+            var e = new StartScanPhaseEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -80,7 +80,7 @@ namespace Tetrage.Network.Gameplay
 
         public void PublishScanPhaseEnd()
         {
-            var e = new EndScanPhaseEvent
+            var e = new EndScanPhaseEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -92,7 +92,7 @@ namespace Tetrage.Network.Gameplay
         {
             var receiverActorNumber = GetActorNumber(receiverPlayerId);
             var targetActorNumber = GetActorNumber(targetPlayerId);
-            var e = new ScanResultEvent
+            var e = new ScanResultEventPacket
             {
                 sequence = _seq.NextSequence(),
                 targetActorNumber = targetActorNumber,
@@ -104,7 +104,7 @@ namespace Tetrage.Network.Gameplay
         public void PublishFinishingGame(List<PlayerId> winnerPlayerIds)
         {
             var winnerActorNumbers = GetActorNumbers(winnerPlayerIds);
-            var e = new FinishingGameEvent
+            var e = new FinishingGameEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -142,7 +142,7 @@ namespace Tetrage.Network.Gameplay
             {
                 foreach (var m in plan.Moves)
                 {
-                    var dto = new CardMovedEvent
+                    var dto = new CardMovedEventPacket
                     {
                         sequence = _seq.NextSequence(),
                         stateVersion = _seq.NextStateVersion(),
@@ -159,7 +159,7 @@ namespace Tetrage.Network.Gameplay
             {
                 foreach (var v in plan.Visibility)
                 {
-                    var dto = new CardStateChangedEvent
+                    var dto = new CardStateChangedEventPacket
                     {
                         sequence = _seq.NextSequence(),
                         stateVersion = _seq.NextStateVersion(),
@@ -174,7 +174,7 @@ namespace Tetrage.Network.Gameplay
 
         private void PublishPileShuffleSeed(int pileId, int seed)
         {
-            var dto = new PileShuffledWithSeedEvent
+            var dto = new PileShuffledWithSeedPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),
@@ -193,7 +193,7 @@ namespace Tetrage.Network.Gameplay
             var ids = new int[temp.Count];
             for (int i = 0; i < temp.Count; i++) ids[i] = temp[i].PlayerId.Value;
 
-            var dto = new ListOrderDeclaredEvent
+            var dto = new ListOrderDeclaredEventPacket
             {
                 sequence = _seq.NextSequence(),
                 stateVersion = _seq.NextStateVersion(),

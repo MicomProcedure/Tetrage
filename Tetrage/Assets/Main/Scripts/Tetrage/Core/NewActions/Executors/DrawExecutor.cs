@@ -149,7 +149,7 @@ namespace Tetrage.Core.Actions
             cardIds.Add(movedToStackCardId);
             cardIds.Add(movedToTrashCardId);
 
-            var descriptor = new ActionRequestDescriptor
+            var descriptor = new ActionRequestDescriptorPacket
             {
                 actionType = ActionType.Draw,
                 actorPlayerId = context.RequesterPlayer.PlayerId,

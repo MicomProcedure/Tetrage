@@ -41,7 +41,7 @@ namespace Tetrage.Network.Gameplay
             return true;
         }
 
-        public void Apply(CardMovedEvent e)
+        public void Apply(CardMovedEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -49,7 +49,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(CardStateChangedEvent e)
+        public void Apply(CardStateChangedEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -57,7 +57,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(StartScanPhaseEvent e)
+        public void Apply(StartScanPhaseEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -65,7 +65,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(EndScanPhaseEvent e)
+        public void Apply(EndScanPhaseEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -73,14 +73,14 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(ScanTargetSelectedEvent e)
+        public void Apply(ScanTargetSelectedEventPacket e)
         {
             // Guest -> Host の入力イベントは送信元ごとにsequence空間が異なるため順序ガードを通さない。
             var domainEvent = _converter.ToDomain(e);
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(ScanResultEvent e)
+        public void Apply(ScanResultEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -88,7 +88,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(FinishingGameEvent e)
+        public void Apply(FinishingGameEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -96,7 +96,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(GameEndedEvent e)
+        public void Apply(GameEndedEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -104,7 +104,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(ActionResultEvent e)
+        public void Apply(ActionResultEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -112,7 +112,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(PileShuffledWithSeedEvent e)
+        public void Apply(PileShuffledWithSeedPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -124,7 +124,7 @@ namespace Tetrage.Network.Gameplay
         /// GameStarted: DTO→DomainEvent変換して発行。
         /// 初期同期のため、連番はリセット。
         /// </summary>
-        public void Apply(GameStartedEvent e)
+        public void Apply(GameStartedEventPacket e)
         {
             ResetSequences();
 
@@ -133,7 +133,7 @@ namespace Tetrage.Network.Gameplay
         }
 
 
-        public void Apply(ListOrderDeclaredEvent e)
+        public void Apply(ListOrderDeclaredEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -141,7 +141,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(TurnStartedEvent e)
+        public void Apply(TurnStartedEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 
@@ -149,7 +149,7 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
-        public void Apply(TurnEndedEvent e)
+        public void Apply(TurnEndedEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
 

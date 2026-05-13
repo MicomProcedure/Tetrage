@@ -68,7 +68,7 @@ namespace Tetrage.Core.Actions
                     .Select(card => card.Id)
                     .ToArray();
 
-                var descriptor = new ActionRequestDescriptor
+                var descriptor = new ActionRequestDescriptorPacket
                 {
                     actionType = ActionType.TetrageMulti,
                     actorPlayerId = context.RequesterPlayer.PlayerId,

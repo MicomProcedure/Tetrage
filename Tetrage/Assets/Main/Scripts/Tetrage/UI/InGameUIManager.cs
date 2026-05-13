@@ -701,7 +701,7 @@ namespace Tetrage.Managers
 				return false;
 			}
 
-			var payload = new NetworkDto.ScanTargetSelectedEvent
+			var payload = new NetworkDto.ScanTargetSelectedEventPacket
 			{
 				sequence = _gameplayNetwork.Sequence.NextSequence(),
 				actorPlayerId = selfActor,

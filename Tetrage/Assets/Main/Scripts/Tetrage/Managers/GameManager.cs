@@ -301,7 +301,7 @@ namespace Tetrage.Managers
 
         private void PublishGameStarted()
         {
-            var started = new GameStartedEvent
+            var started = new GameStartedEventPacket
             {
                 // 一旦FieldSetupComponentの設定を使用するため実質使わない
                 // TODO: 将来的には設定されたルールに応じて適切な値を設定する

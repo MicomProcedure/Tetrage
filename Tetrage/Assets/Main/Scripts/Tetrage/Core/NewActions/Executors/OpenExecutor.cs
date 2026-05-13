@@ -35,7 +35,7 @@ namespace Tetrage.Core.Actions
                 // 3. 現段階ではローカルのFlipは実行せず（Host権威適用を待つ）
                 Debug.Log($"Open アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId} が表向き対象を選択");
 
-                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptor
+                var descriptor = new Tetrage.Network.Gameplay.ActionRequestDescriptorPacket
                 {
                     actionType = Tetrage.Core.Enums.ActionType.Open,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
