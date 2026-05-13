@@ -1,10 +1,14 @@
-using UnityEngine;
 using DG.Tweening;
-using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// ゲーム開始時のUIアニメーションを再生するView。
+/// </summary>
 public class GameStartAnimation : MonoBehaviour
 {
+    #region Serialized Fields
+
     [Header("UI Elements")]
     [SerializeField] private RectTransform gameStartText; // 「GameStart」テキストのRectTransform
     [SerializeField] private Image backgroundImage;       // 背景イメージ
@@ -17,31 +21,84 @@ public class GameStartAnimation : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip gameStartSE;
 
+    #endregion
+
+    #region Private Fields
+
     private Sequence currentSequence; // 再生中のDOTweenシーケンス
     private Vector2 originalPosition; // 初期位置の保持
 
-    public void PlayGameStartAnimation()
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Awake()
     {
-        // 🎯 1. 既存のアニメーションを停止
-        if (currentSequence != null && currentSequence.IsActive())
+        ValidateReferences();
+
+        if (gameStartText != null)
         {
-            currentSequence.Kill();
+            originalPosition = gameStartText.anchoredPosition;
+        }
+    }
+
+    private void OnDisable()
+    {
+        KillCurrentSequence();
+    }
+
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// ゲーム開始演出を再生する。
+    /// </summary>
+    public void PlayAnimation()
+    {
+        if (!ValidateReferences())
+        {
+            return;
         }
 
-        // 🎯 2. 初期状態リセット
+        KillCurrentSequence();
+        ResetAnimationState();
+        PlaySE();
+        BuildSequence();
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    /// <summary>
+    /// 初期状態へ戻す。
+    /// </summary>
+    private void ResetAnimationState()
+    {
         backgroundImage.gameObject.SetActive(true);
         gameStartText.gameObject.SetActive(true);
 
         backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0f);
         gameStartText.anchoredPosition = originalPosition + new Vector2(0, dropDistance);
+    }
 
-        // 🎵 SE再生（PlayOneShotで途中停止を防ぐ）
+    /// <summary>
+    /// ゲーム開始SEを再生する。
+    /// </summary>
+    private void PlaySE()
+    {
         if (gameStartSE != null && audioSource != null)
         {
             audioSource.PlayOneShot(gameStartSE);
         }
+    }
 
-        // 🎬 3. DOTweenアニメーションを再構築
+    /// <summary>
+    /// DOTweenシーケンスを構築して再生する。
+    /// </summary>
+    private void BuildSequence()
+    {
         currentSequence = DOTween.Sequence();
 
         currentSequence.Append(backgroundImage.DOFade(0.6f, fadeDuration)) // 背景フェードイン
@@ -56,4 +113,40 @@ public class GameStartAnimation : MonoBehaviour
                 gameStartText.gameObject.SetActive(false);
             });
     }
+
+    /// <summary>
+    /// 再生中のシーケンスを停止する。
+    /// </summary>
+    private void KillCurrentSequence()
+    {
+        if (currentSequence == null || !currentSequence.IsActive())
+        {
+            return;
+        }
+
+        currentSequence.Kill();
+        currentSequence = null;
+    }
+
+    /// <summary>
+    /// Inspector参照の設定漏れを検出する。
+    /// </summary>
+    private bool ValidateReferences()
+    {
+        if (gameStartText == null)
+        {
+            Debug.LogWarning("GameStartAnimation: gameStartText が未設定です。ゲーム開始演出をスキップします。", this);
+            return false;
+        }
+
+        if (backgroundImage == null)
+        {
+            Debug.LogWarning("GameStartAnimation: backgroundImage が未設定です。ゲーム開始演出をスキップします。", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    #endregion
 }

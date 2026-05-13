@@ -15,6 +15,7 @@ using Tetrage.Core.Ids;
 using Cysharp.Threading.Tasks;
 using DomainEvents = Tetrage.Core.Events;
 using NetworkDto = Tetrage.Network.Gameplay;
+using UnityEngine.Serialization;
 
 namespace Tetrage.Managers
 {
@@ -33,8 +34,8 @@ namespace Tetrage.Managers
 		[SerializeField] private InGameNavigation _inGameNavigation;
 		[SerializeField] private InGameLoadingUI _loadingUI;
 		[Header("Animations")]
-		[SerializeField] private CutInAnimationController _TetrageSoloCutInAnimCtl;
-		[SerializeField] private GameStartAnimation _gameStartAnimation;
+		[FormerlySerializedAs("_TetrageSoloCutInAnimCtl")]
+		[SerializeField] private CutInAnimationController _cutInAnimationController;
 
 		#endregion
 		#region Private Fields
@@ -106,9 +107,9 @@ namespace Tetrage.Managers
 				_ScanUIController.gameObject.SetActive(visible);
 			}
 
-			if (_TetrageSoloCutInAnimCtl != null)
+			if (_cutInAnimationController != null)
 			{
-				_TetrageSoloCutInAnimCtl.gameObject.SetActive(visible);
+				_cutInAnimationController.gameObject.SetActive(visible);
 			}
 
 			if (_inGameNavigation != null)
@@ -210,10 +211,32 @@ namespace Tetrage.Managers
 		private void OnActionResult(DomainEvents.ActionResultEvent e)
 		{
 			Debug.Log($"InGameUIManager: OnActionResult");
-			if (_TetrageSoloCutInAnimCtl != null && e.ActionType == ActionType.TetrageSolo)
+			PlayActionCutIn(e.ActionType);
+		}
+
+		/// <summary>
+		/// アクション種別に対応するカットイン演出を再生する。
+		/// </summary>
+		private void PlayActionCutIn(ActionType actionType)
+		{
+			if (_cutInAnimationController == null)
 			{
-				_TetrageSoloCutInAnimCtl.gameObject.SetActive(true);
-				_TetrageSoloCutInAnimCtl.PlayCutIn();
+				return;
+			}
+
+			_cutInAnimationController.gameObject.SetActive(true);
+
+			switch (actionType)
+			{
+				case ActionType.TetrageSolo:
+					_cutInAnimationController.PlayTetrageSoloCutIn();
+					break;
+				case ActionType.TetrageMulti:
+					_cutInAnimationController.PlayTetrageMultiCutIn();
+					break;
+				case ActionType.Reach:
+					_cutInAnimationController.PlayTetrageReachCutIn();
+					break;
 			}
 		}
 
@@ -273,7 +296,7 @@ namespace Tetrage.Managers
 			SetInGameNavigationActive(false);
 			SetActionPanelActive(true);
 
-			_gameStartAnimation?.PlayGameStartAnimation();	// ゲーム開始演出を再生
+			_cutInAnimationController?.PlayGameStartAnimation();	// ゲーム開始演出を再生
 		}
 
 		private void OnScanResultReceived(DomainEvents.ScanResultReceivedEvent e)
@@ -314,7 +337,7 @@ namespace Tetrage.Managers
 
 		private void SetActionPanelActive(bool active) => SetUIRootActive(_actionPanelController, active);
 
-		private void SetCutInActive(bool active) => SetUIRootActive(_TetrageSoloCutInAnimCtl, active);
+		private void SetCutInActive(bool active) => SetUIRootActive(_cutInAnimationController, active);
 
 		private void SetInGameNavigationActive(bool active) => SetUIRootActive(_inGameNavigation, active);
 		private void SetResultUIActive(bool active) => SetUIRootActive(_resultUI, active);
@@ -420,9 +443,9 @@ namespace Tetrage.Managers
 				ok = false;
 			}
 
-			if (_gameStartAnimation == null)
+			if (_cutInAnimationController == null)
 			{
-				Debug.LogError("InGameUIManager.Initialize: _gameStartAnimation が未設定です。Inspector で割り当ててください。");
+				Debug.LogError("InGameUIManager.Initialize: _cutInAnimationController が未設定です。Inspector で割り当ててください。");
 				ok = false;
 			}
 
@@ -447,11 +470,6 @@ namespace Tetrage.Managers
 			if (_loadingUI == null)
 			{
 				Debug.LogWarning("InGameUIManager.Initialize: _loadingUI が未設定です。LoadingUI の初期表示制御をスキップします。");
-			}
-
-			if (_TetrageSoloCutInAnimCtl == null)
-			{
-				Debug.LogWarning("InGameUIManager.Initialize: _TetrageSoloCutInAnimCtl が未設定です。カットイン演出の制御をスキップします。");
 			}
 
 			return ok;

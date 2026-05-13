@@ -89,11 +89,6 @@ MonoBehaviour:
   turnMarker: {fileID: 3660241870464753898}
   targetMarkerTransform: {fileID: 1933985289276988390}
   targetPileMarker: {fileID: 7685345113181447375}
-  targetSuitImages:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
 --- !u!1001 &1420111572110709091
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -209,6 +204,10 @@ PrefabInstance:
     - target: {fileID: 8564513749115555811, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8564513749115555811, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

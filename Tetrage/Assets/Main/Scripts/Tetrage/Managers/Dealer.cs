@@ -280,6 +280,7 @@ namespace Tetrage.Managers
                 _isGameFinished = true; // 強制終了
             }
 
+            // TetrageSoloかTetrageMultiの場合のみゲーム終了を判定し、ループを抜ける
             if (HandleGameEndingByAction(actionResult))
             {
                 return;
@@ -458,6 +459,7 @@ namespace Tetrage.Managers
                 return false;
             }
 
+            // TetrageSoloかTetrageMultiの場合のみゲーム終了を判定する
             if (descriptor.actionType != ActionType.TetrageSolo && descriptor.actionType != ActionType.TetrageMulti)
             {
                 return false;

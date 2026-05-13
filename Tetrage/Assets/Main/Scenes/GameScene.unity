@@ -795,7 +795,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5681119764361272913, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6138612433724534169, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
       propertyPath: moveDuration
@@ -885,6 +885,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27cfa599d8d7f384ab289ea783fb8fe5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1624701599 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1380032716041231836, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
+  m_PrefabInstance: {fileID: 1624701597}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e21189458eef0a34aa3f736d71c5c71b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1653091889 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4131154578499251106, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
@@ -905,17 +916,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5d1adddc0f0824e88814e74f9ef6b5a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &2026072511 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3386294199709744888, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
-  m_PrefabInstance: {fileID: 1624701597}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 44ce19292b9909f47894be86d7b08af1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &2074764622
@@ -1325,7 +1325,7 @@ PrefabInstance:
     - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
       propertyPath: _gameStartAnimation
       value: 
-      objectReference: {fileID: 2026072511}
+      objectReference: {fileID: 0}
     - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
       propertyPath: _playerUIPanelManager
       value: 
@@ -1334,6 +1334,10 @@ PrefabInstance:
       propertyPath: _actionPanelController
       value: 
       objectReference: {fileID: 53221604}
+    - target: {fileID: 8639723583808061780, guid: a93a1fc6725cb9748947524a86ad75f0, type: 3}
+      propertyPath: _cutInAnimationController
+      value: 
+      objectReference: {fileID: 1624701599}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

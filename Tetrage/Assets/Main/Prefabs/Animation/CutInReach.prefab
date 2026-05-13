@@ -241,7 +241,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6020976563725449959}
-  - component: {fileID: 7416411121295361119}
   - component: {fileID: 6649681105599723863}
   - component: {fileID: 5730101319163603452}
   m_Layer: 5
@@ -273,19 +272,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &7416411121295361119
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7523805808692738180}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e21189458eef0a34aa3f736d71c5c71b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  view: {fileID: 6649681105599723863}
 --- !u!114 &6649681105599723863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -594,8 +580,8 @@ RectTransform:
   m_GameObject: {fileID: 8620676348182479857}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 6020976563725449959}
   m_Father: {fileID: 0}
@@ -650,7 +636,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &6540478636459633890
 MonoBehaviour:
   m_ObjectHideFlags: 0

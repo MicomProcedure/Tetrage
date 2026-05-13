@@ -37,6 +37,17 @@ namespace Tetrage.Core.Constants
 
         public const int DEFAULT_SE_PLAYBACK_GATE_TIME = 100; // SE再生ゲートの時間(ミリ秒)
 
+        /// <summary>カットイン演出の時間設定。</summary>
+        public static class CutInAnimationDuration
+        {
+            public const int MILLISECONDS_PER_SECOND = 1000; // 秒からミリ秒への変換係数
+            public const float ENTRY_DURATION_SECONDS = 0.5f; // カットインが入る時間
+            public const float EXIT_DURATION_SECONDS = 0.3f; // カットインが抜ける時間
+            public const int TETRAGE_SOLO_TOTAL_DURATION_MS = 1500; // TetrageSoloカットインの合計時間
+            public const int TETRAGE_MULTI_TOTAL_DURATION_MS = 1500; // TetrageMultiカットインの合計時間
+            public const int TETRAGE_REACH_TOTAL_DURATION_MS = 1500; // TetrageReachカットインの合計時間
+        }
+
         /// <summary>ScanPhase中にInGameNavigationへ表示する文言。</summary>
         public static class ScanPhaseNavigationText
         {
