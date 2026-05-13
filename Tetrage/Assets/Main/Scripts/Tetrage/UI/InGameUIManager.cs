@@ -37,6 +37,9 @@ namespace Tetrage.Managers
 		[FormerlySerializedAs("_TetrageSoloCutInAnimCtl")]
 		[SerializeField] private CutInAnimationController _cutInAnimationController;
 
+		[Header("TetrageMulti")]
+		[SerializeField] private TetrageMultiResponseUIController _tetrageMultiResponseUI;
+
 		#endregion
 		#region Private Fields
 		private IGameContext _gameContext;
@@ -81,6 +84,10 @@ namespace Tetrage.Managers
 			if (_ScanUIController != null)
 			{
 				_ScanUIController.ResetScanPhaseUIState();
+			}
+			if (_tetrageMultiResponseUI != null)
+			{
+				_tetrageMultiResponseUI.Teardown();
 			}
 			ResetScanSelectionState();
 			Unsubscribe();
@@ -159,10 +166,15 @@ namespace Tetrage.Managers
 				.Subscribe(OnScanPhaseEnded)
 				.AddTo(_disposables);
 
-			_events.ScanResultReceived
-				.Subscribe(OnScanResultReceived)
-				.AddTo(_disposables);
-		}
+		_events.ScanResultReceived
+			.Subscribe(OnScanResultReceived)
+			.AddTo(_disposables);
+
+		// 宣言者: ボタン押下と同時に演出を開始（ネットワーク往復を待たない）
+		TetrageMultiDispatcher.SelectionStarted
+			.Subscribe(_ => PlayActionCutIn(ActionType.TetrageMulti))
+			.AddTo(_disposables);
+	}
 
 		private void Unsubscribe()
 		{
@@ -208,11 +220,23 @@ namespace Tetrage.Managers
 			SetActionPanelActive(true);
 		}
 
-		private void OnActionResult(DomainEvents.ActionResultEvent e)
+	private void OnActionResult(DomainEvents.ActionResultEvent e)
+	{
+		Debug.Log($"InGameUIManager: OnActionResult status={e.ActionStatusInt}");
+
+		if (e.ActionStatusInt == InGameConsts.TetrageMultiStatus.ResponseRequested)
 		{
-			Debug.Log($"InGameUIManager: OnActionResult");
-			PlayActionCutIn(e.ActionType);
+			// 被選択者クライアント: ResponseRequested でカットインを再生
+			// 宣言者は SelectionStarted（ボタン押下時）に既に再生済みのためスキップ
+			var isLocalRequester = _gameContext?.UserPlayer != null
+				&& e.ActorPlayerId == _gameContext.UserPlayer.Id;
+			if (!isLocalRequester)
+				PlayActionCutIn(ActionType.TetrageMulti);
+			return;
 		}
+
+		PlayActionCutIn(e.ActionType);
+	}
 
 		/// <summary>
 		/// アクション種別に対応するカットイン演出を再生する。
@@ -491,6 +515,10 @@ namespace Tetrage.Managers
 			_actionPanelController.Initialize(_gameContext);
 			InitializePlayerUIPanels();
 			_playerUIPanelManager.Initialize(_gameContext);
+
+			// TetrageMulti 応答 UI（Inspector 未設定時はスキップ）
+			if (_tetrageMultiResponseUI != null)
+				_tetrageMultiResponseUI.Initialize(_gameContext, gameplayNetwork);
 		}
 
 				/// <summary>

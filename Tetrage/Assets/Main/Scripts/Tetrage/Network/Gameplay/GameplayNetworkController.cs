@@ -124,12 +124,18 @@ namespace Tetrage.Network.Gameplay
             {
                 if (_isHost)
                 {
-                    // まずは既定プロセッサで即時処理（後でDealer検証に差し替え可）
+                    // TetrageMulti 参加応答パケットは EventBus にも流す（HostActionProcessor の非同期収集用）
+                    if (e.actionType == Tetrage.Core.Enums.ActionType.TetrageMulti
+                        && (e.actionStatusInt == Tetrage.Core.Constants.InGameConsts.TetrageMultiStatus.ResponseOpen
+                         || e.actionStatusInt == Tetrage.Core.Constants.InGameConsts.TetrageMultiStatus.ResponseDecline))
+                    {
+                        _applier.Apply(e);
+                    }
                     _hostActionProcessor.Process(e);
                 }
                 else
                 {
-                    // ゲスト側は現状通知不要。必要になればUI通知デリゲートを追加する。
+                    // Guest 側: TetrageMulti の参加応答は自分の入力として EventBus へ流す必要はない（UI が直接送信する）
                 }
             });
         }

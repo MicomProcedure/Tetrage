@@ -96,16 +96,7 @@ namespace Tetrage.Presenters
         {
             _view.SetCardData(_model.Suit, _model.Number);
 
-            if (!_view.IsFlipAnimationInProgress)
-            {
-                _view.SetFlip(_model.IsFaceUp, _model.IsSuitVisible);
-            }
-            else
-            {
-
-            }
-
-            // ハイライト状態の更新
+            // ハイライトは SetFlip 内の ShowFace/ShowBack より先に同期する（色は _isHighlighted を参照するため）
             if (_model.IsHighlighted)
             {
                 _view.Highlight();
@@ -113,6 +104,11 @@ namespace Tetrage.Presenters
             else
             {
                 _view.Unhighlight();
+            }
+
+            if (!_view.IsFlipAnimationInProgress)
+            {
+                _view.SetFlip(_model.IsFaceUp, _model.IsSuitVisible);
             }
         }
 

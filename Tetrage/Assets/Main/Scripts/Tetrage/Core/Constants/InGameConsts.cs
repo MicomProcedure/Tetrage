@@ -35,6 +35,9 @@ namespace Tetrage.Core.Constants
         /// <summary>Tmp パイル配下に置いたときの CardView の sortingOrder。他の山より手前に出す。</summary>
         public const int CARD_VIEW_TMP_PILE_SORTING_ORDER = 10;
 
+        /// <summary>裏向き表示時にハイライト色を SpriteRenderer.color へ乗算する係数。</summary>
+        public const float CARD_VIEW_BACK_HIGHLIGHT_COLOR_MULTIPLIER = 0.3f;
+
         public const int DEFAULT_SE_PLAYBACK_GATE_TIME = 100; // SE再生ゲートの時間(ミリ秒)
 
         /// <summary>カットイン演出の時間設定。</summary>
@@ -46,6 +49,23 @@ namespace Tetrage.Core.Constants
             public const int TETRAGE_SOLO_TOTAL_DURATION_MS = 1500; // TetrageSoloカットインの合計時間
             public const int TETRAGE_MULTI_TOTAL_DURATION_MS = 1500; // TetrageMultiカットインの合計時間
             public const int TETRAGE_REACH_TOTAL_DURATION_MS = 1500; // TetrageReachカットインの合計時間
+        }
+
+        /// <summary>
+        /// TetrageMulti の ActionRequested/ActionResult で使う actionStatusInt 値。
+        /// 0/1 は既存の成功/失敗と互換を保つ。
+        /// </summary>
+        public static class TetrageMultiStatus
+        {
+            /// <summary>Requester→Host: 宣言開始（targetCardIds = 選択した参加者の Target カード ID）</summary>
+            public const int StartRequest = 10;
+            /// <summary>Host→All: 選択プレイヤーへの参加応答要求通知</summary>
+            public const int ResponseRequested = 20;
+            /// <summary>Guest→Host: 参加応答 — 出す</summary>
+            public const int ResponseOpen = 21;
+            /// <summary>Guest→Host: 参加応答 — 出さない（明示的不参加）</summary>
+            public const int ResponseDecline = 22;
+            // 最終結果は既存の 0=失敗 / 1=成功 を流用
         }
 
         /// <summary>ScanPhase中にInGameNavigationへ表示する文言。</summary>

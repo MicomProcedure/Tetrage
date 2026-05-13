@@ -7,6 +7,7 @@ using Tetrage.Data;
 using R3;
 using System.Collections.Generic;
 using Tetrage.Audio;
+using Tetrage.Core.Constants;
 namespace Tetrage.UI
 {
     public class CardView : MonoBehaviour
@@ -58,6 +59,8 @@ namespace Tetrage.UI
 
         private Color _originalColor;
         private bool _isHighlighted = false;
+        /// <summary>直近の表向き表示か（SetFlip スキップ時もハイライト色を合わせるため保持）</summary>
+        private bool _isDisplayedFaceUp = false;
         private Suit _currentSuit;
         private int _currentNumber;
         private List<GameObject> _suitBackImages = new List<GameObject>();
@@ -194,7 +197,8 @@ namespace Tetrage.UI
             // 表向き：カード画像を表示
             DisableSuitBackUI();
             UpdateCardSprite();
-            spriteRenderer.color = _isHighlighted ? highlightColor : Color.white;
+            _isDisplayedFaceUp = true;
+            ApplyHighlightTint();
         }
 
         /// <summary>
@@ -211,7 +215,8 @@ namespace Tetrage.UI
                     spriteRenderer.sprite = backSuitSprite;
                 }
             }
-            spriteRenderer.color = _isHighlighted ? highlightColor * 0.3f : Color.white;
+            _isDisplayedFaceUp = false;
+            ApplyHighlightTint();
         }
 
         /// <summary>
@@ -244,6 +249,8 @@ namespace Tetrage.UI
         public void Highlight()
         {
             _isHighlighted = true;
+            // 反転アニメ中は SetFlip が呼ばれないため、ここで色を追随させる
+            ApplyHighlightTint();
         }
 
         /// <summary>
@@ -252,11 +259,37 @@ namespace Tetrage.UI
         public void Unhighlight()
         {
             _isHighlighted = false;
+            ApplyHighlightTint();
         }
+
+
 
         #endregion
 
         #region Private Methods
+        
+        /// <summary>
+        /// 表裏とハイライト状態に応じて SpriteRenderer の色を設定する
+        /// </summary>
+        private void ApplyHighlightTint()
+        {
+            if (_isDisplayedFaceUp)
+            {
+                spriteRenderer.color = _isHighlighted ? highlightColor : Color.white;
+                return;
+            }
+
+            // 裏向きは全面ハイライトだと眩しすぎるため RGB のみ係数で抑える（A は highlightColor を維持）
+            if (!_isHighlighted)
+            {
+                spriteRenderer.color = Color.white;
+                return;
+            }
+
+            var c = highlightColor;
+            var m = InGameConsts.CARD_VIEW_BACK_HIGHLIGHT_COLOR_MULTIPLIER;
+            spriteRenderer.color = new Color(c.r * m, c.g * m, c.b * m, c.a);
+        }
 
         /// <summary>
         /// スート別裏面画像を無効にする

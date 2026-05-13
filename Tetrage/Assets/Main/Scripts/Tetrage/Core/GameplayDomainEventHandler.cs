@@ -226,6 +226,7 @@ namespace Tetrage.Core
             // カード移動が失敗した場合は、以降の表示状態更新も行わない。
             if (!CardPile.TransferService.Transfer(fromPile, toPile, card))
             {
+                Debug.LogError($"GameplayDomainEventHandler: カード移動が失敗しました: Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}");
                 return;
             }
 

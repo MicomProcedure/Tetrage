@@ -80,6 +80,16 @@ namespace Tetrage.Network.Gameplay
             _eventBus.Publish(domainEvent);
         }
 
+        /// <summary>
+        /// TetrageMulti 参加応答パケット（Guest→Host）を EventBus へ流す。
+        /// ScanTargetSelected と同様、送信元ごとにシーケンス空間が異なるため順序ガードをかけない。
+        /// </summary>
+        public void Apply(ActionRequestedEventPacket e)
+        {
+            var domainEvent = _converter.ToDomain(e);
+            _eventBus.Publish(domainEvent);
+        }
+
         public void Apply(ScanResultEventPacket e)
         {
             if (!ShouldApply(e.sequence)) return;
