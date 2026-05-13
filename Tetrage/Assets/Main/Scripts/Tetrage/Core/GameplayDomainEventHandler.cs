@@ -232,13 +232,20 @@ namespace Tetrage.Core
 
             UpdateFaceUpStateForTmpTransition(fromPile, toPile, card);
 
+            // UserPlayerのHandsとTargetに入ったときはスート可視を有効化する
             if (_gameContext.UserPlayer != null)
             {
-                var userTmpPileId = PileIds.PlayerTmp(_gameContext.UserPlayer.Id);
+                var userTargetPileId = PileIds.PlayerTarget(_gameContext.UserPlayer.Id);
                 var userHandsPileId = PileIds.PlayerHands(_gameContext.UserPlayer.Id);
 
                 // UserPlayerのHandsに入ったときはスート可視を有効化
                 if (toPile.Id.Equals(userHandsPileId))
+                {
+                    card.SetSuitVisible(true);
+                }
+
+                // UserPlayerのTargetに入ったときはスート可視を有効化
+                if (toPile.Id.Equals(userTargetPileId))
                 {
                     card.SetSuitVisible(true);
                 }
@@ -250,7 +257,7 @@ namespace Tetrage.Core
                 }
 
                 Debug.Log(
-                    $"<color=red>GameplayDomainEventHandler: カード移動完了 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}, UserPlayerTmp={userTmpPileId}, UserPlayerHands={userHandsPileId}");
+                    $"<color=red>GameplayDomainEventHandler: カード移動完了 - Card={card}, FromPile={fromPile.Name}, ToPile={toPile.Name}, UserPlayerTarget={userTargetPileId}, UserPlayerHands={userHandsPileId}");
             }
         }
 
@@ -300,9 +307,9 @@ namespace Tetrage.Core
             }
         }
 
-        #region Tmp FaceUp Control
+        #region CardPile FaceUp Control
         /// <summary>
-        /// Tmp 入退場時の表裏状態を更新します。
+        /// CardPile 入退場時の表裏状態を更新します。
         /// </summary>
         private static void UpdateFaceUpStateForTmpTransition(CardPile from, CardPile to, Card card)
         {
