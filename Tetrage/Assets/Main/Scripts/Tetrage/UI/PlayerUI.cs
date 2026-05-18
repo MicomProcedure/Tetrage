@@ -28,6 +28,7 @@ namespace Tetrage.UI
         #region Private Fields
         
         private PlayerId _playerId;
+        private string _userName;
         private int _iconIndex;
         private TextMeshProUGUI _turnMarkerText;
         private int _playerNumber;
@@ -65,14 +66,15 @@ namespace Tetrage.UI
         /// <summary>
         /// プレイヤーのプロファイルデータを設定
         /// </summary>
-        /// <param name="id">プレイヤーのID</param>
+        /// <param name="userName">プレイヤーのID</param>
         /// <param name="iconIndex">プレイヤーのアイコンのインデックス</param>
         /// <param name="playerNumber">プレイヤー番号（ターン順）</param>
-        public void SetPlayerProfileData(PlayerId id, int iconIndex, int playerNumber, bool isUserPlayer = false)
+        public void SetPlayerProfileData(string userName, PlayerId playerId,int iconIndex, int playerNumber, bool isUserPlayer = false)
         {
             // Debug.Log($"[PlayerUI] SetPlayerProfileData呼び出し: PlayerId={id}, IconIndex={iconIndex}");
             
-            _playerId = id;
+            _userName = userName;
+            _playerId = playerId;
             _iconIndex = iconIndex;
             _playerNumber = playerNumber;
 
@@ -95,8 +97,8 @@ namespace Tetrage.UI
             }
             else
             {
-                profileDisplayView.SetProfile(_iconIndex, _playerId.ToString());
-                Debug.Log("[PlayerUI] ✅ ProfileDisplayView へ反映しました: PlayerId=" + _playerId + ", IconIndex=" + _iconIndex);
+                profileDisplayView.SetProfile(_iconIndex, _userName);
+                Debug.Log("[PlayerUI] ✅ ProfileDisplayView へ反映しました: PlayerId=" + _playerId + ", UserName=" + _userName + ", IconIndex=" + _iconIndex);
             }
             
         }
@@ -106,7 +108,7 @@ namespace Tetrage.UI
         /// </summary>
         /// <param name="playerInfo">プレイヤーの情報</param>
         public void SetPlayerProfileData(PlayerInfo playerInfo, int playerNumber, bool isUserPlayer = false){
-            SetPlayerProfileData(playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber, isUserPlayer);
+            SetPlayerProfileData(playerInfo.UserId, playerInfo.Id, playerInfo.PlayerIconIndex, playerNumber, isUserPlayer);
         }
 
         /// <summary>
@@ -114,7 +116,7 @@ namespace Tetrage.UI
         /// </summary>
         /// <param name="player">プレイヤー</param>
         public void SetPlayerProfileData(IPlayer player, int playerNumber, bool isUserPlayer = false){
-            SetPlayerProfileData(player.Id, player.IconIndex, playerNumber, isUserPlayer);
+            SetPlayerProfileData(player.UserId, player.Id, player.IconIndex, playerNumber, isUserPlayer);
         }
 
 
