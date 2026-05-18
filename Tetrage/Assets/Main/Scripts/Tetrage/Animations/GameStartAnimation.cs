@@ -18,8 +18,6 @@ public class GameStartAnimation : MonoBehaviour
     [SerializeField] private float moveDuration = 0.8f;    // 移動の速さ
     [SerializeField] private float stopTime = 1.0f;        // 停止時間（インスペクタで設定可能）
     [SerializeField] private float fadeDuration = 0.5f;    // 背景フェード時間
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip gameStartSE;
 
     #endregion
 
@@ -63,7 +61,6 @@ public class GameStartAnimation : MonoBehaviour
 
         KillCurrentSequence();
         ResetAnimationState();
-        PlaySE();
         BuildSequence();
     }
 
@@ -81,17 +78,6 @@ public class GameStartAnimation : MonoBehaviour
 
         backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0f);
         gameStartText.anchoredPosition = originalPosition + new Vector2(0, dropDistance);
-    }
-
-    /// <summary>
-    /// ゲーム開始SEを再生する。
-    /// </summary>
-    private void PlaySE()
-    {
-        if (gameStartSE != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(gameStartSE);
-        }
     }
 
     /// <summary>
