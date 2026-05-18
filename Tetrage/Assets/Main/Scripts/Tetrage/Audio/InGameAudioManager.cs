@@ -1,53 +1,51 @@
 using UnityEngine;
-using Tetrage.Core.Contracts;
-using Tetrage.Core.Events;
-using R3;
-using System.Linq;
 using Cysharp.Threading.Tasks;
+using Tetrage.Core.Contracts;
 using Tetrage.Core.Constants;
-using System.Collections.Generic;
-using Tetrage.Core.Ids;
-using Tetrage.Core.Enums;
 
 namespace Tetrage.Audio
 {
     /// <summary>
-    /// InGame中のSE・BGM再生を担当するAudioManager。
-    /// シングルトンを使わず、参照を持つ側から呼び出して利用する。
+    /// InGame 音声の Composition Root。チャンネル・Presenter の配線とライフサイクルを担当する。
     /// </summary>
-    public sealed class InGameAudioManager : MonoBehaviour
+    public sealed class InGameAudioManager : MonoBehaviour, IInGameAudioService
     {
         #region Serialized Fields
 
         [Header("Catalog")]
         [SerializeField] private InGameAudioCatalog _catalog;
 
-        [Header("Audio Sources")]
-        [SerializeField] private AudioSource SEAudioSource;
-        [SerializeField] private AudioSource BGMAudioSource;
+        [Header("Channels")]
+        [SerializeField] private SEAudioChannel _seChannel;
+        [SerializeField] private BgmAudioChannel _bgmChannel;
 
         #endregion
 
-        #region 管理対象インスタンス
+        #region Private Fields
 
-        private IGameContext _gameContext;
+        private InGameAudioEventPresenter _presenter;
+        private InGameBgmStateMachine _bgmStateMachine;
+        private bool _isInitialized;
 
         #endregion
 
-        private bool _isInitialized = false;
+        #region Public Properties
+
         public bool IsInitialized => _isInitialized;
-        private bool _isValid = false;
-        private bool _isAfterReachBgm = false;
-        private Dictionary<InGameSEId, bool> _sePlaybackGate = new();
-        private CompositeDisposable _disposables = new();
 
-        private readonly List<PileId> _targetPiles = new();
+        #endregion
 
         #region Unity Lifecycle
 
         private void Awake()
         {
-            ValidateAudioReferences();
+            ValidateReferences();
+        }
+
+        private void OnDestroy()
+        {
+            _presenter?.Unbind();
+            _bgmStateMachine?.Stop();
         }
 
         #endregion
@@ -56,261 +54,110 @@ namespace Tetrage.Audio
 
         public void Initialize(IGameContext gameContext)
         {
-            _gameContext = gameContext;
-
-            // Subscribeの前に実行する必要あり
-            // CardMovedEventのToPileIdがPlayerTargetのPileIdであるかを判定するために、PlayerTargetのPileIdをリストに追加する。
-            _targetPiles.Clear();
-            foreach (var player in _gameContext.Players)
+            if (!ValidateInitialized(gameContext))
             {
-                _targetPiles.Add(PileIds.PlayerTarget(player.Id));
+                return;
             }
 
-            InitializeSEPlaybackGate();
-            SubscribeToEvents();
+            // 同時再生を抑制する SE ID を登録する。
+            _seChannel.ConfigureGatedSeIds(new[]
+            {
+                InGameSEId.CardMove,
+                InGameSEId.CardFlip,
+                InGameSEId.ButtonClick,
+            });
+
+            // SE 再生ゲートの時間を設定する。
+            _seChannel.SetSEPlaybackGateTimeMS(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME_MS);
+
+            _bgmStateMachine = new InGameBgmStateMachine(_bgmChannel, _catalog);
+            _presenter = new InGameAudioEventPresenter();
+            _presenter.Bind(
+                gameContext.Events,
+                gameContext.Players,
+                _catalog,
+                _seChannel,
+                _bgmStateMachine,
+                this.GetCancellationTokenOnDestroy());
+
             _isInitialized = true;
         }
 
-        /// <summary>
-        /// ゲーム開始演出用SEを再生する。
-        /// </summary>
-        public void PlayGameStartSE()
+        /// <inheritdoc />
+        public void PlaySE(InGameSEId id)
         {
-            PlaySE(InGameSEId.GameStart);
-        }
+            if (!ValidatePlaybackReady())
+            {
+                return;
+            }
 
-        /// <summary>
-        /// カード移動SEを再生する。
-        /// </summary>
-        public void PlayCardMoveSE()
-        {
-            PlayGatedSe(InGameSEId.CardMove);
-        }
+            var clip = _catalog.GetSe(id);
+            if (id == InGameSEId.GameStart)
+            {
+                _seChannel.TryPlay(clip);
+                return;
+            }
 
-        /// <summary>
-        /// カード反転SEを再生する。
-        /// </summary>
-        public void PlayCardFlipSE()
-        {
-            PlayGatedSe(InGameSEId.CardFlip);
-        }
-
-        /// <summary>
-        /// ボタンクリックSEを再生する。
-        /// </summary>
-        public void PlayButtonClickSE()
-        {
-            PlayGatedSe(InGameSEId.ButtonClick);
+            _seChannel.TryPlayGated(id, clip);
         }
 
         #endregion
 
         #region Private Methods
 
-        /// <summary>
-        /// Reach 前 BGM をループ再生する。
-        /// </summary>
-        private void PlayBeforeReachBGM()
+        private bool ValidatePlaybackReady()
         {
-            _isAfterReachBgm = false;
-            PlayBGM(InGameBgmId.BeforeReach);
+            if (_isInitialized && _catalog != null && _seChannel != null)
+            {
+                return true;
+            }
+
+            Debug.LogWarning("InGameAudioManager: 初期化されていません。SE再生をスキップします。", this);
+            return false;
         }
 
-        /// <summary>
-        /// 初回 Reach 成功時に Reach 後 BGM へ切り替える。
-        /// </summary>
-        private void PlayAfterReachBGM()
+        private bool ValidateInitialized(IGameContext gameContext)
         {
-            if (_isAfterReachBgm)
+            if (gameContext?.Events == null)
             {
-                return;
-            }
-
-            _isAfterReachBgm = true;
-            PlayBGM(InGameBgmId.AfterReach);
-        }
-
-        private void StopBGM()
-        {
-            if (BGMAudioSource == null)
-            {
-                return;
-            }
-
-            if (BGMAudioSource.isPlaying)
-            {
-                BGMAudioSource.Stop();
-            }
-
-            BGMAudioSource.clip = null;
-        }
-
-        /// <summary>
-        /// ゲート付き SE を再生する。
-        /// </summary>
-        private void PlayGatedSe(InGameSEId id)
-        {
-            if (!_sePlaybackGate.TryGetValue(id, out var isOpen) || !isOpen)
-            {
-                return;
-            }
-
-            if (!PlaySE(id))
-            {
-                return;
-            }
-
-            _sePlaybackGate[id] = false;
-            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME)
-                .ContinueWith(() => _sePlaybackGate[id] = true)
-                .Forget();
-        }
-
-        /// <summary>
-        /// 指定 ID の SE を再生する。再生できた場合は true。
-        /// </summary>
-        private bool PlaySE(InGameSEId id)
-        {
-            if (_catalog == null)
-            {
+                Debug.LogWarning("InGameAudioManager: GameContext または EventBus が無効です。", this);
                 return false;
             }
 
-            var clip = _catalog.GetSe(id);
-            if (SEAudioSource == null || clip == null)
-            {
-                return false;
-            }
-
-            if (!_isInitialized)
-            {
-                Debug.LogWarning("InGameAudioManager: 初期化されていません。SE再生をスキップします。", this);
-                return false;
-            }
-
-            SEAudioSource.PlayOneShot(clip);
-            return true;
+            return ValidateReferences();
         }
 
-        /// <summary>
-        /// 指定 ID の BGM をループ再生する。
-        /// </summary>
-        private void PlayBGM(InGameBgmId id)
+        private bool ValidateReferences()
         {
             if (_catalog == null)
             {
-                return;
+                Debug.LogWarning("InGameAudioManager: InGameAudioCatalog が未設定です。", this);
+                return false;
             }
 
-            var clip = _catalog.GetBgm(id);
-            if (BGMAudioSource == null || clip == null)
+            var isValid = true;
+            isValid &= _catalog.ValidateReferences();
+            if (_seChannel != null)
             {
-                return;
+                isValid &= _seChannel.ValidateReferences();
             }
-
-            if (!_isInitialized)
+            else
             {
-                Debug.LogWarning("InGameAudioManager: 初期化されていません。BGM再生をスキップします。", this);
-                return;
+                Debug.LogWarning("InGameAudioManager: SeAudioChannel が未設定です。", this);
+                isValid = false;
             }
 
-            if (BGMAudioSource.clip == clip && BGMAudioSource.isPlaying)
+            if (_bgmChannel != null)
             {
-                return;
+                isValid &= _bgmChannel.ValidateReferences();
             }
-
-            BGMAudioSource.loop = true;
-            BGMAudioSource.clip = clip;
-            BGMAudioSource.Play();
-        }
-
-        /// <summary>
-        /// Initialize時に必要な参照が設定されているか検証する。
-        /// </summary>
-        private void ValidateAudioReferences()
-        {
-            if (_catalog == null)
+            else
             {
-                Debug.LogWarning("InGameAudioManager: InGameAudioCatalog が未設定です。音声再生をスキップします。", this);
-                return;
+                Debug.LogWarning("InGameAudioManager: BgmAudioChannel が未設定です。", this);
+                isValid = false;
             }
 
-            if (SEAudioSource == null)
-            {
-                Debug.LogWarning("InGameAudioManager: seAudioSource が未設定です。SE再生をスキップします。", this);
-            }
-            else if (BGMAudioSource == null)
-            {
-                Debug.LogWarning("InGameAudioManager: BGMAudioSource が未設定です。BGM再生をスキップします。", this);
-            }
-            else if (_catalog.ValidateReferences())
-            {
-                _isValid = true;
-            }
-        }
-
-        private void SubscribeToEvents()
-        {
-            // Card移動時に音声を鳴らす
-            // ただし、移動先がPlayerTargetのPileIdである場合は音声を鳴らさない（フィールド初期化時は音を無らしたくない）。
-            if (_catalog.GetSe(InGameSEId.CardMove) != null)
-            {
-                _gameContext.Events.CardMoved
-                    .Where(e => !_targetPiles.Contains(e.ToPileId))
-                    .Subscribe(_ => PlayCardMoveSE())
-                    .AddTo(_disposables);
-            }
-
-            // ScanPhase 終了時（ゲーム開始演出と同タイミング）に SE・Reach 前 BGM を再生する
-            _gameContext.Events.ScanPhaseEnded
-                .Subscribe(_ => OnScanPhaseEnded())
-                .AddTo(_disposables);
-
-            // 誰かが Reach に成功したら BGM を切り替える
-            if (_catalog.GetBgm(InGameBgmId.AfterReach) != null && BGMAudioSource != null)
-            {
-                _gameContext.Events.ActionResult
-                    .Where(e => e.ActionType == ActionType.Reach && e.Accepted)
-                    .Subscribe(_ => PlayAfterReachBGM())
-                    .AddTo(_disposables);
-            }
-        }
-
-        /// <summary>
-        /// ScanPhase 終了時の音声処理。ゲーム開始 SE 再生後、その長さだけ遅らせて Reach 前 BGM を再生する。
-        /// </summary>
-        private void OnScanPhaseEnded()
-        {
-            OnScanPhaseEndedAsync().Forget();
-        }
-
-        private async UniTaskVoid OnScanPhaseEndedAsync()
-        {
-            PlayGameStartSE();
-
-            // gameStartSE の再生時間が終わってから BGM を開始する
-            var delayMs = _catalog != null
-                ? _catalog.GetSeLengthMilliseconds(InGameSEId.GameStart)
-                : 0;
-            if (delayMs > 0)
-            {
-                await UniTask.Delay(delayMs, cancellationToken: this.GetCancellationTokenOnDestroy());
-            }
-
-            PlayBeforeReachBGM();
-        }
-
-        private void InitializeSEPlaybackGate()
-        {
-            _sePlaybackGate[InGameSEId.CardMove] = true;
-            _sePlaybackGate[InGameSEId.CardFlip] = true;
-            _sePlaybackGate[InGameSEId.ButtonClick] = true;
-        }
-
-        private void OnDestroy()
-        {
-            StopBGM();
-            _disposables.Dispose();
+            return isValid;
         }
 
         #endregion

@@ -38,7 +38,7 @@ namespace Tetrage.Core.Constants
         /// <summary>裏向き表示時にハイライト色を SpriteRenderer.color へ乗算する係数。</summary>
         public const float CARD_VIEW_BACK_HIGHLIGHT_COLOR_MULTIPLIER = 0.3f;
 
-        public const int DEFAULT_SE_PLAYBACK_GATE_TIME = 100; // SE再生ゲートの時間(ミリ秒)
+        public const int DEFAULT_SE_PLAYBACK_GATE_TIME_MS = 100; // SE再生ゲートの時間(ミリ秒)
 
         /// <summary>カットイン演出の時間設定。</summary>
         public static class CutInAnimationDuration
