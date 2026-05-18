@@ -12,7 +12,7 @@ namespace Tetrage.Audio
     {
         #region Private Fields
 
-        private readonly Dictionary<InGameSEId, bool> _playbackGate = new();
+        private readonly Dictionary<SEClipId, bool> _playbackGate = new();
         private int _sePlaybackGateTimeMS = InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME_MS;
 
         #endregion
@@ -22,7 +22,7 @@ namespace Tetrage.Audio
         /// <summary>
         /// 同時再生を抑制する SE ID を登録する。
         /// </summary>
-        public void ConfigureGatedSeIds(IEnumerable<InGameSEId> gatedIds)
+        public void ConfigureGatedSeIds(IEnumerable<SEClipId> gatedIds)
         {
             _playbackGate.Clear();
             foreach (var id in gatedIds)
@@ -34,7 +34,7 @@ namespace Tetrage.Audio
         /// <summary>
         /// ゲート付きで SE を再生する。再生できた場合は true。
         /// </summary>
-        public bool TryPlayGated(InGameSEId id, AudioClip clip)
+        public bool TryPlayGated(SEClipId id, AudioClip clip)
         {
             // ゲートが開いていない場合は再生を抑制（同時再生防止）
             if (!_playbackGate.TryGetValue(id, out var isOpen) || !isOpen)

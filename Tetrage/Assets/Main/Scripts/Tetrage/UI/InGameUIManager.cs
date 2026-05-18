@@ -13,6 +13,7 @@ using R3;
 using Tetrage.Services;
 using Tetrage.Core.Ids;
 using Cysharp.Threading.Tasks;
+using Tetrage.Audio;
 using DomainEvents = Tetrage.Core.Events;
 using NetworkDto = Tetrage.Network.Gameplay;
 using UnityEngine.Serialization;
@@ -47,6 +48,7 @@ namespace Tetrage.Managers
 		private CompositeDisposable _disposables = new();
 		private CompositeDisposable _scanTargetCardClickDisposables = new();
 		private IGameplayNetworkController _gameplayNetwork;
+		private IJingleAudioService _jingleAudioService;
 		private bool _scanOwnTargetConfirmed;
 		private bool _scanOpponentSelected;
 		private bool _scanOpponentSuitRevealed;
@@ -60,7 +62,10 @@ namespace Tetrage.Managers
 		/// GameContextを受け取り、イベント購読を開始する。
 		/// </summary>
 		/// <param name="gameplayNetwork">ScanPhase で ScanTargetSelected を送るために ScanUI に渡す（未設定なら送信不可）</param>
-		public void Initialize(IGameContext context, IGameplayNetworkController gameplayNetwork = null)
+		public void Initialize(
+			IGameContext context,
+			IGameplayNetworkController gameplayNetwork = null,
+			IJingleAudioService jingleAudioService = null)
 		{
 			if (!ValidateInitialize(context))	// 初期化に必要なContextとInspector参照が揃っているか検証する。
 			{
@@ -70,6 +75,7 @@ namespace Tetrage.Managers
 			_gameContext = context;
 			_events = context.Events;
 			_gameplayNetwork = gameplayNetwork;
+			_jingleAudioService = jingleAudioService;
 
 			InitializeUIElements(gameplayNetwork);	// UI要素の初期化
 			Subscribe();	// R3のObservableで購読
@@ -290,7 +296,11 @@ namespace Tetrage.Managers
 				winnerIds[i] = e.WinnerPlayerIds[i].Value;
 			}
 
-			_resultUI.DisplayResult(winnerIds, _gameContext.Players);
+			_resultUI.DisplayResult(
+				winnerIds,
+				_gameContext.Players,
+				_gameContext.UserPlayer,
+				_jingleAudioService);
 		}
 
 		private void OnScanPhaseStarted(DomainEvents.ScanPhaseStartedEvent e)	

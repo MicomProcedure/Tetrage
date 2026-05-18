@@ -22,12 +22,21 @@ namespace Tetrage.Audio
         #region Public Methods
 
         /// <summary>
-        /// Reach 前 BGM を再生する。
+        /// ScanPhase 用 BGM を再生する。
         /// </summary>
-        public void PlayBeforeReach()
+        public void PlayScanPhaseBgm()
         {
             _isAfterReachBgm = false;
-            _channel.PlayLoop(_catalog.GetBgm(InGameBgmId.BeforeReach));
+            _channel.PlayLoop(_catalog.GetAudioClip(BgmClipId.ScanPhase));
+        }
+
+        /// <summary>
+        /// Reach 前 BGM を再生する。
+        /// </summary>
+        public void PlayNormalBgm()
+        {
+            _isAfterReachBgm = false;
+            _channel.PlayLoop(_catalog.GetAudioClip(BgmClipId.Normal));
         }
 
         /// <summary>
@@ -41,7 +50,7 @@ namespace Tetrage.Audio
             }
 
             _isAfterReachBgm = true;
-            _channel.PlayLoop(_catalog.GetBgm(InGameBgmId.AfterReach));
+            _channel.PlayLoop(_catalog.GetAudioClip(BgmClipId.AfterReach));
         }
 
         /// <summary>

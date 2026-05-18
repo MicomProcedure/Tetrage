@@ -8,7 +8,7 @@ namespace Tetrage.Audio
     /// <summary>
     /// InGame 音声の Composition Root。チャンネル・Presenter の配線とライフサイクルを担当する。
     /// </summary>
-    public sealed class InGameAudioManager : MonoBehaviour, IInGameAudioService
+    public sealed class InGameAudioManager : MonoBehaviour, ISEAudioService, IJingleAudioService
     {
         #region Serialized Fields
 
@@ -18,6 +18,7 @@ namespace Tetrage.Audio
         [Header("Channels")]
         [SerializeField] private SEAudioChannel _seChannel;
         [SerializeField] private BgmAudioChannel _bgmChannel;
+        [SerializeField] private JingleAudioChannel _jingleChannel;
 
         #endregion
 
@@ -25,6 +26,7 @@ namespace Tetrage.Audio
 
         private InGameAudioEventPresenter _presenter;
         private InGameBgmStateMachine _bgmStateMachine;
+        private InGameJinglePlayer _jinglePlayer;
         private bool _isInitialized;
 
         #endregion
@@ -45,7 +47,9 @@ namespace Tetrage.Audio
         private void OnDestroy()
         {
             _presenter?.Unbind();
+            _jinglePlayer?.Cancel();
             _bgmStateMachine?.Stop();
+            _jingleChannel?.Stop();
         }
 
         #endregion
@@ -62,15 +66,26 @@ namespace Tetrage.Audio
             // 同時再生を抑制する SE ID を登録する。
             _seChannel.ConfigureGatedSeIds(new[]
             {
-                InGameSEId.CardMove,
-                InGameSEId.CardFlip,
-                InGameSEId.ButtonClick,
+                SEClipId.CardMove,
+                SEClipId.CardFlip,
+                SEClipId.ButtonClick,
             });
 
             // SE 再生ゲートの時間を設定する。
             _seChannel.SetSEPlaybackGateTimeMS(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME_MS);
 
+            // BGM 状態マシンを初期化する。
             _bgmStateMachine = new InGameBgmStateMachine(_bgmChannel, _catalog);
+
+            // BGM ダックコントローラを初期化する。
+            var duckController = new BgmDuckController(_bgmChannel);
+
+            // Jingle プレイヤーを初期化する。
+            _jinglePlayer = new InGameJinglePlayer(
+                duckController,
+                _jingleChannel,
+                _catalog,
+                this.GetCancellationTokenOnDestroy());
             _presenter = new InGameAudioEventPresenter();
             _presenter.Bind(
                 gameContext.Events,
@@ -84,21 +99,32 @@ namespace Tetrage.Audio
         }
 
         /// <inheritdoc />
-        public void PlaySE(InGameSEId id)
+        public void PlaySE(SEClipId id)
         {
             if (!ValidatePlaybackReady())
             {
                 return;
             }
 
-            var clip = _catalog.GetSe(id);
-            if (id == InGameSEId.GameStart)
+            var clip = _catalog.GetAudioClip(id);
+            if (id == SEClipId.GameStart)
             {
                 _seChannel.TryPlay(clip);
                 return;
             }
 
             _seChannel.TryPlayGated(id, clip);
+        }
+
+        /// <inheritdoc />
+        public void PlayJingle(JingleClipId id)
+        {
+            if (!ValidateJinglePlaybackReady())
+            {
+                return;
+            }
+
+            _jinglePlayer.PlayJingle(id);
         }
 
         #endregion
@@ -113,6 +139,17 @@ namespace Tetrage.Audio
             }
 
             Debug.LogWarning("InGameAudioManager: 初期化されていません。SE再生をスキップします。", this);
+            return false;
+        }
+
+        private bool ValidateJinglePlaybackReady()
+        {
+            if (_isInitialized && _catalog != null && _jingleChannel != null)
+            {
+                return true;
+            }
+
+            Debug.LogWarning("InGameAudioManager: 初期化されていません。Jingle再生をスキップします。", this);
             return false;
         }
 
@@ -136,7 +173,16 @@ namespace Tetrage.Audio
             }
 
             var isValid = true;
-            isValid &= _catalog.ValidateReferences();
+            if (!_catalog.HasClipSets)
+            {
+                Debug.LogWarning("InGameAudioManager: InGameAudioCatalog のクリップセットが未設定です。", this);
+                isValid = false;
+            }
+            else
+            {
+                // 未設定 Clip は Validate 内で警告済み。戻り値は初期化可否に使わない。
+                _catalog.ValidateReferences();
+            }
             if (_seChannel != null)
             {
                 isValid &= _seChannel.ValidateReferences();
@@ -154,6 +200,16 @@ namespace Tetrage.Audio
             else
             {
                 Debug.LogWarning("InGameAudioManager: BgmAudioChannel が未設定です。", this);
+                isValid = false;
+            }
+
+            if (_jingleChannel != null)
+            {
+                isValid &= _jingleChannel.ValidateReferences();
+            }
+            else
+            {
+                Debug.LogWarning("InGameAudioManager: JingleAudioChannel が未設定です。", this);
                 isValid = false;
             }
 

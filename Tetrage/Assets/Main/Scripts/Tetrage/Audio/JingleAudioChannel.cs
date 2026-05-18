@@ -3,35 +3,25 @@ using UnityEngine;
 namespace Tetrage.Audio
 {
     /// <summary>
-    /// BGM 用 AudioSource のループ再生・停止を担当する。
+    /// Jingle 用 AudioSource の非ループ再生を担当する。
     /// </summary>
-    public sealed class BgmAudioChannel : AudioChannelBase
+    public sealed class JingleAudioChannel : AudioChannelBase
     {
         #region Public Properties
 
         /// <summary>
-        /// BGM AudioSource の音量。ダック制御で利用する。
+        /// ジングルが再生中かどうか。
         /// </summary>
-        public float Volume
-        {
-            get => AudioSource != null ? AudioSource.volume : 0f;
-            set
-            {
-                if (AudioSource != null)
-                {
-                    AudioSource.volume = value;
-                }
-            }
-        }
+        public bool IsPlaying => AudioSource != null && AudioSource.isPlaying;
 
         #endregion
 
         #region Public Methods
 
         /// <summary>
-        /// 指定クリップをループ再生する。
+        /// 再生中のジングルを止めてから、指定クリップを再生する。
         /// </summary>
-        public void PlayLoop(AudioClip clip)
+        public void PlayOneShot(AudioClip clip)
         {
             TryPlay(clip);
         }
@@ -56,12 +46,13 @@ namespace Tetrage.Audio
         /// <inheritdoc />
         protected override void PlayClipInternal(AudioClip clip)
         {
-            if (AudioSource.clip == clip && AudioSource.isPlaying)
+            // 前のジングルを止めてから新しいクリップを頭出し再生する
+            if (AudioSource.isPlaying)
             {
-                return;
+                AudioSource.Stop();
             }
 
-            AudioSource.loop = true;
+            AudioSource.loop = false;
             AudioSource.clip = clip;
             AudioSource.Play();
         }

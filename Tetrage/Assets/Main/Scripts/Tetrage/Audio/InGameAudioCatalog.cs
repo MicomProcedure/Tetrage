@@ -18,64 +18,62 @@ namespace Tetrage.Audio
         [Header("BGM")]
         [SerializeField] private InGameBgmClipSet _bgmClips;
 
+        [Header("JINGLE")]
+        [SerializeField] private InGameJingleClipSet _jingleClips;
+
         #endregion
 
         #region Public Methods
 
         /// <summary>
-        /// 指定 ID の SE クリップを取得する。未設定時は null。
+        /// 指定 ID の AudioClip取得する。未設定時は null。
         /// </summary>
-        public AudioClip GetSe(InGameSEId id)
+        public AudioClip GetAudioClip<TId>(TId id)
         {
-            if (_seClips == null)
+            switch (id)
             {
-                return null;
+                case SEClipId seId:
+                    return _seClips?.GetClip(seId);
+                case BgmClipId bgmId:
+                    return _bgmClips?.GetClip(bgmId);
+                case JingleClipId jingleId:
+                    return _jingleClips?.GetClip(jingleId);
+                default:
+                    return null;
             }
-
-            return _seClips.GetClip(id);
         }
 
-        /// <summary>
-        /// 指定 ID の BGM クリップを取得する。未設定時は null。
-        /// </summary>
-        public AudioClip GetBgm(InGameBgmId id)
+        public int GetAudioClipLengthMS<TId>(TId id)
         {
-            if (_bgmClips == null)
-            {
-                return null;
-            }
-
-            return _bgmClips.GetClip(id);
-        }
-
-        /// <summary>
-        /// SE クリップの再生時間をミリ秒で返す。未設定時は 0。
-        /// </summary>
-        public int GetSeLengthMilliseconds(InGameSEId id)
-        {
-            var clip = GetSe(id);
+            var clip = GetAudioClip(id);
             if (clip == null)
             {
                 return 0;
             }
-
-            return Mathf.CeilToInt(clip.length * InGameConsts.CutInAnimationDuration.MILLISECONDS_PER_SECOND);
+            return Mathf.CeilToInt(clip.length * InGameConsts.MILLISECONDS_PER_SECOND);
         }
+
+        /// <summary>
+        /// SE/BGM/Jingle のクリップセット参照が揃っているか。
+        /// </summary>
+        public bool HasClipSets =>
+            _seClips != null && _bgmClips != null && _jingleClips != null;
 
         /// <summary>
         /// Catalog 参照と各 Clip の設定漏れを検証する。
         /// </summary>
         public bool ValidateReferences()
         {
-            if (_seClips == null || _bgmClips == null)
+            if (!HasClipSets)
             {
-                Debug.LogWarning("InGameAudioCatalog: SE/BGM クリップセットが未設定です。", this);
+                Debug.LogWarning("InGameAudioCatalog: SE/BGM/Jingle クリップセットが未設定です。", this);
                 return false;
             }
 
             var isValid = true;
             isValid &= _seClips.Validate(this);
             isValid &= _bgmClips.Validate(this);
+            isValid &= _jingleClips.Validate(this);
             return isValid;
         }
 
@@ -91,88 +89,119 @@ namespace Tetrage.Audio
 
     #region Clip Sets
 
+    public abstract class AudioClipSetBase<T>
+    {
+        public abstract AudioClip GetClip(T id);
+        public abstract bool Validate(UnityEngine.Object context);
+
+        protected static bool ValidateClip(UnityEngine.Object context, T id, AudioClip clip)
+        {
+            if (clip != null)
+            {
+                return true;
+            }
+
+            Debug.LogWarning($"{context.GetType().Name}: '{id}' が未設定です。", context);
+            return false;
+        }
+    }
+
     /// <summary>
     /// InGame SE クリップの一覧。
     /// </summary>
     [Serializable]
-    public sealed class InGameSEClipSet
+    public sealed class InGameSEClipSet : AudioClipSetBase<SEClipId>
     {
         [SerializeField] private AudioClip gameStart;
         [SerializeField] private AudioClip cardMove;
         [SerializeField] private AudioClip cardFlip;
         [SerializeField] private AudioClip buttonClick;
 
-        public AudioClip GetClip(InGameSEId id)
+        // <inheritdoc />
+        public override AudioClip GetClip(SEClipId id)
         {
             return id switch
             {
-                InGameSEId.GameStart => gameStart,
-                InGameSEId.CardMove => cardMove,
-                InGameSEId.CardFlip => cardFlip,
-                InGameSEId.ButtonClick => buttonClick,
+                SEClipId.GameStart => gameStart,
+                SEClipId.CardMove => cardMove,
+                SEClipId.CardFlip => cardFlip,
+                SEClipId.ButtonClick => buttonClick,
                 _ => null,
             };
         }
 
-        public bool Validate(UnityEngine.Object context)
+        // <inheritdoc />
+        public override bool Validate(UnityEngine.Object context)
         {
             var isValid = true;
-            isValid &= ValidateClip(context, InGameSEId.GameStart, gameStart);
-            isValid &= ValidateClip(context, InGameSEId.CardMove, cardMove);
-            isValid &= ValidateClip(context, InGameSEId.CardFlip, cardFlip);
-            isValid &= ValidateClip(context, InGameSEId.ButtonClick, buttonClick);
+            isValid &= ValidateClip(context, SEClipId.GameStart, gameStart);
+            isValid &= ValidateClip(context, SEClipId.CardMove, cardMove);
+            isValid &= ValidateClip(context, SEClipId.CardFlip, cardFlip);
+            isValid &= ValidateClip(context, SEClipId.ButtonClick, buttonClick);
             return isValid;
         }
 
-        private static bool ValidateClip(UnityEngine.Object context, InGameSEId id, AudioClip clip)
-        {
-            if (clip != null)
-            {
-                return true;
-            }
-
-            Debug.LogWarning($"InGameAudioCatalog: SE '{id}' が未設定です。", context);
-            return false;
-        }
     }
 
     /// <summary>
     /// InGame BGM クリップの一覧。
     /// </summary>
     [Serializable]
-    public sealed class InGameBgmClipSet
+    public sealed class InGameBgmClipSet : AudioClipSetBase<BgmClipId>
     {
-        [SerializeField] private AudioClip beforeReach;
-        [SerializeField] private AudioClip afterReach;
+        [SerializeField] private AudioClip _inGameNormalBgm;
+        [SerializeField] private AudioClip _inGameAfterReachBgm;
+        [SerializeField] private AudioClip _inGameScanPhaseBgm;
 
-        public AudioClip GetClip(InGameBgmId id)
+        public override AudioClip GetClip(BgmClipId id)
         {
             return id switch
             {
-                InGameBgmId.BeforeReach => beforeReach,
-                InGameBgmId.AfterReach => afterReach,
+                BgmClipId.Normal => _inGameNormalBgm,
+                BgmClipId.AfterReach => _inGameAfterReachBgm,
+                BgmClipId.ScanPhase => _inGameScanPhaseBgm,
                 _ => null,
             };
         }
 
-        public bool Validate(UnityEngine.Object context)
+        public override bool Validate(UnityEngine.Object context)
         {
             var isValid = true;
-            isValid &= ValidateClip(context, InGameBgmId.BeforeReach, beforeReach);
-            isValid &= ValidateClip(context, InGameBgmId.AfterReach, afterReach);
+            isValid &= ValidateClip(context, BgmClipId.Normal, _inGameNormalBgm);
+            isValid &= ValidateClip(context, BgmClipId.AfterReach, _inGameAfterReachBgm);
+            isValid &= ValidateClip(context, BgmClipId.ScanPhase, _inGameScanPhaseBgm);
             return isValid;
         }
 
-        private static bool ValidateClip(UnityEngine.Object context, InGameBgmId id, AudioClip clip)
-        {
-            if (clip != null)
-            {
-                return true;
-            }
+    }
 
-            Debug.LogWarning($"InGameAudioCatalog: BGM '{id}' が未設定です。", context);
-            return false;
+    /// <summary>
+    /// InGame Jingle クリップの一覧。
+    /// </summary>
+    [Serializable]
+    public sealed class InGameJingleClipSet : AudioClipSetBase<JingleClipId>
+    {
+        [SerializeField] private AudioClip _loseClip;
+        [SerializeField] private AudioClip _winClip;
+
+        public override AudioClip GetClip(JingleClipId id)
+        {
+            return id switch
+            {
+                JingleClipId.Lose => _loseClip,
+                JingleClipId.Win => _winClip,
+                _ => null,
+            };
         }
+
+        public override bool Validate(UnityEngine.Object context)
+        {
+            var isValid = true;
+            isValid &= ValidateClip(context, JingleClipId.Lose, _loseClip);
+            isValid &= ValidateClip(context, JingleClipId.Win, _winClip);
+            return isValid;
+        }
+        
     }
 
     #endregion

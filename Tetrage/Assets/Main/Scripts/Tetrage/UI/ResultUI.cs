@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Tetrage.Audio;
 using Tetrage.Core.Contracts;
 using Tetrage.Managers;
 
@@ -37,9 +38,13 @@ namespace Tetrage.UI
         /// </summary>
         /// <param name="winnerActorNumbers">勝者の PlayerId.Value 一覧</param>
         /// <param name="allPlayers">全プレイヤーのリスト</param>
+        /// <param name="userPlayer">ローカルユーザー（勝敗ジングル判定用）</param>
+        /// <param name="jingleAudio">勝敗ジングル再生 API（未設定時は再生しない）</param>
         public void DisplayResult(
             int[] winnerActorNumbers,
-            IReadOnlyList<IPlayer> allPlayers)
+            IReadOnlyList<IPlayer> allPlayers,
+            IPlayer userPlayer,
+            IJingleAudioService jingleAudio)
         {
             if (winnerActorNumbers == null || allPlayers == null)
             {
@@ -80,6 +85,8 @@ namespace Tetrage.UI
 
             // 同一 Canvas 上で Result が先頭子だと他 HUD より背面になるため、表示時は最前面へ
             transform.SetAsLastSibling();
+
+            PlayResultJingle(winnerActorNumbers, userPlayer, jingleAudio);
 
             Debug.Log($"ResultUI: 勝者 {winnerItems.Count}人, 敗者 {loserItems.Count}人を表示");
         }
@@ -131,6 +138,21 @@ namespace Tetrage.UI
         #endregion
 
         #region Private Methods
+
+        private void PlayResultJingle(
+            int[] winnerActorNumbers,
+            IPlayer userPlayer,
+            IJingleAudioService jingleAudio)
+        {
+            if (jingleAudio == null || userPlayer == null)
+            {
+                return;
+            }
+
+            // ローカルユーザーの勝敗に応じてジングルを再生する
+            var isWinner = winnerActorNumbers.Contains(userPlayer.Id.Value);
+            jingleAudio.PlayJingle(isWinner ? JingleClipId.Win : JingleClipId.Lose);
+        }
 
         private void AddWinnerItem(IPlayer player)
         {

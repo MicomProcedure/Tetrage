@@ -40,12 +40,19 @@ namespace Tetrage.Audio
 
             BuildTargetPileFilter(players);
 
-            if (catalog.GetSe(InGameSEId.CardMove) != null)
+            if (catalog.GetAudioClip(SEClipId.CardMove) != null)
             {
                 // 移動先が PlayerTarget のときは鳴らさない（フィールド初期化時のノイズ防止）
                 events.CardMoved
                     .Where(e => !_targetPiles.Contains(e.ToPileId))
-                    .Subscribe(_ => seChannel.TryPlayGated(InGameSEId.CardMove, catalog.GetSe(InGameSEId.CardMove)))
+                    .Subscribe(_ => seChannel.TryPlayGated(SEClipId.CardMove, catalog.GetAudioClip(SEClipId.CardMove)))
+                    .AddTo(_disposables);
+            }
+
+            if (catalog.GetAudioClip(BgmClipId.ScanPhase) != null)
+            {
+                events.ScanPhaseStarted
+                    .Subscribe(_ => bgmState.PlayScanPhaseBgm())
                     .AddTo(_disposables);
             }
 
@@ -53,13 +60,18 @@ namespace Tetrage.Audio
                 .Subscribe(_ => OnScanPhaseEnded(catalog, seChannel, bgmState, destroyToken))
                 .AddTo(_disposables);
 
-            if (catalog.GetBgm(InGameBgmId.AfterReach) != null)
+            if (catalog.GetAudioClip(BgmClipId.AfterReach) != null)
             {
                 events.ActionResult
                     .Where(e => e.ActionType == ActionType.Reach && e.Accepted)
                     .Subscribe(_ => bgmState.TrySwitchToAfterReach())
                     .AddTo(_disposables);
             }
+
+            // 結果画面表示時は BGM を止める（勝敗ジングルは ResultUI から再生）
+            events.FinishingGame
+                .Subscribe(_ => bgmState.Stop())
+                .AddTo(_disposables);
         }
 
         /// <summary>
@@ -104,15 +116,15 @@ namespace Tetrage.Audio
             InGameBgmStateMachine bgmState,
             CancellationToken destroyToken)
         {
-            seChannel.TryPlay(catalog.GetSe(InGameSEId.GameStart));
+            seChannel.TryPlay(catalog.GetAudioClip(SEClipId.GameStart));
 
-            var delayMs = catalog.GetSeLengthMilliseconds(InGameSEId.GameStart) - _delayOffsetMS;
+            var delayMs = catalog.GetAudioClipLengthMS(SEClipId.GameStart) - _delayOffsetMS;
             if (delayMs > 0)
             {
                 await UniTask.Delay(delayMs, cancellationToken: destroyToken);
             }
 
-            bgmState.PlayBeforeReach();
+            bgmState.PlayNormalBgm();
         }
 
         #endregion

@@ -18,5 +18,9 @@ MonoBehaviour:
     cardFlip: {fileID: 8300000, guid: cd6974884948242bc97323f8f54b6bd9, type: 3}
     buttonClick: {fileID: 0}
   _bgmClips:
-    beforeReach: {fileID: 8300000, guid: 47269c44a57d6464082c5255474925aa, type: 3}
-    afterReach: {fileID: 8300000, guid: 3eecadde6537e9041a78dded6a24368c, type: 3}
+    _inGameNormalBgm: {fileID: 8300000, guid: 47269c44a57d6464082c5255474925aa, type: 3}
+    _inGameAfterReachBgm: {fileID: 8300000, guid: 3eecadde6537e9041a78dded6a24368c, type: 3}
+    _inGameScanPhaseBgm: {fileID: 8300000, guid: c49f57a813b83f040b6d278694dea623, type: 3}
+  _jingleClips:
+    _loseClip: {fileID: 8300000, guid: de2b118ab9a5d9a47961e5e13be45bd5, type: 3}
+    _winClip: {fileID: 8300000, guid: e1b6519a5e9c39c4a97334c616552d67, type: 3}
