@@ -1,22 +1,31 @@
 using UnityEngine;
+using UnityEngine.Serialization;
+using Cysharp.Threading.Tasks;
 
 namespace Tetrage.Title
 {
     public class PanelButton : MonoBehaviour
 {
-    public GameObject[] targetPanelS; // 表示したいパネル
-    public GameObject[] targetPanelH; // 隠したいパネル
+    [FormerlySerializedAs("targetPanelS")]
+    public GameObject[] targetPanelShow; // 表示したいパネル
+    [FormerlySerializedAs("targetPanelH")]
+    public GameObject[] targetPanelHide; // 隠したいパネル
 
-    public void ShowPanel()
+    public async void ShowPanel()
     {
-        foreach(var targetPanelS in targetPanelS)
+        foreach(var targetPanelS in targetPanelShow){
+        await UniTask.Yield();
         targetPanelS.SetActive(true);
+        }
     }
 
-    public void HidePanel()
+    public async void HidePanel()
     {
-        foreach(var targetPanelH in targetPanelH)
+        foreach(var targetPanelH in targetPanelHide)
+        {
+        await UniTask.Yield();
         targetPanelH.SetActive(false);
+        }
     }
     }
 }

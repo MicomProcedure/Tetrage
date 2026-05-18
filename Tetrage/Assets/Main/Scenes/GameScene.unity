@@ -806,7 +806,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5681119764361272913, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6138612433724534169, guid: 437c119ffae7d445ab2ec0110d56e865, type: 3}
       propertyPath: moveDuration

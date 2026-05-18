@@ -11,9 +11,10 @@ GameObject:
   - component: {fileID: 1221701698442659682}
   - component: {fileID: 8250980078016316984}
   - component: {fileID: 301587294061608221}
-  m_Layer: 0
+  - component: {fileID: 1740820625955519235}
+  m_Layer: 2
   m_Name: Marker.Red
-  m_TagString: Untagged
+  m_TagString: EditorOnly
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -75,6 +76,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1740820625955519235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3282656648387402133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c432cbf66def20b4290f192fdc231ca0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _disableOnAwake: 1
 --- !u!1 &6331242282193166120
 GameObject:
   m_ObjectHideFlags: 0
@@ -86,9 +100,10 @@ GameObject:
   - component: {fileID: 8618596790719637617}
   - component: {fileID: 8232135621426778733}
   - component: {fileID: 3260838795131519172}
-  m_Layer: 0
+  - component: {fileID: 7839208888619372087}
+  m_Layer: 2
   m_Name: Marker.Black
-  m_TagString: Untagged
+  m_TagString: EditorOnly
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -150,6 +165,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7839208888619372087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6331242282193166120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c432cbf66def20b4290f192fdc231ca0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _disableOnAwake: 1
 --- !u!1 &6355281520832339783
 GameObject:
   m_ObjectHideFlags: 0

@@ -908,8 +908,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2992053292704328396}
-        m_TargetAssemblyTypeName: ProfileUIController, Tetrage
+      - m_Target: {fileID: 898160094630151324}
+        m_TargetAssemblyTypeName: Tetrage.Title.ProfileSettingUIController, Tetrage
         m_MethodName: OnPrevIcon
         m_Mode: 1
         m_Arguments:
@@ -1052,8 +1052,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2992053292704328396}
-        m_TargetAssemblyTypeName: Tetrage.Title.ProfileUIController, Tetrage
+      - m_Target: {fileID: 898160094630151324}
+        m_TargetAssemblyTypeName: Tetrage.Title.ProfileSettingUIController, Tetrage
         m_MethodName: OnNextIcon
         m_Mode: 1
         m_Arguments:
@@ -1242,7 +1242,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3374934033194365451}
-  - component: {fileID: 2992053292704328396}
+  - component: {fileID: 898160094630151324}
   m_Layer: 5
   m_Name: Profile
   m_TagString: Untagged
@@ -1267,7 +1267,7 @@ Transform:
   - {fileID: 5049662319168301247}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2992053292704328396
+--- !u!114 &898160094630151324
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1276,18 +1276,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 6769911220101323695}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ddf73e59f42c29c4691cc99869d82e74, type: 3}
+  m_Script: {fileID: 11500000, guid: 27af8f03dd6448b4b864f2a90b0bb18b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iconImage: {fileID: 4118962268851017382}
-  availableIcons:
+  _iconImage: {fileID: 4118962268851017382}
+  _availableIcons:
   - {fileID: -4290277218078684321, guid: 977f8a89803283940a15e8df4abf1898, type: 3}
   - {fileID: -6071142056654786215, guid: 5a08e1952b1d82144b25a80f24bddc58, type: 3}
   - {fileID: -645595715152406368, guid: ead5d136fd069c24b843f5475aafcde4, type: 3}
   - {fileID: 8241042064671765187, guid: 760cfe1165755844180420e60cbb02c0, type: 3}
   - {fileID: -6704369765690059819, guid: 445bc0c73fa8a92489f807ef0f33f9c9, type: 3}
-  nameInput: {fileID: 2738383363308322404}
-  profileManager: {fileID: 0}
+  _nameInput: {fileID: 2738383363308322404}
+  _profileManager: {fileID: 0}
 --- !u!1 &6973394425638329667
 GameObject:
   m_ObjectHideFlags: 0
@@ -1820,7 +1820,7 @@ PrefabInstance:
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 3825692815500439901}
+      objectReference: {fileID: 898160094630151324}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
@@ -1828,7 +1828,7 @@ PrefabInstance:
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
-      objectReference: {fileID: 2992053292704328396}
+      objectReference: {fileID: 3825692815500439901}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
@@ -1843,7 +1843,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ShowPanel
+      value: OnConfirm
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
@@ -1851,11 +1851,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_MethodName
-      value: OnConfirm
+      value: ShowPanel
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Tetrage.Title.PanelButton, Tetrage
+      value: Tetrage.Title.ProfileSettingUIController, Tetrage
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
@@ -1863,7 +1863,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
-      value: Tetrage.Title.ProfileUIController, Tetrage
+      value: Tetrage.Title.PanelButton, Tetrage
       objectReference: {fileID: 0}
     - target: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -1954,9 +1954,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ab95ddb56c135c4aa419818b181257c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPanelS:
+  targetPanelShow:
   - {fileID: 0}
-  targetPanelH:
+  targetPanelHide:
   - {fileID: 6769911220101323695}
 --- !u!224 &5942264063716916572 stripped
 RectTransform:

@@ -1,10 +1,11 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using Photon.Pun;
-using Photon.Realtime;
 using System.Collections.Generic;
 using ExitGames.Client.Photon;
+using Photon.Pun;
+using Photon.Realtime;
+using Tetrage.Network;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace Tetrage.Title
 {
@@ -17,21 +18,22 @@ namespace Tetrage.Title
         #region UI References
         
         [Header("Room Info UI")]
-        [SerializeField] private TextMeshProUGUI roomCodeText;          // 部屋番号表示
+        [SerializeField] private TextMeshProUGUI _roomCodeText;          // 部屋番号表示
         
         [Header("Player List UI")]
-        [SerializeField] private Transform playerListContainer;         // プレイヤーリストの親オブジェクト（Horizontal Layout Group推奨）
-        [SerializeField] private GameObject playerItemPrefab;           // プレイヤー表示用のプレハブ（ProfileDisplayUIコンポーネント付き）
+        [SerializeField] private Transform _playerListContainer;         // プレイヤーリストの親オブジェクト（Horizontal Layout Group推奨）
+        [SerializeField] private GameObject _playerItemPrefab;           // プレイヤー表示用のプレハブ（ProfileDisplayView のみ）
         
         [Header("Action Button UI")]
-        [SerializeField] private Button actionButton;                   // Play/Readyボタン
-        [SerializeField] private TextMeshProUGUI actionButtonText;      // ボタンのテキスト
+        [SerializeField] private Button _actionButton;                   // Play/Readyボタン
+        [SerializeField] private TextMeshProUGUI _actionButtonText;      // ボタンのテキスト
         
         #endregion
 
         #region Private Fields
         
-        private Dictionary<int, ProfileDisplayUI> playerItems = new Dictionary<int, ProfileDisplayUI>();
+        private Dictionary<int, PhotonPlayerProfilePresenter> _playerItems =
+            new Dictionary<int, PhotonPlayerProfilePresenter>();
         private const string IS_READY_KEY = "isReady";  // カスタムプロパティのキー
         private bool wasInRoom = false;                // 前回有効化時点の部屋参加状態
 
@@ -91,7 +93,7 @@ namespace Tetrage.Title
         /// </summary>
         public void UpdateRoomCode()
         {
-            if (roomCodeText == null)
+            if (_roomCodeText == null)
             {
                 Debug.LogWarning("RoomCodeTextが設定されていません");
                 return;
@@ -99,11 +101,11 @@ namespace Tetrage.Title
 
             if (PhotonNetwork.InRoom)
             {
-                roomCodeText.text = PhotonNetwork.CurrentRoom.Name;
+                _roomCodeText.text = PhotonNetwork.CurrentRoom.Name;
             }
             else
             {
-                roomCodeText.text = "-----";
+                _roomCodeText.text = "-----";
                 Debug.LogWarning("部屋に参加していません");
             }
         }
@@ -142,35 +144,31 @@ namespace Tetrage.Title
         /// </summary>
         private void AddPlayerItem(Player player)
         {
-            if (playerItemPrefab == null || playerListContainer == null)
+            if (_playerItemPrefab == null || _playerListContainer == null)
             {
                 Debug.LogError("PlayerItemPrefab または PlayerListContainer が設定されていません");
                 return;
             }
 
             // 既に存在する場合はスキップ
-            if (playerItems.ContainsKey(player.ActorNumber))
+            if (_playerItems.ContainsKey(player.ActorNumber))
             {
                 return;
             }
 
             // プレハブからアイテムを生成
-            GameObject itemObj = Instantiate(playerItemPrefab, playerListContainer);
+            GameObject itemObj = Instantiate(_playerItemPrefab, _playerListContainer);
             
-            // ProfileDisplayUIコンポーネントを取得
-            ProfileDisplayUI playerDisplayUI = itemObj.GetComponent<ProfileDisplayUI>();
-            if (playerDisplayUI == null)
+            var playerPresenter = PhotonPlayerProfilePresenter.Attach(itemObj);
+            if (playerPresenter == null)
             {
-                Debug.LogError("PlayerItemPrefabにProfileDisplayUIコンポーネントがありません");
+                Debug.LogError("PlayerItemPrefabにProfileDisplayViewがありません");
                 Destroy(itemObj);
                 return;
             }
-            
-            // プレイヤー情報を設定
-            playerDisplayUI.SetPlayerData(player);
-            
-            // 辞書に登録
-            playerItems[player.ActorNumber] = playerDisplayUI;
+
+            playerPresenter.SetPlayer(player);
+            _playerItems[player.ActorNumber] = playerPresenter;
         }
 
         /// <summary>
@@ -178,13 +176,13 @@ namespace Tetrage.Title
         /// </summary>
         private void RemovePlayerItem(Player player)
         {
-            if (playerItems.TryGetValue(player.ActorNumber, out ProfileDisplayUI item))
+            if (_playerItems.TryGetValue(player.ActorNumber, out PhotonPlayerProfilePresenter item))
             {
                 if (item != null)
                 {
                     Destroy(item.gameObject);
                 }
-                playerItems.Remove(player.ActorNumber);
+                _playerItems.Remove(player.ActorNumber);
             }
         }
 
@@ -193,14 +191,14 @@ namespace Tetrage.Title
         /// </summary>
         private void ClearPlayerList()
         {
-            foreach (var item in playerItems.Values)
+            foreach (var item in _playerItems.Values)
             {
                 if (item != null)
                 {
                     Destroy(item.gameObject);
                 }
             }
-            playerItems.Clear();
+            _playerItems.Clear();
         }
         
         #endregion
@@ -264,9 +262,9 @@ namespace Tetrage.Title
         public override void OnPlayerPropertiesUpdate(Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
         {
             // アイコンや名前が変更された場合に更新
-            if (playerItems.TryGetValue(targetPlayer.ActorNumber, out ProfileDisplayUI item))
+            if (_playerItems.TryGetValue(targetPlayer.ActorNumber, out PhotonPlayerProfilePresenter item))
             {
-                item.SetPlayerData(targetPlayer);
+                item.SetPlayer(targetPlayer);
             }
             
             // isReadyプロパティが変更された場合はボタンの状態を更新
@@ -286,17 +284,17 @@ namespace Tetrage.Title
         /// </summary>
         private void InitializeActionButton()
         {
-            if (actionButton == null)
+            if (_actionButton == null)
             {
                 Debug.LogWarning("ActionButtonが設定されていません");
                 return;
             }
 
             // ボタンのテキストコンポーネントを取得（設定されていない場合）
-            if (actionButtonText == null)
+            if (_actionButtonText == null)
             {
-                actionButtonText = actionButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (actionButtonText == null)
+                _actionButtonText = _actionButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (_actionButtonText == null)
                 {
                     Debug.LogError("ActionButtonにTextMeshProUGUIコンポーネントが見つかりません");
                     return;
@@ -307,8 +305,8 @@ namespace Tetrage.Title
             ResetLocalReadyState();
 
             // ボタンのクリックイベントを設定
-            actionButton.onClick.RemoveAllListeners();
-            actionButton.onClick.AddListener(OnActionButtonClicked);
+            _actionButton.onClick.RemoveAllListeners();
+            _actionButton.onClick.AddListener(OnActionButtonClicked);
 
             UpdateActionButton();
         }
@@ -358,25 +356,25 @@ namespace Tetrage.Title
         /// </summary>
         private void UpdateActionButton()
         {
-            if (actionButton == null || actionButtonText == null)
+            if (_actionButton == null || _actionButtonText == null)
             {
                 return;
             }
 
             if (!PhotonNetwork.InRoom)
             {
-                actionButton.interactable = false;
-                actionButtonText.text = "-----";
+                _actionButton.interactable = false;
+                _actionButtonText.text = "-----";
                 return;
             }
 
             // ホストの場合は「Play」ボタン
             if (PhotonNetwork.IsMasterClient)
             {
-                actionButtonText.text = "Play";
+                _actionButtonText.text = "Play";
                 // 全ゲストが準備完了している場合のみ有効
                 bool allReady = AreAllGuestsReady();
-                actionButton.interactable = allReady;
+                _actionButton.interactable = allReady;
                 Debug.Log($"[UpdateActionButton] ホスト - Playボタンの有効状態: {allReady}");
             }
             // ゲストの場合は「Ready」ボタン
@@ -384,8 +382,8 @@ namespace Tetrage.Title
             {
                 // 現在の準備状態を取得
                 bool isReady = GetLocalPlayerReadyState();
-                actionButtonText.text = !isReady ? "Ready" : "Cancel";
-                actionButton.interactable = true;  // ゲストは常に切り替え可能
+                _actionButtonText.text = !isReady ? "Ready" : "Cancel";
+                _actionButton.interactable = true;  // ゲストは常に切り替え可能
             }
         }
 

@@ -424,6 +424,10 @@ PrefabInstance:
       propertyPath: frameThickness
       value: 15
       objectReference: {fileID: 0}
+    - target: {fileID: 1076021193386596576, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
+      propertyPath: followRectInUpdate
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2395539775604896638, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -556,6 +560,10 @@ PrefabInstance:
     - target: {fileID: 1134906845401497210, guid: 02257052c2abf7a4aade7ba79aec7cb3, type: 3}
       propertyPath: frameThickness
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1134906845401497210, guid: 02257052c2abf7a4aade7ba79aec7cb3, type: 3}
+      propertyPath: followRectInUpdate
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2337261466433263076, guid: 02257052c2abf7a4aade7ba79aec7cb3, type: 3}
       propertyPath: m_Pivot.x

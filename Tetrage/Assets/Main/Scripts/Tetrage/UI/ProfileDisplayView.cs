@@ -23,7 +23,7 @@ namespace Tetrage.UI
         /// <summary>
         /// 表示参照を外部から注入する。
         /// </summary>
-        public void ConfigureBindings(Image icon, TextMeshProUGUI name, Sprite[] icons)
+        public virtual void ConfigureBindings(Image icon, TextMeshProUGUI name, Sprite[] icons)
         {
             iconImage = icon;
             nameText = name;

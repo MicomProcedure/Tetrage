@@ -290,14 +290,14 @@ namespace Tetrage.Managers
 			SetGameplayHudVisible(false);
 
 			// PlayerId[]をint[]に変換
-			var winnerIds = new int[e.WinnerPlayerIds.Count];
+			var winnerPlayerIds = new PlayerId[e.WinnerPlayerIds.Count];
 			for (int i = 0; i < e.WinnerPlayerIds.Count; i++)
 			{
-				winnerIds[i] = e.WinnerPlayerIds[i].Value;
+				winnerPlayerIds[i] = e.WinnerPlayerIds[i];
 			}
 
 			_resultUI.DisplayResult(
-				winnerIds,
+				winnerPlayerIds,
 				_gameContext.Players,
 				_gameContext.UserPlayer,
 				_jingleAudioService);

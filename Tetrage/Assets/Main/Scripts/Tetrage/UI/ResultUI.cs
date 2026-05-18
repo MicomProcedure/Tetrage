@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Tetrage.Audio;
 using Tetrage.Core.Contracts;
+using Tetrage.Core.Enums;
 using Tetrage.Managers;
+using Tetrage.Core.Ids;
+using Tetrage.Models;
 
 namespace Tetrage.UI
 {
@@ -19,7 +22,7 @@ namespace Tetrage.UI
         [SerializeField] private Transform _loserContainer;
 
         [Header("Prefab")]
-        [SerializeField] private GameObject _playerUIPrefab;
+        [SerializeField] private GameObject _playerProfileOnResultPrefab;
 
         [Header("Optional")]
         [SerializeField] private GameObject _resultPanel;
@@ -27,8 +30,10 @@ namespace Tetrage.UI
         #endregion
 
         #region Private Fields
-        private readonly Dictionary<int, ResultPlayerUI> winnerItems = new Dictionary<int, ResultPlayerUI>();
-        private readonly Dictionary<int, ResultPlayerUI> loserItems = new Dictionary<int, ResultPlayerUI>();
+
+        private readonly Dictionary<PlayerId, ResultPlayerEntry> _winnerItems = new Dictionary<PlayerId, ResultPlayerEntry>();
+        private readonly Dictionary<PlayerId, ResultPlayerEntry> _loserItems = new Dictionary<PlayerId, ResultPlayerEntry>();
+
         #endregion
 
         #region Public Methods
@@ -36,17 +41,17 @@ namespace Tetrage.UI
         /// <summary>
         /// 結果を表示
         /// </summary>
-        /// <param name="winnerActorNumbers">勝者の PlayerId.Value 一覧</param>
+        /// <param name="winnerPlayerIds">勝者の PlayerId 一覧</param>
         /// <param name="allPlayers">全プレイヤーのリスト</param>
         /// <param name="userPlayer">ローカルユーザー（勝敗ジングル判定用）</param>
         /// <param name="jingleAudio">勝敗ジングル再生 API（未設定時は再生しない）</param>
         public void DisplayResult(
-            int[] winnerActorNumbers,
+            PlayerId[] winnerPlayerIds,
             IReadOnlyList<IPlayer> allPlayers,
             IPlayer userPlayer,
             IJingleAudioService jingleAudio)
         {
-            if (winnerActorNumbers == null || allPlayers == null)
+            if (winnerPlayerIds == null || allPlayers == null)
             {
                 Debug.LogError("ResultUI: 引数がnullです");
                 return;
@@ -56,25 +61,13 @@ namespace Tetrage.UI
 
             foreach (var player in allPlayers)
             {
-                if (winnerActorNumbers.Contains(player.Id.Value))
+                if (winnerPlayerIds.Contains(player.Id))
                 {
                     AddWinnerItem(player);
                 }
                 else
                 {
                     AddLoserItem(player);
-                }
-
-                // アイコンを設定
-                {
-                    if (winnerActorNumbers.Contains(player.Id.Value))
-                    {
-                        if (winnerItems.TryGetValue(player.Id.Value, out var ui)) ui.SetIcon(player.IconIndex);
-                    }
-                    else
-                    {
-                        if (loserItems.TryGetValue(player.Id.Value, out var ui)) ui.SetIcon(player.IconIndex);
-                    }
                 }
             }
 
@@ -86,9 +79,9 @@ namespace Tetrage.UI
             // 同一 Canvas 上で Result が先頭子だと他 HUD より背面になるため、表示時は最前面へ
             transform.SetAsLastSibling();
 
-            PlayResultJingle(winnerActorNumbers, userPlayer, jingleAudio);
+            PlayResultJingle(winnerPlayerIds, userPlayer, jingleAudio);
 
-            Debug.Log($"ResultUI: 勝者 {winnerItems.Count}人, 敗者 {loserItems.Count}人を表示");
+            Debug.Log($"ResultUI: 勝者 {_winnerItems.Count}人, 敗者 {_loserItems.Count}人を表示");
         }
 
         /// <summary>
@@ -111,11 +104,12 @@ namespace Tetrage.UI
         /// </summary>
         public void ClearAllLists()
         {
-            ClearList(winnerItems, "Winner");
-            ClearList(loserItems, "Loser");
+            ClearList(_winnerItems, "Winner");
+            ClearList(_loserItems, "Loser");
         }
 
         #region Button Events
+
         /// <summary>
         /// タイトルシーンへ戻る（ボタン用）
         /// </summary>
@@ -133,6 +127,7 @@ namespace Tetrage.UI
             }
             app.GoToTitle();
         }
+
         #endregion
 
         #endregion
@@ -140,7 +135,7 @@ namespace Tetrage.UI
         #region Private Methods
 
         private void PlayResultJingle(
-            int[] winnerActorNumbers,
+            PlayerId[] winnerPlayerIds,
             IPlayer userPlayer,
             IJingleAudioService jingleAudio)
         {
@@ -150,56 +145,85 @@ namespace Tetrage.UI
             }
 
             // ローカルユーザーの勝敗に応じてジングルを再生する
-            var isWinner = winnerActorNumbers.Contains(userPlayer.Id.Value);
+            var isWinner = winnerPlayerIds.Contains(userPlayer.Id);
             jingleAudio.PlayJingle(isWinner ? JingleClipId.Win : JingleClipId.Lose);
         }
 
         private void AddWinnerItem(IPlayer player)
         {
-            AddPlayerItem(player, _winnerContainer, winnerItems, "Winner");
+            AddPlayerItem(player, _winnerContainer, _winnerItems, "Winner");
         }
 
         private void AddLoserItem(IPlayer player)
         {
-            AddPlayerItem(player, _loserContainer, loserItems, "Loser");
+            AddPlayerItem(player, _loserContainer, _loserItems, "Loser");
         }
 
-        private void AddPlayerItem(IPlayer player, Transform container, Dictionary<int, ResultPlayerUI> dict, string listName)
+        private void AddPlayerItem(
+            IPlayer player,
+            Transform container,
+            Dictionary<PlayerId, ResultPlayerEntry> dict,
+            string listName)
         {
-            if (_playerUIPrefab == null || container == null)
+            if (_playerProfileOnResultPrefab == null || container == null)
             {
                 Debug.LogError($"ResultUI: PlayerItemPrefab または {listName}Container が未設定");
                 return;
             }
 
-            if (dict.ContainsKey(player.Id.Value))
+            if (dict.ContainsKey(player.Id))
             {
                 return;
             }
 
-            GameObject itemObj = Instantiate(_playerUIPrefab, container);
-            ResultPlayerUI playerUI = itemObj.GetComponent<ResultPlayerUI>();
+            var itemRoot = Instantiate(_playerProfileOnResultPrefab, container);
+            var profileDisplayView = itemRoot.GetComponentInChildren<ProfileDisplayView>(true);
+            var suitSpriteView = itemRoot.GetComponentInChildren<SuitSpriteView>(true);
 
-            if (playerUI == null)
+            if (profileDisplayView == null || suitSpriteView == null)
             {
-                Debug.LogError("ResultUI: Prefabに ResultPlayerUI コンポーネントがありません");
-                Destroy(itemObj);
+                Debug.LogError("ResultUI: Prefabに ProfileDisplayView または SuitSpriteView コンポーネントがありません");
+                Destroy(itemRoot);
                 return;
             }
 
-            playerUI.SetPlayerData(player);
-            dict[player.Id.Value] = playerUI;
+            profileDisplayView.SetProfile(player.IconIndex, player.UserId);
+
+            if (TryGetTargetSuit(player, out var targetSuit))
+            {
+                suitSpriteView.SetSuit(targetSuit);
+            }
+            else
+            {
+                Debug.LogWarning($"ResultUI: PlayerId={player.Id} の Target にカードがありません。スート表示をスキップします。");
+            }
+
+            dict[player.Id] = new ResultPlayerEntry(itemRoot, profileDisplayView, suitSpriteView);
         }
 
-        private void ClearList(Dictionary<int, ResultPlayerUI> dict, string listName)
+        private static bool TryGetTargetSuit(IPlayer player, out Suit suit)
         {
-            foreach (var item in dict.Values)
+            suit = default;
+            var target = player?.Target;
+            if (target == null || target.Count == 0)
             {
-                if (item != null)
+                return false;
+            }
+
+            suit = target.Cards[0].Suit;
+            return true;
+        }
+
+        private static void ClearList(Dictionary<PlayerId, ResultPlayerEntry> dict, string listName)
+        {
+            foreach (var entry in dict.Values)
+            {
+                if (entry.Root != null)
                 {
-                    Destroy(item.gameObject);
+                    Destroy(entry.Root);
                 }
             }
+
             dict.Clear();
         }
 
@@ -210,6 +234,24 @@ namespace Tetrage.UI
         private void OnDestroy()
         {
             ClearAllLists();
+        }
+
+        #endregion
+
+        #region Nested Types
+
+        private sealed class ResultPlayerEntry
+        {
+            public GameObject Root { get; }
+            public ProfileDisplayView Profile { get; }
+            public SuitSpriteView Suit { get; }
+
+            public ResultPlayerEntry(GameObject root, ProfileDisplayView profile, SuitSpriteView suit)
+            {
+                Root = root;
+                Profile = profile;
+                Suit = suit;
+            }
         }
 
         #endregion

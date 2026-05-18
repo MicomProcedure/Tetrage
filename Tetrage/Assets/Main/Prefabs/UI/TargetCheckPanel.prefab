@@ -953,10 +953,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -280
       objectReference: {fileID: 0}
-    - target: {fileID: 3907189869417946445, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
-      propertyPath: profileManager
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 4128447928149338138, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
       propertyPath: m_Name
       value: ProfileDisplayPanel
@@ -1060,14 +1056,3 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8564513749115555811, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
   m_PrefabInstance: {fileID: 7330480671211156728}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6017434899651307957 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3907189869417946445, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
-  m_PrefabInstance: {fileID: 7330480671211156728}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5db95afdaafb4cb40afce95e19bbf95b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
