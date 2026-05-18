@@ -424,11 +424,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ab95ddb56c135c4aa419818b181257c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPanelS:
+  targetPanelShow:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  targetPanelH:
+  targetPanelHide:
   - {fileID: 7408905724936456624}
 --- !u!1 &4202761523773436301
 GameObject:
@@ -530,7 +530,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4453677235469388288}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -12.8433075}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -538,8 +538,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 40.799927, y: 155.00003}
-  m_SizeDelta: {x: 1500, y: 300}
+  m_AnchoredPosition: {x: 0, y: 155.00003}
+  m_SizeDelta: {x: 1800, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3224906039334043878
 MonoBehaviour:
@@ -554,17 +554,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 10
-    m_Right: 10
-    m_Top: 10
-    m_Bottom: 10
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 3
-  m_Spacing: 300
+  m_Spacing: -100
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
-  m_ChildScaleWidth: 1
+  m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
 --- !u!1 &4566424341339764605
@@ -611,9 +611,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9813b8ad987d1491a8adb0de26710e72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roomCodeText: {fileID: 8813116313948455146}
-  playerListContainer: {fileID: 6158349070337936845}
-  playerItemPrefab: {fileID: 4128447928149338138, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
+  _roomCodeText: {fileID: 8813116313948455146}
+  _playerListContainer: {fileID: 6158349070337936845}
+  _playerItemPrefab: {fileID: 4128447928149338138, guid: c42429c0aa6cb45b08acce2af572683c, type: 3}
+  _actionButton: {fileID: 203105816681011261}
+  _actionButtonText: {fileID: 7742287725325898522}
 --- !u!1 &4838816088113680357
 GameObject:
   m_ObjectHideFlags: 0
@@ -1327,6 +1329,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2395539775604896638, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
   m_PrefabInstance: {fileID: 2337357895291930734}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &203105816681011261 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2503549722023874643, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
+  m_PrefabInstance: {fileID: 2337357895291930734}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5231875861072406997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &5231875861072406997 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7562860986969743803, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
@@ -1344,10 +1357,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ab95ddb56c135c4aa419818b181257c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPanelS:
+  targetPanelShow:
   - {fileID: 0}
-  targetPanelH:
+  targetPanelHide:
   - {fileID: 7408905724936456624}
+--- !u!114 &7742287725325898522 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5412718950964157300, guid: f66438e8296fbe64eb5b7d853938c6d5, type: 3}
+  m_PrefabInstance: {fileID: 2337357895291930734}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2577304307038090771
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1526,9 +1550,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ab95ddb56c135c4aa419818b181257c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPanelS:
+  targetPanelShow:
   - {fileID: 0}
-  targetPanelH:
+  targetPanelHide:
   - {fileID: 7408905724936456624}
 --- !u!1001 &6073064863727850683
 PrefabInstance:
@@ -1703,9 +1727,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ab95ddb56c135c4aa419818b181257c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPanelS:
+  targetPanelShow:
   - {fileID: 0}
-  targetPanelH:
+  targetPanelHide:
   - {fileID: 7408905724936456624}
 --- !u!224 &8464927726146955205 stripped
 RectTransform:
@@ -1889,9 +1913,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ab95ddb56c135c4aa419818b181257c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPanelS:
+  targetPanelShow:
   - {fileID: 0}
-  targetPanelH:
+  targetPanelHide:
   - {fileID: 7408905724936456624}
 --- !u!224 &4985561929728931782 stripped
 RectTransform:

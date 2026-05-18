@@ -10,9 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 981613717191394641}
   - component: {fileID: 5410152243453977386}
-  m_Layer: 0
+  - component: {fileID: 1006137445573928096}
+  m_Layer: 2
   m_Name: Marker.Back
-  m_TagString: Untagged
+  m_TagString: EditorOnly
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -87,6 +88,19 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &1006137445573928096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822750637400071512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c432cbf66def20b4290f192fdc231ca0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _disableOnAwake: 1
 --- !u!1 &7859186537961095930
 GameObject:
   m_ObjectHideFlags: 0
@@ -97,9 +111,10 @@ GameObject:
   m_Component:
   - component: {fileID: 6055098158273985577}
   - component: {fileID: 8248672007978243099}
-  m_Layer: 0
+  - component: {fileID: 7654822890312037609}
+  m_Layer: 2
   m_Name: Marker.Front
-  m_TagString: Untagged
+  m_TagString: EditorOnly
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -174,6 +189,19 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &7654822890312037609
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7859186537961095930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c432cbf66def20b4290f192fdc231ca0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _disableOnAwake: 1
 --- !u!1 &7872026096006799202
 GameObject:
   m_ObjectHideFlags: 0

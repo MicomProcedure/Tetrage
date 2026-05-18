@@ -38,12 +38,21 @@ namespace Tetrage.Core.Constants
         /// <summary>裏向き表示時にハイライト色を SpriteRenderer.color へ乗算する係数。</summary>
         public const float CARD_VIEW_BACK_HIGHLIGHT_COLOR_MULTIPLIER = 0.3f;
 
-        public const int DEFAULT_SE_PLAYBACK_GATE_TIME = 100; // SE再生ゲートの時間(ミリ秒)
+        public const int DEFAULT_SE_PLAYBACK_GATE_TIME_MS = 100; // SE再生ゲートの時間(ミリ秒)
+
+        public const int MILLISECONDS_PER_SECOND = 1000; // 秒からミリ秒への変換係数
+
+        /// <summary>InGame 音声まわりの定数。</summary>
+        public static class Audio
+        {
+            /// <summary>ジングル再生中に BGM へ掛ける音量倍率（0〜1）。</summary>
+            public const float JINGLE_BGM_DUCK_VOLUME_MULTIPLIER = 0.1f;
+        }
 
         /// <summary>カットイン演出の時間設定。</summary>
         public static class CutInAnimationDuration
         {
-            public const int MILLISECONDS_PER_SECOND = 1000; // 秒からミリ秒への変換係数
+            public const int MILLISECONDS_PER_SECOND = InGameConsts.MILLISECONDS_PER_SECOND; // 秒からミリ秒への変換係数
             public const float ENTRY_DURATION_SECONDS = 0.5f; // カットインが入る時間
             public const float EXIT_DURATION_SECONDS = 0.3f; // カットインが抜ける時間
             public const int TETRAGE_SOLO_TOTAL_DURATION_MS = 1500; // TetrageSoloカットインの合計時間

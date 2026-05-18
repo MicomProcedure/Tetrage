@@ -1,54 +1,55 @@
 using UnityEngine;
-using Tetrage.Core.Contracts;
-using Tetrage.Core.Events;
-using R3;
-using System.Linq;
 using Cysharp.Threading.Tasks;
+using Tetrage.Core.Contracts;
 using Tetrage.Core.Constants;
-using System.Collections.Generic;
-using Tetrage.Core.Ids;
-using Mono.Cecil.Cil;
 
-namespace Tetrage.Audio{
+namespace Tetrage.Audio
+{
     /// <summary>
-    /// InGame中のSE再生を担当するAudioManager。
-    /// シングルトンを使わず、参照を持つ側から呼び出して利用する。
+    /// InGame 音声の Composition Root。チャンネル・Presenter の配線とライフサイクルを担当する。
     /// </summary>
-    public sealed class InGameAudioManager : MonoBehaviour
+    public sealed class InGameAudioManager : MonoBehaviour, ISEAudioService, IJingleAudioService
     {
         #region Serialized Fields
 
-        [Header("Audio Sources")]
-        [SerializeField] private AudioSource SEAudioSource;
+        [Header("Catalog")]
+        [SerializeField] private InGameAudioCatalog _catalog;
 
-        [Header("SE Clips")]
-        [SerializeField] private AudioClip cardMoveSE;
-        [SerializeField] private AudioClip cardFlipSE;
-        [SerializeField] private AudioClip buttonClickSE;
-
-        #endregion
-
-        #region 管理対象インスタンス
-
-        private IGameContext _gameContext;
+        [Header("Channels")]
+        [SerializeField] private SEAudioChannel _seChannel;
+        [SerializeField] private BgmAudioChannel _bgmChannel;
+        [SerializeField] private JingleAudioChannel _jingleChannel;
 
         #endregion
 
-        private bool _isInitialized = false;
+        #region Private Fields
+
+        private InGameAudioEventPresenter _presenter;
+        private InGameBgmStateMachine _bgmStateMachine;
+        private InGameJinglePlayer _jinglePlayer;
+        private bool _isInitialized;
+
+        #endregion
+
+        #region Public Properties
+
         public bool IsInitialized => _isInitialized;
-        private bool _isValid = false;
-        private Dictionary<AudioClip, bool> _SEPlaybackGate = new(); // SE再生ゲートを表す変数Dictionary        
-        private CompositeDisposable _disposables = new();
 
-        private readonly List<PileId> _targetPiles = new();
-   
+        #endregion
 
         #region Unity Lifecycle
 
         private void Awake()
         {
-            ValidateAudioReferences();
+            ValidateReferences();
+        }
 
+        private void OnDestroy()
+        {
+            _presenter?.Unbind();
+            _jinglePlayer?.Cancel();
+            _bgmStateMachine?.Stop();
+            _jingleChannel?.Stop();
         }
 
         #endregion
@@ -57,152 +58,164 @@ namespace Tetrage.Audio{
 
         public void Initialize(IGameContext gameContext)
         {
-            _gameContext = gameContext;
-
-            // Subscribeの前に実行する必要あり
-            // CardMovedEventのToPileIdがPlayerTargetのPileIdであるかを判定するために、PlayerTargetのPileIdをリストに追加する。
-            _targetPiles.Clear();
-            foreach (var player in _gameContext.Players){
-                _targetPiles.Add(PileIds.PlayerTarget(player.Id));
+            if (!ValidateInitialized(gameContext))
+            {
+                return;
             }
 
-            InitializeSEPlaybackGate();
-            SubscribeToEvents();
+            // 同時再生を抑制する SE ID を登録する。
+            _seChannel.ConfigureGatedSeIds(new[]
+            {
+                SEClipId.CardMove,
+                SEClipId.CardFlip,
+                SEClipId.ButtonClick,
+            });
 
+            // SE 再生ゲートの時間を設定する。
+            _seChannel.SetSEPlaybackGateTimeMS(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME_MS);
 
+            // BGM 状態マシンを初期化する。
+            _bgmStateMachine = new InGameBgmStateMachine(_bgmChannel, _catalog);
 
+            // BGM ダックコントローラを初期化する。
+            var duckController = new BgmDuckController(_bgmChannel);
+
+            // Jingle プレイヤーを初期化する。
+            _jinglePlayer = new InGameJinglePlayer(
+                duckController,
+                _jingleChannel,
+                _catalog,
+                this.GetCancellationTokenOnDestroy());
+            _presenter = new InGameAudioEventPresenter();
+            _presenter.Bind(
+                gameContext.Events,
+                gameContext.Players,
+                _catalog,
+                _seChannel,
+                _bgmStateMachine,
+                this.GetCancellationTokenOnDestroy());
 
             _isInitialized = true;
         }
 
-        /// <summary>
-        /// カード移動SEを再生する。
-        /// </summary>
-        public void PlayCardMoveSE()
+        /// <inheritdoc />
+        public void PlaySE(SEClipId id)
         {
-            if (!_SEPlaybackGate[cardMoveSE])
-            {
-                return;
-            }           
-            PlaySE(cardMoveSE);
-            _SEPlaybackGate[cardMoveSE] = false;    // 同時再生を防ぐためにゲートを閉じる
-            // 指定した時間後にゲートを開く
-            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME).ContinueWith(() => _SEPlaybackGate[cardMoveSE] = true).Forget();
-        }
-
-        /// <summary>
-        /// カード反転SEを再生する。
-        /// </summary>
-        public void PlayCardFlipSE()
-        {
-            if (!_SEPlaybackGate[cardFlipSE])
+            if (!ValidatePlaybackReady())
             {
                 return;
             }
-            PlaySE(cardFlipSE);
-            _SEPlaybackGate[cardFlipSE] = false;    // 同時再生を防ぐためにゲートを閉じる
-            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME).ContinueWith(() => _SEPlaybackGate[cardFlipSE] = true).Forget();
+
+            var clip = _catalog.GetAudioClip(id);
+            if (id == SEClipId.GameStart)
+            {
+                _seChannel.TryPlay(clip);
+                return;
+            }
+
+            _seChannel.TryPlayGated(id, clip);
         }
 
-        /// <summary>
-        /// ボタンクリックSEを再生する。
-        /// </summary>
-        public void PlayButtonClickSE()
+        /// <inheritdoc />
+        public void PlayJingle(JingleClipId id)
         {
-            if (!_SEPlaybackGate[buttonClickSE])
+            if (!ValidateJinglePlaybackReady())
             {
                 return;
             }
-            PlaySE(buttonClickSE);
-            _SEPlaybackGate[buttonClickSE] = false;    // 同時再生を防ぐためにゲートを閉じる
-            UniTask.Delay(InGameConsts.DEFAULT_SE_PLAYBACK_GATE_TIME).ContinueWith(() => _SEPlaybackGate[buttonClickSE] = true).Forget();
-        }
 
+            _jinglePlayer.PlayJingle(id);
+        }
 
         #endregion
 
         #region Private Methods
-        
-        /// <summary>
-        /// 指定したSEを再生する。
-        /// </summary>
-        private void PlaySE(AudioClip clip)
+
+        private bool ValidatePlaybackReady()
         {
-            if (SEAudioSource == null || clip == null)
+            if (_isInitialized && _catalog != null && _seChannel != null)
             {
-                return;
+                return true;
             }
 
-            if (!_isInitialized)
-            {
-                Debug.LogWarning("InGameAudioManager: 初期化されていません。SE再生をスキップします。", this);
-                return;
-            }
-
-            SEAudioSource.PlayOneShot(clip);
+            Debug.LogWarning("InGameAudioManager: 初期化されていません。SE再生をスキップします。", this);
+            return false;
         }
 
-        /// <summary>
-        /// Initialize時に必要な参照が設定されているか検証する。
-        /// </summary>
-        private void ValidateAudioReferences()
+        private bool ValidateJinglePlaybackReady()
         {
-            if (SEAudioSource == null)
+            if (_isInitialized && _catalog != null && _jingleChannel != null)
             {
-                Debug.LogWarning("InGameAudioManager: seAudioSource が未設定です。SE再生をスキップします。", this);
+                return true;
             }
-            else if (cardFlipSE == null)
+
+            Debug.LogWarning("InGameAudioManager: 初期化されていません。Jingle再生をスキップします。", this);
+            return false;
+        }
+
+        private bool ValidateInitialized(IGameContext gameContext)
+        {
+            if (gameContext?.Events == null)
             {
-                Debug.LogWarning("InGameAudioManager: cardFlipSe が未設定です。SE再生をスキップします。", this);
+                Debug.LogWarning("InGameAudioManager: GameContext または EventBus が無効です。", this);
+                return false;
             }
-            else if (cardMoveSE == null)
+
+            return ValidateReferences();
+        }
+
+        private bool ValidateReferences()
+        {
+            if (_catalog == null)
             {
-                Debug.LogWarning("InGameAudioManager: cardMoveSe が未設定です。SE再生をスキップします。", this);
+                Debug.LogWarning("InGameAudioManager: InGameAudioCatalog が未設定です。", this);
+                return false;
             }
-            else if (buttonClickSE == null)
+
+            var isValid = true;
+            if (!_catalog.HasClipSets)
             {
-                Debug.LogWarning("InGameAudioManager: buttonClickSe が未設定です。SE再生をスキップします。", this);
+                Debug.LogWarning("InGameAudioManager: InGameAudioCatalog のクリップセットが未設定です。", this);
+                isValid = false;
             }
             else
             {
-                _isValid = true;
+                // 未設定 Clip は Validate 内で警告済み。戻り値は初期化可否に使わない。
+                _catalog.ValidateReferences();
             }
-        }
-
-        private void SubscribeToEvents()
-        {
-
-            // Card移動時に音声を鳴らす
-            // ただし、移動先がPlayerTargetのPileIdである場合は音声を鳴らさない（フィールド初期化時は音を無らしたくない）。
-            if (cardMoveSE != null){
-                _gameContext.Events.CardMoved
-                    .Where(e => !_targetPiles.Contains(e.ToPileId))
-                    .Subscribe(_ => PlayCardMoveSE())
-                    .AddTo(_disposables);
+            if (_seChannel != null)
+            {
+                isValid &= _seChannel.ValidateReferences();
+            }
+            else
+            {
+                Debug.LogWarning("InGameAudioManager: SeAudioChannel が未設定です。", this);
+                isValid = false;
             }
 
+            if (_bgmChannel != null)
+            {
+                isValid &= _bgmChannel.ValidateReferences();
+            }
+            else
+            {
+                Debug.LogWarning("InGameAudioManager: BgmAudioChannel が未設定です。", this);
+                isValid = false;
+            }
+
+            if (_jingleChannel != null)
+            {
+                isValid &= _jingleChannel.ValidateReferences();
+            }
+            else
+            {
+                Debug.LogWarning("InGameAudioManager: JingleAudioChannel が未設定です。", this);
+                isValid = false;
+            }
+
+            return isValid;
         }
-
-        private void InitializeSEPlaybackGate()
-        {
-            _SEPlaybackGate.TryAdd(cardMoveSE, true);
-            _SEPlaybackGate.TryAdd(cardFlipSE, true);
-            _SEPlaybackGate.TryAdd(buttonClickSE, true);
-            
-        }       
-
-        private void OnDestroy()
-        {
-            _disposables.Dispose();
-        }
-
-        #endregion
-
-        #region Helper Methods
 
         #endregion
     }
-
-
-
 }

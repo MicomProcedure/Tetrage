@@ -183,15 +183,15 @@ namespace Tetrage.Managers
                 EventSubscribe();
 
                 // 5.6 InGameUIManager 初期化（Bus購読開始）
-                if (_inGameUIManager != null)
-                {
-                    _inGameUIManager.Initialize(_gameContext, _netCtl);
-                }
-
-                // 5.7 InGameAudioManager 初期化
+                // 5.7 InGameAudioManager 初期化（UI より先に行いジングル API を渡す）
                 if (_inGameAudioManager != null)
                 {
                     _inGameAudioManager.Initialize(_gameContext);
+                }
+
+                if (_inGameUIManager != null)
+                {
+                    _inGameUIManager.Initialize(_gameContext, _netCtl, _inGameAudioManager);
                 }
 
 

@@ -1,55 +1,116 @@
 using System;
+using R3;
 using Tetrage.Network;
 using UnityEngine;
 
 namespace Tetrage.Title
 {
+    /// <summary>
+    /// ローカルプレイヤープロファイルの読み込み・保存と変更通知を担当する。
+    /// </summary>
     public class PlayerProfileManager : MonoBehaviour
-{
-    private const string SaveKey = "PlayerProfile";
-    public PlayerProfileData Data { get; private set; }
-
-    void Awake()
     {
-        LoadProfile();
-    }
+        #region Constants
 
-    public void LoadProfile()
-    {
-        // Multi Playmode では各インスタンスに -name が渡される（Player1=メインEditor, Player2..n=仮想プレイヤー）
-        // これを使って、ローカルプロファイル（Title表示）とPhoton用プロファイル（WaitingRoom表示）を
-        // インスタンスごとに分岐させる。
-        if (TryGetMultiPlayModePlayerIndex(out var multiIndex))
+        private const string SaveKey = "PlayerProfile";
+
+        #endregion
+
+        #region Private Fields
+
+        private readonly Subject<PlayerProfileData> _profileChanged = new();    // プロファイルが変更されたときに通知する。
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// プロファイルデータ。
+        /// </summary>
+        public PlayerProfileData Data { get; private set; }  
+
+        public Observable<PlayerProfileData> ProfileChanged => _profileChanged;
+
+        #endregion
+
+        #region Unity Lifecycle
+
+        private void Awake()
         {
-            Data = new PlayerProfileData
+            LoadProfile();
+        }
+
+        private void OnDestroy()
+        {
+            _profileChanged.Dispose();
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public void LoadProfile()
+        {
+            // Multi Playmode では各インスタンスに -name が渡される（Player1=メインEditor, Player2..n=仮想プレイヤー）
+            if (TryGetMultiPlayModePlayerIndex(out var multiIndex))
             {
-                // 要件: Player1..4 / iconIndex 1..4
-                PlayerName = $"Player{multiIndex}",
-                IconIndex = multiIndex
-            };
+                Data = new PlayerProfileData
+                {
+                    PlayerName = $"Player{multiIndex}",
+                    IconIndex = multiIndex
+                };
 
-            Debug.Log($"[MultiPlayMode] Override PlayerProfile: PlayerName={Data.PlayerName}, IconIndex={Data.IconIndex}");
-            return;
+                Debug.Log($"[MultiPlayMode] Override PlayerProfile: PlayerName={Data.PlayerName}, IconIndex={Data.IconIndex}");
+                NotifyProfileChanged();
+                return;
+            }
+
+            if (PlayerPrefs.HasKey(SaveKey))
+            {
+                string json = PlayerPrefs.GetString(SaveKey);
+                Data = JsonUtility.FromJson<PlayerProfileData>(json);
+                Debug.Log($"プロファイル読み込み成功: IconIndex={Data.IconIndex}, PlayerName={Data.PlayerName}");
+            }
+            else
+            {
+                Data = new PlayerProfileData();
+                Debug.Log("プロファイルが存在しないため、初期値を使用: IconIndex=0, PlayerName=Player");
+            }
+
+            NotifyProfileChanged();
         }
 
-        if (PlayerPrefs.HasKey(SaveKey))
+        public void SaveProfile()
         {
-            string json = PlayerPrefs.GetString(SaveKey);
-            Data = JsonUtility.FromJson<PlayerProfileData>(json);
-            Debug.Log($"プロファイル読み込み成功: IconIndex={Data.IconIndex}, PlayerName={Data.PlayerName}");
+            string json = JsonUtility.ToJson(Data);
+            PlayerPrefs.SetString(SaveKey, json);
+            PlayerPrefs.Save();
+            Debug.Log($"プロファイル保存成功: IconIndex={Data.IconIndex}, PlayerName={Data.PlayerName}");
+
+            ProfileSettingPUN.TryPushProfileToPhotonIfInRoom();
+            NotifyProfileChanged();
         }
-        else
+
+        public void UpdateProfile(int iconIndex, string playerName)
         {
-            Data = new PlayerProfileData();
-            Debug.Log("プロファイルが存在しないため、初期値を使用: IconIndex=0, PlayerName=Player");
+            Data.IconIndex = iconIndex;
+            Data.PlayerName = playerName;
+            SaveProfile();
         }
-    }
+
+        #endregion
+
+        #region Private Methods
+
+        private void NotifyProfileChanged()
+        {
+            _profileChanged.OnNext(Data);
+        }
 
         private static bool TryGetMultiPlayModePlayerIndex(out int index)
         {
             index = -1;
 
-            // 例: [..., "-name", "Player3", ...]
             var args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length - 1; i++)
             {
@@ -75,7 +136,6 @@ namespace Tetrage.Title
                     return false;
                 }
 
-                // 要件では 1..4 を想定（それ以外はクランプ）
                 index = Mathf.Clamp(parsed, 1, 4);
                 return true;
             }
@@ -83,21 +143,6 @@ namespace Tetrage.Title
             return false;
         }
 
-    public void SaveProfile()
-    {
-        string json = JsonUtility.ToJson(Data);
-        PlayerPrefs.SetString(SaveKey, json);
-        PlayerPrefs.Save();
-        Debug.Log($"プロファイル保存成功: IconIndex={Data.IconIndex}, PlayerName={Data.PlayerName}");
-
-        ProfileSettingPUN.TryPushProfileToPhotonIfInRoom();
-    }
-
-    public void UpdateProfile(int iconIndex, string playerName)
-    {
-        Data.IconIndex = iconIndex;
-        Data.PlayerName = playerName;
-        SaveProfile();
-    }
+        #endregion
     }
 }

@@ -1,6 +1,6 @@
 using Photon.Pun;
-using UnityEngine;
 using Tetrage.Title;
+using UnityEngine;
 
 namespace Tetrage.Network
 {
@@ -69,8 +69,8 @@ namespace Tetrage.Network
 
             ExitGames.Client.Photon.Hashtable properties = new ExitGames.Client.Photon.Hashtable
             {
-                { "IconIndex", data.IconIndex },
-                { "PlayerName", data.PlayerName }
+                { TitlePhotonPropertyKeys.IconIndex, data.IconIndex },
+                { TitlePhotonPropertyKeys.PlayerName, data.PlayerName }
             };
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(properties);
