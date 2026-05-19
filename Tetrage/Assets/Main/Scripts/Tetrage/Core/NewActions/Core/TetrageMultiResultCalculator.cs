@@ -7,108 +7,165 @@ namespace Tetrage.Core.Actions
 {
     /// <summary>
     /// TetrageMulti の純粋な応答・勝敗計算ロジック。
-    /// HostActionProcessor から分離し、テスト可能にする。
     /// </summary>
     public static class TetrageMultiResultCalculator
     {
+        #region Result types
+
+        /// <summary>TetrageMulti の勝敗判定結果。</summary>
+        public readonly struct JudgeResult
+        {
+            public IReadOnlyList<PlayerId> Winners { get; }
+            public bool IsSuccess { get; }
+
+            public JudgeResult(IReadOnlyList<PlayerId> winners, bool isSuccess)
+            {
+                Winners    = winners ?? new List<PlayerId>();
+                IsSuccess  = isSuccess;
+            }
+        }
+
+        #endregion
+
+        #region Judge
+
         /// <summary>
-        /// 応答状況から「出す」プレイヤーを決定する。
-        /// - 明示的 ResponseOpen → 出す
-        /// - 未応答（responses に含まれない）→ 出す（フォールバック）
-        /// - 明示的 ResponseDecline → 出さない（除外）
+        /// WinCondition.md に基づき勝者と成功フラグを返す。
+        /// submissions: 親・指名子の提出有無（Host がタイムアウト既定を適用済みであること）。
         /// </summary>
-        /// <param name="selectedPlayerIds">宣言者が選択したプレイヤー ID 一覧</param>
-        /// <param name="responses">key=PlayerId, value=true(出す)/false(出さない)</param>
-        /// <returns>出すプレイヤーの PlayerId 一覧</returns>
-        public static List<PlayerId> DetermineOpenPlayers(
-            IReadOnlyList<PlayerId> selectedPlayerIds,
+        public static JudgeResult Judge(
+            PlayerId parentId,
+            Suit parentSuit,
+            IReadOnlyList<PlayerId> nominatedChildIds,
+            IReadOnlyDictionary<PlayerId, bool> submissions,
+            IReadOnlyList<(PlayerId id, Suit suit)> allPlayers)
+        {
+            var participants = BuildParticipants(parentId, nominatedChildIds);
+            var submitters   = participants.Where(id => submissions.TryGetValue(id, out var s) && s).ToList();
+
+            // 条件3: participants 全員不提出
+            if (submitters.Count == 0)
+            {
+                var losers = CollectTeammates(parentId, parentSuit, allPlayers);
+                return new JudgeResult(BuildWinnersExcluding(allPlayers, losers), isSuccess: false);
+            }
+
+            var allSubmitted = participants.All(id => submissions.TryGetValue(id, out var s) && s);
+            var suitsAligned = allSubmitted && participants.All(id =>
+            {
+                var suit = FindSuit(id, allPlayers);
+                return suit == parentSuit;
+            });
+            var noNominationMiss = !HasNominationMiss(parentId, parentSuit, nominatedChildIds, allPlayers);
+
+            // 条件1: 全員提出 + スート一致 + 指名漏れなし
+            if (allSubmitted && suitsAligned && noNominationMiss)
+                return new JudgeResult(participants.ToList(), isSuccess: true);
+
+            // 条件2: 提出者と同スートチームが敗北
+            var loserSet = new HashSet<PlayerId>();
+            foreach (var submitterId in submitters)
+            {
+                var submitterSuit = FindSuit(submitterId, allPlayers);
+                foreach (var (id, suit) in allPlayers)
+                {
+                    if (id != submitterId && suit == submitterSuit)
+                        loserSet.Add(id);
+                }
+                loserSet.Add(submitterId);
+            }
+
+            return new JudgeResult(BuildWinnersExcluding(allPlayers, loserSet), isSuccess: false);
+        }
+
+        #endregion
+
+        #region Submission defaults
+
+        /// <summary>
+        /// 未応答の既定を適用する。親=提出、子=提出しない。
+        /// </summary>
+        public static Dictionary<PlayerId, bool> ApplySubmissionDefaults(
+            PlayerId parentId,
+            IReadOnlyList<PlayerId> nominatedChildIds,
             IReadOnlyDictionary<PlayerId, bool> responses)
         {
-            var openPlayers = new List<PlayerId>();
-            foreach (var id in selectedPlayerIds)
+            var result = new Dictionary<PlayerId, bool>(responses);
+            if (!result.ContainsKey(parentId))
+                result[parentId] = true;
+
+            foreach (var childId in nominatedChildIds)
             {
-                if (!responses.TryGetValue(id, out var isOpen) || isOpen)
-                    openPlayers.Add(id); // 未応答 or 明示的に出す
+                if (!result.ContainsKey(childId))
+                    result[childId] = false;
             }
-            return openPlayers;
+
+            return result;
         }
 
-        /// <summary>
-        /// 参加者のスート情報をもとに成功判定を行う。
-        /// 宣言者と全 openPlayers のスートが一致すれば成功。
-        /// </summary>
-        /// <param name="requesterSuit">宣言者の Target スート</param>
-        /// <param name="openPlayerSuits">出したプレイヤーの Target スート一覧</param>
-        public static bool IsSuccess(Suit requesterSuit, IReadOnlyList<Suit> openPlayerSuits)
+        #endregion
+
+        #region Private helpers
+
+        private static List<PlayerId> BuildParticipants(PlayerId parentId, IReadOnlyList<PlayerId> nominatedChildIds)
         {
-            if (openPlayerSuits == null || openPlayerSuits.Count == 0) return false;
-            return openPlayerSuits.All(s => s == requesterSuit);
+            var list = new List<PlayerId> { parentId };
+            if (nominatedChildIds != null)
+                list.AddRange(nominatedChildIds);
+            return list.Distinct().ToList();
         }
 
-        /// <summary>
-        /// 成功時の勝者 PlayerId 一覧を返す（宣言者 + 出したプレイヤー全員）。
-        /// </summary>
-        public static List<PlayerId> CalculateSuccessWinners(
-            PlayerId requesterId, IReadOnlyList<PlayerId> openPlayerIds)
+        private static bool HasNominationMiss(
+            PlayerId parentId,
+            Suit parentSuit,
+            IReadOnlyList<PlayerId> nominatedChildIds,
+            IReadOnlyList<(PlayerId id, Suit suit)> allPlayers)
         {
-            var winners = new List<PlayerId> { requesterId };
-            winners.AddRange(openPlayerIds);
-            return winners.Distinct().ToList();
-        }
-
-        /// <summary>
-        /// 失敗時の勝者 PlayerId 一覧を返す。
-        /// ① 出した参加者かつ宣言者とスート違い。
-        /// ② 出さなかったプレイヤーかつ全 open 参加者のスートとも異なる。
-        /// </summary>
-        /// <param name="requesterId">宣言者の PlayerId</param>
-        /// <param name="requesterSuit">宣言者の Target スート</param>
-        /// <param name="allPlayers">全プレイヤー（PlayerId, Suit）</param>
-        /// <param name="openPlayerIds">出したプレイヤーの PlayerId 集合</param>
-        public static List<PlayerId> CalculateFailureWinners(
-            PlayerId requesterId,
-            Suit requesterSuit,
-            IReadOnlyList<(PlayerId id, Suit suit)> allPlayers,
-            IReadOnlyList<PlayerId> openPlayerIds)
-        {
-            var openSet   = new HashSet<PlayerId>(openPlayerIds) { requesterId };
-            var openSuits = openPlayers_suits(requesterId, requesterSuit, allPlayers, openPlayerIds);
-            var winners   = new List<PlayerId>();
-
+            var nominated = new HashSet<PlayerId>(nominatedChildIds ?? new List<PlayerId>());
             foreach (var (id, suit) in allPlayers)
             {
-                if (id == requesterId) continue; // 宣言者は失敗時に勝者にならない
-
-                if (openSet.Contains(id))
-                {
-                    // 出した: 宣言者とスートが違えば勝者
-                    if (suit != requesterSuit)
-                        winners.Add(id);
-                }
-                else
-                {
-                    // 出さなかった: 全 open スートとも違えば勝者
-                    if (!openSuits.Contains(suit))
-                        winners.Add(id);
-                }
+                if (id == parentId) continue;
+                if (suit == parentSuit && !nominated.Contains(id))
+                    return true;
             }
-
-            return winners.Distinct().ToList();
+            return false;
         }
 
-        private static HashSet<Suit> openPlayers_suits(
-            PlayerId requesterId, Suit requesterSuit,
-            IReadOnlyList<(PlayerId id, Suit suit)> allPlayers,
-            IReadOnlyList<PlayerId> openPlayerIds)
+        private static HashSet<PlayerId> CollectTeammates(
+            PlayerId parentId,
+            Suit parentSuit,
+            IReadOnlyList<(PlayerId id, Suit suit)> allPlayers)
         {
-            var openSet  = new HashSet<PlayerId>(openPlayerIds);
-            var suitSet  = new HashSet<Suit> { requesterSuit };
+            var set = new HashSet<PlayerId> { parentId };
             foreach (var (id, suit) in allPlayers)
             {
-                if (openSet.Contains(id))
-                    suitSet.Add(suit);
+                if (suit == parentSuit)
+                    set.Add(id);
             }
-            return suitSet;
+            return set;
         }
+
+        private static List<PlayerId> BuildWinnersExcluding(
+            IReadOnlyList<(PlayerId id, Suit suit)> allPlayers,
+            HashSet<PlayerId> losers)
+        {
+            return allPlayers
+                .Where(p => !losers.Contains(p.id))
+                .Select(p => p.id)
+                .Distinct()
+                .ToList();
+        }
+
+        private static Suit FindSuit(PlayerId id, IReadOnlyList<(PlayerId id, Suit suit)> allPlayers)
+        {
+            foreach (var (playerId, suit) in allPlayers)
+            {
+                if (playerId == id)
+                    return suit;
+            }
+            return default;
+        }
+
+        #endregion
     }
 }

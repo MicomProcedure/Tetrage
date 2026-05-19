@@ -7,219 +7,113 @@ using Tetrage.Core.Ids;
 namespace Tetrage.Tests.Editor
 {
     /// <summary>
-    /// TetrageMulti の純粋ロジックを検証する。
-    /// 対象: TetrageMultiResultCalculator（応答収集フォールバック・勝敗判定）
-    /// UI/ネットワーク/アニメーションは対象外。
+    /// TetrageMulti の純粋ロジック（Judge / ApplySubmissionDefaults）を検証する。
     /// </summary>
     public class TetrageMultiLogicEditorTests
     {
-        // ─── テスト用 PlayerId ───────────────────────────────────────────────
-        private static readonly PlayerId Requester = new PlayerId(1);
-        private static readonly PlayerId Player2   = new PlayerId(2);
-        private static readonly PlayerId Player3   = new PlayerId(3);
-        private static readonly PlayerId Player4   = new PlayerId(4);
+        private static readonly PlayerId Parent  = new PlayerId(1);
+        private static readonly PlayerId Child2  = new PlayerId(2);
+        private static readonly PlayerId Child3  = new PlayerId(3);
+        private static readonly PlayerId Child4  = new PlayerId(4);
 
-        // ═══════════════════════════════════════════════════════════════════
-        // DetermineOpenPlayers
-        // ═══════════════════════════════════════════════════════════════════
+        private static List<(PlayerId id, Suit suit)> AllFourPlayers => new()
+        {
+            (Parent,  Suit.Heart),
+            (Child2,  Suit.Heart),
+            (Child3,  Suit.Heart),
+            (Child4,  Suit.Spade),
+        };
 
         [Test]
-        public void DetermineOpenPlayers_ResponseOpen_IsIncluded()
+        public void Judge_Condition1_AllSubmitSameSuitFullNomination_Success()
         {
-            var selected  = new List<PlayerId> { Player2, Player3 };
-            var responses = new Dictionary<PlayerId, bool>
+            var nominated = new List<PlayerId> { Child2, Child3 };
+            var submissions = new Dictionary<PlayerId, bool>
             {
-                { Player2, true },
-                { Player3, true },
+                { Parent, true }, { Child2, true }, { Child3, true },
             };
 
-            var result = TetrageMultiResultCalculator.DetermineOpenPlayers(selected, responses);
+            var result = TetrageMultiResultCalculator.Judge(
+                Parent, Suit.Heart, nominated, submissions, AllFourPlayers);
 
-            Assert.Contains(Player2, result);
-            Assert.Contains(Player3, result);
-            Assert.AreEqual(2, result.Count);
+            Assert.IsTrue(result.IsSuccess);
+            CollectionAssert.Contains(result.Winners, Parent);
+            CollectionAssert.Contains(result.Winners, Child2);
+            CollectionAssert.Contains(result.Winners, Child3);
+            CollectionAssert.DoesNotContain(result.Winners, Child4);
         }
 
         [Test]
-        public void DetermineOpenPlayers_ResponseDecline_IsExcluded()
+        public void Judge_Condition1_NominationMiss_Fails()
         {
-            var selected  = new List<PlayerId> { Player2, Player3 };
-            var responses = new Dictionary<PlayerId, bool>
+            // Child3 (Heart) を指名漏れ
+            var nominated = new List<PlayerId> { Child2 };
+            var submissions = new Dictionary<PlayerId, bool>
             {
-                { Player2, false }, // 出さない
-                { Player3, true },
+                { Parent, true }, { Child2, true },
             };
 
-            var result = TetrageMultiResultCalculator.DetermineOpenPlayers(selected, responses);
+            var result = TetrageMultiResultCalculator.Judge(
+                Parent, Suit.Heart, nominated, submissions, AllFourPlayers);
 
-            CollectionAssert.DoesNotContain(result, Player2);
-            Assert.Contains(Player3, result);
-            Assert.AreEqual(1, result.Count);
+            Assert.IsFalse(result.IsSuccess);
         }
 
         [Test]
-        public void DetermineOpenPlayers_NoResponse_FallsBackToOpen()
+        public void Judge_Condition3_NoSubmissions_ParentTeamLoses()
         {
-            var selected  = new List<PlayerId> { Player2, Player3 };
-            // Player3 は未応答（タイムアウト）
-            var responses = new Dictionary<PlayerId, bool>
-            {
-                { Player2, true },
-            };
+            var nominated = new List<PlayerId> { Child2, Child3 };
+            var submissions = new Dictionary<PlayerId, bool>();
 
-            var result = TetrageMultiResultCalculator.DetermineOpenPlayers(selected, responses);
+            var result = TetrageMultiResultCalculator.Judge(
+                Parent, Suit.Heart, nominated, submissions, AllFourPlayers);
 
-            // 未応答は「出す」扱いのためどちらも含まれる
-            Assert.Contains(Player2, result);
-            Assert.Contains(Player3, result);
-            Assert.AreEqual(2, result.Count);
+            Assert.IsFalse(result.IsSuccess);
+            CollectionAssert.DoesNotContain(result.Winners, Parent);
+            CollectionAssert.DoesNotContain(result.Winners, Child2);
+            CollectionAssert.DoesNotContain(result.Winners, Child3);
+            CollectionAssert.Contains(result.Winners, Child4);
         }
 
         [Test]
-        public void DetermineOpenPlayers_AllDecline_ReturnsEmpty()
+        public void Judge_Condition2_ParentOnlySubmit_SubmitterTeamLoses()
         {
-            var selected  = new List<PlayerId> { Player2, Player3 };
-            var responses = new Dictionary<PlayerId, bool>
-            {
-                { Player2, false },
-                { Player3, false },
-            };
+            var nominated = new List<PlayerId> { Child2, Child3 };
+            var submissions = new Dictionary<PlayerId, bool> { { Parent, true } };
 
-            var result = TetrageMultiResultCalculator.DetermineOpenPlayers(selected, responses);
+            var result = TetrageMultiResultCalculator.Judge(
+                Parent, Suit.Heart, nominated, submissions, AllFourPlayers);
 
-            Assert.AreEqual(0, result.Count);
-        }
-
-        // ═══════════════════════════════════════════════════════════════════
-        // IsSuccess
-        // ═══════════════════════════════════════════════════════════════════
-
-        [Test]
-        public void IsSuccess_AllSameSuit_ReturnsTrue()
-        {
-            var openSuits = new List<Suit> { Suit.Heart, Suit.Heart };
-
-            Assert.IsTrue(TetrageMultiResultCalculator.IsSuccess(Suit.Heart, openSuits));
+            Assert.IsFalse(result.IsSuccess);
+            CollectionAssert.DoesNotContain(result.Winners, Parent);
+            CollectionAssert.DoesNotContain(result.Winners, Child2);
+            CollectionAssert.DoesNotContain(result.Winners, Child3);
+            CollectionAssert.Contains(result.Winners, Child4);
         }
 
         [Test]
-        public void IsSuccess_DifferentSuit_ReturnsFalse()
+        public void ApplySubmissionDefaults_ParentOpen_ChildClosed()
         {
-            var openSuits = new List<Suit> { Suit.Heart, Suit.Spade };
+            var nominated = new List<PlayerId> { Child2, Child3 };
+            var responses = new Dictionary<PlayerId, bool> { { Child2, true } };
 
-            Assert.IsFalse(TetrageMultiResultCalculator.IsSuccess(Suit.Heart, openSuits));
+            var result = TetrageMultiResultCalculator.ApplySubmissionDefaults(
+                Parent, nominated, responses);
+
+            Assert.IsTrue(result[Parent]);
+            Assert.IsTrue(result[Child2]);
+            Assert.IsFalse(result[Child3]);
         }
 
         [Test]
-        public void IsSuccess_EmptyOpenPlayers_ReturnsFalse()
+        public void ApplySubmissionDefaults_TimeoutChild_DefaultsToDecline()
         {
-            Assert.IsFalse(TetrageMultiResultCalculator.IsSuccess(Suit.Heart, new List<Suit>()));
-        }
+            var nominated = new List<PlayerId> { Child2 };
+            var result = TetrageMultiResultCalculator.ApplySubmissionDefaults(
+                Parent, nominated, new Dictionary<PlayerId, bool>());
 
-        // ═══════════════════════════════════════════════════════════════════
-        // CalculateSuccessWinners
-        // ═══════════════════════════════════════════════════════════════════
-
-        [Test]
-        public void CalculateSuccessWinners_ReturnsRequesterAndOpenPlayers()
-        {
-            var open = new List<PlayerId> { Player2, Player3 };
-
-            var result = TetrageMultiResultCalculator.CalculateSuccessWinners(Requester, open);
-
-            Assert.Contains(Requester, result);
-            Assert.Contains(Player2, result);
-            Assert.Contains(Player3, result);
-            Assert.AreEqual(3, result.Count);
-        }
-
-        // ═══════════════════════════════════════════════════════════════════
-        // CalculateFailureWinners
-        // ═══════════════════════════════════════════════════════════════════
-
-        [Test]
-        public void CalculateFailureWinners_OpenPlayerDifferentSuit_Wins()
-        {
-            // Requester=Heart, Player2=Spade(出す), Player3=Heart(非選択)
-            var all = new List<(PlayerId, Suit)>
-            {
-                (Requester, Suit.Heart),
-                (Player2,   Suit.Spade),
-                (Player3,   Suit.Heart),
-            };
-            var openPlayers = new List<PlayerId> { Player2 };
-
-            var result = TetrageMultiResultCalculator.CalculateFailureWinners(
-                Requester, Suit.Heart, all, openPlayers);
-
-            // Player2: 出した & Requesterとスート違い → 勝者
-            Assert.Contains(Player2, result);
-            // Player3: 出さなかった & open参加者スート(Heart, Spade)のいずれかに一致(Heart) → 勝者にならない
-            CollectionAssert.DoesNotContain(result, Player3);
-            // Requester: 失敗時は勝者にならない
-            CollectionAssert.DoesNotContain(result, Requester);
-        }
-
-        [Test]
-        public void CalculateFailureWinners_NonOpenPlayerDistinctSuit_Wins()
-        {
-            // Requester=Heart, Player2=Heart(出す), Player3=Heart(出さない), Player4=Diamond(出さない)
-            // openSuits = { Heart }
-            var all = new List<(PlayerId, Suit)>
-            {
-                (Requester, Suit.Heart),
-                (Player2,   Suit.Heart),
-                (Player3,   Suit.Heart),   // Heart = openSuitsに含まれる → 勝者にならない
-                (Player4,   Suit.Diamond), // Diamond = openSuitsに含まれない → 勝者
-            };
-            var openPlayers = new List<PlayerId> { Player2 }; // Player2 のみ出す
-
-            var result = TetrageMultiResultCalculator.CalculateFailureWinners(
-                Requester, Suit.Heart, all, openPlayers);
-
-            // Player2: 出した & Requesterと同スート(Heart) → 勝者にならない
-            CollectionAssert.DoesNotContain(result, Player2);
-            // Player3: 出さなかった & openスート(Heart)に一致 → 勝者にならない
-            CollectionAssert.DoesNotContain(result, Player3);
-            // Player4: 出さなかった & openスート(Heart)と異なる(Diamond) → 勝者
-            Assert.Contains(Player4, result);
-            // Requester: 失敗時は対象外
-            CollectionAssert.DoesNotContain(result, Requester);
-        }
-
-        [Test]
-        public void CalculateFailureWinners_AllDeclineSameSuitAsOpen_NoWinners()
-        {
-            // Requester=Heart, Player2=Heart(出す), Player3=Heart(出さない)
-            var all = new List<(PlayerId, Suit)>
-            {
-                (Requester, Suit.Heart),
-                (Player2,   Suit.Heart),
-                (Player3,   Suit.Heart),
-            };
-            var openPlayers = new List<PlayerId> { Player2 };
-
-            var result = TetrageMultiResultCalculator.CalculateFailureWinners(
-                Requester, Suit.Heart, all, openPlayers);
-
-            Assert.AreEqual(0, result.Count);
-        }
-
-        [Test]
-        public void CalculateFailureWinners_RequesterNotInWinners()
-        {
-            // 宣言者は失敗時に絶対に勝者にならない
-            var all = new List<(PlayerId, Suit)>
-            {
-                (Requester, Suit.Heart),
-                (Player2,   Suit.Spade),
-            };
-            var openPlayers = new List<PlayerId> { Player2 };
-
-            var result = TetrageMultiResultCalculator.CalculateFailureWinners(
-                Requester, Suit.Heart, all, openPlayers);
-
-            CollectionAssert.DoesNotContain(result, Requester);
+            Assert.IsTrue(result[Parent]);
+            Assert.IsFalse(result[Child2]);
         }
     }
 }

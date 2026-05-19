@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Tetrage.Core.Constants;
 using Tetrage.Core.Ids;
 using Tetrage.Core.Enums;
 using Tetrage.Network.Gameplay;
@@ -305,7 +306,20 @@ namespace Tetrage.Core.Events
                     $"DomainEventConverter: ActorNumber {dto.actorPlayerId} のPlayerIdマッピングが見つかりません（ActionRequested）");
             }
 
-            var cardIds = dto.targetCardIds?.Select(id => new CardId(id)).ToList() ?? new List<CardId>();
+            var rawIds = dto.targetIds ?? Array.Empty<int>();
+            IReadOnlyList<CardId> cardIds;
+            IReadOnlyList<int> nominatedActors = Array.Empty<int>();
+
+            if (dto.actionType == ActionType.TetrageMulti
+                && dto.actionStatusInt == InGameConsts.TetrageMultiStatus.StartRequest)
+            {
+                cardIds          = new List<CardId>();
+                nominatedActors  = rawIds;
+            }
+            else
+            {
+                cardIds = rawIds.Select(id => new CardId(id)).ToList();
+            }
 
             return new ActionRequestedEvent(
                 sequence: dto.sequence,
@@ -314,7 +328,8 @@ namespace Tetrage.Core.Events
                 actionType: dto.actionType,
                 targetCardIds: cardIds,
                 actionStatusInt: dto.actionStatusInt,
-                stateVersion: 0 // DTOにstateVersionがない
+                nominatedActorNumbers: nominatedActors,
+                stateVersion: 0
             );
         }
 
@@ -329,7 +344,22 @@ namespace Tetrage.Core.Events
                     $"DomainEventConverter: ActorNumber {dto.actorPlayerId} のPlayerIdマッピングが見つかりません（ActionResult）");
             }
 
-            var cardIds = dto.targetCardIds?.Select(id => new CardId(id)).ToList() ?? new List<CardId>();
+            var rawIds = dto.targetIds ?? Array.Empty<int>();
+            IReadOnlyList<CardId> cardIds = new List<CardId>();
+            IReadOnlyList<int> participantActors = Array.Empty<int>();
+            IReadOnlyList<int> winnerActors      = Array.Empty<int>();
+
+            if (dto.actionType == ActionType.TetrageMulti)
+            {
+                if (dto.actionStatusInt == InGameConsts.TetrageMultiStatus.ResponseRequested)
+                    participantActors = rawIds;
+                else if (dto.actionStatusInt == 0 || dto.actionStatusInt == 1)
+                    winnerActors = rawIds;
+            }
+            else
+            {
+                cardIds = rawIds.Select(id => new CardId(id)).ToList();
+            }
 
             return new ActionResultEvent(
                 sequence: dto.sequence,
@@ -340,7 +370,9 @@ namespace Tetrage.Core.Events
                 reason: dto.reason,
                 targetCardIds: cardIds,
                 actionStatusInt: dto.actionStatusInt,
-                stateVersion: 0 // DTOにstateVersionがない
+                participantActorNumbers: participantActors,
+                winnerActorNumbers: winnerActors,
+                stateVersion: 0
             );
         }
 

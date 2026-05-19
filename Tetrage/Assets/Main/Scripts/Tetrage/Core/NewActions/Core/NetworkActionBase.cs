@@ -30,11 +30,11 @@ namespace Tetrage.Core.Actions
                     clientSequence = context.Network.NextClientSequence(),
                     actorPlayerId = desc.actorPlayerId,
                     actionType = desc.actionType,
-                    targetCardIds = desc.targetCardIds?.Select(id => id.Value).ToArray(),
+                    targetIds = desc.targetIds,
                     actionStatusInt = desc.actionStatusInt
                 };
                 context.Network.Request(request);
-                Debug.Log($"NetworkActionBase: OnAfterExecute: Request {desc.actionType}, ActorPlayerId: {desc.actorPlayerId}, TargetCardIds: {string.Join(", ", desc.targetCardIds.Select(id => id.Value))}");
+                Debug.Log($"NetworkActionBase: OnAfterExecute: Request {desc.actionType}, ActorPlayerId: {desc.actorPlayerId}, TargetIds: {string.Join(", ", desc.targetIds ?? System.Array.Empty<int>())}");
             }
 
             await UniTask.Yield();

@@ -9,6 +9,8 @@ namespace Tetrage.Network.Gameplay
         private readonly SequenceService _seq;
         private readonly IPlayerIdMapper _playerIdMapper;
 
+        public IPlayerIdMapper PlayerIdMapper => _playerIdMapper;
+
         public GeneralNetworkActionContext(INetworkBroadcaster broadcaster, SequenceService seq, IPlayerIdMapper playerIdMapper)
         {
             _broadcaster = broadcaster;

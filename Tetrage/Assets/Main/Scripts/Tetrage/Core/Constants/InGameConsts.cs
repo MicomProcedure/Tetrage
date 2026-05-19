@@ -64,9 +64,21 @@ namespace Tetrage.Core.Constants
         /// TetrageMulti の ActionRequested/ActionResult で使う actionStatusInt 値。
         /// 0/1 は既存の成功/失敗と互換を保つ。
         /// </summary>
+        /// <summary>
+        /// ActionRequested / ActionResult / Descriptor の targetIds の解釈。
+        /// </summary>
+        public static class ActionPacketTargetIdsSemantics
+        {
+            // ActionRequested + Draw/Open/Check 等: CardId.Value
+            // ActionRequested + TetrageMulti + StartRequest: 指名した子の ActorNumber[]
+            // ActionResult + TetrageMulti + ResponseRequested: 提出参加者 ActorNumber[]（親+指名子）
+            // ActionResult + TetrageMulti + 最終 0/1: 勝者 ActorNumber[]
+            // Descriptor + TetrageMulti + 最終 0/1: 勝者 ActorNumber[]
+        }
+
         public static class TetrageMultiStatus
         {
-            /// <summary>Requester→Host: 宣言開始（targetCardIds = 選択した参加者の Target カード ID）</summary>
+            /// <summary>Requester→Host: 宣言開始（targetIds = 指名した子の ActorNumber[]）</summary>
             public const int StartRequest = 10;
             /// <summary>Host→All: 選択プレイヤーへの参加応答要求通知</summary>
             public const int ResponseRequested = 20;
