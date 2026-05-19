@@ -1,11 +1,13 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core.Actions
 {
     /// <summary>
-    /// Pass アクションの実行処理を担当するクラス
-    /// 何もしないアクション（no-op）
+    /// Pass アクションの実行処理を担当するクラス。
+    /// ゲーム状態の変更はなく、Host へ ActionResult 同期のみ行う。
     /// </summary>
     public class PassExecutor : IActionExecutor
     {
@@ -13,14 +15,17 @@ namespace Tetrage.Core.Actions
         {
             try
             {
-                // Passアクションは何もしないアクションなので、
-                // 実際の処理は行わず、成功を返す
-                Debug.Log($"Pass アクション実行: プレイヤー {context.RequesterPlayer.UserId}");
+                Debug.Log($"Pass アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId}");
 
-                // 短時間待機してリアルな処理感を演出（オプション）
-                await UniTask.Delay(50);
+                var descriptor = new ActionRequestDescriptorPacket
+                {
+                    actionType = ActionType.Pass,
+                    actorPlayerId = context.RequesterPlayer.PlayerId,
+                    targetIds = System.Array.Empty<int>(),
+                };
 
-                return ActionResult.Success("Pass アクションが正常に実行されました");
+                await UniTask.Yield();
+                return ActionResult.Success(descriptor);
             }
             catch (System.Exception ex)
             {

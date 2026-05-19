@@ -25,7 +25,7 @@ namespace Tetrage.Core.Actions
                     return ActionResult.Failure("相手プレイヤーに裏向きのカードがありません");
                 }
 
-                // 2. プレイヤーにカード選択のUIを表示（現在は自動選択で仮実装）
+                // 2. プレイヤーにカード選択のUIを表示
                 var selectedCard = await SelectHiddenCard(context, hiddenCards);
                 if (selectedCard == null)
                 {
