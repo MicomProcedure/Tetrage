@@ -9,7 +9,6 @@ using Tetrage.Core.Actions;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Ids;
-using Tetrage.Core;
 using R3;
 using Tetrage.Core.Constants;
 using DomainEvents = Tetrage.Core.Events;
@@ -140,7 +139,7 @@ namespace Tetrage.Managers
             ValidateStrategy();
 
             // 初めてラウンドを開始する際の処理（山札シャッフル、ターゲットカード設定、ターン順序初期化、最初のプレイヤーを決定）
-            FirstDeal();
+            await FirstDeal();
 
 
             // ゲーム終了フラグをリセット
@@ -168,17 +167,24 @@ namespace Tetrage.Managers
         /// <summary>
         /// 初めてラウンドを開始する際の処理（山札シャッフル、ターゲットカード設定、ターン順序初期化、最初のプレイヤーを決定）
         /// </summary>
-        public void FirstDeal()
+        public async UniTask FirstDeal()
         {
             if (!IsHost())
             {
                 Debug.Log("Dealer: FirstDeal はホストのみ実行します。無視しました");
                 return;
             }
+
+            // 先にシャッフルが完了するまで待機するタスクを作成しておく
+            var shuffleWaitTask = WaitForShuffleCompletedAsync();
+
             // デッキ準備 & 配布（副作用なしプラン → イベント発行 → 受信適用）
             // 1) 山札シャッフル（決定論で構築される前提のため、原則空プラン）
             var shufflePlan = _dealerPlanner.PlanShuffleDeck(_gameContext.Stage.Stack);
             _messenger?.PublishDealerPlan(shufflePlan);
+
+            // シャッフルが完了するまで待機
+            await shuffleWaitTask;
 
             // 2) 初期ターゲット設定
             var targetPlan = _dealerPlanner.PlanTargetSetup(_gameContext.Players, _gameContext.Stage.Stack);
@@ -351,6 +357,25 @@ namespace Tetrage.Managers
             catch (OperationCanceledException)
             {
                 return ActionResult.Failure("ActionResult待機がキャンセルされました");
+            }
+        }
+
+        /// <summary>
+        /// シャッフルが完了するまで待機する
+        /// </summary>
+        private async UniTask WaitForShuffleCompletedAsync()
+        {
+            try{
+                await _gameContext.Events.PileShuffled
+                    .FirstAsync(e => e.PileId == _gameContext.Stage.Stack.Id)
+                    .AsUniTask()
+                    .Timeout(TimeSpan.FromSeconds(SettingConsts.SHUFFLE_COMPLETED_WAIT_TIMEOUT_SECONDS));
+            }
+            catch (TimeoutException)
+            {
+                _isGameInterrupted = true;
+                _isGameFinished = true;
+                throw new OperationCanceledException("シャッフル待機のタイムアウトが発生しました。シャッフルが正常に完了していない可能性があります。ゲームを中断します。");
             }
         }
         #endregion
@@ -621,6 +646,7 @@ namespace Tetrage.Managers
             _gameContext.Events.GameEnded
                 .Subscribe(OnGameEnded)
                 .AddTo(_disposables);
+
         }
 
         private void OnGameEnded(DomainEvents.GameEndedEvent e)
