@@ -1,11 +1,14 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System.Linq;
+using Tetrage.Core.Enums;
+using Tetrage.Network.Gameplay;
 
 namespace Tetrage.Core.Actions
 {
     /// <summary>
-    /// Reach アクションの実行処理を担当するクラス
+    /// Reach アクションの実行処理を担当するクラス。
+    /// 手札の表向き化と Reach 状態は Host 権威のネットワークイベントで適用する。
     /// </summary>
     public class ReachExecutor : IActionExecutor
     {
@@ -15,65 +18,30 @@ namespace Tetrage.Core.Actions
             {
                 var hands = context.RequesterPlayer.Hands;
 
-                // 1. プレイヤーの手札を全て表向きにする
-                var cardsRevealed = 0;
-                foreach (var card in hands)
+                // 裏向きの手札IDを Host へ送る（表向き化は CardVisibilityChanged で全員同期）
+                var faceDownCardIds = hands
+                    .Where(card => !card.IsFaceUp)
+                    .Select(card => card.Id.Value)
+                    .ToArray();
+
+                Debug.Log(
+                    $"Reach アクション実行完了(送信準備): プレイヤー {context.RequesterPlayer.UserId}, 表向き化対象={faceDownCardIds.Length}枚");
+
+                var descriptor = new ActionRequestDescriptorPacket
                 {
-                    if (!card.IsFaceUp)
-                    {
-                        card.Flip();
-                        cardsRevealed++;
-                    }
-                }
+                    actionType = ActionType.Reach,
+                    actorPlayerId = context.RequesterPlayer.PlayerId,
+                    targetIds = faceDownCardIds,
+                };
 
-                // 2. プレイヤーをReach状態に設定
-                context.RequesterPlayer.Reach();
-
-                // 3. Reach状態の通知/アニメーション
-                await ShowReachAnimation(context);
-
-                var suitName = hands.FirstOrDefault()?.Suit.ToString() ?? "Unknown";
-
-                Debug.Log($"Reach アクション実行完了: プレイヤー {context.RequesterPlayer.UserId} が {suitName} でReach状態になりました");
-
-                return ActionResult.Success(new
-                {
-                    ReachedSuit = suitName,
-                    CardsRevealed = cardsRevealed,
-                    Message = "Reach アクションが正常に実行されました"
-                });
+                await UniTask.Yield();
+                return ActionResult.Success(descriptor);
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"Reach アクション実行中にエラーが発生: {ex.Message}");
                 return ActionResult.Failure($"Reach アクション実行エラー: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// Reach状態のアニメーション/エフェクトを表示
-        /// </summary>
-        private async UniTask ShowReachAnimation(IActionContext context)
-        {
-            // TODO: 実際のReachアニメーション/エフェクトを実装
-            // 手札のカードをハイライトしたり、特殊なエフェクトを表示
-
-            // 仮実装：手札のカードを一時的にハイライト
-            var hands = context.RequesterPlayer.Hands;
-            foreach (var card in hands)
-            {
-                card.Highlight();
-            }
-
-            Debug.Log("Reach アニメーション開始");
-            await UniTask.Delay(500); // アニメーション時間
-
-            foreach (var card in hands)
-            {
-                card.Unhighlight();
-            }
-
-            Debug.Log("Reach アニメーション完了");
         }
     }
 }

@@ -249,30 +249,50 @@ namespace Tetrage.Managers
             // ラウンド開始イベントを通知
             PublishTurnStart();
 
-            ActionResult actionResult = ActionResult.Failure("アクションが実行されませんでした");
             try
             {
                 // 現在のプレイヤーが設定されているかどうかを検証
                 if (!ValidateCurrentPlayer()) return;
 
-                // プレイヤーのアクションを待つ（現在手番のプレイヤー）
-                // Hostの自手番は ActionAwaiter、Guest手番はネットのActionResultを待機
-                var isLocalTurn = _gameContext.UserPlayer != null && ReferenceEquals(_gameContext.CurrentPlayer, _gameContext.UserPlayer);
-                if (isLocalTurn)
+                // Reach はターンを消費しないため、Pass/Check 等が来るまで同一手番で待機を続ける
+                while (!_isGameFinished && !gameCts.IsCancellationRequested)
                 {
-                    actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
-                }
-                else
-                {
-                    actionResult = await WaitActionResultFromNetworkAsync(_gameContext.CurrentPlayer, gameCts);
-                }
+                    ActionResult actionResult = ActionResult.Failure("アクションが実行されませんでした");
 
-                if (!actionResult.IsSuccess)
-                {
-                    Debug.LogWarning($"Dealer: プレイヤーアクション失敗 - {actionResult.ErrorMessage}");
-                }
+                    // プレイヤーのアクションを待つ（現在手番のプレイヤー）
+                    // Hostの自手番は ActionAwaiter、Guest手番はネットのActionResultを待機
+                    var isLocalTurn = _gameContext.UserPlayer != null
+                        && ReferenceEquals(_gameContext.CurrentPlayer, _gameContext.UserPlayer);
+                    if (isLocalTurn)
+                    {
+                        actionResult = await _actionAwaiter.WaitForPlayerActionAsync(_gameContext.CurrentPlayer);
+                    }
+                    else
+                    {
+                        actionResult = await WaitActionResultFromNetworkAsync(_gameContext.CurrentPlayer, gameCts);
+                    }
 
-                actionResult.Log("Dealer: プレイヤーアクション結果");
+                    if (!actionResult.IsSuccess)
+                    {
+                        Debug.LogWarning($"Dealer: プレイヤーアクション失敗 - {actionResult.ErrorMessage}");
+                    }
+
+                    actionResult.Log("Dealer: プレイヤーアクション結果");
+
+                    // TetrageSoloかTetrageMultiの場合のみゲーム終了を判定し、ループを抜ける
+                    if (HandleGameEndingByAction(actionResult))
+                    {
+                        return;
+                    }
+
+                    // Reach 後は同一ターンで Pass / Check 等を継続できる
+                    if (IsNonTurnConsumingAction(actionResult))
+                    {
+                        continue;
+                    }
+
+                    break;
+                }
             }
             catch (OperationCanceledException) when (gameCts.IsCancellationRequested)
             {
@@ -284,12 +304,6 @@ namespace Tetrage.Managers
                 Debug.LogError($"Dealer: アクション実行中に致命的エラーが発生: {ex.Message}");
                 _isGameInterrupted = true;
                 _isGameFinished = true; // 強制終了
-            }
-
-            // TetrageSoloかTetrageMultiの場合のみゲーム終了を判定し、ループを抜ける
-            if (HandleGameEndingByAction(actionResult))
-            {
-                return;
             }
 
             PublishTurnEnd();
@@ -513,6 +527,20 @@ namespace Tetrage.Managers
 
             descriptor = default;
             return false;
+        }
+
+        /// <summary>
+        /// ターンを消費せず、同一手番で続けられるアクションかどうか。
+        /// </summary>
+        private bool IsNonTurnConsumingAction(ActionResult actionResult)
+        {
+            if (!actionResult.IsSuccess)
+            {
+                return false;
+            }
+
+            return TryGetActionDescriptor(actionResult, out var descriptor)
+                && descriptor.actionType == ActionType.Reach;
         }
 
         private List<PlayerId> BuildWinnersFromActionResult(ActionRequestDescriptorPacket descriptor)

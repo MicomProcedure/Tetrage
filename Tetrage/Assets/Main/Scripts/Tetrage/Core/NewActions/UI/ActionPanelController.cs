@@ -31,7 +31,8 @@ namespace Tetrage.Core.Actions
         private ActionManager _actionManager;
         private IGameContext _gameContextProvider;
         private Dictionary<ActionType, Button> _actionButtons;
-        private IPlayer _currentPlayer;
+        /// <summary>ローカルユーザー（操作対象）。手番時のみ設定される。</summary>
+        private IPlayer _userPlayer;
         private bool _isInitialized = false;
         private CompositeDisposable _disposables = new();   // disposableをまとめて管理するためのコンテナ
 
@@ -86,6 +87,11 @@ namespace Tetrage.Core.Actions
             // R3のObservableでTurnStartedイベントを購読
             _gameContextProvider.Events.TurnStarted
                 .Subscribe(OnTurnStartedEvent)
+                .AddTo(_disposables);
+
+            // Reach 等のドメイン状態反映後にボタン表示を同期する
+            _gameContextProvider.Events.ActionResult
+                .Subscribe(OnActionResultEvent)
                 .AddTo(_disposables);
 
             // 初回ボタン状態更新。UIボタン更新メソッドを実行
@@ -163,21 +169,41 @@ namespace Tetrage.Core.Actions
             UpdateButtonStates();
         }
 
+        private void OnActionResultEvent(DomainEvents.ActionResultEvent e)
+        {
+            UpdateButtonStates();
+        }
+
         /// <summary>
-        /// ボタンの状態（有効/無効）を更新
+        /// ローカルユーザーの手番かどうかを判定する。
+        /// </summary>
+        private bool IsLocalPlayerTurn()
+        {
+            var userPlayer = _gameContextProvider?.UserPlayer;
+            var turnPlayer = _gameContextProvider?.CurrentPlayer;
+            return userPlayer != null
+                && turnPlayer != null
+                && ReferenceEquals(userPlayer, turnPlayer);
+        }
+
+        /// <summary>
+        /// ボタンの状態（有効/無効・表示/非表示）を更新する。
+        /// 表示は <see cref="ShouldShowButton"/>、活性は Validator 経由の CanExecute で決める。
         /// </summary>
         public void UpdateButtonStates()
         {
             if (_actionManager == null || _gameContextProvider == null)
                 return;
 
-            _currentPlayer = _gameContextProvider.CurrentPlayer;
-
-            if (_currentPlayer == null)
+            var userPlayer = _gameContextProvider.UserPlayer;
+            if (userPlayer == null || !IsLocalPlayerTurn())
             {
+                _userPlayer = null;
                 DisableAllButtons();
                 return;
             }
+
+            _userPlayer = userPlayer;
 
             // 各ボタンの状態（有効/無効、表示/非表示）を更新（ActionType版）
             foreach (var pair in _actionButtons)
@@ -187,10 +213,10 @@ namespace Tetrage.Core.Actions
 
                 if (button != null)
                 {
-                    bool canExecute = _currentPlayer.CanExecuteNewAction(actionType);
+                    bool canExecute = _userPlayer.CanExecuteNewAction(actionType);
                     button.interactable = canExecute;
 
-                    bool shouldShow = ShouldShowButton(actionType, _currentPlayer);
+                    bool shouldShow = ShouldShowButton(actionType, _userPlayer);
                     button.gameObject.SetActive(shouldShow);
                 }
             }
@@ -200,7 +226,7 @@ namespace Tetrage.Core.Actions
         /// プレイヤーの状態に応じてボタンを表示すべきか判定
         /// </summary>
         /// <param name="actionType">判定対象のアクション</param>
-        /// <param name="player">現在のプレイヤー</param>
+        /// <param name="player">ローカルユーザー</param>
         /// <returns>表示すべき場合true</returns>
         private bool ShouldShowButton(ActionType actionType, IPlayer player)
         {
@@ -238,9 +264,9 @@ namespace Tetrage.Core.Actions
         /// </summary>
         private async UniTask ExecuteActionAsync(ActionType actionType)
         {
-            if (_actionManager == null || _currentPlayer == null)
+            if (_actionManager == null || _userPlayer == null)
             {
-                Debug.LogWarning("ActionManagerまたは現在のプレイヤーが設定されていません");
+                Debug.LogWarning("ActionManagerまたはローカルプレイヤーが未設定、または手番外です");
                 return;
             }
 
@@ -251,7 +277,7 @@ namespace Tetrage.Core.Actions
 
                 Debug.Log($"アクション実行開始: {actionType}");
 
-                var result = await _currentPlayer.ExecuteNewActionAsync(actionType);
+                var result = await _userPlayer.ExecuteNewActionAsync(actionType);
 
                 if (result.IsSuccess)
                 {
@@ -304,13 +330,13 @@ namespace Tetrage.Core.Actions
         [ContextMenu("Show Available Actions")]
         private void ShowAvailableActions()
         {
-            if (_currentPlayer == null)
+            if (_userPlayer == null)
             {
                 Debug.LogWarning("現在のプレイヤーが設定されていません");
                 return;
             }
 
-            var availableActions = _currentPlayer.GetAvailableNewActionTypes();
+            var availableActions = _userPlayer.GetAvailableNewActionTypes();
             Debug.Log($"実行可能なアクション: {string.Join(", ", availableActions)}");
         }
 
@@ -324,9 +350,9 @@ namespace Tetrage.Core.Actions
         [ContextMenu("Test Draw Action")]
         private async void TestDrawAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.DrawAsync();
+                var result = await _userPlayer.DrawAsync();
                 Debug.Log($"Test Draw Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -334,9 +360,9 @@ namespace Tetrage.Core.Actions
         [ContextMenu("Test Open Action")]
         private async void TestOpenAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.OpenAsync();
+                var result = await _userPlayer.OpenAsync();
                 Debug.Log($"Test Open Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -344,9 +370,9 @@ namespace Tetrage.Core.Actions
         [ContextMenu("Test Reach Action")]
         private async void TestReachAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.ReachAsync();
+                var result = await _userPlayer.ReachAsync();
                 Debug.Log($"Test Reach Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -354,9 +380,9 @@ namespace Tetrage.Core.Actions
         [ContextMenu("Test Check Action")]
         private async void TestCheckAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.CheckAsync();
+                var result = await _userPlayer.CheckAsync();
                 Debug.Log($"Test Check Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
@@ -364,27 +390,27 @@ namespace Tetrage.Core.Actions
         [ContextMenu("Test Pass Action")]
         private async void TestPassAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.PassAsync();
+                var result = await _userPlayer.PassAsync();
                 Debug.Log($"Test Pass Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
         [ContextMenu("Test Tetrage Solo Action")]
         private async void TestTetrageSoloAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.TetrageSolo);
+                var result = await _userPlayer.ExecuteNewActionAsync(ActionType.TetrageSolo);
                 Debug.Log($"Test Tetrage Solo Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }
         [ContextMenu("Test Tetrage Multi Action")]
         private async void TestTetrageMultiAction()
         {
-            if (_currentPlayer != null)
+            if (_userPlayer != null)
             {
-                var result = await _currentPlayer.ExecuteNewActionAsync(ActionType.TetrageMulti);
+                var result = await _userPlayer.ExecuteNewActionAsync(ActionType.TetrageMulti);
                 Debug.Log($"Test Tetrage Multi Result: {result.IsSuccess} - {result.ErrorMessage}");
             }
         }

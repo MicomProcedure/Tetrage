@@ -104,6 +104,12 @@ namespace Tetrage.Network.Gameplay
                         break;
                     ProcessTetrageMultiAsync(e, seq).Forget();
                     break;
+                case ActionType.Reach:
+                    ProcessReach(e, seq);
+                    break;
+                case ActionType.Pass:
+                    ProcessPass(e, seq);
+                    break;
                 default:
                     ProcessDefault(e, seq);
                     break;
@@ -444,6 +450,81 @@ namespace Tetrage.Network.Gameplay
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, packet);
+        }
+
+        /// <summary>
+        /// Reachアクション処理。targetIds は表向きにする手札の CardId.Value 配列。
+        /// </summary>
+        private void ProcessReach(ActionRequestedEventPacket e, SequenceService seq)
+        {
+            var requester = ResolvePlayer(e.actorPlayerId);
+            if (requester == null)
+            {
+                BroadcastError(e, seq, "Reach: 実行プレイヤーを解決できません");
+                return;
+            }
+
+            if (requester.IsReach)
+            {
+                BroadcastError(e, seq, "Reach: 既にリーチ状態です");
+                return;
+            }
+
+            // 手札の表向き化は CardVisibilityChanged で全クライアントへ配信する
+            if (e.targetIds != null)
+            {
+                foreach (var cardIdValue in e.targetIds)
+                {
+                    if (cardIdValue == 0)
+                    {
+                        continue;
+                    }
+
+                    var cardStateChanged = new CardStateChangedEventPacket
+                    {
+                        sequence = seq.NextSequence(),
+                        stateVersion = seq.NextStateVersion(),
+                        cardId = cardIdValue,
+                        stateCode = CardStateCode.FaceUp,
+                        stateValue = true,
+                    };
+                    _netCtl.Broadcaster.Raise(EventCode.CardVisibilityChanged, cardStateChanged);
+                }
+            }
+
+            var res = new ActionResultEventPacket
+            {
+                sequence = seq.NextSequence(),
+                clientSequence = e.clientSequence,
+                actorPlayerId = e.actorPlayerId,
+                actionType = e.actionType,
+                accepted = true,
+                reason = string.Empty,
+                targetIds = e.targetIds,
+                actionStatusInt = 0,
+            };
+            _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
+        }
+
+        /// <summary>
+        /// Passアクション処理（状態変更なし、結果同期のみ）。
+        /// </summary>
+        private void ProcessPass(ActionRequestedEventPacket e, SequenceService seq)
+        {
+            var requester = ResolvePlayer(e.actorPlayerId);
+            if (requester == null)
+            {
+                BroadcastError(e, seq, "Pass: 実行プレイヤーを解決できません");
+                return;
+            }
+
+            if (!requester.IsReach)
+            {
+                BroadcastError(e, seq, "Pass: リーチしていないプレイヤーはPassできません");
+                return;
+            }
+
+            ProcessDefault(e, seq);
         }
 
         private void ProcessDefault(ActionRequestedEventPacket e, SequenceService seq)
