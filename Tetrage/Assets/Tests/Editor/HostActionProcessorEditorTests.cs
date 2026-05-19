@@ -127,7 +127,7 @@ namespace Tetrage.Tests.Editor
             {
                 actorPlayerId = 10,
                 actionType = ActionType.Draw,
-                targetCardIds = new[] { 101, 102, 103 },
+                targetIds = new[] { 101, 102, 103 },
                 clientSequence = 1
             };
 

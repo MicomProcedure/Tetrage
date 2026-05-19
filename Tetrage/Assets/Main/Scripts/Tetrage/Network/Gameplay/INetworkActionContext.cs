@@ -8,6 +8,7 @@ namespace Tetrage.Network.Gameplay
     /// </summary>
     public interface INetworkActionContext
     {
+        IPlayerIdMapper PlayerIdMapper { get; }
         void Request(ActionRequestedEventPacket request);
         int NextClientSequence();
     }

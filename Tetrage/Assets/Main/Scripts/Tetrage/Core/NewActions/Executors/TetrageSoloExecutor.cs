@@ -51,7 +51,7 @@ namespace Tetrage.Core.Actions
                 {
                     actionType = ActionType.TetrageSolo,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
-                    targetIds = new[] { myTargetCard.Id },
+                    targetIds = new[] { myTargetCard.Id.Value },
                     actionStatusInt = isWin ? 1 : 0
                 };
 

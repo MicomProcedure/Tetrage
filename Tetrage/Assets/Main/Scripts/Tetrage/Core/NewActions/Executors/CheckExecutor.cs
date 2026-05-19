@@ -44,7 +44,7 @@ namespace Tetrage.Core.Actions
                 {
                     actionType = ActionType.Check,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
-                    targetIds = new[] { targetCard.Id },
+                    targetIds = new[] { targetCard.Id.Value },
                     actionStatusInt = isMatch ? 1 : 0
                 };
                 return ActionResult.Success(descriptor);

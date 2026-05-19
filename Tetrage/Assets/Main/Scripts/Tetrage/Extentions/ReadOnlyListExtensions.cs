@@ -20,5 +20,22 @@ namespace Tetrage.Extentions
 
             return -1;
         }
+
+        public static bool Contains<T>(this IReadOnlyList<T> list, T target)
+        {
+            if (list == null) return false;
+
+            var comparer = EqualityComparer<T>.Default;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (comparer.Equals(list[i], target))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

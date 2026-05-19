@@ -64,11 +64,6 @@ namespace Tetrage.Network.Gameplay
             return player?.Target?.FirstOrDefault();
         }
 
-        private string BuildWinnersReason(IEnumerable<int> winnerActorNumbers)
-        {
-            return $"winners:{string.Join(",", winnerActorNumbers)}";
-        }
-
         private bool TryResolvePlayerId(int actorNumber, out PlayerId playerId)
         {
             playerId = default;
@@ -85,7 +80,7 @@ namespace Tetrage.Network.Gameplay
         public void Process(ActionRequestedEventPacket e)
         {
             var seq = _netCtl.Sequence;
-            Debug.Log($"HostActionProcessor: Process {e.actionType}, ActorPlayerId: {e.actorPlayerId}, TargetCardIds: {string.Join(", ", e.targetCardIds ?? System.Array.Empty<int>())}");
+            Debug.Log($"HostActionProcessor: Process {e.actionType}, ActorPlayerId: {e.actorPlayerId}, TargetIds: {string.Join(", ", e.targetIds ?? System.Array.Empty<int>())}");
             if (!TryResolvePlayerId(e.actorPlayerId, out var actorPlayerId))
             {
                 return;
@@ -119,7 +114,7 @@ namespace Tetrage.Network.Gameplay
 
         /// <summary>
         /// Drawアクション処理。
-        /// targetCardIdsの順序:
+        /// targetIdsの順序（CardId.Value）:
         ///   [0]: Handsへ（Stack -> Hands）
         ///   [1]: Stackに戻したカード（戻した順）
         ///   [2]: Trashに送ったカード（送った順）
@@ -129,7 +124,7 @@ namespace Tetrage.Network.Gameplay
             var othersInt = GetOtherActorNumbers(e.actorPlayerId);
             Debug.Log($"HostActionProcessor: Process Draw, ActorPlayerId: {e.actorPlayerId}, Others: [{string.Join(", ", othersInt)}]");
 
-            var validIds = e.targetCardIds?.Where(id => id != 0).ToArray();
+            var validIds = e.targetIds?.Where(id => id != 0).ToArray();
             if (validIds != null && validIds.Length > 0)
             {
                 // [0]: Handsへ（Stack -> Hands）
@@ -171,7 +166,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = string.Empty,
-                targetIds = e.targetCardIds,
+                targetIds = e.targetIds,
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -182,13 +177,13 @@ namespace Tetrage.Network.Gameplay
             var isMatch = e.actionStatusInt == 1;
 
             // Checkに成功した場合は、相手のTargetカードを表示する。
-            if (isMatch && e.targetCardIds != null && e.targetCardIds.Length > 0)
+            if (isMatch && e.targetIds != null && e.targetIds.Length > 0)
             {
                 var targetCardStateChanged = new CardStateChangedEventPacket
                 {
                     sequence = seq.NextSequence(),
                     stateVersion = seq.NextStateVersion(),
-                    cardId = e.targetCardIds[0],
+                    cardId = e.targetIds[0],
                     stateCode = CardStateCode.IsSuitVisible,
                     stateValue = true,
                 };
@@ -206,7 +201,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = string.Empty,
-                targetIds = e.targetCardIds,
+                targetIds = e.targetIds,
                 actionStatusInt = e.actionStatusInt,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -226,7 +221,7 @@ namespace Tetrage.Network.Gameplay
                     actionType = e.actionType,
                     accepted = false,
                     reason = "勝利判定に必要なターゲット情報を取得できません",
-                    targetIds = e.targetCardIds,
+                    targetIds = e.targetIds,
                     actionStatusInt = 0,
                 };
                 _netCtl.Broadcaster.Raise(EventCode.ActionResult, fallback);
@@ -267,8 +262,8 @@ namespace Tetrage.Network.Gameplay
                 actorPlayerId = e.actorPlayerId,
                 actionType = e.actionType,
                 accepted = true,
-                reason = BuildWinnersReason(winnerActorNumbers),
-                targetIds = e.targetCardIds,
+                reason = string.Empty,
+                targetIds = winnerActorNumbers.ToArray(),
                 actionStatusInt = isSuccess ? 1 : 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -276,12 +271,9 @@ namespace Tetrage.Network.Gameplay
 
         /// <summary>
         /// TetrageMulti の Host 側オーケストレーション（非同期）。
-        /// StartRequest を受けたあと、選択プレイヤーへ応答要求を送り、
-        /// 収集したレスポンス（未応答は「出す」扱い）で勝敗を判定して最終結果を配信する。
         /// </summary>
         private async UniTask ProcessTetrageMultiAsync(ActionRequestedEventPacket e, SequenceService seq)
         {
-            // 1フレーム空けてメインの同期呼び出しスタックから切り離す
             await UniTask.Yield();
 
             var requester     = ResolvePlayer(e.actorPlayerId);
@@ -293,15 +285,16 @@ namespace Tetrage.Network.Gameplay
                 return;
             }
 
-            // 宣言者が選択した参加者を targetCardIds から解決する
-            var selectedPlayers = ResolveSelectedPlayers(e, requester);
+            var selectedPlayers = ResolveSelectedPlayersByActor(e, requester);
             if (selectedPlayers.Count == 0)
             {
                 BroadcastError(e, seq, "選択プレイヤーが見つかりません");
                 return;
             }
 
-            // 2. 応答要求を全員へブロードキャスト
+            var nominatedChildIds = selectedPlayers.Select(p => p.Id).ToList();
+            var participantActorNumbers = BuildParticipantActorNumbers(e.actorPlayerId, selectedPlayers);
+
             var responseRequestPacket = new ActionResultEventPacket
             {
                 sequence        = seq.NextSequence(),
@@ -309,31 +302,35 @@ namespace Tetrage.Network.Gameplay
                 actorPlayerId   = e.actorPlayerId,
                 actionType      = ActionType.TetrageMulti,
                 accepted        = true,
-                targetIds   = e.targetCardIds,
+                reason          = string.Empty,
+                targetIds       = participantActorNumbers,
                 actionStatusInt = InGameConsts.TetrageMultiStatus.ResponseRequested,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, responseRequestPacket);
 
-            // 3. 選択プレイヤーの参加応答を収集（タイムアウトあり）
-            var responses = await CollectResponsesAsync(selectedPlayers, e.actorPlayerId);
+            var responses = await CollectResponsesAsync(requester, selectedPlayers, e.actorPlayerId);
 
-            // 4. 未応答は「出す」フォールバック → 開いたプレイヤー一覧を確定
-            var selectedPlayerIds = selectedPlayers.Select(p => p.Id).ToList();
-            var openPlayerIds     = TetrageMultiResultCalculator.DetermineOpenPlayers(selectedPlayerIds, responses);
-            var openPlayers       = _netCtl.GameContext.Players
-                .Where(p => openPlayerIds.Contains(p.Id))
+            var submissions = TetrageMultiResultCalculator.ApplySubmissionDefaults(
+                requester.Id, nominatedChildIds, responses);
+
+            var allPlayerInfo = _netCtl.GameContext.Players
+                .Select(p => (id: p.Id, suit: GetTargetCard(p)?.Suit ?? default))
                 .ToList();
 
-            // 5. 勝敗判定
-            var openSuits  = openPlayers.Select(p => GetTargetCard(p)?.Suit).Where(s => s.HasValue).Select(s => s.Value).ToList();
-            var isSuccess  = TetrageMultiResultCalculator.IsSuccess(requesterCard.Suit, openSuits);
-            var winnerActorNumbers = CalculateWinnerActorNumbers(requester, openPlayers, isSuccess);
+            var judgeResult = TetrageMultiResultCalculator.Judge(
+                requester.Id,
+                requesterCard.Suit,
+                nominatedChildIds,
+                submissions,
+                allPlayerInfo);
 
-            // 6. 開いた参加者の Target カード ID（最終 ActionResult に載せる）
-            var openedCardIds = openPlayers
-                .Select(p => GetTargetCard(p))
-                .Where(c => c != null)
-                .Select(c => c.Id.Value)
+            var winnerActorNumbers = judgeResult.Winners
+                .Where(id => _playerIdMapper.TryGetActorNumber(id, out _))
+                .Select(id =>
+                {
+                    _playerIdMapper.TryGetActorNumber(id, out var actor);
+                    return actor;
+                })
                 .ToArray();
 
             var res = new ActionResultEventPacket
@@ -343,9 +340,9 @@ namespace Tetrage.Network.Gameplay
                 actorPlayerId   = e.actorPlayerId,
                 actionType      = ActionType.TetrageMulti,
                 accepted        = true,
-                reason          = BuildWinnersReason(winnerActorNumbers.Distinct()),
-                targetIds   = openedCardIds,
-                actionStatusInt = isSuccess ? 1 : 0,
+                reason          = string.Empty,
+                targetIds       = winnerActorNumbers,
+                actionStatusInt = judgeResult.IsSuccess ? 1 : 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
         }
@@ -353,25 +350,25 @@ namespace Tetrage.Network.Gameplay
         // ─── 応答収集 ─────────────────────────────────────────────────────────
 
         /// <summary>
-        /// 選択プレイヤーからの参加応答を EventBus 経由で収集する。
-        /// タイムアウト（TETRAGE_MULTI_RESPONSE_TIMEOUT_SECONDS）を過ぎると収集を打ち切る。
+        /// 親・指名子からの提出応答を収集する。未応答は ApplySubmissionDefaults で補完する。
         /// </summary>
         private async UniTask<Dictionary<PlayerId, bool>> CollectResponsesAsync(
-            IReadOnlyList<IPlayer> selectedPlayers, int requesterActorNumber)
+            IPlayer requester, IReadOnlyList<IPlayer> selectedPlayers, int requesterActorNumber)
         {
-            var responses     = new Dictionary<PlayerId, bool>();
-            var pendingIds    = new HashSet<PlayerId>(selectedPlayers.Select(p => p.Id));
-            var eventBus      = _netCtl?.EventBus;
+            var responses  = new Dictionary<PlayerId, bool>();
+            var pendingIds = new HashSet<PlayerId> { requester.Id };
+            foreach (var p in selectedPlayers)
+                pendingIds.Add(p.Id);
 
+            var eventBus = _netCtl?.EventBus;
             if (eventBus == null)
-                return responses; // テスト環境など EventBus なし → 全員フォールバック
+                return responses;
 
             using var cts = new CancellationTokenSource(
                 TimeSpan.FromSeconds(SettingConsts.TETRAGE_MULTI_RESPONSE_TIMEOUT_SECONDS));
 
             var tcs = new UniTaskCompletionSource();
 
-            // EventBus.ActionRequested を購読して応答を収集する
             var disposable = eventBus.ActionRequested
                 .Where(ev => ev.ActionType == ActionType.TetrageMulti
                           && (ev.ActionStatusInt == InGameConsts.TetrageMultiStatus.ResponseOpen
@@ -385,17 +382,16 @@ namespace Tetrage.Network.Gameplay
                     Debug.Log($"TetrageMulti: 応答受信 player={ev.ActorPlayerId} open={isOpen} 残り={pendingIds.Count}");
 
                     if (pendingIds.Count == 0)
-                        tcs.TrySetResult(); // 全員応答済み
+                        tcs.TrySetResult();
                 });
 
             try
             {
-                // 全員応答またはタイムアウトまで待機
                 await tcs.Task.AttachExternalCancellation(cts.Token);
             }
             catch (OperationCanceledException)
             {
-                Debug.Log($"TetrageMulti: 応答タイムアウト。未応答 {pendingIds.Count} 人を「出す」扱いにします");
+                Debug.Log($"TetrageMulti: 応答タイムアウト。未応答 {pendingIds.Count} 人（親=提出・子=不提出の既定を適用）");
             }
             finally
             {
@@ -405,63 +401,32 @@ namespace Tetrage.Network.Gameplay
             return responses;
         }
 
-        // ─── 勝敗判定ロジック ──────────────────────────────────────────────────
-
-        /// <summary>
-        /// 勝者の ActorNumber 一覧を計算する。
-        /// TetrageMultiResultCalculator の純粋ロジックを用い、ActorNumber へ変換して返す。
-        /// </summary>
-        private List<int> CalculateWinnerActorNumbers(
-            IPlayer requester, IReadOnlyList<IPlayer> openPlayers, bool isSuccess)
-        {
-            var allPlayerInfo = _netCtl.GameContext.Players
-                .Select(p => (id: p.Id, suit: GetTargetCard(p)?.Suit ?? default))
-                .ToList();
-
-            var openPlayerIds = openPlayers.Select(p => p.Id).ToList();
-            var requesterCard = GetTargetCard(requester);
-
-            List<PlayerId> winnerPlayerIds;
-            if (isSuccess)
-            {
-                winnerPlayerIds = TetrageMultiResultCalculator.CalculateSuccessWinners(requester.Id, openPlayerIds);
-            }
-            else
-            {
-                var allWithSuit = allPlayerInfo.Select(p => (p.id, p.suit)).ToList();
-                winnerPlayerIds = TetrageMultiResultCalculator.CalculateFailureWinners(
-                    requester.Id, requesterCard?.Suit ?? default, allWithSuit, openPlayerIds);
-            }
-
-            return winnerPlayerIds
-                .Where(id => _playerIdMapper.TryGetActorNumber(id, out _))
-                .Select(id =>
-                {
-                    _playerIdMapper.TryGetActorNumber(id, out var actor);
-                    return actor;
-                })
-                .ToList();
-        }
-
         // ─── ヘルパー ────────────────────────────────────────────────────────
 
         /// <summary>
-        /// targetCardIds から選択されたプレイヤーを解決する（宣言者は除く）。
+        /// targetIds（指名 ActorNumber[]）から選択されたプレイヤーを解決する。
         /// </summary>
-        private List<IPlayer> ResolveSelectedPlayers(ActionRequestedEventPacket e, IPlayer requester)
+        private List<IPlayer> ResolveSelectedPlayersByActor(ActionRequestedEventPacket e, IPlayer requester)
         {
-            if (e.targetCardIds == null || e.targetCardIds.Length == 0)
+            if (e.targetIds == null || e.targetIds.Length == 0)
                 return new List<IPlayer>();
 
-            var selectedCardIdSet = new HashSet<int>(e.targetCardIds);
+            var actorSet = new HashSet<int>(e.targetIds);
             return _netCtl.GameContext.Players
                 .Where(p => p.Id != requester.Id)
-                .Where(p =>
-                {
-                    var card = GetTargetCard(p);
-                    return card != null && selectedCardIdSet.Contains(card.Id.Value);
-                })
+                .Where(p => _playerIdMapper.TryGetActorNumber(p.Id, out var actor) && actorSet.Contains(actor))
                 .ToList();
+        }
+
+        private int[] BuildParticipantActorNumbers(int parentActorNumber, IReadOnlyList<IPlayer> selectedPlayers)
+        {
+            var list = new List<int> { parentActorNumber };
+            foreach (var player in selectedPlayers)
+            {
+                if (_playerIdMapper.TryGetActorNumber(player.Id, out var actor))
+                    list.Add(actor);
+            }
+            return list.Distinct().ToArray();
         }
 
         /// <summary>エラー時に失敗 ActionResult をブロードキャストして終了する。</summary>
@@ -475,7 +440,7 @@ namespace Tetrage.Network.Gameplay
                 actionType      = e.actionType,
                 accepted        = false,
                 reason          = reason,
-                targetIds   = e.targetCardIds,
+                targetIds   = e.targetIds,
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, packet);
@@ -491,7 +456,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = string.Empty,
-                targetIds = e.targetCardIds,
+                targetIds = e.targetIds,
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);

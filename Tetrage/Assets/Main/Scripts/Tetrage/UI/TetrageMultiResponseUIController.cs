@@ -116,7 +116,7 @@ namespace Tetrage.UI
             _gameContext.Events.ActionResult
                 .Where(ev => ev.ActionType     == ActionType.TetrageMulti
                           && ev.ActionStatusInt == InGameConsts.TetrageMultiStatus.ResponseRequested
-                          && IsLocalPlayerTargeted(ev))
+                          && IsLocalParticipant(ev))
                 .Subscribe(_ =>
                 {
                     gameObject.SetActive(true);
@@ -133,17 +133,14 @@ namespace Tetrage.UI
         #region Handlers
 
         /// <summary>
-        /// ローカルプレイヤーが ResponseRequested の対象かどうかを判定する。
+        /// ローカルが提出フェーズの参加者（親または指名子）かどうか。
         /// </summary>
-        private bool IsLocalPlayerTargeted(ActionResultEvent ev)
+        private bool IsLocalParticipant(ActionResultEvent ev)
         {
-            var userPlayer = _gameContext?.UserPlayer;
-            if (userPlayer == null) return false;
+            if (_network?.PlayerIdMapper?.TryGetActorNumber(_localPlayerId, out var localActor) != true)
+                return false;
 
-            var localTargetCard = userPlayer.Target.FirstOrDefault();
-            if (localTargetCard == null) return false;
-
-            return ev.TargetCardIds?.Any(id => id == localTargetCard.Id) == true;
+            return ev.ParticipantActorNumbers?.Contains(localActor) == true;
         }
 
         /// <summary>
@@ -169,7 +166,7 @@ namespace Tetrage.UI
                 actorPlayerId   = actorNumber,
                 actionType      = ActionType.TetrageMulti,
                 actionStatusInt = statusInt,
-                targetCardIds   = Array.Empty<int>()
+                targetIds       = System.Array.Empty<int>()
             };
 
             _network.Broadcaster.Raise(EventCode.ActionRequested, packet);

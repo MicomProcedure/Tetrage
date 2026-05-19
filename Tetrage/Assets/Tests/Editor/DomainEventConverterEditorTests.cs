@@ -64,7 +64,7 @@ namespace Tetrage.Tests.Editor
                 clientSequence = 22,
                 actorPlayerId = 10,
                 actionType = Tetrage.Core.Enums.ActionType.Draw,
-                targetCardIds = new[] { 101, 102 },
+                targetIds = new[] { 101, 102 },
                 actionStatusInt = 1
             };
 

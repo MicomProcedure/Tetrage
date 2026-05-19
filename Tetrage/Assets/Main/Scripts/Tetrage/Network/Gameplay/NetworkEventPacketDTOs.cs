@@ -147,8 +147,9 @@ namespace Tetrage.Network.Gameplay
         public int clientSequence; // クライアント側の識別用
         public int actorPlayerId; // ActorNumber（ネットワーク境界はActorNumberで統一）
         public ActionType actionType;
-        public int[] targetCardIds; // 単数 or 複数対象（CardId.Valueの配列）
-        public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
+        /// <summary>意味は actionType×actionStatusInt で変わる。InGameConsts.ActionPacketTargetIdsSemantics 参照。</summary>
+        public int[] targetIds;
+        public int actionStatusInt;
     }
 
     [Serializable]
@@ -160,7 +161,8 @@ namespace Tetrage.Network.Gameplay
         public ActionType actionType;
         public bool accepted;      // 成否
         public string reason;      // 失敗時
-        public int[] targetIds; // 影響対象（応答時に確定させたい場合）
+        /// <summary>意味は actionType×actionStatusInt で変わる。InGameConsts.ActionPacketTargetIdsSemantics 参照。</summary>
+        public int[] targetIds;
         public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }
 
@@ -172,6 +174,7 @@ namespace Tetrage.Network.Gameplay
     {
         public ActionType actionType;
         public int actorPlayerId; // PlayerId.Value（ドメイン内部の識別値）
+        /// <summary>TetrageMulti 最終結果時は勝者 ActorNumber[]。他は未使用または CardId.Value。</summary>
         public int[] targetIds;
         public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }

@@ -1,13 +1,10 @@
 using UnityEngine;
-using Tetrage.Core;
 using Tetrage.Core.Constants;
 using Tetrage.Network.Gameplay;
 using Tetrage.Core.Contracts;
 using Tetrage.Core.Enums;
 using Tetrage.Core.Events;
 using Tetrage.UI;
-using Tetrage.Core.DTO;
-using System.Collections.Generic;
 using Tetrage.Core.Actions;
 using R3;
 using Tetrage.Services;
@@ -17,6 +14,7 @@ using Tetrage.Audio;
 using DomainEvents = Tetrage.Core.Events;
 using NetworkDto = Tetrage.Network.Gameplay;
 using UnityEngine.Serialization;
+using Tetrage.Extentions;
 
 namespace Tetrage.Managers
 {
@@ -176,10 +174,6 @@ namespace Tetrage.Managers
 			.Subscribe(OnScanResultReceived)
 			.AddTo(_disposables);
 
-		// 宣言者: ボタン押下と同時に演出を開始（ネットワーク往復を待たない）
-		TetrageMultiDispatcher.SelectionStarted
-			.Subscribe(_ => PlayActionCutIn(ActionType.TetrageMulti))
-			.AddTo(_disposables);
 	}
 
 		private void Unsubscribe()
@@ -232,17 +226,29 @@ namespace Tetrage.Managers
 
 		if (e.ActionStatusInt == InGameConsts.TetrageMultiStatus.ResponseRequested)
 		{
-			// 被選択者クライアント: ResponseRequested でカットインを再生
-			// 宣言者は SelectionStarted（ボタン押下時）に既に再生済みのためスキップ
-			var isLocalRequester = _gameContext?.UserPlayer != null
-				&& e.ActorPlayerId == _gameContext.UserPlayer.Id;
-			if (!isLocalRequester)
+			if (IsLocalTetrageMultiParticipant(e))
 				PlayActionCutIn(ActionType.TetrageMulti);
 			return;
 		}
 
 		PlayActionCutIn(e.ActionType);
 	}
+
+		/// <summary>
+		/// ローカルが TetrageMulti 提出フェーズの参加者かどうか。
+		/// </summary>
+		private bool IsLocalTetrageMultiParticipant(DomainEvents.ActionResultEvent e)
+		{
+			var userPlayer = _gameContext?.UserPlayer;
+			if (userPlayer == null || _gameplayNetwork?.PlayerIdMapper == null)
+				return false;
+
+			if (_gameplayNetwork.PlayerIdMapper.TryGetActorNumber(userPlayer.Id, out var localActor)
+			    && e.ParticipantActorNumbers?.Contains(localActor) == true)
+				return true;
+
+			return false;
+		}
 
 		/// <summary>
 		/// アクション種別に対応するカットイン演出を再生する。
