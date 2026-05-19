@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Photon.Pun;
 using Tetrage.Core;
+using Tetrage.Core.Constants;
 using Tetrage.Core.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -147,7 +150,178 @@ namespace Tetrage.Managers
         public void GoToGame() { GoToGameAsync().Forget(); }
         public void GoToResult() { GoToResultAsync().Forget(); }
         public void GoBack() { GoBackAsync().Forget(); }
+        #endregion
 
+        #region Application Lifecycle
+        /// <summary>
+        /// Photon の部屋から退出する（同期）。部屋未参加時は false。
+        /// </summary>
+        public bool TryLeavePhotonRoom()
+        {
+            if (!ValidateLeavePhotonRoomPreconditions(out var reason))
+            {
+                Debug.LogWarning($"ApplicationManager: 部屋から退出できません - {reason}");
+                return false;
+            }
+
+            Debug.Log("ApplicationManager: 部屋退出リクエストを送信します");
+            return PhotonNetwork.LeaveRoom();
+        }
+
+        /// <summary>Photon の部屋から退出し、退出完了まで待機する</summary>
+        public async UniTask LeavePhotonRoomAsync()
+        {
+            if (!ValidateLeavePhotonRoomPreconditions(out var reason))
+            {
+                Debug.LogWarning($"ApplicationManager: 部屋から退出できません - {reason}");
+                return;
+            }
+
+            await LeavePhotonRoomInternalAsync(_lifecycleCts.Token);
+        }
+
+        /// <summary>UI 等から呼ぶ Photon 部屋退出の薄いラッパー</summary>
+        public void LeavePhotonRoom() { LeavePhotonRoomAsync().Forget(); }
+
+        /// <summary>アプリケーションを終了する（Photon 切断後に終了）</summary>
+        public async UniTask QuitApplicationAsync()
+        {
+            await CleanupPhotonConnectionAsync(_lifecycleCts.Token);
+            QuitApplicationImmediate();
+        }
+
+        /// <summary>UI 等から呼ぶアプリケーション終了の薄いラッパー</summary>
+        public void QuitApplication() { QuitApplicationAsync().Forget(); }
+
+        /// <summary>
+        /// アプリケーションを再起動する（Photon 切断・状態リセット後にタイトルシーンへ戻る）
+        /// </summary>
+        public async UniTask RestartApplicationAsync()
+        {
+            if (_isLoading)
+            {
+                Debug.LogWarning("ApplicationManager: シーン読み込み中のため再起動をスキップします");
+                return;
+            }
+
+            await CleanupPhotonConnectionAsync(_lifecycleCts.Token);
+            ResetApplicationStateForRestart();
+            await LoadBootstrapSceneAsync(_lifecycleCts.Token);
+            Debug.Log("ApplicationManager: アプリケーションを再起動しました");
+        }
+
+        /// <summary>UI 等から呼ぶアプリケーション再起動の薄いラッパー</summary>
+        public void RestartApplication() { RestartApplicationAsync().Forget(); }
+
+        private async UniTask LeavePhotonRoomInternalAsync(CancellationToken ct)
+        {
+            if (!PhotonNetwork.InRoom)
+            {
+                return;
+            }
+
+            if (!PhotonNetwork.LeaveRoom())
+            {
+                Debug.LogWarning("ApplicationManager: LeaveRoom の送信に失敗しました");
+                return;
+            }
+
+            try
+            {
+                // サーバーからの退出完了を待つ
+                await UniTask.WaitUntil(() => !PhotonNetwork.InRoom, cancellationToken: ct)
+                    .Timeout(TimeSpan.FromSeconds(ApplicationConsts.PHOTON_LEAVE_ROOM_TIMEOUT_SECONDS));
+                Debug.Log("ApplicationManager: 部屋から退出しました");
+            }
+            catch (TimeoutException)
+            {
+                Debug.LogWarning(
+                    $"ApplicationManager: 部屋退出が {ApplicationConsts.PHOTON_LEAVE_ROOM_TIMEOUT_SECONDS} 秒以内に完了しませんでした");
+            }
+        }
+
+        private async UniTask DisconnectPhotonIfConnectedAsync(CancellationToken ct)
+        {
+            if (!PhotonNetwork.IsConnected)
+            {
+                return;
+            }
+
+            PhotonNetwork.Disconnect();
+            try
+            {
+                await UniTask.WaitUntil(() => !PhotonNetwork.IsConnected, cancellationToken: ct)
+                    .Timeout(TimeSpan.FromSeconds(ApplicationConsts.PHOTON_DISCONNECT_TIMEOUT_SECONDS));
+                Debug.Log("ApplicationManager: Photon から切断しました");
+            }
+            catch (TimeoutException)
+            {
+                Debug.LogWarning(
+                    $"ApplicationManager: Photon 切断が {ApplicationConsts.PHOTON_DISCONNECT_TIMEOUT_SECONDS} 秒以内に完了しませんでした");
+            }
+        }
+
+        private async UniTask CleanupPhotonConnectionAsync(CancellationToken ct)
+        {
+            if (PhotonNetwork.InRoom)
+            {
+                await LeavePhotonRoomInternalAsync(ct);
+            }
+
+            await DisconnectPhotonIfConnectedAsync(ct);
+        }
+
+        private void ResetApplicationStateForRestart()
+        {
+            _networkModeLocked = false;
+            _networkMode = NetworkMode.RealPhoton;
+            _networkContext = null;
+            _playerIdMapper = null;
+            _sceneHistory.Clear();
+            _isLoading = false;
+            _sessionIdToActorNumberMap.Clear();
+            _playerSession.Clear(false);
+            InitializeLocalPlayerSession();
+            PhotonNetwork.AutomaticallySyncScene = true;
+        }
+
+        private async UniTask LoadBootstrapSceneAsync(CancellationToken ct)
+        {
+            _isLoading = true;
+            try
+            {
+                var op = SceneManager.LoadSceneAsync(TitleSceneName, LoadSceneMode.Single);
+                await op.ToUniTask(cancellationToken: ct);
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+
+        private static void QuitApplicationImmediate()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
+        private bool ValidateLeavePhotonRoomPreconditions(out string reason)
+        {
+            reason = null;
+            if (!PhotonNetwork.InRoom)
+            {
+                reason = "部屋に参加していません";
+                return false;
+            }
+
+            return true;
+        }
+        #endregion
+
+        #region Scene Loading (private)
         private async UniTask LoadSceneByNameAsync(string sceneName)
         {
             if (_isLoading) return;

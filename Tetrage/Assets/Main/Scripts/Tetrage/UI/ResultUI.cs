@@ -125,7 +125,9 @@ namespace Tetrage.UI
                 Debug.LogError("ResultUI: ApplicationManager が見つかりません");
                 return;
             }
-            app.GoToTitle();
+
+            app.TryLeavePhotonRoom();   // 部屋から退出してからタイトルシーンへ遷移する
+            app.GoToTitle();            // タイトルシーンへ遷移する
         }
 
         #endregion
