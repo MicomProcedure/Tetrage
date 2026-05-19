@@ -244,7 +244,7 @@ namespace Tetrage.Models
         }
 
         /// <summary>
-        /// 決定論的シャッフル（Fisher–Yates）。同じ seed で同じ順序になります。
+        /// 決定論的シャッフル（Fisher–Yates）。同じ seed で同じ順序になる。
         /// </summary>
         /// <param name="seed">乱数シード</param>
         public void RandomShuffle(int seed)
