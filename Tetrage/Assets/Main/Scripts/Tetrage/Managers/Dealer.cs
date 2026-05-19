@@ -335,7 +335,7 @@ namespace Tetrage.Managers
                 {
                     actionType = result.ActionType,
                     actorPlayerId = result.ActorPlayerId.Value,
-                    targetCardIds = result.TargetCardIds?.Select(id => id).ToArray(),
+                    targetIds = result.TargetCardIds?.Select(id => id.Value).ToArray(),
                     actionStatusInt = result.ActionStatusInt
                 };
 
@@ -495,7 +495,7 @@ namespace Tetrage.Managers
 
             if (descriptor.actionType == ActionType.TetrageMulti)
             {
-                return EvaluateMultiWinners(descriptor.actorPlayerId, descriptor.targetCardIds, descriptor.actionStatusInt);
+                return EvaluateMultiWinners(descriptor.actorPlayerId, descriptor.targetIds?.Select(id => new CardId(id)).ToArray(), descriptor.actionStatusInt);
             }
 
             return new List<PlayerId>();

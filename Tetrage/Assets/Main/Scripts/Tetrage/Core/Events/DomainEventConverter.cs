@@ -329,7 +329,7 @@ namespace Tetrage.Core.Events
                     $"DomainEventConverter: ActorNumber {dto.actorPlayerId} のPlayerIdマッピングが見つかりません（ActionResult）");
             }
 
-            var cardIds = dto.targetCardIds?.Select(id => new CardId(id)).ToList() ?? new List<CardId>();
+            var cardIds = dto.targetIds?.Select(id => new CardId(id)).ToList() ?? new List<CardId>();
 
             return new ActionResultEvent(
                 sequence: dto.sequence,

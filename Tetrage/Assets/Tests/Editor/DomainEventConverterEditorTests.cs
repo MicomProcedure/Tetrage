@@ -91,7 +91,7 @@ namespace Tetrage.Tests.Editor
                 actionType = Tetrage.Core.Enums.ActionType.TetrageSolo,
                 accepted = true,
                 reason = "ok",
-                targetCardIds = new[] { 201 },
+                targetIds = new[] { 201 },
                 actionStatusInt = 1
             };
 

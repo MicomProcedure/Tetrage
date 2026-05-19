@@ -160,7 +160,7 @@ namespace Tetrage.Network.Gameplay
         public ActionType actionType;
         public bool accepted;      // 成否
         public string reason;      // 失敗時
-        public int[] targetCardIds; // 影響対象（応答時に確定させたい場合）
+        public int[] targetIds; // 影響対象（応答時に確定させたい場合）
         public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }
 
@@ -172,7 +172,7 @@ namespace Tetrage.Network.Gameplay
     {
         public ActionType actionType;
         public int actorPlayerId; // PlayerId.Value（ドメイン内部の識別値）
-        public CardId[] targetCardIds;
+        public int[] targetIds;
         public int actionStatusInt; // 追加ステータス（結果の分岐判定用）
     }
 }

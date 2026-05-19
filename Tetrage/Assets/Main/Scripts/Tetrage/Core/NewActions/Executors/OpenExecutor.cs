@@ -39,7 +39,7 @@ namespace Tetrage.Core.Actions
                 {
                     actionType = Tetrage.Core.Enums.ActionType.Open,
                     actorPlayerId = context.RequesterPlayer.PlayerId,
-                    targetCardIds = new[] { selectedCard.Id }
+                    targetIds = new[] { selectedCard.Id }
                 };
                 return ActionResult.Success(descriptor);
             }

@@ -153,7 +153,7 @@ namespace Tetrage.Core.Actions
             {
                 actionType = ActionType.Draw,
                 actorPlayerId = context.RequesterPlayer.PlayerId,
-                targetCardIds = cardIds.ToArray()
+                targetIds = cardIds.ToArray()
             };
             Debug.Log($"DrawExecutor: ActionRequestDescriptor: ActorPlayerId: {context.RequesterPlayer.PlayerId}, TargetCardIds: {string.Join(", ", cardIds.Select(id => id.Value))}");
             return ActionResult.Success(descriptor);

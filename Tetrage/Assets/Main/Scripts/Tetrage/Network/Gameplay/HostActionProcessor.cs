@@ -171,7 +171,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = string.Empty,
-                targetCardIds = e.targetCardIds,
+                targetIds = e.targetCardIds,
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -206,7 +206,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = string.Empty,
-                targetCardIds = e.targetCardIds,
+                targetIds = e.targetCardIds,
                 actionStatusInt = e.actionStatusInt,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -226,7 +226,7 @@ namespace Tetrage.Network.Gameplay
                     actionType = e.actionType,
                     accepted = false,
                     reason = "勝利判定に必要なターゲット情報を取得できません",
-                    targetCardIds = e.targetCardIds,
+                    targetIds = e.targetCardIds,
                     actionStatusInt = 0,
                 };
                 _netCtl.Broadcaster.Raise(EventCode.ActionResult, fallback);
@@ -268,7 +268,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = BuildWinnersReason(winnerActorNumbers),
-                targetCardIds = e.targetCardIds,
+                targetIds = e.targetCardIds,
                 actionStatusInt = isSuccess ? 1 : 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -309,7 +309,7 @@ namespace Tetrage.Network.Gameplay
                 actorPlayerId   = e.actorPlayerId,
                 actionType      = ActionType.TetrageMulti,
                 accepted        = true,
-                targetCardIds   = e.targetCardIds,
+                targetIds   = e.targetCardIds,
                 actionStatusInt = InGameConsts.TetrageMultiStatus.ResponseRequested,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, responseRequestPacket);
@@ -344,7 +344,7 @@ namespace Tetrage.Network.Gameplay
                 actionType      = ActionType.TetrageMulti,
                 accepted        = true,
                 reason          = BuildWinnersReason(winnerActorNumbers.Distinct()),
-                targetCardIds   = openedCardIds,
+                targetIds   = openedCardIds,
                 actionStatusInt = isSuccess ? 1 : 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);
@@ -475,7 +475,7 @@ namespace Tetrage.Network.Gameplay
                 actionType      = e.actionType,
                 accepted        = false,
                 reason          = reason,
-                targetCardIds   = e.targetCardIds,
+                targetIds   = e.targetCardIds,
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, packet);
@@ -491,7 +491,7 @@ namespace Tetrage.Network.Gameplay
                 actionType = e.actionType,
                 accepted = true,
                 reason = string.Empty,
-                targetCardIds = e.targetCardIds,
+                targetIds = e.targetCardIds,
                 actionStatusInt = 0,
             };
             _netCtl.Broadcaster.Raise(EventCode.ActionResult, res);

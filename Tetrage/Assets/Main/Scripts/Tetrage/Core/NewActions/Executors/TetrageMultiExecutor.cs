@@ -95,7 +95,7 @@ namespace Tetrage.Core.Actions
             {
                 actionType      = ActionType.TetrageMulti,
                 actorPlayerId   = context.RequesterPlayer.PlayerId,
-                targetCardIds   = finalEvent.TargetCardIds?.ToArray(),
+                targetIds   = finalEvent.TargetCardIds?.Select(id => id.Value).ToArray(),
                 actionStatusInt = finalEvent.ActionStatusInt
             };
 
@@ -271,7 +271,7 @@ namespace Tetrage.Core.Actions
             {
                 actionType      = ActionType.TetrageMulti,
                 actorPlayerId   = context.RequesterPlayer.PlayerId,
-                targetCardIds   = targetCards.Select(c => c.Id).ToArray(),
+                targetIds   = targetCards.Select(c => c.Id.Value).ToArray(),
                 actionStatusInt = isSuccess ? 1 : 0
             };
 
