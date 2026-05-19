@@ -518,7 +518,11 @@ namespace Tetrage.Core
                     break;
 
                 case ActionType.Check:
-                    // モデル変更は不要（情報提示のみ）
+                    // 成功時は対象 Target カードのスートを全クライアントで可視化する
+                    if (e.Accepted && e.ActionStatusInt == 1)
+                    {
+                        ApplyCheckSuccessTargetSuitVisibility(e.TargetCardIds);
+                    }
                     break;
 
                 case ActionType.TetrageSolo:
@@ -532,6 +536,28 @@ namespace Tetrage.Core
                 default:
                     // Draw/Passなど、モデル変更不要なものは無処理
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Check 成功時に、対象 Target カードの IsSuitVisible を有効化する。
+        /// </summary>
+        private void ApplyCheckSuccessTargetSuitVisibility(IReadOnlyList<CardId> targetCardIds)
+        {
+            if (targetCardIds == null)
+            {
+                return;
+            }
+
+            foreach (var cardId in targetCardIds)
+            {
+                if (!_cardRegistry.TryGet(cardId, out var card))
+                {
+                    Debug.LogWarning($"GameplayDomainEventHandler: Check成功対象の CardId {cardId} が見つかりません");
+                    continue;
+                }
+
+                card.SetSuitVisible(true);
             }
         }
 
